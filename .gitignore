@@ -25,12 +25,16 @@ Saved/Config/WindowsEditor/GameUserSettings.ini
 
 # IDE/editor settings (VS Code & JetBrains Rider)
 .vscode/
-.idea/
+.idea/                  # Rider 가 생성하는 모든 설정 폴더를 통째로 차단
 .rider/
+_ReSharper.Caches/      # Rider의 코드 분석 캐시 폴더 차단
+
+# Rider/ReSharper 관련 프로젝트/유저 파일들
 *.sln.iml
+*.csproj.iml
+*.fsproj.iml
 *.idea.ProjectConfiguration.xml
 *.idea.user
-_ReSharper.Caches/
 
 # Compiled files
 *.exe
