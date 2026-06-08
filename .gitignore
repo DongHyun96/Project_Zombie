@@ -10,13 +10,14 @@ FeaturePacks/
 Saved/Config/WindowsEditor/GameUserSettings.ini
 
 # Visual Studio files
+.vs/                   
 *.sln
 *.suo
 *.user
 *.userosscache
 *.sdf
 *.opensdf
-*.VC.db
+*.VC.db* 
 *.csproj.vcxproj
 *.ncb
 *.dbmdl

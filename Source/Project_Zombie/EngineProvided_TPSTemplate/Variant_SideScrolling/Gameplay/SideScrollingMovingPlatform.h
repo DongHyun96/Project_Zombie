@@ -15,6 +15,9 @@ UCLASS(abstract)
 class ASideScrollingMovingPlatform : public AActor, public ISideScrollingInteractable
 {
 	GENERATED_BODY()
+
+	// 한글 주석 테스팅
+	// 안깨지나?
 	
 public:	
 	
