@@ -106,11 +106,16 @@ protected:
 	//UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	//UInputAction* IA_ToggleMode;
 
+
+// Input Action Functions
+private:
+	void InitInput();
 protected:
 	void MoveAction(const FInputActionValue& Value);
 	void LookAction(const FInputActionValue& Value);
 	void JumpAction();
 	void FireAction();
+
 
 protected:
 	virtual void BeginPlay() override;
@@ -119,4 +124,7 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+public:
+	AC_BasicPlayer();
 };
