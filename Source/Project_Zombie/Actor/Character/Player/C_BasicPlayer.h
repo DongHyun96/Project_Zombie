@@ -107,6 +107,9 @@ protected:
 	//UInputAction* IA_ToggleMode;
 
 
+public:
+	EPlayerState GetPlayerState() { return m_PlayerState; }
+
 // Input Action Functions
 private:
 	void InitInput();
