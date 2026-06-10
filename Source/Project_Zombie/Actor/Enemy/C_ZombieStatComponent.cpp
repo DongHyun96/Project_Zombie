@@ -6,9 +6,8 @@
 
 UC_ZombieStatComponent::UC_ZombieStatComponent()
 {
-	PrimaryComponentTick.bCanEverTick = false;
-}
 
+}
 
 void UC_ZombieStatComponent::BeginPlay()
 {
@@ -16,8 +15,55 @@ void UC_ZombieStatComponent::BeginPlay()
 }
 
 
-void UC_ZombieStatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+void UC_ZombieStatComponent::PostEditChangeProperty(FPropertyChangedEvent& _Event)
 {
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	Super::PostEditChangeProperty(_Event);
+
+	InitStat();
 }
 
+
+void UC_ZombieStatComponent::OnRegister()
+{
+	Super::OnRegister();
+
+	InitStat();
+}
+
+
+void UC_ZombieStatComponent::InitStatFromStruct(UScriptStruct* _InStruct, const void* _StrcPtr)
+{
+	if (nullptr == _InStruct || nullptr == _StrcPtr)
+		return;
+
+	for (TFieldIterator<FProperty> Iter(_InStruct); Iter; ++Iter)
+	{
+		FProperty* Property = *Iter;
+
+		// 멤버변수 이름
+		FName StatName = Property->GetFName();
+
+		FFloatProperty* FloatPro = CastField<FFloatProperty>(Property);
+
+		if (FloatPro)
+		{
+			float Value = FloatPro->GetPropertyValue_InContainer(_StrcPtr);
+
+			AddStat(StatName, Value);
+		}
+	}
+}
+
+void UC_ZombieStatComponent::InitStat()
+{
+	if (nullptr == m_Table || m_RowName.IsNone())
+		return;
+
+	m_Stats.Empty();
+
+	FC_ZombieStatData* pStat = m_Table->FindRow<FC_ZombieStatData>(m_RowName, TEXT("ZombieStat"));
+
+	InitStatFromStruct(FC_ZombieStatData::StaticStruct(), pStat);
+
+	Modify();
+}
