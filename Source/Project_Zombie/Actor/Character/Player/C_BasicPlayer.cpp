@@ -76,6 +76,8 @@ void AC_BasicPlayer::InitInput()
 	UEnhancedInputLocalPlayerSubsystem* Subsystem =
 		LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
 
+	Subsystem->ClearAllMappings();
+
 	if (Subsystem && DefaultMappingContext)
 	{
 		Subsystem->AddMappingContext(DefaultMappingContext, 0);
