@@ -15,22 +15,6 @@ void UC_ZombieStatComponent::BeginPlay()
 }
 
 
-void UC_ZombieStatComponent::PostEditChangeProperty(FPropertyChangedEvent& _Event)
-{
-	Super::PostEditChangeProperty(_Event);
-
-	InitStat();
-}
-
-
-void UC_ZombieStatComponent::OnRegister()
-{
-	Super::OnRegister();
-
-	InitStat();
-}
-
-
 void UC_ZombieStatComponent::InitStatFromStruct(UScriptStruct* _InStruct, const void* _StrcPtr)
 {
 	if (nullptr == _InStruct || nullptr == _StrcPtr)
@@ -53,6 +37,22 @@ void UC_ZombieStatComponent::InitStatFromStruct(UScriptStruct* _InStruct, const 
 		}
 	}
 }
+
+void UC_ZombieStatComponent::PostEditChangeProperty(FPropertyChangedEvent& _Event)
+{
+	Super::PostEditChangeProperty(_Event);
+
+	InitStat();
+}
+
+
+void UC_ZombieStatComponent::OnRegister()
+{
+	Super::OnRegister();
+
+	InitStat();
+}
+
 
 void UC_ZombieStatComponent::InitStat()
 {
