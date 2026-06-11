@@ -44,7 +44,7 @@ class PROJECT_ZOMBIE_API UC_BasicPlayerInputComponent : public UActorComponent
 	GENERATED_BODY()
 
 	// 이하 멤버 변수
-protected: // protected로 닫을 생각 할 것.
+protected: 
 	// Player Main InputMappingContext
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Input")
 	class UInputMappingContext* DefaultMappingContext{};
