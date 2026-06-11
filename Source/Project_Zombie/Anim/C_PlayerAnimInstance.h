@@ -20,11 +20,21 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class AC_BasicPlayer* m_Character;
 
+	// 속도
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
 	float	m_GroundSpeed;
 
+	// 방향
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
 	float	m_Direction;
+
+	// 낙하
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
+	bool	m_IsFall;
+
+	// 수직 속도 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
+	float	m_VerticalSpeed;
 
 public:
 	virtual void NativeInitializeAnimation() override;
