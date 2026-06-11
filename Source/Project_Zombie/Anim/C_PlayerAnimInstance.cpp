@@ -4,6 +4,8 @@
 #include "C_PlayerAnimInstance.h"
 
 #include "../Actor/Character/Player/C_BasicPlayer.h"
+#include "GameFramework/CharacterMovementComponent.h"
+
 
 void UC_PlayerAnimInstance::NativeInitializeAnimation()
 {
@@ -34,4 +36,7 @@ void UC_PlayerAnimInstance::NativeUpdateAnimation(float _DT)
 
 	if (m_GroundSpeed > 10.f)
 		m_Direction = CalculateDirection(Velocity, m_Character->GetActorRotation());
+
+	m_IsFall = m_MovementComponent->IsFalling();
+	m_VerticalSpeed = m_MovementComponent->Velocity.Z;
 }
