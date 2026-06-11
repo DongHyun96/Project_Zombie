@@ -26,6 +26,14 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Effects")
 	UAnimSequence*			m_FireAnimation;
 
+	// 에디터에서 등록할 탄피 스태틱 메시 에셋
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Effects")
+	UStaticMesh*			m_ShellMesh;
+
+	// 탄피가 배출구 소켓 기준으로 어느 방향으로 튈지 더해줄 오프셋 힘
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Effects")
+	float					m_ShellEjectImpulse = 150.0f;
+
 protected:
 	//현재 남아있는 총알 수
 	int32					m_CurrentAmmo;
@@ -60,6 +68,8 @@ public:
 	/// <summary>
 	UFUNCTION(BlueprintCallable)
 	
+	void CompleteReload();
+
 	void PlayFireEffects();
 
 protected:
