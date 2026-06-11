@@ -10,8 +10,6 @@
 void AC_UIManager::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	UC_Util::Print("asdf", FColor::MakeRandomColor(), 10.f);
 
 	if (!m_MainHUDClass)
 	{
