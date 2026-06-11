@@ -7,6 +7,32 @@
 #include "Perception/AIPerceptionTypes.h"
 #include "C_ZombieController.generated.h"
 
+// 감지된 타겟 정보 구조체
+USTRUCT(BlueprintType)
+struct FSensedTargetInfo
+{
+	GENERATED_BODY();
+public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TWeakObjectPtr<AActor>	Target;
+
+	// 어그로 수치
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	float					AggroValue = 0.f;
+
+	// 인지 유무
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	bool					bSensed;
+
+	// 마지막으로 확인된 위치
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	FVector					LosePos;
+
+	// 인지를 놓친 시간
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	float					LoseTime;
+};
+
 UCLASS()
 class PROJECT_ZOMBIE_API AC_ZombieController : public AAIController
 {
@@ -36,6 +62,18 @@ protected:
 	// 블랙보드
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
 	class UBlackboardData*			m_BBAsset;
+
+	// 감지된 타겟들
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
+	TArray<FSensedTargetInfo>		m_SensedTargets;
+
+
+public:
+	const TArray<FSensedTargetInfo>& GetSensedTargets() { return m_SensedTargets; }
+
+	FSensedTargetInfo& AddSensedTarget(AActor* _Target);
+	FSensedTargetInfo* FindSensedTarget(const AActor* _Target);
+	void ClearSensedTarget(float _LimitTime);
 
 public:
 	/// <summary>

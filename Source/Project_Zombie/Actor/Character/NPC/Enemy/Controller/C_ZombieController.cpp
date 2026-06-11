@@ -98,6 +98,7 @@ void AC_ZombieController::OnPossess(APawn* _Pawn)
 	}
 }
 
+
 void AC_ZombieController::OnTargetDetected(AActor* _Target, FAIStimulus _Stimulus)
 {
 	if (!_Target)
@@ -107,4 +108,106 @@ void AC_ZombieController::OnTargetDetected(AActor* _Target, FAIStimulus _Stimulu
 	AC_Zombie* pZombie = Cast<AC_Zombie>(GetPawn());
 	if (nullptr == pZombie)
 		return;
+
+	// 감지대상의 우호관계 가져오기
+	ETeamAttitude::Type type = pZombie->GetTeamAttitudeTowards(*_Target);
+
+	// 감지 대상이 적(플레이어)이라면
+	if (ETeamAttitude::Hostile == type)
+	{
+		// 이미 감지됐던 타겟인지 확인
+		FSensedTargetInfo* pInfo = FindSensedTarget(_Target);
+
+		// 없다면 목록에 추가
+		if (nullptr == pInfo)
+		{
+			pInfo = &AddSensedTarget(_Target);
+		}
+
+		pInfo->bSensed = _Stimulus.WasSuccessfullySensed();
+
+		// 인지범위에서 벗어난 경우
+		if (false == pInfo->bSensed)
+		{
+			// 놓친 위치 저장
+			pInfo->LosePos = _Stimulus.StimulusLocation;
+
+			// 놓쳤을 때 시간 저장
+			pInfo->LoseTime = GetWorld()->GetTimeSeconds();
+		}
+
+		// 인지정보가 어떤 감각으로 발생한 정보인지 구별
+		static FAISenseID SightID = UAISense::GetSenseID<UAISense_Sight>();
+		static FAISenseID DmgID = UAISense::GetSenseID<UAISense_Damage>();
+		static FAISenseID HearingID = UAISense::GetSenseID<UAISense_Hearing>();
+
+		if (_Stimulus.Type == SightID)
+		{
+			if (pInfo->bSensed)
+				pInfo->AggroValue += 10.f;
+		}
+		else if (_Stimulus.Type == DmgID)
+		{
+			pInfo->AggroValue += 20.f;
+		}
+		else
+		{
+			pInfo->AggroValue += 15.f;
+		}
+	}
+}
+
+FSensedTargetInfo& AC_ZombieController::AddSensedTarget(AActor* _Target)
+{
+	FSensedTargetInfo info;
+
+	info.Target = _Target;
+
+	return m_SensedTargets.Add_GetRef(info);
+}
+
+FSensedTargetInfo* AC_ZombieController::FindSensedTarget(const AActor* _Target)
+{
+	for (FSensedTargetInfo& info : m_SensedTargets)
+	{
+		if (info.Target == _Target)
+		{
+			return &info;
+		}
+	}
+
+	return nullptr;
+}
+
+void AC_ZombieController::ClearSensedTarget(float _LimitTime)
+{
+	// 월드 현재시간
+	float CurTime = GetWorld()->GetTimeSeconds();
+
+	for (auto iter = m_SensedTargets.CreateIterator(); iter; ++iter)
+	{
+		bool bRemove = false;
+
+		// 1. 감지한 대상이 삭제된 경우
+		if (false == iter->Target.IsValid())
+		{
+			bRemove = true;
+		}
+
+		// 2. 인지를 놓친지 _LimitTime 을 넘어선 경우
+		else if (false == iter->bSensed)
+		{
+			// 감지를 못한 시간이 Limit 를 넘어서면
+			if (_LimitTime < CurTime - iter->LoseTime)
+			{
+				bRemove = true;
+			}
+		}
+
+		if (bRemove)
+		{
+			// iter 가 가리키는 대상을 삭제하고, 하나 이전을 가리킨다
+			iter.RemoveCurrent();
+		}
+	}
 }
