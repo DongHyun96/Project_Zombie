@@ -50,7 +50,7 @@ public: // 무기 상태 정보 업데이트 관련
 	/// <param name="_Visible"> : 켜기/끄기 옵션 </param>
 	/// <param name="_FireMode"> : 처음 표기할 FireMode / 켜기 옵션 시 default parameter 쓰지말고 해당 FireMode 넣어줄 것 </param>
 	/// <param name="_MagazineAmmo"> : 처음 표기할 탄창에 남은 장탄수 / 켜기 옵션 시 default parameter 쓰지말고 해당 FireMode 넣어줄 것 </param>
-	/// <param name="_LeftAmmoTotalCount"> : 처음 표기할 해당 총기 Type의 전체 보유한 탄약 수 / 켜기 옵션 시 default parameter 쓰지말고 해당 FireMode 넣어줄 것 </param>
+	/// <param name="_LeftAmmoTotalCount"> : 처음 표기할 해당 총기 Type의 전체 보유한 탄약 수(or 한탄창 탄약 수 -> 추후 기획에 따라 달라짐) / 켜기 옵션 시 default parameter 쓰지말고 해당 FireMode 넣어줄 것 </param>
 	/// <returns> : 잘못된 인자값이 들어온 경우, 처리되지 않고 return false </returns>
 	bool ToggleAmmoInfoVisibility
 	(
@@ -75,10 +75,23 @@ public: // 무기 상태 정보 업데이트 관련
 	/// </summary>
 	/// <param name="_LeftAmmoTotalCount"> : 해당 무기의 사용할 수 있는 총 탄약 수 </param>
 	void UpdateLeftAmmoTotalCount(int32 _LeftAmmoTotalCount);
+
+public: // Ingame Log 관련
+	
+	/// <summary>
+	/// Player Warning Log 추가
+	/// </summary>
+	/// <param name="WarningLog"> : Warning log </param>
+	/// <returns> : 제대로 추가되지 않았다면 return false </returns>
+	UFUNCTION(BlueprintCallable)
+	bool AddPlayerWarningLog(const FString& WarningLog);
 	
 protected:
 
 	UPROPERTY(meta = (BindWidget))
 	class UC_PlayerStatWidget* PlayerStatWidget{};
+	
+	UPROPERTY(meta = (BindWidget))
+	class UC_InformWidget* InformWidget{};
 
 };

@@ -111,6 +111,10 @@ void AC_GunBase::PlayFireEffects()
 	if (m_CurrentAmmo <= 0)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, TEXT("No Ammo! Need Reload (Press R)"));
+		
+		if (AC_UIManager* UIManager = Cast<AC_UIManager>(GetWorld()->GetFirstPlayerController()->GetHUD()))
+			UIManager->GetMainHUDWidget()->AddPlayerWarningLog("OUT OF AMMO");
+		
 		ReleaseTrigger();
 		return;
 	}

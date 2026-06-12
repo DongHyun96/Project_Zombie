@@ -3,6 +3,7 @@
 
 #include "C_GameMainHUD.h"
 
+#include "InformWidget/C_InformWidget.h"
 #include "PlayerStatHUD/C_PlayerStatWidget.h"
 
 void UC_GameMainHUD::NativeOnInitialized()
@@ -43,4 +44,9 @@ void UC_GameMainHUD::UpdateMagazineAmmoCount(int32 _AmmoCount)
 void UC_GameMainHUD::UpdateLeftAmmoTotalCount(int32 _LeftAmmoTotalCount)
 {
 	PlayerStatWidget->UpdateLeftAmmoTotalCount(_LeftAmmoTotalCount);
+}
+
+bool UC_GameMainHUD::AddPlayerWarningLog(const FString& WarningLog)
+{
+	return InformWidget->AddPlayerWarningLog(WarningLog);
 }
