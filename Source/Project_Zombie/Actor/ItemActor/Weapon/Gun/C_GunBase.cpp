@@ -7,6 +7,7 @@
 #include "TimerManager.h"
 #include "Engine/StaticMeshActor.h"
 #include "Components/StaticMeshComponent.h"
+#include "DrawDebugHelpers.h"
 
 AC_GunBase::AC_GunBase()
 {
@@ -58,7 +59,14 @@ void AC_GunBase::Reload()
 {
 	ReleaseTrigger();
 
-	if (m_CurrentAmmo == m_MaxAmmo) return;
+	if (m_CurrentAmmo == m_MaxAmmo) 
+		return;
+
+	// 재장전 애니메이션 재생
+	if (m_WeaponMesh && m_ReloadAnimation)
+	{
+		m_WeaponMesh->PlayAnimation(m_ReloadAnimation, false);
+	}
 
 	GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, TEXT("Reloading..."));
 
@@ -71,6 +79,15 @@ void AC_GunBase::CompleteReload()
 {
 	m_CurrentAmmo = m_MaxAmmo;
 	GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Cyan, TEXT("Reload Complete"));
+}
+
+FTransform AC_GunBase::GetLeftHandIKTransform() const
+{
+	if (m_WeaponMesh)
+	{
+		return m_WeaponMesh->GetSocketTransform(TEXT("Reload_IK_Socket"), RTS_World);
+	}
+	return FTransform::Identity;
 }
 
 // 총알 소모 로직 후 애니메이션 실행 함수
@@ -126,17 +143,112 @@ void AC_GunBase::PlayFireEffects()
 
 				// 물리 엔진 및 콜리전(PhysicsActor) 활성화
 				MeshComp->SetSimulatePhysics(true);
-				MeshComp->SetCollisionProfileName(TEXT("PhysicsActor"));
+				
+				MeshComp->SetCollisionProfileName(TEXT("Custom"));
 
-				// 탄피 배출 힘(Impulse) 계산 및 적용
-				// 소켓의 현재 회전 기준 우측(Right) 벡터와 상단(Up) 벡터를 활용해 항상 총구 기준 우측 상단으로 튕김
-				FVector EjectDirection = EjectTransform.GetRotation().GetRightVector() * 150.0f
-					+ EjectTransform.GetRotation().GetUpVector() * 75.0f;
+				// 캐릭터와 무기 컴포넌트는 완전히 충돌무시(Ignore)하도록 설정합니다.
+				MeshComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);        // 캐릭터 몸통 무시
+				MeshComp->SetCollisionResponseToChannel(ECC_PhysicsBody, ECR_Ignore); // 총기 및 기타 물리 물리 무시
 
+				// 바닥이나 벽에는 부딪혀야 하므로 Block으로 설정
+				MeshComp->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);  // 벽, 땅 바닥
+				MeshComp->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Block); // 움직이는 장애물
+
+				/* 제미나이 도움받음!*******/
+
+				float RandomRightForce = FMath::FRandRange(130.0f, 220.0f); // 오른쪽으로 튕기는 힘 (최소 130 ~ 최대 220)
+				float RandomUpForce = FMath::FRandRange(60.0f, 130.0f);  // 위로 솟구치는 힘   (최소 60 ~ 최대 130)
+				float RandomForwardForce = FMath::FRandRange(-40.0f, 40.0f); // 앞뒤로 미세하게 흔들리는 힘
+
+				// 소켓의 방향 벡터에 랜덤 힘을 곱해서 최종 방향 벡터(Velocity) 생성
+				FVector EjectDirection = (EjectTransform.GetRotation().GetRightVector() * RandomRightForce)
+					+ (EjectTransform.GetRotation().GetUpVector() * RandomUpForce)
+					+ (EjectTransform.GetRotation().GetForwardVector() * RandomForwardForce);
+
+				// 탄피에 불규칙한 추진력 가하기
 				MeshComp->AddImpulse(EjectDirection, NAME_None, true);
+
+				// 날아갈 때 탄피 자체도 지멋대로 빙글빙글 회전하게 만들기 (Angular Impulse)
+				// X, Y, Z축 기준으로 랜덤한 회전력을 줍니다.
+				FVector RandomTorque = FVector(FMath::FRandRange(-50.0f, 50.0f),
+					FMath::FRandRange(-50.0f, 50.0f),
+					FMath::FRandRange(-50.0f, 50.0f));
+				MeshComp->AddAngularImpulseInRadians(RandomTorque, NAME_None, true);
+
+				/*******제미나이 도움받음! */
 
 				// 3초 뒤 월드에서 자동으로 파괴되도록 수명 설정
 				SpawnedShell->SetLifeSpan(3.0f);
+			}
+		}
+	}
+	if (m_WeaponMesh && GetWorld())
+	{
+		// 소켓 이름 : MuzzleFlash
+		FVector StartLocation = m_WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
+		FVector ForwardDirection = m_WeaponMesh->GetSocketRotation(TEXT("MuzzleFlash")).Vector();
+		FVector MaxEndLocation = StartLocation + (ForwardDirection * 500.0f); // 최대 사거리
+
+		FHitResult HitResult;
+		FCollisionQueryParams QueryParams;
+		QueryParams.AddIgnoredActor(this); // 총 액터 충돌 무시
+		if (GetOwner())
+		{
+			QueryParams.AddIgnoredActor(GetOwner()); // 총을 들고있는 캐릭터 액터 충돌 무시
+		}
+
+		bool bHasHit = GetWorld()->LineTraceSingleByChannel(
+			HitResult,
+			StartLocation,
+			MaxEndLocation,
+			ECC_Visibility,
+			QueryParams
+		);
+
+		// 라인트레이스 디버그 모드 사거리 표시
+		FVector ActualEndLocation;
+
+		if (bHasHit)
+		{
+			ActualEndLocation = HitResult.ImpactPoint; // 충돌이 감지되면 출돌체 까지가 끝점
+		}
+		else
+		{
+			ActualEndLocation = MaxEndLocation; // 원래 끝 사거리
+		}
+
+		// 총알 궤적
+		DrawDebugLine(
+			GetWorld(),
+			StartLocation,
+			ActualEndLocation,
+			FColor::Green,
+			false,
+			0.5f,
+			0,
+			1.5f
+		);
+
+		// 충돌체에 맞으면 붉은원으로 표시
+		if (bHasHit)
+		{
+			DrawDebugSphere(
+				GetWorld(),
+				ActualEndLocation,
+				7.0f,
+				12,
+				FColor::Red,
+				false,
+				0.5f,
+				0,
+				1.5f
+			);
+
+			// 여기서 맞은 대상이 누구인지 식별해서 데미지
+			AActor* HitActor = HitResult.GetActor();
+			if (HitActor)
+			{
+				// 예: GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, FString::Printf(TEXT("Hit: %s"), *HitActor->GetName()));
 			}
 		}
 	}

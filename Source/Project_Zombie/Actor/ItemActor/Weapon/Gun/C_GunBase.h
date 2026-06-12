@@ -11,7 +11,7 @@ class PROJECT_ZOMBIE_API AC_GunBase : public AActor
 {
 	GENERATED_BODY()
 
-public:
+protected:
 	// 최대 총알 수
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Data", meta = (ClampMin = "1"))
 	int32					m_MaxAmmo = 30;
@@ -25,6 +25,9 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Effects")
 	UAnimSequence*			m_FireAnimation;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Effects")
+	UAnimSequence*			m_ReloadAnimation;
 
 	// 에디터에서 등록할 탄피 스태틱 메시 에셋
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Effects")
@@ -69,6 +72,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	
 	void CompleteReload();
+
+	UFUNCTION(BlueprintCallable, Category = "Weapon|IK")
+	FTransform GetLeftHandIKTransform() const;
 
 	void PlayFireEffects();
 
