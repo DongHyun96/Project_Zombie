@@ -7,6 +7,9 @@
 #include "TimerManager.h"
 #include "Engine/StaticMeshActor.h"
 #include "Components/StaticMeshComponent.h"
+#include "GameMode/C_UIManager.h"
+#include "UI/MainHUD/C_GameMainHUD.h"
+#include "Utility/C_Util.h"
 
 AC_GunBase::AC_GunBase()
 {
@@ -21,6 +24,13 @@ void AC_GunBase::BeginPlay()
 	Super::BeginPlay();
 	
 	m_CurrentAmmo = m_MaxAmmo;
+	
+	// TODO : Testing 용 HUD 업데이트
+	if (AC_UIManager* UIManager = Cast<AC_UIManager>(GetWorld()->GetFirstPlayerController()->GetHUD()))
+	{
+		// Swap한 현재 무기 정보를 토대로 AmmoInfo UI 가시성 true로 켜는 동작
+		UIManager->GetMainHUDWidget()->ToggleAmmoInfoVisibility(true, EFireMode::FullAuto, m_CurrentAmmo, m_MaxAmmo);
+	}
 }
 
 void AC_GunBase::Tick(float DeltaTime)
@@ -71,6 +81,10 @@ void AC_GunBase::CompleteReload()
 {
 	m_CurrentAmmo = m_MaxAmmo;
 	GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Cyan, TEXT("Reload Complete"));
+
+	// 새로 장전된 장탄수 UI 업데이트
+	if (AC_UIManager* UIManager = Cast<AC_UIManager>(GetWorld()->GetFirstPlayerController()->GetHUD()))
+		UIManager->GetMainHUDWidget()->UpdateMagazineAmmoCount(m_CurrentAmmo);
 }
 
 // 총알 소모 로직 후 애니메이션 실행 함수
@@ -88,6 +102,19 @@ void AC_GunBase::PlayFireEffects()
 
 	FString AmmoLog = FString::Printf(TEXT("Ammo: %d / %d"), m_CurrentAmmo, m_MaxAmmo);
 	GEngine->AddOnScreenDebugMessage(-1, m_FireRate, FColor::Green, AmmoLog);
+
+	UC_Util::Print(AmmoLog, FColor::Green, m_FireRate);
+	
+	/*UC_Util::Print
+	(
+		AmmoLog,			// 출력할 내용
+		FColor::Green,		// 출력 색상
+		m_FireRate			// Display Time
+	);*/
+
+	// 현재 남은 장탄수 UI 업데이트
+	if (AC_UIManager* UIManager = Cast<AC_UIManager>(GetWorld()->GetFirstPlayerController()->GetHUD()))
+		UIManager->GetMainHUDWidget()->UpdateMagazineAmmoCount(m_CurrentAmmo);
 
 	// 총기 발사 애니메이션 재생
 	if (m_WeaponMesh && m_FireAnimation)

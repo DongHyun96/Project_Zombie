@@ -6,6 +6,20 @@
 #include "GameFramework/Actor.h"
 #include "C_GunBase.generated.h"
 
+// 상황 : 이 모든 FireMode를 지원하지 않는 총기일 수 있음
+// TArray<EFireMode> m_ApplicableFireMode -> 해당 배열에 총기 자신이 지원하는 FireMode를 넣고, EFireMode m_CurrentFireMode -> 이런식으로 둘 수 있을 듯
+/// <summary>
+/// 총기 조정간 FireMode Type
+/// </summary>
+UENUM(BlueprintType)
+enum class EFireMode : uint8
+{
+	Single,		// 단발
+	Burst,		// 점사
+	FullAuto,	// 연발
+	End			UMETA(Hidden) 
+};
+
 UCLASS()
 class PROJECT_ZOMBIE_API AC_GunBase : public AActor
 {
