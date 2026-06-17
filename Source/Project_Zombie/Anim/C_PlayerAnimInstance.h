@@ -3,13 +3,13 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Animation/AnimInstance.h"
+#include "C_BasicCharacterAnimInstance.h"
 #include "C_PlayerAnimInstance.generated.h"
 
 //class AC_BasicPlayer;
 
 UCLASS()
-class PROJECT_ZOMBIE_API UC_PlayerAnimInstance : public UAnimInstance
+class PROJECT_ZOMBIE_API UC_PlayerAnimInstance : public UC_BasicCharacterAnimInstance
 {
 	GENERATED_BODY()
 	
