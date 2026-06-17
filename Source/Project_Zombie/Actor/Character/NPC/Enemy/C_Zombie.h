@@ -13,8 +13,6 @@ class PROJECT_ZOMBIE_API AC_Zombie : public AC_BasicEnemy
 	GENERATED_BODY()
 
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (DisplayName = "StatComponent"))
-	class UC_EnemyStatComponent* m_StatCom;
 
 protected:
 	virtual void BeginPlay() override;

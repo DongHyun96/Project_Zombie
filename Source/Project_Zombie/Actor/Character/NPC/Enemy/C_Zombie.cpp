@@ -6,8 +6,7 @@
 
 AC_Zombie::AC_Zombie()
 {
-	// 스탯 컴포넌트 추가
-	m_StatCom = CreateDefaultSubobject<UC_EnemyStatComponent>(TEXT("StatComponent"));
+	
 }
 
 void AC_Zombie::BeginPlay()
