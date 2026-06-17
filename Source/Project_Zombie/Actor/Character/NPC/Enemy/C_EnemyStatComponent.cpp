@@ -1,21 +1,21 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "C_ZombieStatComponent.h"
-#include "C_ZombieStatData.h"
+#include "C_EnemyStatComponent.h"
+#include "C_EnemyStatData.h"
 
-UC_ZombieStatComponent::UC_ZombieStatComponent()
+UC_EnemyStatComponent::UC_EnemyStatComponent()
 {
 
 }
 
-void UC_ZombieStatComponent::BeginPlay()
+void UC_EnemyStatComponent::BeginPlay()
 {
 	Super::BeginPlay();
 }
 
 
-void UC_ZombieStatComponent::InitStatFromStruct(UScriptStruct* _InStruct, const void* _StrcPtr)
+void UC_EnemyStatComponent::InitStatFromStruct(UScriptStruct* _InStruct, const void* _StrcPtr)
 {
 	if (nullptr == _InStruct || nullptr == _StrcPtr)
 		return;
@@ -38,7 +38,7 @@ void UC_ZombieStatComponent::InitStatFromStruct(UScriptStruct* _InStruct, const 
 	}
 }
 
-void UC_ZombieStatComponent::PostEditChangeProperty(FPropertyChangedEvent& _Event)
+void UC_EnemyStatComponent::PostEditChangeProperty(FPropertyChangedEvent& _Event)
 {
 	Super::PostEditChangeProperty(_Event);
 
@@ -46,7 +46,7 @@ void UC_ZombieStatComponent::PostEditChangeProperty(FPropertyChangedEvent& _Even
 }
 
 
-void UC_ZombieStatComponent::OnRegister()
+void UC_EnemyStatComponent::OnRegister()
 {
 	Super::OnRegister();
 
@@ -54,16 +54,16 @@ void UC_ZombieStatComponent::OnRegister()
 }
 
 
-void UC_ZombieStatComponent::InitStat()
+void UC_EnemyStatComponent::InitStat()
 {
 	if (nullptr == m_Table || m_RowName.IsNone())
 		return;
 
 	m_Stats.Empty();
 
-	FC_ZombieStatData* pStat = m_Table->FindRow<FC_ZombieStatData>(m_RowName, TEXT("ZombieStat"));
+	FC_EnemyStatData* pStat = m_Table->FindRow<FC_EnemyStatData>(m_RowName, TEXT("ZombieStat"));
 
-	InitStatFromStruct(FC_ZombieStatData::StaticStruct(), pStat);
+	InitStatFromStruct(FC_EnemyStatData::StaticStruct(), pStat);
 
 	Modify();
 }

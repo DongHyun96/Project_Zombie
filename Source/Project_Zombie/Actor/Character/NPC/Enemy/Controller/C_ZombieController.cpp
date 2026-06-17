@@ -9,7 +9,7 @@
 #include "Perception/AISenseConfig_Damage.h"
 #include "Perception/AISenseConfig_Hearing.h"
 
-#include "../C_ZombieStatComponent.h"
+#include "../C_EnemyStatComponent.h"
 
 #include "../C_Zombie.h"
 
@@ -71,7 +71,7 @@ void AC_ZombieController::OnPossess(APawn* _Pawn)
 	//	SetGenericTeamId((uint8)ETeamType::None);
 
 	// 빙의 대상의 스탯 컴포넌트를 가져온다
-	UC_ZombieStatComponent* pStatCom = _Pawn->FindComponentByClass<UC_ZombieStatComponent>();
+	UC_EnemyStatComponent* pStatCom = _Pawn->FindComponentByClass<UC_EnemyStatComponent>();
 
 	// 시야 인지범위를 데이터테이블에 작성된 스탯으로 설정
 	m_SightConfig->SightRadius = pStatCom->GetStat(TEXT("DetectRange"));

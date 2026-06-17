@@ -2,11 +2,11 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
-#include "C_ZombieStatData.generated.h"
+#include "C_EnemyStatData.generated.h"
 
 /// 좀비 스탯(데이터테이블)
 USTRUCT(BlueprintType)
-struct FC_ZombieStatData : public FTableRowBase
+struct FC_EnemyStatData : public FTableRowBase
 {
 	GENERATED_BODY()
 

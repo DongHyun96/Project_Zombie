@@ -14,13 +14,12 @@ class PROJECT_ZOMBIE_API AC_Zombie : public AC_BasicEnemy
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (DisplayName = "StatComponent"))
-	class UC_ZombieStatComponent* m_StatCom;
+	class UC_EnemyStatComponent* m_StatCom;
 
 protected:
 	virtual void BeginPlay() override;
 
 public:	
 	virtual void Tick(float DeltaTime) override;
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	AC_Zombie();
 };
