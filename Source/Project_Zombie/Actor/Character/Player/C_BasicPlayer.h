@@ -152,9 +152,6 @@ public:
 	EPlayerState GetPlayerState() const { return m_PlayerState; }
 	void SetPlayerState(EPlayerState _NewState) { m_PlayerState = _NewState; }
 
-	UFUNCTION(BlueprintCallable)
-
-
 protected:
 	virtual void BeginPlay() override;
 
