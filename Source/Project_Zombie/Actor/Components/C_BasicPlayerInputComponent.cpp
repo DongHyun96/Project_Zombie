@@ -38,6 +38,10 @@ void UC_BasicPlayerInputComponent::InitializePlayerInput(UInputComponent* Player
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
 		{
+			// 기존에 등록된 MappingContext 제거 후 새로 등록
+			// Look 쪽 매핑이 등록되어 있으면 기존 매핑을 제거하고 새로 등록
+			Subsystem->ClearAllMappings();
+
 			if (DefaultMappingContext)
 			{
 				Subsystem->AddMappingContext(DefaultMappingContext, 0);
@@ -76,7 +80,7 @@ void UC_BasicPlayerInputComponent::MoveAction(const FInputActionValue& Value)
 		FVector vF = Player->GetActorForwardVector();
 		FVector vR = Player->GetActorRightVector();
 
-		UE_LOG(LogTemp, Warning, TEXT("Move X: %f, Y: %f"), Input.X, Input.Y);
+		//UE_LOG(LogTemp, Warning, TEXT("Move X: %f, Y: %f"), Input.X, Input.Y);
 
 		Player->AddMovementInput(vF, Input.X);
 		Player->AddMovementInput(vR, Input.Y);
@@ -89,7 +93,7 @@ void UC_BasicPlayerInputComponent::LookAction(const FInputActionValue& Value)
 	{
 		FVector2D Input = Value.Get<FVector2D>();
 
-		UE_LOG(LogTemp, Warning, TEXT("Look X: %f, Y: %f"), Input.X, Input.Y);
+		//UE_LOG(LogTemp, Warning, TEXT("Look X: %f, Y: %f"), Input.X, Input.Y);
 
 		Player->AddControllerYawInput(Input.X);
 		Player->AddControllerPitchInput(Input.Y);
@@ -98,7 +102,11 @@ void UC_BasicPlayerInputComponent::LookAction(const FInputActionValue& Value)
 
 void UC_BasicPlayerInputComponent::JumpAction()
 {
-	Player->Jump();
+	if (Player && Player->CanJump())
+	{
+		Player->SetIsJumpInput(true);
+		Player->Jump();
+	}
 }
 
 void UC_BasicPlayerInputComponent::FireAction()
