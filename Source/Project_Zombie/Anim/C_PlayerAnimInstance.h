@@ -3,13 +3,13 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Animation/AnimInstance.h"
+#include "C_BasicCharacterAnimInstance.h"
 #include "C_PlayerAnimInstance.generated.h"
 
 //class AC_BasicPlayer;
 
 UCLASS()
-class PROJECT_ZOMBIE_API UC_PlayerAnimInstance : public UAnimInstance
+class PROJECT_ZOMBIE_API UC_PlayerAnimInstance : public UC_BasicCharacterAnimInstance
 {
 	GENERATED_BODY()
 	
@@ -20,11 +20,21 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class AC_BasicPlayer* m_Character;
 
+	// 속도
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
 	float	m_GroundSpeed;
 
+	// 방향
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
 	float	m_Direction;
+
+	// 낙하
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
+	bool	m_IsFall;
+
+	// 수직 속도 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
+	float	m_VerticalSpeed;
 
 public:
 	virtual void NativeInitializeAnimation() override;

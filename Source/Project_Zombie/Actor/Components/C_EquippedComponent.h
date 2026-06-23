@@ -12,7 +12,7 @@ enum class EWeaponSlot : uint8
 	SUB_GUN,
 	MELEE_WEAPON,
 	THROWABLE_WEAPON,
-	GADGET
+	GADGET				// 나중에 추가할지도 모르는 장비 슬롯 (예: 방어구, 액세서리, 설치형 무기등), gadget : 간단한 기계 장치
 };
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
