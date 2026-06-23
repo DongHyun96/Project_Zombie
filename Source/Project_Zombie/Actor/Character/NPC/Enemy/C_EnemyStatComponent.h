@@ -4,16 +4,16 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "C_ZombieStatComponent.generated.h"
+#include "C_EnemyStatComponent.generated.h"
 
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class PROJECT_ZOMBIE_API UC_ZombieStatComponent : public UActorComponent
+class PROJECT_ZOMBIE_API UC_EnemyStatComponent : public UActorComponent
 {
 	GENERATED_BODY()
 protected:
 	// 데이터 테이블 포인터
-	UPROPERTY(EditAnywhere, Category = "Stat", meta = (RequiredAssetDataTags = "RowStructure=/Script/Project_Zombie.C_ZombieStatData"))
+	UPROPERTY(EditAnywhere, Category = "Stat", meta = (RequiredAssetDataTags = "RowStructure=/Script/Project_Zombie.C_EnemyStatData"))
 	UDataTable* m_Table;
 
 	// 행 이름
@@ -66,6 +66,6 @@ protected:
 	void InitStat();
 
 public:	
-	UC_ZombieStatComponent();
+	UC_EnemyStatComponent();
 		
 };

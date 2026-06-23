@@ -10,5 +10,11 @@ UCLASS()
 class PROJECT_ZOMBIE_API AC_BasicEnemy : public AC_BasicNPC
 {
 	GENERATED_BODY()
-	
+
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (DisplayName = "StatComponent"))
+	class UC_EnemyStatComponent* m_StatCom;
+
+public:
+	AC_BasicEnemy();
 };
