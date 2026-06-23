@@ -39,4 +39,6 @@ void UC_PlayerAnimInstance::NativeUpdateAnimation(float _DT)
 
 	m_IsFall = m_MovementComponent->IsFalling();
 	m_VerticalSpeed = m_MovementComponent->Velocity.Z;
+
+
 }

@@ -28,8 +28,12 @@ AC_BasicPlayer::AC_BasicPlayer()
 	m_Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("MainCamera"));
 	m_Camera->SetupAttachment(m_SpringArm);
 
+	// 점프높이 설정
+	GetCharacterMovement()->JumpZVelocity = 600.f;
+
 	// 우리가 만든 InputComponent 클래스를 Player에게 추가.
 	m_InputComponent = CreateDefaultSubobject<UC_BasicPlayerInputComponent>(TEXT("InputComponent"));
+
 }
 
 void AC_BasicPlayer::BeginPlay()
