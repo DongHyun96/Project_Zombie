@@ -8,6 +8,8 @@
 
 //class AC_BasicPlayer;
 
+enum class EHandState : uint8;
+
 UCLASS()
 class PROJECT_ZOMBIE_API UC_PlayerAnimInstance : public UC_BasicCharacterAnimInstance
 {
@@ -20,6 +22,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class AC_BasicPlayer* m_Character;
 
+	// HandState
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player Basic State")
+	EHandState m_HandState;
+	
 	// 속도
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
 	float	m_GroundSpeed;

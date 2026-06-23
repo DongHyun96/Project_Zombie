@@ -31,6 +31,9 @@ void UC_PlayerAnimInstance::NativeUpdateAnimation(float _DT)
 	if (nullptr == m_Character || nullptr == m_MovementComponent)
 		return;
 
+	// HandState 갱신
+	m_HandState = m_Character->GetHandState();
+	
 	FVector Velocity = m_Character->GetVelocity();
 	m_GroundSpeed = Velocity.Size2D();
 
