@@ -55,6 +55,11 @@ void AC_BasicPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	}
 }
 
+float AC_BasicPlayer::TakeDamage(float _Damage, FDamageEvent const& _DamageEvent, AController* _InstigatorController, AActor* _InstigatorActor)
+{
+	return 0.0f;
+}
+
 //void AC_BasicPlayer::InitInput()
 //{
 //	APlayerController* PC = Cast<APlayerController>(GetController());
