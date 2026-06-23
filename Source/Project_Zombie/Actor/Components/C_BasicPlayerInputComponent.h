@@ -127,8 +127,11 @@ public:
 	// 플레이어의 SetupPlayerInputComponent에서 호출해 줄 초기화 함수
 	void InitializePlayerInput(UInputComponent* PlayerInputComponent, AC_BasicPlayer* InPlayer);
 
-protected:
+private:
+	void MoveStart(const FInputActionValue& Value);
 	void MoveAction(const FInputActionValue& Value);
+	void MoveEnd(const FInputActionValue& Value);
+	
 	void LookAction(const FInputActionValue& Value);
 	void JumpAction();
 	void FireAction();

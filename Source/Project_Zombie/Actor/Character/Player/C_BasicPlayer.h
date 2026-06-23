@@ -55,10 +55,18 @@ protected:
 	class UC_BasicPlayerInputComponent* m_InputComponent;
 
 
+	// TurnInPlace 처리 담당 Actor Component (속도가 0인 상황에서, 왼쪽 오른쪽 회전 시 몸체 회전 모션 처리를 자연스럽게 도와준다)
+	// 해당 기능은 PlayerCharacter만 처리를 할 예정
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (DisplayName = "TurnInPlaceComponent"))
+	class UC_TurnInPlaceComponent* m_TurnInPlaceComponent{};
+	
 // [Status]
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Status")
 	EPlayerState		m_PlayerState;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Status")
+	EHandState			m_HandState;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Status")
 	bool				m_IsDead;
@@ -151,7 +159,12 @@ public:
 	UFUNCTION(BlueprintCallable)
 	EPlayerState GetPlayerState() const { return m_PlayerState; }
 	void SetPlayerState(EPlayerState _NewState) { m_PlayerState = _NewState; }
+	
+	EHandState GetHandState() const { return m_HandState; }
+	void SetHandState(EHandState _HandState) { m_HandState = _HandState; }
 
+	UC_TurnInPlaceComponent* GetTurnInPlaceComponent() const { return m_TurnInPlaceComponent; }
+	
 protected:
 	virtual void BeginPlay() override;
 
