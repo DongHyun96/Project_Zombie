@@ -66,7 +66,7 @@ protected:
 
 	// => 여기서부터는 나중에 StatComponent으로 분리?
 	// 기본 이동 속도
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Status")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Status")
 	float				m_BaseMaxSpeed;
 
 	// 최대 체력
@@ -85,37 +85,38 @@ protected:
 	EPlayerViewMode		m_PlayerViewMode;
 
 	// 3인칭 카메라 암 길이
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
 	float				m_TPSCameraArmLength;
 
 	// 1인칭 카메라 암 길이
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
 	float				m_FPSCameraArmLength;
 
 	// => 나중에 InputComponent으로 분리?
 	// 마우스 감도
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
 	float 				m_MouseSensitivity;
+
 
 // [Movement]
 protected:
 	// 걷기 속도
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float m_WalkSpeed;
 
 	// 달리기 속도
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float m_RunSpeed;
 
 	// 조준 시 속도
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float m_AimMoveSpeed;
 
 	// 웅크리기 시 속도
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float m_CrouchSpeed;
 
-	/// 우선순위
+	/// 우선순위... 따로 enum으로 빼서 관리할까 
 	/// 웅크리기 > 조준 > 달리기 > 일반 이동
 	// 달리기 상태
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
@@ -128,6 +129,7 @@ protected:
 	// 웅크리기 상태
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
 	bool m_IsCrouching;
+
 
 // [Weapon]
 protected:
@@ -146,7 +148,11 @@ protected:
 
 
 public:
-	EPlayerState GetPlayerState() { return m_PlayerState; }
+	UFUNCTION(BlueprintCallable)
+	EPlayerState GetPlayerState() const { return m_PlayerState; }
+	void SetPlayerState(EPlayerState _NewState) { m_PlayerState = _NewState; }
+
+	UFUNCTION(BlueprintCallable)
 
 
 protected:
@@ -157,6 +163,11 @@ public:
 
 	// Cotroller가 빙의할 때 실행되는 함수.
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+public:
+	// 데미지 처리 함수 
+	virtual float TakeDamage(float _Damage, struct FDamageEvent const& _DamageEvent
+		, class AController* _InstigatorController, AActor* _InstigatorActor) override;
 
 public:
 	AC_BasicPlayer();
