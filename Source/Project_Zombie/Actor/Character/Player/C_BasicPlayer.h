@@ -124,6 +124,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float m_CrouchSpeed;
 
+	// 점프 입력 여부
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
+	bool m_IsJumpInput;
+
 	/// 우선순위... 따로 enum으로 빼서 관리할까 
 	/// 웅크리기 > 조준 > 달리기 > 일반 이동
 	// 달리기 상태
@@ -163,8 +167,19 @@ public:
 	EHandState GetHandState() const { return m_HandState; }
 	void SetHandState(EHandState _HandState) { m_HandState = _HandState; }
 
+
 	UC_TurnInPlaceComponent* GetTurnInPlaceComponent() const { return m_TurnInPlaceComponent; }
 	
+	bool IsDead() const { return m_IsDead; }
+	void SetIsDead(bool _IsDead) { m_IsDead = _IsDead; }
+
+	bool IsJumpInput() const { return m_IsJumpInput; }
+	void SetIsJumpInput(bool _IsJumpInput) { m_IsJumpInput = _IsJumpInput; }
+
+public:
+	// 캐릭터가 착지했을 때 실행되는 함수
+	void Landed(const FHitResult& Hit) override;
+
 protected:
 	virtual void BeginPlay() override;
 

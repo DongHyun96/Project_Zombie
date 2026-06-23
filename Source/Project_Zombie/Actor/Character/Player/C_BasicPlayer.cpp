@@ -30,11 +30,18 @@ AC_BasicPlayer::AC_BasicPlayer()
 	m_Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("MainCamera"));
 	m_Camera->SetupAttachment(m_SpringArm);
 
+	// 점프높이 설정
+	GetCharacterMovement()->JumpZVelocity = 600.f;
+
+	// 점프 입력 초기화
+	m_IsJumpInput = false;
+
 	// 우리가 만든 InputComponent 클래스를 Player에게 추가.
 	m_InputComponent = CreateDefaultSubobject<UC_BasicPlayerInputComponent>(TEXT("InputComponent"));
 	
 	// TurnInPlace Component
 	m_TurnInPlaceComponent = CreateDefaultSubobject<UC_TurnInPlaceComponent>(TEXT("TurnInPlaceComponent"));
+
 }
 
 void AC_BasicPlayer::BeginPlay()
@@ -64,6 +71,14 @@ float AC_BasicPlayer::TakeDamage(float _Damage, FDamageEvent const& _DamageEvent
 {
 	return 0.0f;
 }
+
+void AC_BasicPlayer::Landed(const FHitResult& Hit)
+{
+	Super::Landed(Hit);
+
+	m_IsJumpInput = false;
+}
+
 
 //void AC_BasicPlayer::InitInput()
 //{
