@@ -102,7 +102,11 @@ void UC_BasicPlayerInputComponent::LookAction(const FInputActionValue& Value)
 
 void UC_BasicPlayerInputComponent::JumpAction()
 {
-	Player->Jump();
+	if (Player && Player->CanJump())
+	{
+		Player->SetIsJumpInput(true);
+		Player->Jump();
+	}
 }
 
 void UC_BasicPlayerInputComponent::FireAction()
