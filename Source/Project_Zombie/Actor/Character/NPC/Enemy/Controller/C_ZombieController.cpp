@@ -9,6 +9,15 @@
 #include "Perception/AISenseConfig_Damage.h"
 #include "Perception/AISenseConfig_Hearing.h"
 
+// TeamAgentInterface
+#include "GenericTeamAgentInterface.h"
+
+// BehaviorTree / Blackboard
+#include "BehaviorTree/BehaviorTree.h"
+#include "BehaviorTree/BlackboardComponent.h"
+#include "BehaviorTree/BlackboardData.h"
+
+// StatComponent
 #include "../C_EnemyStatComponent.h"
 
 #include "../C_Zombie.h"
@@ -31,8 +40,8 @@ AC_ZombieController::AC_ZombieController()
 		m_SightConfig->LoseSightRadius = 3500.f; // AI 가 대상을 처음 감지할 수 있는 거리
 		m_SightConfig->PeripheralVisionAngleDegrees = 60.f; // 시전 정면방향을 기준으로, 반경 각도, 최대시야각은 x2 
 		m_SightConfig->DetectionByAffiliation.bDetectEnemies = true; // 감지대상이 적대관계인경우 탐지한것으로 인정
-		m_SightConfig->DetectionByAffiliation.bDetectFriendlies = false; // 감지대상이 우호관계인경우 탐지한것으로 인정
-		m_SightConfig->DetectionByAffiliation.bDetectNeutrals = false; // 감지대상이 중립관계인경우 탐지한것으로 인정
+		m_SightConfig->DetectionByAffiliation.bDetectFriendlies = true; // 감지대상이 우호관계인경우 탐지한것으로 인정
+		m_SightConfig->DetectionByAffiliation.bDetectNeutrals = true; // 감지대상이 중립관계인경우 탐지한것으로 인정
 
 		m_PerceptionCom->ConfigureSense(*m_SightConfig); // 인지 컴포넌트에 시각정보 추가
 		m_PerceptionCom->SetDominantSense(m_SightConfig->GetSenseImplementation()); // 시각정보를 최우선 감각으로 사용할 것
@@ -61,6 +70,8 @@ AC_ZombieController::AC_ZombieController()
 void AC_ZombieController::OnPossess(APawn* _Pawn)
 {
 	Super::OnPossess(_Pawn);
+
+	UE_LOG(LogTemp, Warning, TEXT("OnPossess Success"));
 
 	// 빙의한 대상과 같은 팀으로 설정
 	const IGenericTeamAgentInterface* pPawnTeam = Cast<IGenericTeamAgentInterface>(_Pawn);
@@ -101,10 +112,31 @@ void AC_ZombieController::OnPossess(APawn* _Pawn)
 
 void AC_ZombieController::OnTargetDetected(AActor* _Target, FAIStimulus _Stimulus)
 {
+	UE_LOG(LogTemp, Warning, TEXT("Perception Triggered"));
+
 	if (!_Target)
 		return;
 
-	// 감지한 대상이 적인지 아닌지 판단
+	if (_Stimulus.WasSuccessfullySensed())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Detected : %s"), *_Target->GetName());
+
+		if (Blackboard)
+		{
+			Blackboard->SetValueAsObject(TEXT("Target"), _Target);
+		}
+	}
+
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Lost : %s"), *_Target->GetName());
+
+		if (Blackboard)
+		{
+			Blackboard->ClearValue(TEXT("Target"));
+		}
+	}
+	/*// 감지한 대상이 적인지 아닌지 판단
 	AC_Zombie* pZombie = Cast<AC_Zombie>(GetPawn());
 	if (nullptr == pZombie)
 		return;
@@ -154,7 +186,7 @@ void AC_ZombieController::OnTargetDetected(AActor* _Target, FAIStimulus _Stimulu
 		{
 			pInfo->AggroValue += 15.f;
 		}
-	}
+	}*/
 }
 
 FSensedTargetInfo& AC_ZombieController::AddSensedTarget(AActor* _Target)
