@@ -21,8 +21,23 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 public:
+
 	virtual void StartAttack() PURE_VIRTUAL(AC_WeaponBase::StartAttack, );
 	virtual void StopAttack() PURE_VIRTUAL(AC_WeaponBase::StopAttack, );
 	virtual void Reload() PURE_VIRTUAL(AC_WeaponBase::Reload, );
+
+
+	/// <summary>
+	/// 무기집에 무기 붙이기
+	/// </summary>
+	/// <returns> 실패 시 return false </returns>
+	virtual bool AttachToHolster(USceneComponent* _ParentMesh) PURE_VIRTUAL(AC_WeaponBase::AttachToHolster, return false;);
+
+	/// <summary>
+	/// 손에 장착하기
+	/// </summary>
+	/// <returns> 실패 시 return false </returns>
+	virtual bool AttachToHand(USceneComponent* _ParentMesh) PURE_VIRTUAL(AC_WeaponBase::AttachToHand, return false;);
+
 
 };

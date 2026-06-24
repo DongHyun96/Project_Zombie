@@ -6,18 +6,15 @@
 AC_WeaponBase::AC_WeaponBase()
 {
 	PrimaryActorTick.bCanEverTick = true;
-
 }
 
 void AC_WeaponBase::BeginPlay()
 {
 	Super::BeginPlay();
-	
 }
 
 void AC_WeaponBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
 }
 

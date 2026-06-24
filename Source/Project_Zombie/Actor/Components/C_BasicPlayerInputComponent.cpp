@@ -77,6 +77,24 @@ void UC_BasicPlayerInputComponent::InitializePlayerInput(UInputComponent* Player
 		{
 			EnhancedInputComponent->BindAction(IA_Fire, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::FireAction);
 		}
+		
+		if (IA_EquipMainWeapon)
+			EnhancedInputComponent->BindAction(IA_EquipMainWeapon, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::EquipMainWeapon);
+		
+		if (IA_EquipMeleeWeapon)
+		{
+			EnhancedInputComponent->BindAction(IA_EquipMeleeWeapon, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::EquipMeleeWeapon);
+		}
+		
+		if (IA_EquipThrowable)
+		{
+			EnhancedInputComponent->BindAction(IA_EquipThrowable, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::EquipThrowable);
+		}
+		
+		if (IA_ToggleArmed)
+		{
+			EnhancedInputComponent->BindAction(IA_ToggleArmed, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::ToggleArmed);
+		}
 	}
 }
 
@@ -157,5 +175,25 @@ void UC_BasicPlayerInputComponent::CrouchAction()
 void UC_BasicPlayerInputComponent::FireAction()
 {
 	// 무기 컴포넌트에서 발사 함수 호출
+}
+
+void UC_BasicPlayerInputComponent::EquipMainWeapon()
+{
+	UC_Util::Print("EquipMainWeapon", FColor::Red, 10.f);
+}
+
+void UC_BasicPlayerInputComponent::EquipMeleeWeapon()
+{
+	UC_Util::Print("EquipMeleeWeapon", FColor::Red, 10.f);
+}
+
+void UC_BasicPlayerInputComponent::EquipThrowable()
+{
+	UC_Util::Print("EquipThrowable", FColor::Red, 10.f);
+}
+
+void UC_BasicPlayerInputComponent::ToggleArmed()
+{
+	UC_Util::Print("ToggleArmed", FColor::Red, 10.f);
 }
 
