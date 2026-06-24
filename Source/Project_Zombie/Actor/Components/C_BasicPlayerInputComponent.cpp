@@ -129,11 +129,13 @@ void UC_BasicPlayerInputComponent::LookAction(const FInputActionValue& Value)
 
 void UC_BasicPlayerInputComponent::JumpAction()
 {
-	if (Player && Player->CanJump())
-	{
-		Player->SetIsJumpInput(true);
-		Player->Jump();
-	}
+	if (!Player || !Player->CanJump()) return;
+
+	// Jump 이전, TurnInPlace 모션 중이었다면 중단 처리
+	Player->GetTurnInPlaceComponent()->CancelTurnInPlaceMotionIfNecessary();
+	
+	Player->SetIsJumpInput(true);
+	Player->Jump();
 }
 
 void UC_BasicPlayerInputComponent::FireAction()
