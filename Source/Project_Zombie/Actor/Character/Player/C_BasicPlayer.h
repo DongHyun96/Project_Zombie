@@ -14,6 +14,14 @@ enum class EPlayerState : uint8
 	Dead,
 };
 
+// 이동 상태
+UENUM(BlueprintType)
+enum class EPlayerMoveState : uint8
+{
+	Stand,
+	Crouch,
+};
+
 // 손 상태
 UENUM(BlueprintType)
 enum class EHandState : uint8
@@ -65,6 +73,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Status")
 	EPlayerState		m_PlayerState;
 	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Status")
+	EPlayerMoveState	m_PlayerMoveState;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Status")
 	EHandState			m_HandState;
 
@@ -164,10 +175,13 @@ public:
 	EPlayerState GetPlayerState() const { return m_PlayerState; }
 	void SetPlayerState(EPlayerState _NewState) { m_PlayerState = _NewState; }
 	
+	EPlayerMoveState GetPlayerMoveState() const { return m_PlayerMoveState; }
+	void SetPlayerMoveState(EPlayerMoveState _MoveState) { m_PlayerMoveState = _MoveState; }
+
 	EHandState GetHandState() const { return m_HandState; }
 	void SetHandState(EHandState _HandState) { m_HandState = _HandState; }
 
-
+	UFUNCTION(BlueprintCallable)
 	UC_TurnInPlaceComponent* GetTurnInPlaceComponent() const { return m_TurnInPlaceComponent; }
 	
 	bool IsDead() const { return m_IsDead; }
@@ -179,6 +193,10 @@ public:
 public:
 	// 캐릭터가 착지했을 때 실행되는 함수
 	void Landed(const FHitResult& Hit) override;
+
+	// 웅크리기
+	void StartCrouch();
+	void StopCrouch();
 
 protected:
 	virtual void BeginPlay() override;
