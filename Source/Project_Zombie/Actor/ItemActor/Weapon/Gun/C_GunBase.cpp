@@ -95,15 +95,6 @@ void AC_GunBase::CompleteReload()
 		UIManager->GetMainHUDWidget()->UpdateMagazineAmmoCount(m_CurrentAmmo);
 }
 
-FTransform AC_GunBase::GetLeftHandIKTransform() const
-{
-	if (m_WeaponMesh)
-	{
-		return m_WeaponMesh->GetSocketTransform(TEXT("Reload_IK_Socket"), RTS_World);
-	}
-	return FTransform::Identity;
-}
-
 // 총알 소모 로직 후 애니메이션 실행 함수
 void AC_GunBase::PlayFireEffects()
 {

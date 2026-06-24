@@ -87,9 +87,6 @@ public:
 	
 	void CompleteReload();
 
-	UFUNCTION(BlueprintCallable, Category = "Weapon|IK")
-	FTransform GetLeftHandIKTransform() const;
-
 	void PlayFireEffects();
 
 protected:
