@@ -3,6 +3,8 @@
 
 #include "Actor/Character/NPC/Enemy/C_BasicEnemy.h"
 
+#include "C_EnemyStatComponent.h"
+
 AC_BasicEnemy::AC_BasicEnemy()
 {
 	// 스탯 컴포넌트 추가

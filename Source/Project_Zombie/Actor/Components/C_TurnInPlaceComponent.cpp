@@ -69,6 +69,9 @@ void UC_TurnInPlaceComponent::CancelTurnInPlaceMotionIfNecessary()
 
 void UC_TurnInPlaceComponent::HandleUpdateTurnInPlace(float DeltaTime)
 {
+	// TODO : TurnInPlace 할 수 없는 예외처리 더 있다면 더 해주어야 함
+	if (m_OwnerPlayer->GetCharacterMovement()->IsFalling()) return;
+	
 	// 0 360
 	const float Delta = UKismetMathLibrary::NormalizedDeltaRotator(m_OwnerPlayer->GetControlRotation(), m_OwnerPlayer->GetActorRotation()).Yaw;
 	
