@@ -53,6 +53,9 @@ protected:
 	// 새로 추가된 우리만의 커스텀 인풋 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (DisplayName = "PlayerInput"))
 	class UC_BasicPlayerInputComponent* m_InputComponent;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (DisplayName = "EquippedComponent"))
+	class UC_EquippedComponent* m_EquippedComponent{};
 
 
 	// TurnInPlace 처리 담당 Actor Component (속도가 0인 상황에서, 왼쪽 오른쪽 회전 시 몸체 회전 모션 처리를 자연스럽게 도와준다)
@@ -143,7 +146,7 @@ protected:
 	bool m_IsCrouching;
 
 
-// [Weapon]
+// [Weapon] - EquippedComponent에서 관리할 예정
 protected:
 
 
@@ -168,7 +171,10 @@ public:
 	void SetHandState(EHandState _HandState) { m_HandState = _HandState; }
 
 
+	UC_EquippedComponent* GetEquippedComponent() const { return m_EquippedComponent; }
 	UC_TurnInPlaceComponent* GetTurnInPlaceComponent() const { return m_TurnInPlaceComponent; }
+
+public:
 	
 	bool IsDead() const { return m_IsDead; }
 	void SetIsDead(bool _IsDead) { m_IsDead = _IsDead; }

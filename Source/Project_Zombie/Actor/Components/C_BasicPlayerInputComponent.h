@@ -73,21 +73,21 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	UInputAction* IA_Reload;
 
-	// 주무기 1 장착	// 1
+	// 주무기 장착 // 1
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
-	UInputAction* IA_EquipPrimary1;
+	UInputAction* IA_EquipMainWeapon;
 
-	// 주무기 2 장착	// 2
+	// 근접무기 장착 // 2
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
-	UInputAction* IA_EquipPrimary2;
+	UInputAction* IA_EquipMeleeWeapon;
 
-	// 보조무기 장착	// 3
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
-	UInputAction* IA_EquipMelee;
-
-	// 투척류 무기 장착 // 4
+	// 투척류 무기 장착 // 3
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	UInputAction* IA_EquipThrowable;
+
+	// 무장, 비무장 상태 전환 // X
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+	UInputAction* IA_ToggleArmed;
 
 	// 인벤토리 열기	// Tab
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
@@ -135,4 +135,12 @@ private:
 	void LookAction(const FInputActionValue& Value);
 	void JumpAction();
 	void FireAction();
+	
+private: // Equip Weapon input 관련
+
+	void EquipMainWeapon();
+	void EquipMeleeWeapon();
+	void EquipThrowable(); // TODO : Throwable Equip은 따로 처리를 안할수도
+	void ToggleArmed();
+	
 };

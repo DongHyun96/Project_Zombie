@@ -16,6 +16,7 @@
 #include "../../Components/C_BasicPlayerInputComponent.h"
 #include "C_BasicPlayer.h"
 
+#include "Actor/Components/C_EquippedComponent.h"
 #include "Actor/Components/C_TurnInPlaceComponent.h"
 
 AC_BasicPlayer::AC_BasicPlayer()
@@ -38,6 +39,8 @@ AC_BasicPlayer::AC_BasicPlayer()
 
 	// 우리가 만든 InputComponent 클래스를 Player에게 추가.
 	m_InputComponent = CreateDefaultSubobject<UC_BasicPlayerInputComponent>(TEXT("InputComponent"));
+
+	m_EquippedComponent = CreateDefaultSubobject<UC_EquippedComponent>(TEXT("EquippedComponent"));
 	
 	// TurnInPlace Component
 	m_TurnInPlaceComponent = CreateDefaultSubobject<UC_TurnInPlaceComponent>(TEXT("TurnInPlaceComponent"));
