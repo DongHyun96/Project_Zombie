@@ -69,6 +69,10 @@ void UC_BasicPlayerInputComponent::InitializePlayerInput(UInputComponent* Player
 		{
 			EnhancedInputComponent->BindAction(IA_Jump, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::JumpAction);
 		}
+		if (IA_Crouch)
+		{
+			EnhancedInputComponent->BindAction(IA_Crouch, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::CrouchAction);
+		}
 		if (IA_Fire)
 		{
 			EnhancedInputComponent->BindAction(IA_Fire, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::FireAction);
@@ -136,6 +140,18 @@ void UC_BasicPlayerInputComponent::JumpAction()
 	
 	Player->SetIsJumpInput(true);
 	Player->Jump();
+}
+
+void UC_BasicPlayerInputComponent::CrouchAction()
+{
+	if (Player->GetPlayerMoveState() == EPlayerMoveState::Stand)
+	{
+		Player->StartCrouch();
+	}
+	else if (Player->GetPlayerMoveState() == EPlayerMoveState::Crouch)
+	{
+		Player->StopCrouch();
+	}
 }
 
 void UC_BasicPlayerInputComponent::FireAction()

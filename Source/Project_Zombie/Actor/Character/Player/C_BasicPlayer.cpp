@@ -79,6 +79,31 @@ void AC_BasicPlayer::Landed(const FHitResult& Hit)
 	m_IsJumpInput = false;
 }
 
+void AC_BasicPlayer::StartCrouch()
+{
+	if (m_PlayerMoveState == EPlayerMoveState::Crouch)
+		return;
+
+	m_PlayerMoveState = EPlayerMoveState::Crouch;
+
+	GetCharacterMovement()->MaxWalkSpeed = m_CrouchSpeed;
+	GetCharacterMovement()->MaxWalkSpeedCrouched = m_CrouchSpeed;
+
+	Crouch();
+}
+
+void AC_BasicPlayer::StopCrouch()
+{
+	if (m_PlayerMoveState == EPlayerMoveState::Stand)
+		return;
+
+	m_PlayerMoveState = EPlayerMoveState::Stand;
+
+	GetCharacterMovement()->MaxWalkSpeed = m_RunSpeed;
+
+	UnCrouch();
+}
+
 
 //void AC_BasicPlayer::InitInput()
 //{
