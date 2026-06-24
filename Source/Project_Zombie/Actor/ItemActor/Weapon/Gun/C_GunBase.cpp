@@ -34,12 +34,6 @@ void AC_GunBase::BeginPlay()
 	}
 }
 
-void AC_GunBase::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-}
-
 void AC_GunBase::StartAttack()
 {
 	PullTrigger();
@@ -53,6 +47,12 @@ void AC_GunBase::StopAttack()
 void AC_GunBase::Reload()
 {
 	Gun_Reload();
+}
+
+void AC_GunBase::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
 }
 
 void AC_GunBase::PullTrigger()
@@ -98,6 +98,16 @@ void AC_GunBase::Gun_Reload()
 	// 2초 타이머 후 탄창만큼의 탄약 보충
 	FTimerHandle ReloadTimerHandle;
 	GetWorldTimerManager().SetTimer(ReloadTimerHandle, this, &AC_GunBase::CompleteReload, 2.0f, false);
+}
+
+bool AC_GunBase::AttachToHand(USceneComponent* _ParentMesh)
+{
+	return Super::AttachToHand(_ParentMesh);
+}
+
+bool AC_GunBase::AttachToHolster(USceneComponent* _ParentMesh)
+{
+	return Super::AttachToHolster(_ParentMesh);
 }
 
 void AC_GunBase::CompleteReload()
@@ -281,10 +291,11 @@ void AC_GunBase::PlayFireEffects()
 				1.5f
 			);
 
-			// 대상이 누구인지 식별해서 데미지 처리 (미구현)
+			// 여기서 맞은 대상이 누구인지 식별해서 데미지
 			AActor* HitActor = HitResult.GetActor();
 			if (HitActor)
 			{
+				// 예: GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, FString::Printf(TEXT("Hit: %s"), *HitActor->GetName()));
 			}
 		}
 	}

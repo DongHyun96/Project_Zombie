@@ -94,6 +94,9 @@ public:
 	virtual void StartAttack() override;
 	virtual void StopAttack() override;
 	virtual void Reload() override;
+	
+	virtual bool AttachToHand(USceneComponent* _ParentMesh) override;
+    virtual bool AttachToHolster(USceneComponent* _ParentMesh) override;
 
 protected:
 	virtual void BeginPlay() override;
