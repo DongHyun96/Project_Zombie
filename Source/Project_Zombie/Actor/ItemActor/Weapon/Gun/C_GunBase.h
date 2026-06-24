@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "../C_WeaponBase.h"
 #include "C_GunBase.generated.h"
 
 // 상황 : 이 모든 FireMode를 지원하지 않는 총기일 수 있음
@@ -21,14 +22,14 @@ enum class EFireMode : uint8
 };
 
 UCLASS()
-class PROJECT_ZOMBIE_API AC_GunBase : public AActor
+class PROJECT_ZOMBIE_API AC_GunBase : public AC_WeaponBase
 {
 	GENERATED_BODY()
 
 protected:
 	// 최대 총알 수
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Data", meta = (ClampMin = "1"))
-	int32					m_MaxAmmo = 30;
+	int32					m_MaxAmmo = 30;        
 
 	// 연사 속도 (발사 간의 시간 간격 : 0.1초 = 초당 10발)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Data")
@@ -78,7 +79,7 @@ public:
 	/// R 키 입력 (재장전 요청)
 	/// <summary>
 	UFUNCTION(BlueprintCallable)
-	void Reload();
+	void Gun_Reload();
 
 	/// <summary>
 	/// 방아쇠를 당겼을 때 애니메이션 재생 함수
@@ -88,6 +89,11 @@ public:
 	void CompleteReload();
 
 	void PlayFireEffects();
+
+public:
+	virtual void StartAttack() override;
+	virtual void StopAttack() override;
+	virtual void Reload() override;
 
 protected:
 	virtual void BeginPlay() override;
