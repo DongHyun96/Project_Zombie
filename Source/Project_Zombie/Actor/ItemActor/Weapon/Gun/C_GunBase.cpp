@@ -40,6 +40,21 @@ void AC_GunBase::Tick(float DeltaTime)
 
 }
 
+void AC_GunBase::StartAttack()
+{
+	PullTrigger();
+}
+
+void AC_GunBase::StopAttack()
+{
+	ReleaseTrigger();
+}
+
+void AC_GunBase::Reload()
+{
+	Gun_Reload();
+}
+
 void AC_GunBase::PullTrigger()
 {
 	if (m_bIsFiring) return; // 이미 쏘고 있다면 중복 실행 방지
@@ -65,7 +80,7 @@ void AC_GunBase::ReleaseTrigger()
 	GetWorldTimerManager().ClearTimer(m_FireTimerHandle);
 }
 
-void AC_GunBase::Reload()
+void AC_GunBase::Gun_Reload()
 {
 	ReleaseTrigger();
 
@@ -266,11 +281,10 @@ void AC_GunBase::PlayFireEffects()
 				1.5f
 			);
 
-			// 여기서 맞은 대상이 누구인지 식별해서 데미지
+			// 대상이 누구인지 식별해서 데미지 처리 (미구현)
 			AActor* HitActor = HitResult.GetActor();
 			if (HitActor)
 			{
-				// 예: GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Yellow, FString::Printf(TEXT("Hit: %s"), *HitActor->GetName()));
 			}
 		}
 	}

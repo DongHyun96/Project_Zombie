@@ -6,21 +6,23 @@
 #include "GameFramework/Actor.h"
 #include "C_WeaponBase.generated.h"
 
-UCLASS()
+UCLASS(Abstract)
 class PROJECT_ZOMBIE_API AC_WeaponBase : public AActor
 {
 	GENERATED_BODY()
 	
 public:	
-	// Sets default values for this actor's properties
 	AC_WeaponBase();
 
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 public:	
-	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+
+public:
+	virtual void StartAttack() PURE_VIRTUAL(AC_WeaponBase::StartAttack, );
+	virtual void StopAttack() PURE_VIRTUAL(AC_WeaponBase::StopAttack, );
+	virtual void Reload() PURE_VIRTUAL(AC_WeaponBase::Reload, );
 
 };
