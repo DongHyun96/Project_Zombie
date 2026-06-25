@@ -10,7 +10,7 @@
 /**
  * 
  */
-UCLASS()
+UCLASS(Blueprintable)
 class PROJECT_ZOMBIE_API UC_ItemMagnager : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
