@@ -18,6 +18,7 @@
 
 #include "Actor/Components/C_EquippedComponent.h"
 #include "Actor/Components/C_TurnInPlaceComponent.h"
+#include "Actor/Components/C_InvenComponent.h"
 
 AC_BasicPlayer::AC_BasicPlayer()
 {
@@ -44,6 +45,8 @@ AC_BasicPlayer::AC_BasicPlayer()
 	
 	// TurnInPlace Component
 	m_TurnInPlaceComponent = CreateDefaultSubobject<UC_TurnInPlaceComponent>(TEXT("TurnInPlaceComponent"));
+
+	m_InvenComponent = CreateDefaultSubobject<UC_InvenComponent>(TEXT("InvenComponent"));
 
 }
 
