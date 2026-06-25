@@ -9,13 +9,6 @@
 #include "GameMode/C_UIManager.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
 
-const TMap<EThrowableWeaponType, FName> AC_ThrowableWeaponBase::s_HandSocketNames =
-{
-	{EThrowableWeaponType::Grenade,		TEXT("GrenadeHandSocket")},
-	{EThrowableWeaponType::FlashBang,	TEXT("FlashBangHandSocket")},
-	{EThrowableWeaponType::Molotov,		TEXT("MolotovHandSocket")}
-};
-
 const FName AC_ThrowableWeaponBase::s_HolsterSocketName = TEXT("ThrowableHolsterSocket");
 
 // Sets default values
@@ -38,7 +31,7 @@ AC_ThrowableWeaponBase::AC_ThrowableWeaponBase()
 void AC_ThrowableWeaponBase::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	m_ProjectileMovement->Deactivate();
 }
 
 // Called every frame
@@ -76,7 +69,7 @@ bool AC_ThrowableWeaponBase::AttachToHand(USceneComponent* _ParentMesh)
 	(
 		_ParentMesh,
 		FAttachmentTransformRules(EAttachmentRule::KeepRelative, true),
-		s_HandSocketNames[m_ThrowableWeaponType]
+		m_HandSocketName
 	);
 	
 	return bIsAttached;

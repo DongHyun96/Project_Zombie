@@ -1,5 +1,6 @@
 #include "Actor/Components/C_BasicPlayerInputComponent.h"
 
+#include "C_EquippedComponent.h"
 #include "C_TurnInPlaceComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
@@ -179,21 +180,21 @@ void UC_BasicPlayerInputComponent::FireAction()
 
 void UC_BasicPlayerInputComponent::EquipMainWeapon()
 {
-	UC_Util::Print("EquipMainWeapon", FColor::Red, 10.f);
+	Player->GetEquippedComponent()->ChangeCurWeapon(EWeaponSlot::MainWeapon);
 }
 
 void UC_BasicPlayerInputComponent::EquipMeleeWeapon()
 {
-	UC_Util::Print("EquipMeleeWeapon", FColor::Red, 10.f);
+	Player->GetEquippedComponent()->ChangeCurWeapon(EWeaponSlot::MeleeWeapon);
 }
 
 void UC_BasicPlayerInputComponent::EquipThrowable()
 {
-	UC_Util::Print("EquipThrowable", FColor::Red, 10.f);
+	Player->GetEquippedComponent()->ChangeCurWeapon(EWeaponSlot::ThrowableWeapon);
 }
 
 void UC_BasicPlayerInputComponent::ToggleArmed()
 {
-	UC_Util::Print("ToggleArmed", FColor::Red, 10.f);
+	Player->GetEquippedComponent()->ToggleArmed();
 }
 

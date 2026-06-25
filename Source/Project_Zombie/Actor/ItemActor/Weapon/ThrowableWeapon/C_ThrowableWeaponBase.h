@@ -6,14 +6,6 @@
 #include "Actor/ItemActor/Weapon/C_WeaponBase.h"
 #include "C_ThrowableWeaponBase.generated.h"
 
-UENUM(BlueprintType)
-enum class EThrowableWeaponType : uint8
-{
-	Grenade,
-	FlashBang,
-	Molotov		// 화염병
-};
-
 UCLASS()
 class PROJECT_ZOMBIE_API AC_ThrowableWeaponBase : public AC_WeaponBase
 {
@@ -32,16 +24,15 @@ public:
 	virtual bool AttachToHand(USceneComponent* _ParentMesh) override;
 	virtual bool AttachToHolster(USceneComponent* _ParentMesh) override;
 
-protected:
 
-	// ThrowableType 종류 (Blueprint에서 초기화해줄 것)
-	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, meta = (DisplayName = "ThrowableWeaponType"))
-	EThrowableWeaponType m_ThrowableWeaponType{};
+	/* Socket Name 관련 */
+protected: 
 
-private: /* Socket Name 관련 */
-
-	// Hand Socket Names
-	static const TMap<EThrowableWeaponType, FName> s_HandSocketNames;
+	// Hand Socket Name (각 Throwable 블루프린트에서 Name 초기화 해줄 것)
+	UPROPERTY(EditDefaultsOnly, meta = (DisplayName = "HandSocketName"))
+	FName m_HandSocketName{};
+	
+private:
 	
 	// Holster(무기집 위치) Socket Name (모든 Throwable 공통 무기집 위치 사용할 예정)
 	static const FName s_HolsterSocketName;

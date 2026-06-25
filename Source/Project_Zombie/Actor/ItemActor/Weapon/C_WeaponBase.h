@@ -38,6 +38,11 @@ public:
 	/// </summary>
 	/// <returns> 실패 시 return false </returns>
 	virtual bool AttachToHand(USceneComponent* _ParentMesh) PURE_VIRTUAL(AC_WeaponBase::AttachToHand, return false;);
+
+public:
+	
+	UAnimMontage* GetDrawMontage() const { return m_DrawMontage; }
+	UAnimMontage* GetSheathMontage() const { return m_SheathMontage; }
 	
 protected:
 
