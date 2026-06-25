@@ -70,6 +70,13 @@ protected:
 	// 해당 기능은 PlayerCharacter만 처리를 할 예정
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (DisplayName = "TurnInPlaceComponent"))
 	class UC_TurnInPlaceComponent* m_TurnInPlaceComponent{};
+
+	/// <summary>
+	/// InvenComponent,
+	/// 플레이어의 아이템을 소유하는 컴포넌트.
+	/// </summary>
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (DisplayName = "InvenComponent"))
+	class UC_InvenComponent* m_InvenComponent{};
 	
 // [Status]
 protected:
