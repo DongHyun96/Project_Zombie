@@ -51,8 +51,6 @@ bool AC_ThrowableWeaponBase::AttachToHand(USceneComponent* _ParentMesh)
 	m_ProjectileMovement->Deactivate();
 	// ClearSpline(); // PathSpline 예측 경로 기능이 있다 하면, Clear 한번 여기서 처리를 해주어야 함
 
-	Player->SetHandState(EHandState::WeaponThrowable);
-	
 	// Self init (이 변수들 처리 추후, 던지기 기다리기 처리 시 필요함)
 	// bIsCharging       = false;
 	// bIsOnThrowProcess = false;
@@ -71,6 +69,9 @@ bool AC_ThrowableWeaponBase::AttachToHand(USceneComponent* _ParentMesh)
 		FAttachmentTransformRules(EAttachmentRule::KeepRelative, true),
 		m_HandSocketName
 	);
+	
+	if (bIsAttached)
+		Player->SetHandState(EHandState::WeaponThrowable);
 	
 	return bIsAttached;
 }

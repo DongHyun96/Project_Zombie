@@ -72,6 +72,9 @@ bool AC_MeleeWeaponBase::AttachToHand(USceneComponent* _ParentMesh)
 		m_HandSocketName
 	);
 	
+	if (bIsAttached)
+    		Player->SetHandState(EHandState::WeaponMelee);
+	
 	return bIsAttached;
 }
 

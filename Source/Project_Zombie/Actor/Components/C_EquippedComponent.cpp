@@ -114,7 +114,7 @@ bool UC_EquippedComponent::ChangeCurWeapon(EWeaponSlot _ChangeTo)
 	}
 	
 	// NextWeaponType이 None이 아니고, 바꾸려는 무기 슬롯에 무기가 없을 때, Swap 처리 불가
-	if (_ChangeTo != EWeaponSlot::None && m_Weapons[ChangeToIdx])
+	if (_ChangeTo != EWeaponSlot::None && !m_Weapons[ChangeToIdx])
 	{
 		m_NextWeaponTypeIdx = NoneSlotIdx;
 		return false;

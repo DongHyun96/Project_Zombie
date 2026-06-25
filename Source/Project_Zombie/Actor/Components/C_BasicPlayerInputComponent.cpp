@@ -180,21 +180,25 @@ void UC_BasicPlayerInputComponent::FireAction()
 
 void UC_BasicPlayerInputComponent::EquipMainWeapon()
 {
-	Player->GetEquippedComponent()->ChangeCurWeapon(EWeaponSlot::MainWeapon);
+	if (!Player->GetEquippedComponent()->ChangeCurWeapon(EWeaponSlot::MainWeapon))
+		UC_Util::Print("Failed to EquipMainWeapon", FColor::Red, 10.f);
 }
 
 void UC_BasicPlayerInputComponent::EquipMeleeWeapon()
 {
-	Player->GetEquippedComponent()->ChangeCurWeapon(EWeaponSlot::MeleeWeapon);
+	if (!Player->GetEquippedComponent()->ChangeCurWeapon(EWeaponSlot::MeleeWeapon))
+		UC_Util::Print("Failed to EquipMeleeWeapon", FColor::Red, 10.f);
 }
 
 void UC_BasicPlayerInputComponent::EquipThrowable()
 {
-	Player->GetEquippedComponent()->ChangeCurWeapon(EWeaponSlot::ThrowableWeapon);
+	if (!Player->GetEquippedComponent()->ChangeCurWeapon(EWeaponSlot::ThrowableWeapon))
+		UC_Util::Print("Failed to EquipThrowable", FColor::Red, 10.f);
 }
 
 void UC_BasicPlayerInputComponent::ToggleArmed()
 {
+	UC_Util::Print("ToggleArmed", FColor::Red, 10.f);
 	Player->GetEquippedComponent()->ToggleArmed();
 }
 
