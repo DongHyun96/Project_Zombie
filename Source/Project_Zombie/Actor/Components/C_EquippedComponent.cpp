@@ -72,5 +72,9 @@ AC_WeaponBase* UC_EquippedComponent::SetSlotWeapon(EWeaponSlot TargetSlot, AC_We
 
 bool UC_EquippedComponent::ChangeCurWeapon(EWeaponSlot _ChangeTo)
 {
+	const uint8 ChangeToIdx = static_cast<uint8>(_ChangeTo);
+
+	
+	
 	return false;
 }

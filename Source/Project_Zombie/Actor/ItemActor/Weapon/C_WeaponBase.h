@@ -38,6 +38,18 @@ public:
 	/// </summary>
 	/// <returns> 실패 시 return false </returns>
 	virtual bool AttachToHand(USceneComponent* _ParentMesh) PURE_VIRTUAL(AC_WeaponBase::AttachToHand, return false;);
+	
+protected:
+
+	// 해당 무기의 무기 꺼내는 동작 Montage
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, meta = (DisplayName = "DrawMontage"))
+	UAnimMontage* m_DrawMontage{};
+	
+	// 해당 무기의 무기집에 집어넣는 동작 Montage
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, meta = (DisplayName = "SheathMontage"))
+	UAnimMontage* m_SheathMontage{};
+	
+	
 
 
 };

@@ -85,7 +85,6 @@ public:
 	/// 방아쇠를 당겼을 때 애니메이션 재생 함수
 	/// <summary>
 	UFUNCTION(BlueprintCallable)
-	
 	void CompleteReload();
 
 	void PlayFireEffects();

@@ -64,12 +64,13 @@ bool AC_ThrowableWeaponBase::AttachToHand(USceneComponent* _ParentMesh)
 	// bIsCharging       = false;
 	// bIsOnThrowProcess = false;
 
-	// Main HUD Init
+	// Main HUD Throwable 종류로 초기화
 	if (AC_UIManager* UIManager = Cast<AC_UIManager>(Player->GetController<APlayerController>()->GetHUD()))
 		UIManager->GetMainHUDWidget()->ToggleAmmoInfoVisibility(true, EFireMode::Single, 1, 1);
 
 	// 이 처리는 왜 해줬는지 잘 기억은 안남 (아마 Attach 하기전에 처리를 해주어야 똑바로 위치처리가 되어서 해주었던 것 같음)
-	SetActorRelativeLocation(FVector::ZeroVector);
+	// TODO : 필요하다면 그때가서 풀기 (아마 딱히 필요 없어보임)
+	// SetActorRelativeLocation(FVector::ZeroVector);
 	
 	const bool bIsAttached = AttachToComponent
 	(

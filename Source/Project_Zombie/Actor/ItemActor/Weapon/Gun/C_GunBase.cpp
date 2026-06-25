@@ -102,12 +102,12 @@ void AC_GunBase::Gun_Reload()
 
 bool AC_GunBase::AttachToHand(USceneComponent* _ParentMesh)
 {
-	return Super::AttachToHand(_ParentMesh);
+	return false;
 }
 
 bool AC_GunBase::AttachToHolster(USceneComponent* _ParentMesh)
 {
-	return Super::AttachToHolster(_ParentMesh);
+	return false;
 }
 
 void AC_GunBase::CompleteReload()
