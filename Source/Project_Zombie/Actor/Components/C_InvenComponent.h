@@ -32,6 +32,8 @@ public:
     /// 엔진 내부에서 자동으로 호출해주는 함수.
     /// </summary>
     //virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+    bool AddItem(FInventoryEntry ItemEntry);
 protected:
 
     UPROPERTY(BlueprintReadOnly, Category = "Inventory")

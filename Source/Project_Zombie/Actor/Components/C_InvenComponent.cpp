@@ -25,6 +25,30 @@ void UC_InvenComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAct
 
 }
 
+bool UC_InvenComponent::AddItem(FInventoryEntry ItemEntry)
+{
+	if (InventoryItems.Num() > 180) return false;
+
+	// TODO : 같은 아이템이 인벤토리에 존재한다면 거기에 추가해주기.
+
+	for (int i = 0; i < 180; ++i)
+	{
+		// TODO : 겹칠 수 없는 아이템은 예외처리하기.
+		if (InventoryItems[i].ItemRowName == ItemEntry.ItemRowName)
+		{
+			if (InventoryItems[i].bIsStack == true)
+			{
+				InventoryItems[i].Count += ItemEntry.Count;
+				return true;
+			}
+		}
+	}
+
+	InventoryItems.Add(ItemEntry);
+
+	return true;
+}
+
 //void UC_InvenComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 //{
 //	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
