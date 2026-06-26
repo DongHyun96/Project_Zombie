@@ -123,12 +123,6 @@ void UC_BasicPlayerInputComponent::MoveAction(const FInputActionValue& Value)
 	
 }
 
-void UC_BasicPlayerInputComponent::MoveEnd(const FInputActionValue& Value)
-{
-	// Movement 멈췄으면, 다시금 TurnInPlace 처리를 할 수 있게끔 처리
-	Player->GetTurnInPlaceComponent()->SetStrafeRotationToIdleStop();
-}
-
 void UC_BasicPlayerInputComponent::SprintStart()
 {
 	if (!Player)
