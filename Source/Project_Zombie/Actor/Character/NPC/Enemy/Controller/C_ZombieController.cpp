@@ -20,6 +20,8 @@
 // StatComponent
 #include "../C_EnemyStatComponent.h"
 
+#include "../../../../../GlobalEnum.h"
+
 #include "../C_Zombie.h"
 
 AC_ZombieController::AC_ZombieController()
@@ -78,8 +80,8 @@ void AC_ZombieController::OnPossess(APawn* _Pawn)
 	if (pPawnTeam)
 		SetGenericTeamId(pPawnTeam->GetGenericTeamId());
 	// 공용헤더에 팀 설정 후 처리
-	//else
-	//	SetGenericTeamId((uint8)ETeamType::None);
+	else
+		SetGenericTeamId((uint8)ETeamType::None);
 
 	// 빙의 대상의 스탯 컴포넌트를 가져온다
 	UC_EnemyStatComponent* pStatCom = _Pawn->FindComponentByClass<UC_EnemyStatComponent>();
@@ -114,7 +116,7 @@ void AC_ZombieController::OnTargetDetected(AActor* _Target, FAIStimulus _Stimulu
 {
 	UE_LOG(LogTemp, Warning, TEXT("Perception Triggered"));
 
-	if (!_Target)
+	/*if (!_Target)
 		return;
 
 	if (_Stimulus.WasSuccessfullySensed())
@@ -135,8 +137,9 @@ void AC_ZombieController::OnTargetDetected(AActor* _Target, FAIStimulus _Stimulu
 		{
 			Blackboard->ClearValue(TEXT("Target"));
 		}
-	}
-	/*// 감지한 대상이 적인지 아닌지 판단
+	}*/
+
+	// 감지한 대상이 적인지 아닌지 판단
 	AC_Zombie* pZombie = Cast<AC_Zombie>(GetPawn());
 	if (nullptr == pZombie)
 		return;
@@ -186,7 +189,7 @@ void AC_ZombieController::OnTargetDetected(AActor* _Target, FAIStimulus _Stimulu
 		{
 			pInfo->AggroValue += 15.f;
 		}
-	}*/
+	}
 }
 
 FSensedTargetInfo& AC_ZombieController::AddSensedTarget(AActor* _Target)

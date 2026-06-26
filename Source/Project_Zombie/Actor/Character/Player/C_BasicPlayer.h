@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Actor/Character/C_BasicCharacter.h"
+#include "GenericTeamAgentInterface.h"
 #include "C_BasicPlayer.generated.h"
 
 // 캐릭터 상태
@@ -46,7 +47,7 @@ class UInputAction;
 struct FInputActionValue;
 
 UCLASS()
-class PROJECT_ZOMBIE_API AC_BasicPlayer : public AC_BasicCharacter
+class PROJECT_ZOMBIE_API AC_BasicPlayer : public AC_BasicCharacter, public IGenericTeamAgentInterface
 {
 	GENERATED_BODY()
 	
@@ -105,6 +106,10 @@ protected:
 	// 현재 체력
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Status")
 	float				m_CurHP;
+
+
+// 팀 설정
+	FGenericTeamId		m_TeamId;
 
 
 // [Camera]
@@ -224,6 +229,12 @@ public:
 	// 데미지 처리 함수 
 	virtual float TakeDamage(float _Damage, struct FDamageEvent const& _DamageEvent
 		, class AController* _InstigatorController, AActor* _InstigatorActor) override;
+
+	// TeamAgentInterface
+public:
+	virtual void SetGenericTeamId(const FGenericTeamId& _NewId) override { m_TeamId = _NewId; }
+	virtual FGenericTeamId GetGenericTeamId() const override { return m_TeamId; }
+	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& _Other) const override;
 
 public:
 	AC_BasicPlayer();

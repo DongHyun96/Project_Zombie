@@ -38,6 +38,9 @@ AC_BasicPlayer::AC_BasicPlayer()
 	// 점프 입력 초기화
 	m_IsJumpInput = false;
 
+	// TeamId
+	SetGenericTeamId((uint8)ETeamType::Player);
+
 	// 우리가 만든 InputComponent 클래스를 Player에게 추가.
 	m_InputComponent = CreateDefaultSubobject<UC_BasicPlayerInputComponent>(TEXT("InputComponent"));
 
@@ -110,6 +113,28 @@ void AC_BasicPlayer::StopCrouch()
 	UnCrouch();
 }
 
+ETeamAttitude::Type AC_BasicPlayer::GetTeamAttitudeTowards(const AActor& _Other) const
+{
+	const IGenericTeamAgentInterface* TeamAgent = Cast<IGenericTeamAgentInterface>(&_Other);
+
+	if (TeamAgent)
+	{
+		FGenericTeamId OtherID = TeamAgent->GetGenericTeamId();
+
+		if (GetGenericTeamId() == OtherID)
+		{
+			return ETeamAttitude::Friendly;
+		}
+		else
+		{
+			return ETeamAttitude::Hostile;
+		}
+	}
+
+	// 팀 설정 기능이 없는 Actor 인 경우 중립
+	return ETeamAttitude::Neutral;
+}
+
 
 //void AC_BasicPlayer::InitInput()
 //{
@@ -171,3 +196,4 @@ void AC_BasicPlayer::StopCrouch()
 //{
 //	// 무기 컴포넌트에서 발사 함수 호출
 //}
+

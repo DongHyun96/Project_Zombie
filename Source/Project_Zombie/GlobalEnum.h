@@ -11,3 +11,11 @@ enum class EItemType : uint8
     CONSUMABLE,
 
 };
+
+UENUM(BlueprintType)
+enum class ETeamType : uint8
+{
+    Player	UMETA(DisplayName = "Player"),
+    Enemy	UMETA(DisplayName = "Enemy"),
+    None	UMETA(DisplayName = "None"),
+};
