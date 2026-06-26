@@ -90,6 +90,23 @@ void AC_BasicPlayer::BeginPlay()
 void AC_BasicPlayer::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	/// 나중에 스탯 컴포넌트로 분리할 예정
+	// 달리기 중이면 부스트 소모
+	if (m_IsSprinting)
+	{
+		UseBoost(m_SprintBoostUseCost * DeltaTime);
+		
+		if (m_CurBoost <= 0.f)
+		{
+			StopSprint();
+		}
+	}
+	// 달리기 중이 아니면 부스트 회복
+	else
+	{
+		RecoverBoost(m_BoostRecoverCost * DeltaTime);
+	}
 }
 
 void AC_BasicPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

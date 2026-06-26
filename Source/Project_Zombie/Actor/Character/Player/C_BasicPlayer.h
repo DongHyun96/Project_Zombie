@@ -14,12 +14,14 @@ enum class EPlayerState : uint8
 	Dead,
 };
 
-// 이동 상태
+// 이동 속도 결정 상태
 UENUM(BlueprintType)
-enum class EPlayerMoveState : uint8
+enum class EPlayerMoveSpeedState : uint8
 {
-	Stand,
+	Walk,
+	Sprint,
 	Crouch,
+	Aim,
 };
 
 // 손 상태
@@ -84,7 +86,7 @@ protected:
 	EPlayerState		m_PlayerState;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Status")
-	EPlayerMoveState	m_PlayerMoveState;
+	EPlayerMoveSpeedState	m_PlayerMoveSpeedState;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Status")
 	EHandState			m_HandState;
@@ -220,8 +222,8 @@ public:
 	EPlayerState GetPlayerState() const { return m_PlayerState; }
 	void SetPlayerState(EPlayerState _NewState) { m_PlayerState = _NewState; }
 	
-	EPlayerMoveState GetPlayerMoveState() const { return m_PlayerMoveState; }
-	void SetPlayerMoveState(EPlayerMoveState _MoveState) { m_PlayerMoveState = _MoveState; }
+	EPlayerMoveSpeedState GetPlayerMoveState() const { return m_PlayerMoveSpeedState; }
+	void SetPlayerMoveState(EPlayerMoveSpeedState _MoveSpeedState) { m_PlayerMoveSpeedState = _MoveSpeedState; }
 
 	EHandState GetHandState() const { return m_HandState; }
 	void SetHandState(EHandState _HandState) { m_HandState = _HandState; }
@@ -251,6 +253,7 @@ public:
 	void Landed(const FHitResult& Hit) override;
 
 	/// <summary>
+	/// 후에 스탯 컴포넌트 쪽으로
 	/// 부스트를 사용하고 HUD를 갱신한다.
 	/// </summary>
 	/// <param name="_UseAmount"> : 사용할 부스트 양 </param>
@@ -258,6 +261,7 @@ public:
 	bool UseBoost(float _UseAmount);
 
 	/// <summary>
+	/// 후에 스탯 컴포넌트 쪽으로
 	/// 부스트를 회복하고 HUD를 갱신한다.
 	/// </summary>
 	/// <param name="_RecoverAmount"> : 회복할 부스트 양 </param>
@@ -290,6 +294,9 @@ protected:
 	virtual void BeginPlay() override;
 
 private:
+	EPlayerMoveSpeedState DetermineMoveSpeedState() const;
+	float GetMoveSpeedByState(EPlayerMoveSpeedState _MoveSpeedState) const;
+
 	// 부스트 바 HUD를 갱신하는 함수
 	void UpdateBoostBarHUD() const;
 

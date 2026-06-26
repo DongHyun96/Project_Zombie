@@ -25,11 +25,6 @@ protected:
 	// HandState
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player Basic State")
 	EHandState m_HandState;
-
-	// MoveState
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player Basic State")
-	EPlayerMoveState m_PlayerMoveState;
-
 	
 	// 속도
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
