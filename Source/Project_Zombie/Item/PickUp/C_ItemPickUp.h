@@ -23,10 +23,17 @@ protected:
 	void OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, 
 						UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, 
 						bool bFromSweep, const FHitResult& SweepResult);
+
+	// 로드가 완료되면 호출될 콜백 함수 (반드시 ufunction이어야 합니다)
+	UFUNCTION(BlueprintCallable)
+	void OnMeshLoadCompleted(TSoftObjectPtr<UStaticMesh> LoadedSoftMesh);
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	// 외부(매니저)에서 호출할 비동기 로드 시작 함수
+	void SetPickupMeshAsync(TSoftObjectPtr<UStaticMesh> InSoftMesh);
+public:
 	// 아이템 정보
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FInventoryEntry ItemData;
@@ -43,4 +50,7 @@ protected:
 	// 바닥에 보일 아이템 메시
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	class UStaticMeshComponent* MeshComp;
+
+	// 비동기 로드를 관리할 핸들러 포인터 유지
+	TSharedPtr<struct FStreamableHandle> AssetLoadHandle;
 };
