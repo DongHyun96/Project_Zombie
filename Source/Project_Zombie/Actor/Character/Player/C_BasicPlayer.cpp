@@ -16,6 +16,7 @@
 #include "../../Components/C_BasicPlayerInputComponent.h"
 #include "C_BasicPlayer.h"
 
+#include "Actor/Components/C_ControllerFSMComponent.h"
 #include "Actor/Components/C_EquippedComponent.h"
 #include "Actor/Components/C_TurnInPlaceComponent.h"
 #include "Actor/Components/C_InvenComponent.h"
@@ -77,7 +78,9 @@ AC_BasicPlayer::AC_BasicPlayer()
 	m_TurnInPlaceComponent = CreateDefaultSubobject<UC_TurnInPlaceComponent>(TEXT("TurnInPlaceComponent"));
 
 	m_InvenComponent = CreateDefaultSubobject<UC_InvenComponent>(TEXT("InvenComponent"));
-
+	
+	// ControllerFSM Component
+	m_ControllerFSMComponent = CreateDefaultSubobject<UC_ControllerFSMComponent>(TEXT("ControllerFSMComponent"));
 }
 
 void AC_BasicPlayer::BeginPlay()

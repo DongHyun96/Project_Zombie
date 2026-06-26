@@ -74,12 +74,17 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (DisplayName = "TurnInPlaceComponent"))
 	class UC_TurnInPlaceComponent* m_TurnInPlaceComponent{};
 
+
 	/// <summary>
 	/// InvenComponent,
 	/// 플레이어의 아이템을 소유하는 컴포넌트.
 	/// </summary>
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (DisplayName = "InvenComponent"))
 	class UC_InvenComponent* m_InvenComponent{};
+
+	// Player 상황 별, Controller rotation 처리 State machine 기능 담당
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (DisplayName = "PlayerControllerFSMCom"))
+	class UC_ControllerFSMComponent* m_ControllerFSMComponent{};
 	
 // [Status]
 protected:
@@ -182,6 +187,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
 	bool m_IsCrouching;
 
+
 	// 달리기 중 초당 부스트 소모량
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float m_SprintBoostUseCost;
@@ -204,7 +210,9 @@ protected:
 	// 웅크리기 전환 타이머 핸들
 	FTimerHandle m_CrouchTransitionTimerHandle;
 
-
+private:
+	// Free look 상태 (Hold Alt 상태)
+	bool m_IsFreeLook{};
 
 // [Weapon] - EquippedComponent에서 관리할 예정
 protected:
@@ -244,6 +252,9 @@ public:
 
 	bool IsJumpInput() const { return m_IsJumpInput; }
 	void SetIsJumpInput(bool _IsJumpInput) { m_IsJumpInput = _IsJumpInput; }
+	
+	bool IsFreeLook() const { return m_IsFreeLook; }
+	void SetIsFreeLook(bool _IsFreeLook) { m_IsFreeLook = _IsFreeLook; }
 
 	bool IsSprintInput() const { return m_IsSprintInput; }
 	void SetIsSprintInput(bool _IsSprintInput) { m_IsSprintInput = _IsSprintInput; }

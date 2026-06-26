@@ -98,11 +98,14 @@ bool UC_PlayerStatWidget::ToggleAmmoInfoVisibility
 {
 	if (!_Visible)
 	{
-		// 이전까지 보여줬던 FireMode 전용 ShowAnimation 역으로 재생처리
-		PlayAnimation(m_ShowAmmoInfosAnims[m_CurrentShowingFireMode], 0.f, 1, EUMGSequencePlayMode::Reverse);
+		if (!m_bAmmoInfoPlayedReverseFlag) // 역재생 Animation 처리로 마지막에 호출하지 않았을 때 역재생 새로이 재생
+		{
+			// 이전까지 보여줬던 FireMode 전용 ShowAnimation 역으로 재생처리
+			PlayAnimation(m_ShowAmmoInfosAnims[m_CurrentShowingFireMode], 0.f, 1, EUMGSequencePlayMode::Reverse);
+			m_bAmmoInfoPlayedReverseFlag = true;
+		}
 		return true;
 	}
-
 
 	if (_FireMode == EFireMode::End)
 	{
@@ -118,8 +121,12 @@ bool UC_PlayerStatWidget::ToggleAmmoInfoVisibility
 	SetMagazineText(_MagazineAmmo);
 	SetLeftAmmoText(_LeftAmmoTotalCount);
 
-	// 현재의 FireMode에 맞는 ShowingAmmoInfoAnim 재생
-	PlayAnimation(m_ShowAmmoInfosAnims[m_CurrentShowingFireMode]);
+	// 현재의 FireMode에 맞는 ShowingAmmoInfoAnim 재생 (만약 이전에 역방향 재생처리를 했었다면)
+	if (m_bAmmoInfoPlayedReverseFlag)
+	{
+		m_bAmmoInfoPlayedReverseFlag = false;
+		PlayAnimation(m_ShowAmmoInfosAnims[m_CurrentShowingFireMode]);
+	}
 	
 	return true;
 }

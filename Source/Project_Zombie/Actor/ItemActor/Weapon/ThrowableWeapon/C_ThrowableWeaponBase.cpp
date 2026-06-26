@@ -9,13 +9,6 @@
 #include "GameMode/C_UIManager.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
 
-const TMap<EThrowableWeaponType, FName> AC_ThrowableWeaponBase::s_HandSocketNames =
-{
-	{EThrowableWeaponType::Grenade,		TEXT("GrenadeHandSocket")},
-	{EThrowableWeaponType::FlashBang,	TEXT("FlashBangHandSocket")},
-	{EThrowableWeaponType::Molotov,		TEXT("MolotovHandSocket")}
-};
-
 const FName AC_ThrowableWeaponBase::s_HolsterSocketName = TEXT("ThrowableHolsterSocket");
 
 // Sets default values
@@ -38,7 +31,7 @@ AC_ThrowableWeaponBase::AC_ThrowableWeaponBase()
 void AC_ThrowableWeaponBase::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	m_ProjectileMovement->Deactivate();
 }
 
 // Called every frame
@@ -58,8 +51,6 @@ bool AC_ThrowableWeaponBase::AttachToHand(USceneComponent* _ParentMesh)
 	m_ProjectileMovement->Deactivate();
 	// ClearSpline(); // PathSpline 예측 경로 기능이 있다 하면, Clear 한번 여기서 처리를 해주어야 함
 
-	Player->SetHandState(EHandState::WeaponThrowable);
-	
 	// Self init (이 변수들 처리 추후, 던지기 기다리기 처리 시 필요함)
 	// bIsCharging       = false;
 	// bIsOnThrowProcess = false;
@@ -76,8 +67,11 @@ bool AC_ThrowableWeaponBase::AttachToHand(USceneComponent* _ParentMesh)
 	(
 		_ParentMesh,
 		FAttachmentTransformRules(EAttachmentRule::KeepRelative, true),
-		s_HandSocketNames[m_ThrowableWeaponType]
+		m_HandSocketName
 	);
+	
+	if (bIsAttached)
+		Player->SetHandState(EHandState::WeaponThrowable);
 	
 	return bIsAttached;
 }

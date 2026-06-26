@@ -62,6 +62,19 @@ protected:
 	// 현재 사격 버튼을 누르고 있는 상태인지 확인
 	bool m_bIsFiring =		false;
 
+private:
+
+	// 이거 희민님이 지정한 오른손 소켓 그냥 써도 되면 그냥 쓰기
+	// Hand Socket Name (각 MeleeWeapon 블루프린트에서 Name 초기화 해줄 것)
+	static const FName s_HandSocketName;
+	
+protected:
+	
+	// Holster Socket Name (각 MeleeWeapon 블루프린트에서 Name 초기화 해줄 것)
+	// 이거는 무기마다 Socket Transform 다를 수 있다고 판단됨
+	UPROPERTY(EditDefaultsOnly, meta = (DisplayName = "HolsterSocketName"))
+	FName m_HolsterSocketName{};
+	
 public:
 	/// <summary>
 	/// 마우스 왼쪽 버튼 클릭 (사격 시작)

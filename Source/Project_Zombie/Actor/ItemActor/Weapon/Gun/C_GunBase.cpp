@@ -8,9 +8,13 @@
 #include "Engine/StaticMeshActor.h"
 #include "Components/StaticMeshComponent.h"
 #include "DrawDebugHelpers.h"
+#include "Actor/Character/Player/C_BasicPlayer.h"
 #include "GameMode/C_UIManager.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
 #include "Utility/C_Util.h"
+
+// 일단은 총기 오른손 부착 위치 Socket과 동일한 Socket으로 둠
+const FName AC_GunBase::s_HandSocketName = TEXT("HandGrip_R");
 
 AC_GunBase::AC_GunBase()
 {
@@ -25,13 +29,6 @@ void AC_GunBase::BeginPlay()
 	Super::BeginPlay();
 	
 	m_CurrentAmmo = m_MaxAmmo;
-	
-	// TODO : Testing 용 HUD 업데이트
-	if (AC_UIManager* UIManager = Cast<AC_UIManager>(GetWorld()->GetFirstPlayerController()->GetHUD()))
-	{
-		// Swap한 현재 무기 정보를 토대로 AmmoInfo UI 가시성 true로 켜는 동작
-		UIManager->GetMainHUDWidget()->ToggleAmmoInfoVisibility(true, EFireMode::FullAuto, m_CurrentAmmo, m_MaxAmmo);
-	}
 }
 
 void AC_GunBase::StartAttack()
@@ -102,12 +99,45 @@ void AC_GunBase::Gun_Reload()
 
 bool AC_GunBase::AttachToHand(USceneComponent* _ParentMesh)
 {
-	return false;
+	if (!_ParentMesh) return false;
+	AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(_ParentMesh->GetOwner());
+	if (!Player) return false; // 장착 시도하는 Owner Character가 Player형이 아닌 경우, return false
+
+	// Main HUD MeleeWeapon 종류로 초기화
+	if (APlayerController* PC = Player->GetController<APlayerController>())
+	{
+		// TODO : 각 MeleeWeapon에 맞는 이미지 아이콘(?) 표시해주면 좋을 듯 (일단은 AmmoInfo쪽 정보 감추는 처리로 함)
+		if (AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD()))
+			UIManager->GetMainHUDWidget()->ToggleAmmoInfoVisibility(true, EFireMode::FullAuto, m_CurrentAmmo, m_MaxAmmo); // TODO : FireMode 현재 FireMode로 넣어줄 것
+	}
+
+	const bool bIsAttached = AttachToComponent
+	(
+		_ParentMesh,
+		FAttachmentTransformRules(EAttachmentRule::KeepRelative, true),
+		s_HandSocketName
+	);
+	
+	if (bIsAttached)
+		Player->SetHandState(EHandState::WeaponGun);
+	
+	return bIsAttached;
 }
 
 bool AC_GunBase::AttachToHolster(USceneComponent* _ParentMesh)
 {
-	return false;
+	if (!_ParentMesh) return false;
+	AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(_ParentMesh->GetOwner());
+	if (!Player) return false; // 장착 시도하는 Owner Character가 Player형이 아닌 경우, return false
+
+	const bool bIsAttached = AttachToComponent
+	(
+		_ParentMesh,
+		FAttachmentTransformRules(EAttachmentRule::KeepRelative, true),
+		m_HolsterSocketName
+	);
+	
+	return bIsAttached;
 }
 
 void AC_GunBase::CompleteReload()
