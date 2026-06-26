@@ -70,6 +70,10 @@ protected:
 	// 해당 기능은 PlayerCharacter만 처리를 할 예정
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (DisplayName = "TurnInPlaceComponent"))
 	class UC_TurnInPlaceComponent* m_TurnInPlaceComponent{};
+
+	// Player 상황 별, Controller rotation 처리 State machine 기능 담당
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (DisplayName = "PlayerControllerFSMCom"))
+	class UC_ControllerFSMComponent* m_ControllerFSMComponent{};
 	
 // [Status]
 protected:
@@ -156,6 +160,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
 	bool m_IsCrouching;
 
+private:
+	// Free look 상태 (Hold Alt 상태)
+	bool m_IsFreeLook{};
 
 // [Weapon] - EquippedComponent에서 관리할 예정
 protected:
@@ -195,6 +202,9 @@ public:
 
 	bool IsJumpInput() const { return m_IsJumpInput; }
 	void SetIsJumpInput(bool _IsJumpInput) { m_IsJumpInput = _IsJumpInput; }
+	
+	bool IsFreeLook() const { return m_IsFreeLook; }
+	void SetIsFreeLook(bool _IsFreeLook) { m_IsFreeLook = _IsFreeLook; }
 
 public:
 	// 캐릭터가 착지했을 때 실행되는 함수

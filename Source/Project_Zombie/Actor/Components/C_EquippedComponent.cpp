@@ -164,7 +164,7 @@ bool UC_EquippedComponent::ToggleArmed()
 		return false;
 	
 	/* 현재 들고 있는 무기가 있을 때 */
-	if (m_CurWeaponTypeIdx == NoneSlotIdx && GetCurWeapon())
+	if (m_CurWeaponTypeIdx != NoneSlotIdx && GetCurWeapon())
 	{
 		// 이전 무기 종류 저장 및 UnArmed 처리
 		m_PrevWeaponTypeIdx = m_CurWeaponTypeIdx;

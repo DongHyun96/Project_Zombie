@@ -58,9 +58,7 @@ void UC_BasicPlayerInputComponent::InitializePlayerInput(UInputComponent* Player
 	{
 		if (IA_Move)
 		{
-			EnhancedInputComponent->BindAction(IA_Move, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::MoveStart);
 			EnhancedInputComponent->BindAction(IA_Move, ETriggerEvent::Triggered, this, &UC_BasicPlayerInputComponent::MoveAction);
-			EnhancedInputComponent->BindAction(IA_Move, ETriggerEvent::Completed, this, &UC_BasicPlayerInputComponent::MoveEnd);
 		}
 		if (IA_Look)
 		{
@@ -96,24 +94,13 @@ void UC_BasicPlayerInputComponent::InitializePlayerInput(UInputComponent* Player
 		{
 			EnhancedInputComponent->BindAction(IA_ToggleArmed, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::ToggleArmed);
 		}
+		
+		if (IA_FreeLook)
+		{
+			EnhancedInputComponent->BindAction(IA_FreeLook, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::FreeLookHolStart);
+			EnhancedInputComponent->BindAction(IA_FreeLook, ETriggerEvent::Completed, this, &UC_BasicPlayerInputComponent::FreeLookHoldEnd);
+		}
 	}
-}
-
-void UC_BasicPlayerInputComponent::MoveStart(const FInputActionValue& Value)
-{
-	// TODO : Alt 키를 누른 상태의 Free Look 상황이면, MoveAction 매 Tick에서 추가 처리를 해주어야 함
-	// 아래와 같이 처리를 해주면 됨
-	/*PlayerMovement->bUseControllerDesiredRotation	= false;
-	PlayerMovement->bOrientRotationToMovement		= false;
-	Player->bUseControllerRotationYaw				= false;*/
-	
-	// Turn in place 동작을 하는 중이었다면, 해당 동작을 끊어준다.
-	Player->GetTurnInPlaceComponent()->CancelTurnInPlaceMotionIfNecessary();
-
-	// 일반 Movement 처리 ControllerYaw의 회전을 따라가도록 기본 처리 한다
-	Player->bUseControllerRotationYaw             = true;
-	PlayerMovement->bUseControllerDesiredRotation = false;
-	PlayerMovement->bOrientRotationToMovement     = false;
 }
 
 void UC_BasicPlayerInputComponent::MoveAction(const FInputActionValue& Value)
@@ -129,12 +116,6 @@ void UC_BasicPlayerInputComponent::MoveAction(const FInputActionValue& Value)
 	Player->AddMovementInput(vF, Input.X);
 	Player->AddMovementInput(vR, Input.Y);
 	
-}
-
-void UC_BasicPlayerInputComponent::MoveEnd(const FInputActionValue& Value)
-{
-	// Movement 멈췄으면, 다시금 TurnInPlace 처리를 할 수 있게끔 처리
-	Player->GetTurnInPlaceComponent()->SetStrafeRotationToIdleStop();
 }
 
 void UC_BasicPlayerInputComponent::LookAction(const FInputActionValue& Value)
@@ -154,9 +135,6 @@ void UC_BasicPlayerInputComponent::JumpAction()
 {
 	if (!Player || !Player->CanJump()) return;
 
-	// Jump 이전, TurnInPlace 모션 중이었다면 중단 처리
-	Player->GetTurnInPlaceComponent()->CancelTurnInPlaceMotionIfNecessary();
-	
 	Player->SetIsJumpInput(true);
 	Player->Jump();
 }
@@ -180,25 +158,33 @@ void UC_BasicPlayerInputComponent::FireAction()
 
 void UC_BasicPlayerInputComponent::EquipMainWeapon()
 {
-	if (!Player->GetEquippedComponent()->ChangeCurWeapon(EWeaponSlot::MainWeapon))
-		UC_Util::Print("Failed to EquipMainWeapon", FColor::Red, 10.f);
+	Player->GetEquippedComponent()->ChangeCurWeapon(EWeaponSlot::MainWeapon);
 }
 
 void UC_BasicPlayerInputComponent::EquipMeleeWeapon()
 {
-	if (!Player->GetEquippedComponent()->ChangeCurWeapon(EWeaponSlot::MeleeWeapon))
-		UC_Util::Print("Failed to EquipMeleeWeapon", FColor::Red, 10.f);
+	Player->GetEquippedComponent()->ChangeCurWeapon(EWeaponSlot::MeleeWeapon);
 }
 
 void UC_BasicPlayerInputComponent::EquipThrowable()
 {
-	if (!Player->GetEquippedComponent()->ChangeCurWeapon(EWeaponSlot::ThrowableWeapon))
-		UC_Util::Print("Failed to EquipThrowable", FColor::Red, 10.f);
+	Player->GetEquippedComponent()->ChangeCurWeapon(EWeaponSlot::ThrowableWeapon);
 }
 
 void UC_BasicPlayerInputComponent::ToggleArmed()
 {
-	UC_Util::Print("ToggleArmed", FColor::Red, 10.f);
 	Player->GetEquippedComponent()->ToggleArmed();
+}
+
+void UC_BasicPlayerInputComponent::FreeLookHolStart()
+{
+	UC_Util::Print("FreeLook");
+	Player->SetIsFreeLook(true);
+}
+
+void UC_BasicPlayerInputComponent::FreeLookHoldEnd()
+{
+	UC_Util::Print("NonFreeLook");
+	Player->SetIsFreeLook(false);
 }
 

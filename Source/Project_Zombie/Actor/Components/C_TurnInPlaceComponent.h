@@ -9,6 +9,7 @@
 
 enum class EHandState : uint8;
 
+
 USTRUCT(BlueprintType)
 struct FTurnInPlaceMontages
 {
@@ -51,6 +52,15 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetStrafeRotationToIdleStop();
 
+public:
+	
+	/// <summary>
+	/// Turn in place 모션 재생 처리 시작 
+	/// </summary>
+	/// <param name="_YawRotDelta"> : Controller Rot와 Player Actor Row의 Delta값 중 Yaw 값</param>
+	/// <returns> : 처리할 수 없다면 return false </returns>
+	bool StartTurnInPlaceMotion(float _YawRotDelta);
+	
 	/// <summary>
 	/// 움직임이 시작되는 등의 행동이 이루어질 때, TurnInPlace 모션이 이미 재생중이었다면 해당 재생을 끊어주는 처리를 해야한다
 	/// </summary>
@@ -63,6 +73,7 @@ private:
 	/// <para> 바라보는 방향의 각이 90도 이상이면, Turn In place로 캐릭터 조정 </para>
 	/// </summary>
 	void HandleUpdateTurnInPlace(float DeltaTime);
+	
 	
 private:
 	

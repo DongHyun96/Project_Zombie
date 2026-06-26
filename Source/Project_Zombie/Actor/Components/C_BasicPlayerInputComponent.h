@@ -101,6 +101,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	UInputAction* IA_Interact;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+	UInputAction* IA_FreeLook{};
+	
 	// 인칭 전환
 	//UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	//UInputAction* IA_ToggleMode;
@@ -132,9 +135,8 @@ public:
 	void InitializePlayerInput(UInputComponent* PlayerInputComponent, AC_BasicPlayer* InPlayer);
 
 private:
-	void MoveStart(const FInputActionValue& Value);
+	
 	void MoveAction(const FInputActionValue& Value);
-	void MoveEnd(const FInputActionValue& Value);
 	
 	void LookAction(const FInputActionValue& Value);
 	void JumpAction();
@@ -147,5 +149,10 @@ private: // Equip Weapon input 관련
 	void EquipMeleeWeapon();
 	void EquipThrowable(); // TODO : Throwable Equip은 따로 처리를 안할수도
 	void ToggleArmed();
+
+private: // FreeLook 관련
+	
+	void FreeLookHolStart();
+	void FreeLookHoldEnd();
 	
 };

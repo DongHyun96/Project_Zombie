@@ -127,6 +127,11 @@ private:
 	float m_BoostBarPercentLerpDest{};
 	
 	/* Ammo Info 관련 */
+
+private: // 전체 AmmoInfo Animation Visibility Toggle animation 마지막으로 재생한 방향 저장 
+
+	// 처음 상태 감춰진 상태로, Reverse방향이 감추는 Animation 재생 방향 -> 이 값 true로 시작처리함
+	bool m_bAmmoInfoPlayedReverseFlag = true;
 	
 private: // 현재 Main으로 표기중인 정보
 

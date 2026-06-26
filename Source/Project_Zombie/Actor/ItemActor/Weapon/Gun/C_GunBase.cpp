@@ -29,13 +29,6 @@ void AC_GunBase::BeginPlay()
 	Super::BeginPlay();
 	
 	m_CurrentAmmo = m_MaxAmmo;
-	
-	// TODO : Testing 용 HUD 업데이트
-	if (AC_UIManager* UIManager = Cast<AC_UIManager>(GetWorld()->GetFirstPlayerController()->GetHUD()))
-	{
-		// Swap한 현재 무기 정보를 토대로 AmmoInfo UI 가시성 true로 켜는 동작
-		UIManager->GetMainHUDWidget()->ToggleAmmoInfoVisibility(true, EFireMode::FullAuto, m_CurrentAmmo, m_MaxAmmo);
-	}
 }
 
 void AC_GunBase::StartAttack()
@@ -111,9 +104,12 @@ bool AC_GunBase::AttachToHand(USceneComponent* _ParentMesh)
 	if (!Player) return false; // 장착 시도하는 Owner Character가 Player형이 아닌 경우, return false
 
 	// Main HUD MeleeWeapon 종류로 초기화
-	// TODO : 각 MeleeWeapon에 맞는 이미지 아이콘(?) 표시해주면 좋을 듯 (일단은 AmmoInfo쪽 정보 감추는 처리로 함)
-	if (AC_UIManager* UIManager = Cast<AC_UIManager>(Player->GetController<APlayerController>()->GetHUD()))
-		UIManager->GetMainHUDWidget()->ToggleAmmoInfoVisibility(false);
+	if (APlayerController* PC = Player->GetController<APlayerController>())
+	{
+		// TODO : 각 MeleeWeapon에 맞는 이미지 아이콘(?) 표시해주면 좋을 듯 (일단은 AmmoInfo쪽 정보 감추는 처리로 함)
+		if (AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD()))
+			UIManager->GetMainHUDWidget()->ToggleAmmoInfoVisibility(true, EFireMode::FullAuto, m_CurrentAmmo, m_MaxAmmo); // TODO : FireMode 현재 FireMode로 넣어줄 것
+	}
 
 	const bool bIsAttached = AttachToComponent
 	(
