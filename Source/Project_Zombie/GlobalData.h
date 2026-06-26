@@ -14,14 +14,21 @@ struct FItemData : public FTableRowBase
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Info")
     FText ItemName;
 
+    // ── [공통 정보] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Info")
     FText ItemDescription;
 
+    // ── [공통 정보] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Info")
     EItemType ItemType;
 
+    // ── [공통 정보] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Info")
     int32 Count = 1;
+
+    // ── [공통 정보] ── 인벤토리에서 겹쳐서 보관 할 수 있는 아이템인지.(true면 겹치기 가능)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
+    bool bIsStack;
 
     // ── [비주얼 리소스 - 강참조 포인터] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Visual")
@@ -59,6 +66,10 @@ public:
     // ── [실시간 공통 데이터] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
     int32 Count = 0;
+
+    // ── [실시간 공통 데이터] ──
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
+    bool bIsStack;
 
     // ── [실시간 인스턴스 변수 - 무기/장비용] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory | Weapon")
