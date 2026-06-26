@@ -72,3 +72,71 @@ public:
     //UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory | Weapon")
     //float Durability = 100.0f;
 };
+
+// ******************************
+// 무기 데이터테이블 구조체 선언부
+// ******************************
+
+// ── [스탯 (Stats)] ──
+USTRUCT(BlueprintType)
+struct FGunStats
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    float FireRate = 0.1f; // 발사 간격 (초 단위)
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    int32 MaxAmmo = 30;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    float					m_ShellEjectImpulse = 150.0f;
+};
+
+// ── [총기 매쉬 (Mesh)] ──
+USTRUCT(BlueprintType)
+struct FGunMesh
+{
+    GENERATED_BODY()
+    
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    TSoftObjectPtr<USkeletalMesh>   m_WeaponMesh;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    TSoftObjectPtr<UStaticMesh> m_ShellMesh;
+
+};
+
+// ── [애니메이션 (Animations)] ──
+USTRUCT(BlueprintType)
+struct FGunAnims
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    TSoftObjectPtr<UAnimSequence> m_FireAnimation;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    TSoftObjectPtr<UAnimSequence> m_ReloadAnimation;
+};
+
+// 데이터 테이블로 관리할 총기 정보
+USTRUCT(BlueprintType)
+struct FGunData : public FTableRowBase
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+    FGunStats Gun_Stats;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mesh")
+    FGunMesh Gun_Mesh;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animations")
+    FGunAnims Gun_Animations;
+
+};
+
+// ******************************
+// 무기 데이터테이블 구조체 선언부
+// ******************************
