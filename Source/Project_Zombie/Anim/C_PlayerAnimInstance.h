@@ -25,11 +25,6 @@ protected:
 	// HandState
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player Basic State")
 	EHandState m_HandState;
-
-	// MoveState
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player Basic State")
-	EPlayerMoveState m_PlayerMoveState;
-
 	
 	// 속도
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
@@ -50,6 +45,10 @@ protected:
 	// 수직 속도 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
 	float	m_VerticalSpeed;
+
+	// 웅크리기
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
+	bool	m_IsCrouch;
 
 public:
 	virtual void NativeInitializeAnimation() override;

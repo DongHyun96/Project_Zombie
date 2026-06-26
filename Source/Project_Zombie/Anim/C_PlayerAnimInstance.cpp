@@ -33,9 +33,9 @@ void UC_PlayerAnimInstance::NativeUpdateAnimation(float _DT)
 
 	// HandState 갱신
 	m_HandState = m_Character->GetHandState();
-	
-	// MoveState 갱신
-	m_PlayerMoveState = m_Character->GetPlayerMoveState();
+
+	// Crouch 여부 갱신
+	m_IsCrouch = m_Character->IsCrouching();
 
 	// 속도 갱신
 	FVector Velocity = m_Character->GetVelocity();

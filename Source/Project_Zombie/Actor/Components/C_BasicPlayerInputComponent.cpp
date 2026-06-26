@@ -69,6 +69,11 @@ void UC_BasicPlayerInputComponent::InitializePlayerInput(UInputComponent* Player
 		{
 			EnhancedInputComponent->BindAction(IA_Jump, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::JumpAction);
 		}
+		if (IA_Sprint)
+		{
+			EnhancedInputComponent->BindAction(IA_Sprint, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::SprintStart);
+			EnhancedInputComponent->BindAction(IA_Sprint, ETriggerEvent::Completed, this, &UC_BasicPlayerInputComponent::SprintEnd);	
+		}
 		if (IA_Crouch)
 		{
 			EnhancedInputComponent->BindAction(IA_Crouch, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::CrouchAction);
@@ -136,6 +141,22 @@ void UC_BasicPlayerInputComponent::MoveEnd(const FInputActionValue& Value)
 	Player->GetTurnInPlaceComponent()->SetStrafeRotationToIdleStop();
 }
 
+void UC_BasicPlayerInputComponent::SprintStart()
+{
+	if (!Player)
+		return;
+
+	Player->StartSprint();
+}
+
+void UC_BasicPlayerInputComponent::SprintEnd()
+{
+	if (!Player)
+		return;
+
+	Player->StopSprint();
+}
+
 void UC_BasicPlayerInputComponent::LookAction(const FInputActionValue& Value)
 {
 	if (Player->GetController() != nullptr)
@@ -156,20 +177,23 @@ void UC_BasicPlayerInputComponent::JumpAction()
 	// Jump 이전, TurnInPlace 모션 중이었다면 중단 처리
 	Player->GetTurnInPlaceComponent()->CancelTurnInPlaceMotionIfNecessary();
 	
+	// Crouch 상태라면, 먼저 Crouch를 풀어주도록 처리
+	if (Player->IsCrouching())
+	{
+		Player->ToggleCrouch();
+		return;
+	}
+
 	Player->SetIsJumpInput(true);
 	Player->Jump();
 }
 
 void UC_BasicPlayerInputComponent::CrouchAction()
 {
-	if (Player->GetPlayerMoveState() == EPlayerMoveState::Stand)
-	{
-		Player->StartCrouch();
-	}
-	else if (Player->GetPlayerMoveState() == EPlayerMoveState::Crouch)
-	{
-		Player->StopCrouch();
-	}
+	if (!Player)
+		return;
+
+	Player->ToggleCrouch();
 }
 
 void UC_BasicPlayerInputComponent::FireAction()
