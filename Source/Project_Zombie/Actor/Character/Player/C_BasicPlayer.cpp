@@ -35,6 +35,19 @@ AC_BasicPlayer::AC_BasicPlayer()
 	// 점프높이 설정
 	GetCharacterMovement()->JumpZVelocity = 600.f;
 
+	// 이동 속도 설정
+	m_WalkSpeed = 300.f;
+	m_RunSpeed = 600.f;
+	m_CrouchSpeed = 200.f;
+
+	m_BaseMaxSpeed = m_WalkSpeed;
+
+	GetCharacterMovement()->MaxWalkSpeed = m_RunSpeed;
+	GetCharacterMovement()->MaxWalkSpeedCrouched = m_CrouchSpeed;
+
+	// 웅크리기 전환 시간 설정
+	m_CrouchTransitionStopTime = 0.2f;
+
 	// 점프 입력 초기화
 	m_IsJumpInput = false;
 
@@ -85,29 +98,59 @@ void AC_BasicPlayer::Landed(const FHitResult& Hit)
 	m_IsJumpInput = false;
 }
 
-void AC_BasicPlayer::StartCrouch()
+/// <summary>
+/// 웅크리기 토글 함수
+/// </summary>
+void AC_BasicPlayer::ToggleCrouch()
 {
-	if (m_PlayerMoveState == EPlayerMoveState::Crouch)
+	if (m_IsCrouchTransitioning)
 		return;
 
-	m_PlayerMoveState = EPlayerMoveState::Crouch;
+	m_IsCrouching = !m_IsCrouching;
+	m_IsCrouchTransitioning = true;
 
+	// 전환 시작 순간 잠깐 정지
+	GetCharacterMovement()->MaxWalkSpeed = 0.f;
+
+	if (m_IsCrouching)
+	{
+		Crouch();
+
+		GetWorldTimerManager().SetTimer(
+			m_CrouchTransitionTimerHandle,
+			this,
+			&AC_BasicPlayer::ApplyCrouchSpeed,
+			m_CrouchTransitionStopTime,
+			false
+		);
+	}
+	else
+	{
+		UnCrouch();
+
+		GetWorldTimerManager().SetTimer(
+			m_CrouchTransitionTimerHandle,
+			this,
+			&AC_BasicPlayer::ApplyCrouchSpeed,
+			m_CrouchTransitionStopTime,
+			false
+		);
+	}
+}
+
+void AC_BasicPlayer::ApplyCrouchSpeed()
+{
 	GetCharacterMovement()->MaxWalkSpeed = m_CrouchSpeed;
 	GetCharacterMovement()->MaxWalkSpeedCrouched = m_CrouchSpeed;
 
-	Crouch();
+	m_IsCrouchTransitioning = false;
 }
 
-void AC_BasicPlayer::StopCrouch()
+void AC_BasicPlayer::ApplyWalkSpeed()
 {
-	if (m_PlayerMoveState == EPlayerMoveState::Stand)
-		return;
-
-	m_PlayerMoveState = EPlayerMoveState::Stand;
-
 	GetCharacterMovement()->MaxWalkSpeed = m_RunSpeed;
 
-	UnCrouch();
+	m_IsCrouchTransitioning = false;
 }
 
 

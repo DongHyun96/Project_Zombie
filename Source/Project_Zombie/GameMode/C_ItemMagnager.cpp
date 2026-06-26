@@ -9,11 +9,11 @@ void UC_ItemMagnager::Initialize(FSubsystemCollectionBase& Collection)
 
     // 생성자나 에디터 지정이 아닌, 코드에서 데이터 테이블을 static load 합니다.
     // 경로(Path)는 본인의 데이터 테이블 에디터 경로로 수정하세요.
-    static ConstructorHelpers::FObjectFinder<UDataTable> DataTableFinder(TEXT("/Game/Blueprints/Data/DT_ItemData_Sang.DT_ItemData_Sang"));
-    if (DataTableFinder.Succeeded())
-    {
-        ItemDataTable = DataTableFinder.Object;
-    }
+    //static ConstructorHelpers::FObjectFinder<UDataTable> DataTableFinder(TEXT("/Game/Blueprints/Data/DT_ItemData_Sang.DT_ItemData_Sang"));
+    //if (DataTableFinder.Succeeded())
+    //{
+    //    ItemDataTable = DataTableFinder.Object;
+    //}
 }
 
 const FItemData* UC_ItemMagnager::GetItemData(FName InRowName) const

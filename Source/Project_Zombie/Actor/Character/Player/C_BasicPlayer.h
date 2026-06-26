@@ -163,6 +163,16 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
 	bool m_IsCrouching;
 
+	// 웅크리기 전환 중인지 여부 (애니메이션 전환 중일 때 true)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
+	bool m_IsCrouchTransitioning = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	float m_CrouchTransitionStopTime;
+
+	// 웅크리기 전환 타이머 핸들
+	FTimerHandle m_CrouchTransitionTimerHandle;
+
 
 // [Weapon] - EquippedComponent에서 관리할 예정
 protected:
@@ -181,7 +191,7 @@ protected:
 
 
 public:
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintPure)
 	EPlayerState GetPlayerState() const { return m_PlayerState; }
 	void SetPlayerState(EPlayerState _NewState) { m_PlayerState = _NewState; }
 	
@@ -191,25 +201,31 @@ public:
 	EHandState GetHandState() const { return m_HandState; }
 	void SetHandState(EHandState _HandState) { m_HandState = _HandState; }
 
-
 	UC_EquippedComponent* GetEquippedComponent() const { return m_EquippedComponent; }
+	
+	UFUNCTION(BlueprintPure)
 	UC_TurnInPlaceComponent* GetTurnInPlaceComponent() const { return m_TurnInPlaceComponent; }
 
 public:
-	
 	bool IsDead() const { return m_IsDead; }
 	void SetIsDead(bool _IsDead) { m_IsDead = _IsDead; }
 
 	bool IsJumpInput() const { return m_IsJumpInput; }
 	void SetIsJumpInput(bool _IsJumpInput) { m_IsJumpInput = _IsJumpInput; }
 
+	bool IsCrouching() const { return m_IsCrouching; }
+	void SetIsCrouching(bool _IsCrouching) { m_IsCrouching = _IsCrouching; }
+
 public:
 	// 캐릭터가 착지했을 때 실행되는 함수
 	void Landed(const FHitResult& Hit) override;
 
-	// 웅크리기
-	void StartCrouch();
-	void StopCrouch();
+	// 웅크리기 토글
+	void ToggleCrouch();
+
+	// 웅크리기 전환 완료 후 속도 적용
+	void ApplyCrouchSpeed();
+	void ApplyWalkSpeed();
 
 protected:
 	virtual void BeginPlay() override;
