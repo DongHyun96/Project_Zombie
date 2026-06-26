@@ -106,6 +106,14 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Status")
 	float				m_CurHP;
 
+	// 최대 부스트
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Status")
+	float				m_MaxBoost;
+
+	// 현재 부스트
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Status")
+	float				m_CurBoost;
+
 
 // [Camera]
 protected:
@@ -135,7 +143,7 @@ protected:
 
 	// 달리기 속도
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
-	float m_RunSpeed;
+	float m_SprintSpeed;
 
 	// 조준 시 속도
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
@@ -149,11 +157,15 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
 	bool m_IsJumpInput;
 
+	// 달리기 입력 여부
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
+	bool m_IsSprintInput;
+
 	/// 우선순위... 따로 enum으로 빼서 관리할까 
 	/// 웅크리기 > 조준 > 달리기 > 일반 이동
 	// 달리기 상태
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
-	bool m_IsRunning;
+	bool m_IsSprinting;
 
 	// 조준 상태
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
@@ -162,6 +174,18 @@ protected:
 	// 웅크리기 상태
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
 	bool m_IsCrouching;
+
+	// 달리기 중 초당 부스트 소모량
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	float m_SprintBoostUseCost;
+
+	// 달리지 않을 때 초당 부스트 회복량
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	float m_BoostRecoverCost;
+
+	// 이 값 이상 회복되어야 다시 달리기 가능
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	//float m_MinBoostToSprint = 10.f;
 
 	// 웅크리기 전환 중인지 여부 (애니메이션 전환 중일 때 true)
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
@@ -172,6 +196,7 @@ protected:
 
 	// 웅크리기 전환 타이머 핸들
 	FTimerHandle m_CrouchTransitionTimerHandle;
+
 
 
 // [Weapon] - EquippedComponent에서 관리할 예정
@@ -191,7 +216,7 @@ protected:
 
 
 public:
-	UFUNCTION(BlueprintPure)
+	UFUNCTION()
 	EPlayerState GetPlayerState() const { return m_PlayerState; }
 	void SetPlayerState(EPlayerState _NewState) { m_PlayerState = _NewState; }
 	
@@ -203,7 +228,7 @@ public:
 
 	UC_EquippedComponent* GetEquippedComponent() const { return m_EquippedComponent; }
 	
-	UFUNCTION(BlueprintPure)
+	UFUNCTION()
 	UC_TurnInPlaceComponent* GetTurnInPlaceComponent() const { return m_TurnInPlaceComponent; }
 
 public:
@@ -213,22 +238,60 @@ public:
 	bool IsJumpInput() const { return m_IsJumpInput; }
 	void SetIsJumpInput(bool _IsJumpInput) { m_IsJumpInput = _IsJumpInput; }
 
+	bool IsSprintInput() const { return m_IsSprintInput; }
+	void SetIsSprintInput(bool _IsSprintInput) { m_IsSprintInput = _IsSprintInput; }
+
 	bool IsCrouching() const { return m_IsCrouching; }
 	void SetIsCrouching(bool _IsCrouching) { m_IsCrouching = _IsCrouching; }
 
 public:
-	// 캐릭터가 착지했을 때 실행되는 함수
+	/// <summary>
+	/// 캐릭터가 착지했을 때 실행되는 함수
+	/// </summary>
 	void Landed(const FHitResult& Hit) override;
 
-	// 웅크리기 토글
+	/// <summary>
+	/// 부스트를 사용하고 HUD를 갱신한다.
+	/// </summary>
+	/// <param name="_UseAmount"> : 사용할 부스트 양 </param>
+	/// <returns> : 사용 성공 여부 </returns>
+	bool UseBoost(float _UseAmount);
+
+	/// <summary>
+	/// 부스트를 회복하고 HUD를 갱신한다.
+	/// </summary>
+	/// <param name="_RecoverAmount"> : 회복할 부스트 양 </param>
+	void RecoverBoost(float _RecoverAmount);
+
+	/// <summary>
+	/// 달리기 시작
+	/// </summary>
+	void StartSprint();
+	
+	/// <summary>
+	///	달리기 종료
+	/// </summary>
+	void StopSprint();
+
+	/// <summary>
+	/// 웅크리기 토글
+	/// </summary>
 	void ToggleCrouch();
 
-	// 웅크리기 전환 완료 후 속도 적용
+	/// <summary>
+	/// 속도 적용(달리기, 걷기, 웅크리기 등)
+	/// </summary>
+	void ApplyMovementSpeed();
+	
 	void ApplyCrouchSpeed();
 	void ApplyWalkSpeed();
 
 protected:
 	virtual void BeginPlay() override;
+
+private:
+	// 부스트 바 HUD를 갱신하는 함수
+	void UpdateBoostBarHUD() const;
 
 public:
 	virtual void Tick(float DeltaTime) override;

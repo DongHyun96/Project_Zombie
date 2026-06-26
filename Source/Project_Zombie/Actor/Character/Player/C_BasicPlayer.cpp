@@ -19,6 +19,8 @@
 #include "Actor/Components/C_EquippedComponent.h"
 #include "Actor/Components/C_TurnInPlaceComponent.h"
 #include "Actor/Components/C_InvenComponent.h"
+#include "GameMode/C_UIManager.h"
+#include "UI/MainHUD/C_GameMainHUD.h"
 
 AC_BasicPlayer::AC_BasicPlayer()
 {
@@ -37,13 +39,25 @@ AC_BasicPlayer::AC_BasicPlayer()
 
 	// 이동 속도 설정
 	m_WalkSpeed = 300.f;
-	m_RunSpeed = 600.f;
+	m_SprintSpeed = 600.f;
 	m_CrouchSpeed = 200.f;
 
 	m_BaseMaxSpeed = m_WalkSpeed;
 
-	GetCharacterMovement()->MaxWalkSpeed = m_RunSpeed;
+	GetCharacterMovement()->MaxWalkSpeed = m_WalkSpeed;
 	GetCharacterMovement()->MaxWalkSpeedCrouched = m_CrouchSpeed;
+
+	// 달리기 입력 초기화
+	m_IsSprintInput = false;
+	m_IsSprinting = false;
+
+	// 부스트 초기화
+	m_MaxBoost = 100.f;
+	m_CurBoost = m_MaxBoost;
+
+	// 부스트 사용량 설정
+	m_SprintBoostUseCost = 20.f;
+	m_BoostRecoverCost = 15.f;
 
 	// 웅크리기 전환 시간 설정
 	m_CrouchTransitionStopTime = 0.2f;
@@ -66,6 +80,8 @@ AC_BasicPlayer::AC_BasicPlayer()
 void AC_BasicPlayer::BeginPlay()
 {
 	Super::BeginPlay();
+
+	UpdateBoostBarHUD();
 
 	// 입력 시스템 초기화
 	//InitInput();
@@ -98,9 +114,67 @@ void AC_BasicPlayer::Landed(const FHitResult& Hit)
 	m_IsJumpInput = false;
 }
 
-/// <summary>
-/// 웅크리기 토글 함수
-/// </summary>
+bool AC_BasicPlayer::UseBoost(float _UseAmount)
+{
+	if (_UseAmount <= 0.f || m_MaxBoost <= 0.f || m_CurBoost <= 0.f)
+		return false;
+
+	float PrevBoost = m_CurBoost;
+	bool bHasBoost = (m_CurBoost >= _UseAmount);
+
+	if (bHasBoost)
+	{	
+		// 부스트 사용 
+		m_CurBoost = FMath::Max(0.f, m_CurBoost - _UseAmount);
+
+		// 값이 변경되었을 경우 HUD 업데이트
+		if (!FMath::IsNearlyEqual(PrevBoost, m_CurBoost))
+			UpdateBoostBarHUD();
+	}
+	
+	return bHasBoost;
+}
+
+void AC_BasicPlayer::RecoverBoost(float _RecoverAmount)
+{
+	if (_RecoverAmount <= 0.f || m_MaxBoost <= 0.f || m_CurBoost >= m_MaxBoost)
+		return;
+
+	float PrevBoost = m_CurBoost;
+	
+	// 부스트 회복
+	m_CurBoost = FMath::Min(m_MaxBoost, m_CurBoost + _RecoverAmount);
+
+	// 값이 변경되었을 경우 HUD 업데이트
+	if (!FMath::IsNearlyEqual(PrevBoost, m_CurBoost))
+		UpdateBoostBarHUD();
+}
+
+void AC_BasicPlayer::StartSprint()
+{
+	m_IsSprintInput = true;
+
+	// 공중일 때는 달리기 불가
+	if (!GetCharacterMovement() || GetCharacterMovement()->IsFalling())
+		return;
+
+	// 웅크리기 중이거나 웅크리기 전환 중일 때는 달리기 불가
+	if (IsCrouching() || m_IsCrouchTransitioning)
+		return;
+
+	m_IsSprinting = true;
+
+	ApplyMovementSpeed();
+}
+
+void AC_BasicPlayer::StopSprint()
+{
+	m_IsSprintInput = false;
+	m_IsSprinting = false;
+
+	ApplyMovementSpeed();
+}
+
 void AC_BasicPlayer::ToggleCrouch()
 {
 	if (m_IsCrouchTransitioning)
@@ -131,10 +205,44 @@ void AC_BasicPlayer::ToggleCrouch()
 		GetWorldTimerManager().SetTimer(
 			m_CrouchTransitionTimerHandle,
 			this,
-			&AC_BasicPlayer::ApplyCrouchSpeed,
+			&AC_BasicPlayer::ApplyWalkSpeed,
 			m_CrouchTransitionStopTime,
 			false
 		);
+	}
+}
+
+/// <summary>
+///	나중에 enum으로 상태를 관리하는 방식으로 변경할 듯
+/// </summary>
+void AC_BasicPlayer::ApplyMovementSpeed()
+{
+	if (!GetCharacterMovement())
+		return;
+
+	// 웅크리기 전환 중일 때는 잠깐 정지
+	if (m_IsCrouchTransitioning)
+	{
+		GetCharacterMovement()->MaxWalkSpeed = 0.f;
+		return;
+	}
+
+	// 웅크리기 상태
+	if (IsCrouching())
+	{
+		GetCharacterMovement()->MaxWalkSpeed = m_CrouchSpeed;
+		GetCharacterMovement()->MaxWalkSpeedCrouched = m_CrouchSpeed;
+		return;
+	}
+
+	// 달리기 상태
+	if (m_IsSprinting)
+	{
+		GetCharacterMovement()->MaxWalkSpeed = m_SprintSpeed;
+	}
+	else
+	{
+		GetCharacterMovement()->MaxWalkSpeed = m_WalkSpeed; 
 	}
 }
 
@@ -148,9 +256,21 @@ void AC_BasicPlayer::ApplyCrouchSpeed()
 
 void AC_BasicPlayer::ApplyWalkSpeed()
 {
-	GetCharacterMovement()->MaxWalkSpeed = m_RunSpeed;
+	GetCharacterMovement()->MaxWalkSpeed = m_WalkSpeed;
 
 	m_IsCrouchTransitioning = false;
+}
+
+void AC_BasicPlayer::UpdateBoostBarHUD() const
+{
+	if (APlayerController* PC = GetController<APlayerController>())
+	{
+		if (AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD()))
+		{
+			if (UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget())
+				MainHUD->UpdateBoostBar(m_CurBoost, m_MaxBoost);
+		}
+	}
 }
 
 

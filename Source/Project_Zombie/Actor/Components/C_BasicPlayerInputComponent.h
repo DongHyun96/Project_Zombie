@@ -61,9 +61,13 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	UInputAction* IA_Jump;
 
-	// 웅크리기			// Ctrl
+	// 웅크리기		// Ctrl
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	UInputAction* IA_Crouch;
+
+	// 달리기		// Shift
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+	UInputAction* IA_Sprint;
 
 	// 공격			// LMB
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
@@ -136,6 +140,9 @@ private:
 	void MoveAction(const FInputActionValue& Value);
 	void MoveEnd(const FInputActionValue& Value);
 	
+	void SprintStart();
+	void SprintEnd();
+
 	void LookAction(const FInputActionValue& Value);
 	void JumpAction();
 	void CrouchAction();

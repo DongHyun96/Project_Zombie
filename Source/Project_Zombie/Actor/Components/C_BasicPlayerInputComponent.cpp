@@ -69,6 +69,11 @@ void UC_BasicPlayerInputComponent::InitializePlayerInput(UInputComponent* Player
 		{
 			EnhancedInputComponent->BindAction(IA_Jump, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::JumpAction);
 		}
+		if (IA_Sprint)
+		{
+			EnhancedInputComponent->BindAction(IA_Sprint, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::SprintStart);
+			EnhancedInputComponent->BindAction(IA_Sprint, ETriggerEvent::Completed, this, &UC_BasicPlayerInputComponent::SprintEnd);	
+		}
 		if (IA_Crouch)
 		{
 			EnhancedInputComponent->BindAction(IA_Crouch, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::CrouchAction);
@@ -134,6 +139,22 @@ void UC_BasicPlayerInputComponent::MoveEnd(const FInputActionValue& Value)
 {
 	// Movement 멈췄으면, 다시금 TurnInPlace 처리를 할 수 있게끔 처리
 	Player->GetTurnInPlaceComponent()->SetStrafeRotationToIdleStop();
+}
+
+void UC_BasicPlayerInputComponent::SprintStart()
+{
+	if (!Player)
+		return;
+
+	Player->StartSprint();
+}
+
+void UC_BasicPlayerInputComponent::SprintEnd()
+{
+	if (!Player)
+		return;
+
+	Player->StopSprint();
 }
 
 void UC_BasicPlayerInputComponent::LookAction(const FInputActionValue& Value)
