@@ -5,7 +5,8 @@
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
-#include "Actor/Components/C_InvenComponent.h"
+#include "Utility/C_Util.h"
+
 AC_ItemPickUp::AC_ItemPickUp()
 {
 	PrimaryActorTick.bCanEverTick = false;
@@ -14,7 +15,7 @@ AC_ItemPickUp::AC_ItemPickUp()
     CollisionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionSphere"));
     RootComponent = CollisionSphere;
     CollisionSphere->SetSphereRadius(80.0f); // 줍는 범위 설정
-
+    CollisionSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
     if (CollisionSphere)
     {
         CollisionSphere->OnComponentBeginOverlap.AddDynamic(this, &AC_ItemPickUp::OnOverlapBegin);
@@ -50,34 +51,38 @@ void AC_ItemPickUp::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* 
     // 이미 누군가 주워가는 중이라면 중복 처리 방지
     if (bPickup) return;
 
+    // 2. 충돌한 대상(플레이어 등)에게 인벤토리 컴포넌트가 있는지 확인
     AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(OtherActor);
 
-    // 2. 충돌한 대상(플레이어 등)에게 인벤토리 컴포넌트가 있는지 확인
-    UC_InvenComponent* InvenComp = OtherActor->FindComponentByClass<UC_InvenComponent>();
+    if (!IsValid(Player)) return;
 
-    if (InvenComp)
+    UC_InvenComponent* PlayerInvenComp = Player->GetInvenComponent();
+
+    UC_Util::Print("OverlapBegin");
+
+    if (PlayerInvenComp)
     {
         // 중복 진입 방지 플래그 On
         bPickup = true;
 
         // 3. 인벤토리에 아이템 추가 시도
-        bool bIsAdded = InvenComp->AddItem(ItemData);
+        bool bIsAdded = PlayerInvenComp->AddItem(ItemData);
 
         if (bIsAdded)
         {
             // 4. 아이템 획득에 성공했다면 필드의 아이템 액터 삭제
             Destroy();
+            UC_Util::Print("Success Add Item to Inventory!");
         }
         else
         {
             // 인벤토리가 가득 찼거나 추가에 실패한 경우 플래그 원복
             bPickup = false;
+            UC_Util::Print("Failed Add Item to Inventory!");
+
             // 필요하다면 화면에 "인벤토리가 가득 찼습니다" 메시지 출력
         }
     }
-    
-
-    
 }
 
 void AC_ItemPickUp::OnMeshLoadCompleted(TSoftObjectPtr<UStaticMesh> LoadedSoftMesh)

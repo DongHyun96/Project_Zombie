@@ -20,6 +20,8 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	// Sphere Collision으로 충돌시 아이템 습득
+	UFUNCTION(BlueprintCallable)
 	void OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, 
 						UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, 
 						bool bFromSweep, const FHitResult& SweepResult);
@@ -28,7 +30,6 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void OnMeshLoadCompleted(TSoftObjectPtr<UStaticMesh> LoadedSoftMesh);
 public:	
-	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
 	// 외부(매니저)에서 호출할 비동기 로드 시작 함수
