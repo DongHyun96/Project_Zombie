@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -7,9 +5,7 @@
 #include "GlobalData.h"
 #include "C_ItemMagnager.generated.h"
 
-/**
- * 
- */
+
 UCLASS(Blueprintable)
 class PROJECT_ZOMBIE_API UC_ItemMagnager : public UGameInstanceSubsystem
 {
