@@ -7,7 +7,7 @@
 #include "GlobalData.h"
 #include "C_InvenComponent.generated.h"
 
-
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnInventorySlotChanged, int32, SlotIndex, const FInventoryEntry&, ItemData);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class PROJECT_ZOMBIE_API UC_InvenComponent : public UActorComponent
@@ -18,13 +18,14 @@ public:
 	// Sets default values for this component's properties
 	UC_InvenComponent();
 
+public:
+    const TArray<FInventoryEntry>& GetInventoryItems() const { return InventoryItems; }
+
 protected:
-	// Called when the game starts
 	virtual void BeginPlay() override;
 
 public:	
-	// Called every frame
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	//virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
     // 이 함수는 현재 사용하지 않을 예정
     /// <summary>
@@ -35,7 +36,15 @@ public:
 
     bool AddItem(FInventoryEntry ItemEntry);
 protected:
+    // C_IneventoryGridWidget에서 grid slot의 갯수와 일치 시킬 변수
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Inventory")
+    int32 MaxSlots = 45; 
 
+    // 인벤토리에서 담고 있을 아이템 정보 구조체 배열
     UPROPERTY(BlueprintReadOnly, Category = "Inventory")
     TArray<FInventoryEntry> InventoryItems;
+
+public:
+    UPROPERTY(BlueprintAssignable)
+    FOnInventorySlotChanged OnInventorySlotChanged; // 델리게이트 알림용 변수
 };

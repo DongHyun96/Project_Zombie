@@ -1,12 +1,11 @@
 #include "Actor/Components/C_InvenComponent.h"
-//#include "Net/UnrealNetwork.h"
-
+#include "Utility/C_Util.h"
 UC_InvenComponent::UC_InvenComponent()
 {
 
 	PrimaryComponentTick.bCanEverTick = false;
 
-
+	InventoryItems.SetNum(MaxSlots);
 }
 
 
@@ -19,34 +18,101 @@ void UC_InvenComponent::BeginPlay()
 }
 
 
-void UC_InvenComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-}
+//void UC_InvenComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+//{
+//	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+//
+//}
 
 bool UC_InvenComponent::AddItem(FInventoryEntry ItemEntry)
 {
-	if (InventoryItems.Num() > 180) return false;
+	// TODO : 멀티 환경 적용하기, 더 좋은 방법이 분명 존재해 보임.
+	// 쌓을 수 있는 아이템이라면
+	//if (ItemEntry.bIsStack == false)
+	//{
+	//	for (int i = 0; i < MaxSlots; ++i)
+	//	{
+	//		// 빈칸이면 바로 아이템 넣기
+	//		if (InventoryItems[i].ItemRowName == NAME_None)
+	//		{
+	//			InventoryItems[i] = ItemEntry;
+	//			break;
+	//		}
+	//	}
 
-	// TODO : 같은 아이템이 인벤토리에 존재한다면 거기에 추가해주기.
+	//	return false;
+	//}
+	//// 쌓을 수 없는 아이템이라면
+	//else
+	//{
+	//	int FirstEmptySlotNum = MaxSlots;
+	//	for (int i = 0; i < MaxSlots; ++i)
+	//	{
+	//		// 같은 아이템을 찾았다면 Count 더해주기
+	//		if (InventoryItems[i].ItemRowName == ItemEntry.ItemRowName)
+	//		{
+	//			InventoryItems[i].Count += ItemEntry.Count;
+	//			break;
+	//		}
+	//		// 같은 아이템이 없는 경우를 고려해서 
+	//		else if (InventoryItems[i].ItemRowName == NAME_None)
+	//		{
+	//			FirstEmptySlotNum = FMath::Min(FirstEmptySlotNum, i);
+	//		}
+	//	}
+	//	
+	//	if (FirstEmptySlotNum == MaxSlots)
+	//		return false; // MaxSlots이면 인벤에 못넣는 상태.(idx : 0~MaxSlots-1 ; num : MaxSlots)
+	//	else 
+	//		InventoryItems[FirstEmptySlotNum] = ItemEntry;
+	//}
 
-	for (int i = 0; i < 180; ++i)
+	//return true;
+
+	int32 TargetIndex = -1;
+
+	// 1. 쌓을 수 있는 아이템인 경우 -> 기존에 같은 아이템이 있는지 먼저 검색
+	if (ItemEntry.bIsStack)
 	{
-		// TODO : 겹칠 수 없는 아이템은 예외처리하기.
-		if (InventoryItems[i].ItemRowName == ItemEntry.ItemRowName)
+		for (int32 i = 0; i < MaxSlots; ++i)
 		{
-			if (InventoryItems[i].bIsStack == true)
+			if (InventoryItems[i].ItemRowName == ItemEntry.ItemRowName)
 			{
 				InventoryItems[i].Count += ItemEntry.Count;
-				return true;
+				TargetIndex = i;
+				break; // 찾았으니 즉시 종료
 			}
 		}
 	}
 
-	InventoryItems.Add(ItemEntry);
+	// 2. 새로운 아이템이거나 쌓을 수 없는 아이템인 경우 -> 빈 슬롯 찾기
+	if (TargetIndex == -1)
+	{
+		for (int32 i = 0; i < MaxSlots; ++i)
+		{
+			if (InventoryItems[i].ItemRowName == NAME_None)
+			{
+				InventoryItems[i] = ItemEntry;
+				TargetIndex = i;
+				break; // 빈 칸에 넣었으니 즉시 종료
+			}
+		}
+	}
 
-	return true;
+	// 3. 결과 처리
+	if (TargetIndex != -1)
+	{
+		// UI 및 리스너들에게 변경 사항 브로드캐스트
+		
+		OnInventorySlotChanged.Broadcast(TargetIndex, InventoryItems[TargetIndex]);
+		UC_Util::Print(InventoryItems[TargetIndex].ItemRowName.ToString());
+
+		UC_Util::Print(InventoryItems[TargetIndex].Count);
+		return true;
+	}
+
+	// 인벤토리가 가득 차서 공간이 없음
+	return false;
 }
 
 //void UC_InvenComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
