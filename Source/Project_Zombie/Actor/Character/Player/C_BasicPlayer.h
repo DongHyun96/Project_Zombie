@@ -333,6 +333,9 @@ public:
 	virtual FGenericTeamId GetGenericTeamId() const override { return m_TeamId; }
 	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& _Other) const override;
 
+	
+public:
+	class UC_InvenComponent* GetInvenComponent() { return m_InvenComponent; }
 public:
 	AC_BasicPlayer();
 };
