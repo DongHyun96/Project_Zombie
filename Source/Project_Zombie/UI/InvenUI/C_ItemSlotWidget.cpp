@@ -4,7 +4,7 @@
 #include "UI/InvenUI/C_ItemSlotWidget.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
-
+#include "Blueprint/WidgetBlueprintLibrary.h"
 void UC_ItemSlotWidget::UpdateSlot(const FInventoryEntry& ItemData, const FItemData* CoreData)
 {
     if (CoreData->IconTexture.IsValid())
@@ -21,4 +21,21 @@ void UC_ItemSlotWidget::UpdateSlot(const FInventoryEntry& ItemData, const FItemD
         }
     }
     SetVisibility(ESlateVisibility::Visible);
+}
+
+FReply UC_ItemSlotWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
+{
+    if (InMouseEvent.IsMouseButtonDown(EKeys::LeftMouseButton))
+    {
+        FEventReply RePlyResult =
+            UWidgetBlueprintLibrary::DetectDragIfPressed(InMouseEvent, this, EKeys::LeftMouseButton);
+    
+        return RePlyResult.NativeReply;
+    }
+    return Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
+}
+
+void UC_ItemSlotWidget::NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& OutOperation)
+{
+
 }
