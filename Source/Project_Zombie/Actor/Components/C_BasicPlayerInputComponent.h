@@ -107,7 +107,8 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	UInputAction* IA_FreeLook{};
-	
+
+
 	// 인칭 전환
 	//UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	//UInputAction* IA_ToggleMode;
@@ -150,6 +151,9 @@ private:
 	void CrouchAction();
 	void FireAction();
 	
+	// 인벤토리를 여닫는 함수
+	void ToggleInventoryWidget();
+
 private: // Equip Weapon input 관련
 
 	void EquipMainWeapon();
