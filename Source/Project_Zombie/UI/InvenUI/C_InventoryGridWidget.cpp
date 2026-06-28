@@ -21,7 +21,7 @@ void UC_InventoryGridWidget::NativeConstruct()
         if (!NewSlot) continue;
 
         // 슬롯 위젯에게 자신이 몇 번째 칸인지 인덱스를 부여 (드래그 앤 드롭 구현 시 필수)
-        //NewSlot->SetSlotIndex(i); 
+        NewSlot->SetSlotIndex(i); 
 
         // 행(Row)과 열(Column) 계산 (이미지의 나누기/나머지 로직)
         int32 CurRow = i / Column;
@@ -42,6 +42,7 @@ void UC_InventoryGridWidget::NativeConstruct()
             if (UC_InvenComponent* InvenComp = Player->GetInvenComponent())
             {
                 // 델리게이트 중복 방지, TODO : 근데 이 부분이 왜 두번 호출됬는지 확인하고 조치를 취할 것.
+                // 두번 호출되진 않는거 같은데 델리게이트 중복 오류가 뜨긴함.
                 InvenComp->OnInventorySlotChanged.RemoveDynamic(this, &UC_InventoryGridWidget::RefreshSlotAt);
 
                 // 인벤의 슬롯이 바뀔 때 마다 내 RefreshSlotAt 함수가 정확한 타겟만 찍어서 수행됩니다.

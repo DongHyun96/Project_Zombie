@@ -23,7 +23,7 @@ public:
 	void RefreshAllSlots(const TArray<FInventoryEntry>& InventoryItems);
 
 	// 특정 슬롯만 콕 집어서 업데이트하고 싶을 때 (아이템 획득/소모/이동 시)
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable)
 	void RefreshSlotAt(int32 SlotIndex, const FInventoryEntry& ItemData);
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
@@ -37,7 +37,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 MaxSlots = 0;
 
-	// 
+	// 몇 열짜리로 만들 것인지.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 Column = 0;
 
