@@ -29,6 +29,7 @@ public:
 public:
 	const TArray<class UC_ItemSlotWidget*>& GetSlotArr() const { return SlotWidgets; }
 protected:
+	// C_ItemSlot을 배치할 GridPanel
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
 	class UUniformGridPanel* ItemGridPanel;
 

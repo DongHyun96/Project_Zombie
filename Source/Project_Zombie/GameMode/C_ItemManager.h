@@ -21,6 +21,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	class AC_ItemPickUp* SpawnItem(FName InRowName, const FVector& SpawnLocation, const FVector& LaunchVelocity = FVector::ZeroVector);
 private:
+
 	UPROPERTY()
 	UDataTable* ItemDataTable = nullptr;
 	

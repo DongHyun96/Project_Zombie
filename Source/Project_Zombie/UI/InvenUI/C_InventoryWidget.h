@@ -19,6 +19,7 @@ public:
 	class UC_InventoryGridWidget* GetGridWidget() { return GridWidget; }
 
 protected:
+	// 아이템 슬롯을 가지고 있을 그리드 위젯
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
 	class UC_InventoryGridWidget* GridWidget = nullptr;
 };
