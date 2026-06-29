@@ -44,9 +44,13 @@ public:
 	bool bPickup = false;
 
 protected:
+	// 실제 땅과 충돌하고 날아다닐 물리 구체 (새로운 루트)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	class USphereComponent* PhysicsSphere;
+	
 	// 충돌을 감지할 구체 컴포넌트
 	UPROPERTY(VisibleAnywhere, Category = "Components")
-	class USphereComponent* CollisionSphere;
+	class USphereComponent* PickupSphere;
 
 	// 바닥에 보일 아이템 메시
 	UPROPERTY(VisibleAnywhere, Category = "Components")

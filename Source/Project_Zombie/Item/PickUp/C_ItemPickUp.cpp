@@ -11,36 +11,50 @@ AC_ItemPickUp::AC_ItemPickUp()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
-    // 구체 컴포넌트 생성 및 루트 설정
-    CollisionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionSphere"));
-    RootComponent = CollisionSphere;
-    CollisionSphere->SetSphereRadius(80.0f); // 줍는 범위 설정
-    CollisionSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-    if (CollisionSphere)
-    {
-        CollisionSphere->OnComponentBeginOverlap.AddDynamic(this, &AC_ItemPickUp::OnOverlapBegin);
-    }
+    // 물리 구체를 생성하고 루트 컴포넌트로 설정합니다.
+    PhysicsSphere = CreateDefaultSubobject<USphereComponent>(TEXT("PhysicsSphere"));
+    RootComponent = PhysicsSphere;
+    PhysicsSphere->SetSphereRadius(15.0f); // 아이템 자체 크기에 맞게 작게 설정 (땅에 구르는 용도)
+    
+    // 물리가 가능하도록 셋팅 (이것이 던지기의 핵심!)
+    PhysicsSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    PhysicsSphere->SetCollisionObjectType(ECollisionChannel::ECC_PhysicsBody);
+    PhysicsSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
+    // 플레이어 캡슐과는 겹치게(Overlap) 해서 플레이어를 밀어내지 않게 설정하는 것이 좋습니다.
+    PhysicsSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+    
+    PhysicsSphere->SetLinearDamping(1.5f);
+    
+    PhysicsSphere->SetAngularDamping(2.0f);
+    // 기본적으로 물리를 켜둡니다. (Manager에서 명시적으로 켜도 됨)
+    PhysicsSphere->SetSimulatePhysics(true);
 
-    // 물리 및 충돌 프로필 설정 (플레이어와 겹침 감지가 가능하도록)
-    //CollisionSphere->SetCollisionProfileName(TEXT("Trigger"));
-
-    // 스태틱 메시 컴포넌트 생성 및 첨부
+    // 태틱 메시 컴포넌트 생성 및 첨부
     MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComp"));
     MeshComp->SetupAttachment(RootComponent);
+    MeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision); // 메시는 비주얼용 유지
 
-    // 메시는 순수 비주얼용이므로 물리 연산 및 캐릭터 밀어내기를 끕니다.
-    MeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-
+    // 줍는 범위 감지용 구체를 자식으로 붙입니다.
+    PickupSphere = CreateDefaultSubobject<USphereComponent>(TEXT("PickupSphere"));
+    PickupSphere->SetupAttachment(RootComponent);
+    PickupSphere->SetSphereRadius(50.0f); // 줍는 범위는 크게 유지
+    PickupSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    
+    // 플레이어만 감지하도록 셋팅
+    PickupSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+    PickupSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
     // 변수 초기화
     bPickup = false;
-
-
 }
 
 void AC_ItemPickUp::BeginPlay()
 {
 	Super::BeginPlay();
-	
+    
+    if (PickupSphere)
+    {
+        PickupSphere->OnComponentBeginOverlap.AddDynamic(this, &AC_ItemPickUp::OnOverlapBegin);
+    }
 }
 
 void AC_ItemPickUp::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
