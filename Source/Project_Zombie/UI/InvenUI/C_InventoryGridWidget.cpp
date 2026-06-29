@@ -1,7 +1,7 @@
 #include "UI/InvenUI/C_InventoryGridWidget.h"
 #include "Components/UniformGridPanel.h"
 #include "C_ItemSlotWidget.h"
-#include "GameMode/C_ItemMagnager.h"
+#include "GameMode/C_ItemManager.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/Components/C_InvenComponent.h"
 void UC_InventoryGridWidget::NativeConstruct()
@@ -49,7 +49,7 @@ void UC_InventoryGridWidget::NativeConstruct()
                 InvenComp->OnInventorySlotChanged.AddDynamic(this, &UC_InventoryGridWidget::RefreshSlotAt);
 
                 // UI 창이 켜지는 최초 시점에는 도화지가 비어있으므로 한 번 정비해줍니다.
-                //RefreshAllSlots(InvenComp->GetInventoryItems());
+                RefreshAllSlots(InvenComp->GetInventoryItems());
             }
         }
     }
@@ -58,7 +58,7 @@ void UC_InventoryGridWidget::NativeConstruct()
 
 void UC_InventoryGridWidget::RefreshAllSlots(const TArray<FInventoryEntry>& InventoryItems)
 {
-    UC_ItemMagnager* ItemManager = GetGameInstance()->GetSubsystem<UC_ItemMagnager>();
+    UC_ItemManager* ItemManager = GetGameInstance()->GetSubsystem<UC_ItemManager>();
     if (!ItemManager) return;
 
     // 데이터 배열과 위젯 배열의 크기 중 작은 것을 기준으로 안전하게 순회
@@ -81,7 +81,7 @@ void UC_InventoryGridWidget::RefreshAllSlots(const TArray<FInventoryEntry>& Inve
 
 void UC_InventoryGridWidget::RefreshSlotAt(int32 SlotIndex, const FInventoryEntry& ItemData)
 {
-    UC_ItemMagnager* ItemManager = GetGameInstance()->GetSubsystem<UC_ItemMagnager>();
+    UC_ItemManager* ItemManager = GetGameInstance()->GetSubsystem<UC_ItemManager>();
     if (!ItemManager) return;
 
     // 인덱스 안정성 검사 후 해당 슬롯만 변경

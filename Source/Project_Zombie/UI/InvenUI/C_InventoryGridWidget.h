@@ -25,6 +25,9 @@ public:
 	// 특정 슬롯만 콕 집어서 업데이트하고 싶을 때 (아이템 획득/소모/이동 시)
 	UFUNCTION(BlueprintCallable)
 	void RefreshSlotAt(int32 SlotIndex, const FInventoryEntry& ItemData);
+
+public:
+	const TArray<class UC_ItemSlotWidget*>& GetSlotArr() const { return SlotWidgets; }
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
 	class UUniformGridPanel* ItemGridPanel;
