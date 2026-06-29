@@ -65,8 +65,6 @@ AC_ZombieController::AC_ZombieController()
 	m_PerceptionCom->ConfigureSense(*m_DamageConfig); // 인지 컴포넌트에 데미지정보 추가
 
 
-	// 탐지가 발생하면 호출받을 Delegate 등록
-	m_PerceptionCom->OnTargetPerceptionUpdated.AddDynamic(this, &AC_ZombieController::OnTargetDetected);
 }
 
 void AC_ZombieController::OnPossess(APawn* _Pawn)
@@ -190,6 +188,14 @@ void AC_ZombieController::OnTargetDetected(AActor* _Target, FAIStimulus _Stimulu
 			pInfo->AggroValue += 15.f;
 		}
 	}
+}
+
+void AC_ZombieController::BeginPlay()
+{
+	Super::BeginPlay();
+	
+	// 탐지가 발생하면 호출받을 Delegate 등록
+	m_PerceptionCom->OnTargetPerceptionUpdated.AddDynamic(this, &AC_ZombieController::OnTargetDetected);
 }
 
 FSensedTargetInfo& AC_ZombieController::AddSensedTarget(AActor* _Target)

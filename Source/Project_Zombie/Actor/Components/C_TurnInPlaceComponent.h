@@ -10,17 +10,21 @@
 enum class EHandState : uint8;
 
 
+/// <summary>
+/// <para> HandState 별 TurnInPlace 모션 담을 struct </para>
+/// <para> Default group full body / Addit group lower body slot 모두 포함 </para>
+/// </summary>
 USTRUCT(BlueprintType)
 struct FTurnInPlaceMontages
 {
-	
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly)
-	UAnimMontage* TurnRightMontage{};
+	// Stand Default Group full body slot && Addit Group Lower body slot TurnInPlace 몽타주가 들어간다. 
+	UPROPERTY(VisibleAnywhere)
+	TArray<UAnimMontage*> TurnRightMontages{};
 	
-	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly)
-	UAnimMontage* TurnLeftMontage{};
+	UPROPERTY(VisibleAnywhere)
+	TArray<UAnimMontage*> TurnLeftMontages{};
 };
 
 /// <summary>
@@ -37,20 +41,8 @@ public:
 	UC_TurnInPlaceComponent();
 
 protected:
-	
+
 	virtual void BeginPlay() override;
-
-public:
-	
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-
-public:
-	
-	/// <summary>
-	/// Turn in place가 끝났을 시 anim notify에 의해 호출, 멈춰 있을 때의 Rotation 세팅 값들로 돌아가기
-	/// </summary>
-	UFUNCTION(BlueprintCallable)
-	void SetStrafeRotationToIdleStop();
 
 public:
 	
@@ -65,15 +57,13 @@ public:
 	/// 움직임이 시작되는 등의 행동이 이루어질 때, TurnInPlace 모션이 이미 재생중이었다면 해당 재생을 끊어주는 처리를 해야한다
 	/// </summary>
 	void CancelTurnInPlaceMotionIfNecessary();
-	
+
 private:
 	
 	/// <summary>
-	/// <para> 캐릭터가 멈춰있을 때, 캐릭터가 오브젝트가 바라보는 방향과 컨트롤러(카메라)가 </para>
-	/// <para> 바라보는 방향의 각이 90도 이상이면, Turn In place로 캐릭터 조정 </para>
+	/// 멤버변수 초기화용 
 	/// </summary>
-	void HandleUpdateTurnInPlace(float DeltaTime);
-	
+	void InitTurnInPlaceMontages();
 	
 private:
 	
@@ -81,8 +71,11 @@ private:
 
 protected:
 	
-	// HandState에 따른 TurnInPlace 몽타주들 (현재는 Stand Pose 상태에서의 TurnInPlace 몽타주만 처리함) 
-	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly)
-	TMap<EHandState, FTurnInPlaceMontages> m_TurnInPlaceMontages{};
+	// HandState에 따른 Stand TurnInPlace 몽타주들 
+	UPROPERTY(VisibleAnywhere)
+	TMap<EHandState, FTurnInPlaceMontages> m_StandTurnInPlaceMontages{}; 
+	
+	UPROPERTY(VisibleAnywhere)
+	TMap<EHandState, FTurnInPlaceMontages> m_CrouchTurnInPlaceMontages{};	
 	
 };

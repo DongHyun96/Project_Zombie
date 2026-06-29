@@ -69,6 +69,10 @@ protected:
 
 
 public:
+	
+	virtual void BeginPlay() override;
+	
+public:
 	const TArray<FSensedTargetInfo>& GetSensedTargets() { return m_SensedTargets; }
 
 	FSensedTargetInfo& AddSensedTarget(AActor* _Target);

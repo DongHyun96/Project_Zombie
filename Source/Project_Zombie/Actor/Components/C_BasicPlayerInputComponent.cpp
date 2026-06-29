@@ -156,9 +156,6 @@ void UC_BasicPlayerInputComponent::JumpAction()
 {
 	if (!Player || !Player->CanJump()) return;
 
-	// Jump 이전, TurnInPlace 모션 중이었다면 중단 처리
-	Player->GetTurnInPlaceComponent()->CancelTurnInPlaceMotionIfNecessary();
-	
 	// Crouch 상태라면, 먼저 Crouch를 풀어주도록 처리
 	if (Player->IsCrouching())
 	{
