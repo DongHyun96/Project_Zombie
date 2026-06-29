@@ -3,11 +3,11 @@
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "GlobalData.h"
-#include "C_ItemMagnager.generated.h"
+#include "C_ItemManager.generated.h"
 
 
 UCLASS(Blueprintable)
-class PROJECT_ZOMBIE_API UC_ItemMagnager : public UGameInstanceSubsystem
+class PROJECT_ZOMBIE_API UC_ItemManager : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
 	

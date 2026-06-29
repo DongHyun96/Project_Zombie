@@ -1,9 +1,9 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "GameMode/C_ItemMagnager.h"
+#include "GameMode/C_ItemManager.h"
 #include "../Item/PickUp/C_ItemPickUp.h"
-void UC_ItemMagnager::Initialize(FSubsystemCollectionBase& Collection)
+void UC_ItemManager::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
 
@@ -27,7 +27,7 @@ void UC_ItemMagnager::Initialize(FSubsystemCollectionBase& Collection)
     }
 }
 
-const FItemData* UC_ItemMagnager::GetItemData(FName InRowName) const
+const FItemData* UC_ItemManager::GetItemData(FName InRowName) const
 {
     if (!ItemDataTable || InRowName.IsNone()) return nullptr;
 
@@ -35,7 +35,7 @@ const FItemData* UC_ItemMagnager::GetItemData(FName InRowName) const
     return ItemDataTable->FindRow<FItemData>(InRowName, TEXT("GetItemDataContext"));
 }
 
-AC_ItemPickUp* UC_ItemMagnager::SpawnItem(FName InRowName, const FVector& SpawnLocation)
+AC_ItemPickUp* UC_ItemManager::SpawnItem(FName InRowName, const FVector& SpawnLocation)
 {
     // 1. 안전성 검사 및 데이터 가져오기
     const FItemData* Data = GetItemData(InRowName);
