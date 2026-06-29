@@ -21,6 +21,10 @@ public:
 public:
     const TArray<FInventoryEntry>& GetInventoryItems() const { return InventoryItems; }
 
+    bool SwapInvenEntry(int32 SlotIdx1, int32 SlotIdx2);
+	
+	void InitInvenItemAt(int32 idx);
+
 protected:
 	virtual void BeginPlay() override;
 

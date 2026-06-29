@@ -1,5 +1,9 @@
 #include "Actor/Components/C_InvenComponent.h"
 #include "Utility/C_Util.h"
+#include "GameMode/C_UIManager.h"
+#include "UI/InvenUI/C_InventoryWidget.h"
+#include "UI/InvenUI/C_InventoryGridWidget.h"
+#include "UI/InvenUI/C_ItemSlotWidget.h"
 UC_InvenComponent::UC_InvenComponent()
 {
 
@@ -8,6 +12,55 @@ UC_InvenComponent::UC_InvenComponent()
 	InventoryItems.SetNum(MaxSlots);
 }
 
+
+bool UC_InvenComponent::SwapInvenEntry(int32 SlotIdx1, int32 SlotIdx2)
+{
+	UC_Util::Print(SlotIdx1);				 // 드롭된 슬롯
+	UC_Util::Print(SlotIdx2, FColor::Green); // 드래그된 슬롯
+	
+	if (!InventoryItems.IsValidIndex(SlotIdx1) || !InventoryItems.IsValidIndex(SlotIdx2))
+	{
+		return false;
+	}
+    
+	// 같은 슬롯이면 바꿀 필요가 없으므로 무조건 true 반환
+	if (SlotIdx1 == SlotIdx2) return true;
+
+	// 1. 소유자 액터를 APawn으로 형변환 후 플레이어 컨트롤러 가져오기
+	APawn* OwnerPawn = Cast<APawn>(GetOwner());
+	if (!OwnerPawn) return false;
+
+	APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController());
+	if (!PC) return false;
+
+	// 2. 컨트롤러가 가진 HUD를 AC_UIManager로 형변환
+	AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD());
+	if (!UIManager) return false;
+
+	// 3. 인벤토리 위젯 가져오기
+	UC_InventoryWidget* InvWidget = UIManager->GetInventoryWidget();
+	if (!InvWidget) return false;
+
+	// 4. 데이터 교환 (언리얼 내장 함수 사용으로 한 줄로 단축)
+	InventoryItems.Swap(SlotIdx1, SlotIdx2);
+
+	// 5. UI 새로고침 (GridWidget과 SlotArr, 개별 슬롯의 유효성 검사도 곁들이면 안전합니다)
+	if (InvWidget->GetGridWidget() && !InvWidget->GetGridWidget()->GetSlotArr().IsEmpty())
+	{
+		UC_Util::Print(SlotIdx1);
+		UC_Util::Print(SlotIdx2);
+		InvWidget->GetGridWidget()->RefreshSlotAt(SlotIdx1, InventoryItems[SlotIdx1]); 
+		InvWidget->GetGridWidget()->RefreshSlotAt(SlotIdx2, InventoryItems[SlotIdx2]); 
+	}
+
+	// [추가] 성공적으로 끝났으므로 true 반환
+	return true;
+}
+
+void UC_InvenComponent::InitInvenItemAt(int32 idx)
+{
+	InventoryItems[idx].Initialize();
+}
 
 void UC_InvenComponent::BeginPlay()
 {
