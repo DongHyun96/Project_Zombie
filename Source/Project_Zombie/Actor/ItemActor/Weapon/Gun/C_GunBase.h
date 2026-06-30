@@ -38,6 +38,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Weapon|Mesh")
 	USkeletalMeshComponent* m_WeaponMesh;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon|Components", meta = (DisplayName = "DataComponent"))
+	class UC_GunDataTableComponent* m_DataCom;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Effects")
 	UAnimSequence*			m_FireAnimation;
 

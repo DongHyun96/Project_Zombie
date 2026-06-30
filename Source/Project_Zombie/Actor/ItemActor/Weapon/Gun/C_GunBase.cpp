@@ -2,13 +2,16 @@
 
 
 #include "C_GunBase.h"
-#include "Components/SkeletalMeshComponent.h"
 #include "Animation/AnimSequence.h"
 #include "TimerManager.h"
 #include "Engine/StaticMeshActor.h"
-#include "Components/StaticMeshComponent.h"
 #include "DrawDebugHelpers.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
+#include "../WeaponComponent/GunComponent/C_GunDataTableComponent.h"
+
+#include "Components/SkeletalMeshComponent.h"
+#include "Components/StaticMeshComponent.h"
+
 #include "GameMode/C_UIManager.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
 #include "Utility/C_Util.h"
@@ -22,6 +25,8 @@ AC_GunBase::AC_GunBase()
 
 	m_WeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
 	RootComponent = m_WeaponMesh;
+
+	m_DataCom = CreateDefaultSubobject<UC_GunDataTableComponent>(TEXT("DataComponent"));
 }
 
 void AC_GunBase::BeginPlay()
@@ -90,8 +95,6 @@ void AC_GunBase::Gun_Reload()
 		m_WeaponMesh->PlayAnimation(m_ReloadAnimation, false);
 	}
 
-	GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, TEXT("Reloading..."));
-
 	// 2초 타이머 후 탄창만큼의 탄약 보충
 	FTimerHandle ReloadTimerHandle;
 	GetWorldTimerManager().SetTimer(ReloadTimerHandle, this, &AC_GunBase::CompleteReload, 2.0f, false);
@@ -156,8 +159,6 @@ void AC_GunBase::PlayFireEffects()
 	// 총알이 없다면 사격 중지
 	if (m_CurrentAmmo <= 0)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, TEXT("No Ammo! Need Reload (Press R)"));
-		
 		if (AC_UIManager* UIManager = Cast<AC_UIManager>(GetWorld()->GetFirstPlayerController()->GetHUD()))
 			UIManager->GetMainHUDWidget()->AddPlayerWarningLog("OUT OF AMMO");
 		
@@ -166,18 +167,6 @@ void AC_GunBase::PlayFireEffects()
 	}
 
 	m_CurrentAmmo--;
-
-	FString AmmoLog = FString::Printf(TEXT("Ammo: %d / %d"), m_CurrentAmmo, m_MaxAmmo);
-	GEngine->AddOnScreenDebugMessage(-1, m_FireRate, FColor::Green, AmmoLog);
-
-	UC_Util::Print(AmmoLog, FColor::Green, m_FireRate);
-	
-	/*UC_Util::Print
-	(
-		AmmoLog,			// 출력할 내용
-		FColor::Green,		// 출력 색상
-		m_FireRate			// Display Time
-	);*/
 
 	// 현재 남은 장탄수 UI 업데이트
 	if (AC_UIManager* UIManager = Cast<AC_UIManager>(GetWorld()->GetFirstPlayerController()->GetHUD()))
@@ -231,7 +220,7 @@ void AC_GunBase::PlayFireEffects()
 				MeshComp->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);  // 벽, 땅 바닥
 				MeshComp->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Block); // 움직이는 장애물
 
-				/* 제미나이 도움받음!*******/
+				/* 제미나이 도움받음*******/
 
 				float RandomRightForce = FMath::FRandRange(130.0f, 220.0f); // 오른쪽으로 튕기는 힘 (최소 130 ~ 최대 220)
 				float RandomUpForce = FMath::FRandRange(60.0f, 130.0f);  // 위로 솟구치는 힘   (최소 60 ~ 최대 130)
@@ -252,7 +241,7 @@ void AC_GunBase::PlayFireEffects()
 					FMath::FRandRange(-50.0f, 50.0f));
 				MeshComp->AddAngularImpulseInRadians(RandomTorque, NAME_None, true);
 
-				/*******제미나이 도움받음! */
+				/*******제미나이 도움받음 */
 
 				// 3초 뒤 월드에서 자동으로 파괴되도록 수명 설정
 				SpawnedShell->SetLifeSpan(3.0f);
