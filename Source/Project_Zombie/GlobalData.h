@@ -88,64 +88,50 @@ public:
 // 무기 데이터테이블 구조체 선언부
 // ******************************
 
-// ── [스탯 (Stats)] ──
+// 데이터 테이블로 관리할 무기 공통 데이터
 USTRUCT(BlueprintType)
-struct FGunStats
+struct FWeaponData : public FTableRowBase
 {
     GENERATED_BODY()
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    float FireRate = 0.1f; // 발사 간격 (초 단위)
+    // ── [무기 종류 (Type)] ──
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Type")
+    EWeaponType WeaponType;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    int32 MaxAmmo = 30;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    float					m_ShellEjectImpulse = 150.0f;
-};
-
-// ── [총기 매쉬 (Mesh)] ──
-USTRUCT(BlueprintType)
-struct FGunMesh
-{
-    GENERATED_BODY()
-    
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    TSoftObjectPtr<USkeletalMesh>   m_WeaponMesh;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    TSoftObjectPtr<UStaticMesh> m_ShellMesh;
-
-};
-
-// ── [애니메이션 (Animations)] ──
-USTRUCT(BlueprintType)
-struct FGunAnims
-{
-    GENERATED_BODY()
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    TSoftObjectPtr<UAnimSequence> m_FireAnimation;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    TSoftObjectPtr<UAnimSequence> m_ReloadAnimation;
-};
-
-// 데이터 테이블로 관리할 총기 정보
-USTRUCT(BlueprintType)
-struct FGunData : public FTableRowBase
-{
-    GENERATED_BODY()
+    // ── [무기 공통 스탯 (Stats)] ──
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+    float BaseDamage;     // 무기 기본 데미지
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
-    FGunStats Gun_Stats;
+    float AttackRate;     // 총기 발사간격, 근접 공속, 투척 딜레이 공통 사용 (시간 간격 : 0.1초 = 초당 10발)
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mesh")
-    FGunMesh Gun_Mesh;
+    // ── [무기 공통 매쉬 (Mesh)] ──
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual")
+    TSoftObjectPtr<USkeletalMesh> WeaponMesh;
+
+
+};
+
+// 데이터 테이블로 관리할 총기 데이터
+USTRUCT(BlueprintType)
+struct FGunData : public FWeaponData
+{
+    GENERATED_BODY()
+
+    // ── [총기 부가 설정] ──
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+    float ShellEjectImpulse = 150.0f; // 탄피 배출에 가하는 힘.
+
+    // ── [총기 관련 매쉬 (Mesh)] ──
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual")
+    TSoftObjectPtr<UStaticMesh> ShellMesh;   // 총기 탄피 매쉬
+
+    // ── [총기 애니메이션 (Animations)] ──
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animations")
+    TSoftObjectPtr<UAnimSequence> FireAnimation;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animations")
-    FGunAnims Gun_Animations;
-
+    TSoftObjectPtr<UAnimSequence> ReloadAnimation;
 };
 
 // ******************************

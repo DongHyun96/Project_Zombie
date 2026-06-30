@@ -19,3 +19,11 @@ enum class ETeamType : uint8
     Enemy	UMETA(DisplayName = "Enemy"),
     None	UMETA(DisplayName = "None"),
 };
+
+UENUM(BlueprintType)
+enum class EWeaponType : uint8
+{
+    Gun         UMETA(DisplayName = "Gun"),
+    Melee       UMETA(DisplayName = "Melee"),
+    Throwable   UMETA(DisplayName = "Throwable")
+};
