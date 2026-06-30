@@ -24,3 +24,12 @@ void AC_Zombie::Tick(float DeltaTime)
 
 }
 
+
+void AC_Zombie::PlayAttack()
+{
+	if (GetMesh()->GetAnimInstance()->Montage_IsPlaying(m_AttackMontage))
+		return;
+
+	PlayAnimMontage(m_AttackMontage);
+
+}
