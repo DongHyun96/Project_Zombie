@@ -96,3 +96,18 @@ bool AC_ThrowableWeaponBase::AttachToHolster(USceneComponent* _ParentMesh)
 	);
 	return bIsAttached;
 }
+
+bool AC_ThrowableWeaponBase::OnStartFire(class AC_BasicPlayer* _WeaponUser)
+{
+	return false;
+}
+
+bool AC_ThrowableWeaponBase::OnFireOnGoing(AC_BasicPlayer* _WeaponUser)
+{
+	return false;
+}
+
+bool AC_ThrowableWeaponBase::OnFireEnd(AC_BasicPlayer* _WeaponUser)
+{
+	return false;
+}

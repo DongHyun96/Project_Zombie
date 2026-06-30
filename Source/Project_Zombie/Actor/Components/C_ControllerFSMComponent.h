@@ -10,6 +10,7 @@
 /// <summary>
 /// 상황 별, Player Controller Rotation 관련 값이 상이함
 /// </summary>
+UENUM(BlueprintType)
 enum class EPlayerControllerRotState : uint8
 {
 	IdleStopState,		// 가장 기본 가만히 있는 상태
@@ -41,7 +42,7 @@ public:
 	/// TurnInPlace 모션 이후, IdleStopState Transition 전환 처리 여기서
 	/// </summary>
 	UFUNCTION(BlueprintCallable)
-	void OnTurnInPlaceFin() { m_PlayerControllerRotState = EPlayerControllerRotState::IdleStopState; }
+	void OnTurnInPlaceFin();
 	
 	
 private:
@@ -60,7 +61,10 @@ private:
 	
 	class AC_BasicPlayer*				m_OwnerPlayer{};
 	class UCharacterMovementComponent*	m_PlayerMovement{};
+
+protected:
 	
+	UPROPERTY(VisibleAnywhere)
 	EPlayerControllerRotState			m_PlayerControllerRotState{};
 
 };

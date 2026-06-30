@@ -15,11 +15,6 @@ AC_ItemPickUp::AC_ItemPickUp()
     RootComponent = CollisionSphere;
     CollisionSphere->SetSphereRadius(80.0f); // 줍는 범위 설정
 
-    if (CollisionSphere)
-    {
-        CollisionSphere->OnComponentBeginOverlap.AddDynamic(this, &AC_ItemPickUp::OnOverlapBegin);
-    }
-
     // 물리 및 충돌 프로필 설정 (플레이어와 겹침 감지가 가능하도록)
     //CollisionSphere->SetCollisionProfileName(TEXT("Trigger"));
 
@@ -39,6 +34,11 @@ AC_ItemPickUp::AC_ItemPickUp()
 void AC_ItemPickUp::BeginPlay()
 {
 	Super::BeginPlay();
+    
+    if (CollisionSphere)
+    {
+        CollisionSphere->OnComponentBeginOverlap.AddDynamic(this, &AC_ItemPickUp::OnOverlapBegin);
+    }
 	
 }
 

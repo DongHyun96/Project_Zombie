@@ -15,6 +15,9 @@ enum class EWeaponSlot : uint8
 	Max				UMETA(Hidden)
 };
 
+/// <summary>
+/// 장착된 무기 관리 및 무기전환, 현재 손에 들고 있는 무기 관리 처리 Component
+/// </summary>
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class PROJECT_ZOMBIE_API UC_EquippedComponent : public UActorComponent
 {

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "EngineUtils.h"
 #include "GameFramework/Actor.h"
 #include "C_WeaponBase.generated.h"
 
@@ -21,10 +22,38 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 public:
+	
+	/// <summary>
+	/// 발사 시작 동작 처리 (기본 키 : LMB Started (발사 키 클릭 이벤트 발생 시))
+	/// </summary>
+	/// <param name="_WeaponUser"> : 이 Weapon을 사용하는 Player 객체 </param>
+	/// <returns> : StartFire 처리가 필요없거나(이건 웬만한 무기는 다 필요할 듯), 모종의 이유로 실패했을 경우 return false </returns>
+	virtual bool OnStartFire(class AC_BasicPlayer* _WeaponUser) PURE_VIRTUAL(AC_WeaponBase::OnStartFire, return false;);
 
-	virtual void StartAttack() PURE_VIRTUAL(AC_WeaponBase::StartAttack, );
-	virtual void StopAttack() PURE_VIRTUAL(AC_WeaponBase::StopAttack, );
-	virtual void Reload() PURE_VIRTUAL(AC_WeaponBase::Reload, );
+	/// <summary>
+	/// 발사 동작 지속동작 처리 (기본 키 : LMB OnGoing (계속 누르고 있는 시점) )
+	/// </summary>
+	/// <param name="_WeaponUser"> : 이 Weapon을 사용하는 Player 객체 </param>
+	/// <returns> : FireOnGoing 처리가 필요없거나 모종의 이유로 실패했을 경우 return false </returns>
+	virtual bool OnFireOnGoing(AC_BasicPlayer* _WeaponUser) { return false; }
+
+	/// <summary>
+	/// 발사 끝났을 때 처리 (기본 키 : LMB Completed (발사키 떼었을 때 시점) )
+	/// </summary>
+	/// <param name="_WeaponUser"> : 이 Weapon을 사용하는 Player 객체 </param>
+	/// <returns> : FireEnd 처리가 필요없거나 모종의 이유로 실패했을 경우 return false </returns>
+	virtual bool OnFireEnd(AC_BasicPlayer* _WeaponUser) { return false; }
+
+	/// <summary>
+	/// Reload 키 동작 처리 (기본 키 R키 기능) 
+	/// </summary>
+	/// <param name="_WeaponUser"> : 이 Weapon을 사용하는 Player 객체 </param>
+	/// <returns> : R키에 대한 처리가 필요없거나 실패했을 경우 return false </returns>
+	virtual bool Reload(AC_BasicPlayer* _WeaponUser) { return false; }
+	
+	/*virtual void StartAttack(class AC_BasicPlayer* _WeaponUser) PURE_VIRTUAL(AC_WeaponBase::StartAttack, );
+	virtual void StopAttack(AC_BasicPlayer* _WeaponUser) PURE_VIRTUAL(AC_WeaponBase::StopAttack, );*/
+
 
 
 	/// <summary>

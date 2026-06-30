@@ -9,6 +9,10 @@ UC_GunDataTableComponent::UC_GunDataTableComponent()
 
 }
 
+void UC_GunDataTableComponent::InitGunDataFromStruct(UScriptStruct* _InStruct, const void* _StrctPtr)
+{
+}
+
 void UC_GunDataTableComponent::BeginPlay()
 {
 	Super::BeginPlay();
