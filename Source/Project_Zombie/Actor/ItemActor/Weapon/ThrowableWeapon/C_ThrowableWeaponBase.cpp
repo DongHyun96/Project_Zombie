@@ -32,6 +32,8 @@ void AC_ThrowableWeaponBase::BeginPlay()
 {
 	Super::BeginPlay();
 	m_ProjectileMovement->Deactivate();
+	
+	m_MainCollider->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics)
 }
 
 // Called every frame

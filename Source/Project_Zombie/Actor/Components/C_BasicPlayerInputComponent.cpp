@@ -185,18 +185,21 @@ void UC_BasicPlayerInputComponent::CrouchAction()
 
 void UC_BasicPlayerInputComponent::FireStarted()
 {
+	UC_Util::Print("FireStarted");
 	if (AC_WeaponBase* CurWeapon = Player->GetEquippedComponent()->GetCurWeapon())
 		CurWeapon->OnStartFire(Player);
 }
 
 void UC_BasicPlayerInputComponent::FireOnGoing()
 {
+	UC_Util::Print("FireOnGoing");
 	if (AC_WeaponBase* CurWeapon = Player->GetEquippedComponent()->GetCurWeapon())
 		CurWeapon->OnFireOnGoing(Player);
 }
 
 void UC_BasicPlayerInputComponent::FireEnd()
 {
+	UC_Util::Print("FIreEnd", FColor::Red, 10.f);
 	if (AC_WeaponBase* CurWeapon = Player->GetEquippedComponent()->GetCurWeapon())
 		CurWeapon->OnFireEnd(Player);
 }
