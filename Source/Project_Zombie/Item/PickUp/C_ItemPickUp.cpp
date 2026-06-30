@@ -5,41 +5,60 @@
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
-#include "Actor/Components/C_InvenComponent.h"
+#include "Utility/C_Util.h"
+
 AC_ItemPickUp::AC_ItemPickUp()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
-    // 구체 컴포넌트 생성 및 루트 설정
-    CollisionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionSphere"));
-    RootComponent = CollisionSphere;
-    CollisionSphere->SetSphereRadius(80.0f); // 줍는 범위 설정
+    // 물리 구체를 생성하고 루트 컴포넌트로 설정합니다.
+    PhysicsSphere = CreateDefaultSubobject<USphereComponent>(TEXT("PhysicsSphere"));
+    RootComponent = PhysicsSphere;
+    PhysicsSphere->SetSphereRadius(15.0f); // 아이템 자체 크기에 맞게 작게 설정 (땅에 구르는 용도)
+    
+    // 물리가 가능하도록 셋팅 (이것이 던지기의 핵심!)
+    PhysicsSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    PhysicsSphere->SetCollisionObjectType(ECollisionChannel::ECC_PhysicsBody);
+    PhysicsSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
+    // 플레이어 캡슐과는 겹치게(Overlap) 해서 플레이어를 밀어내지 않게 설정하는 것이 좋습니다.
+    PhysicsSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+    
+    PhysicsSphere->SetLinearDamping(1.5f);
+    
+    PhysicsSphere->SetAngularDamping(2.0f);
+    // 기본적으로 물리를 켜둡니다. (Manager에서 명시적으로 켜도 됨)
+    PhysicsSphere->SetSimulatePhysics(true);
 
     // 물리 및 충돌 프로필 설정 (플레이어와 겹침 감지가 가능하도록)
     //CollisionSphere->SetCollisionProfileName(TEXT("Trigger"));
 
     // 스태틱 메시 컴포넌트 생성 및 첨부
+
     MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComp"));
     MeshComp->SetupAttachment(RootComponent);
+    MeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision); // 메시는 비주얼용 유지
 
-    // 메시는 순수 비주얼용이므로 물리 연산 및 캐릭터 밀어내기를 끕니다.
-    MeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-
+    // 줍는 범위 감지용 구체를 자식으로 붙입니다.
+    PickupSphere = CreateDefaultSubobject<USphereComponent>(TEXT("PickupSphere"));
+    PickupSphere->SetupAttachment(RootComponent);
+    PickupSphere->SetSphereRadius(50.0f); // 줍는 범위는 크게 유지
+    PickupSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    
+    // 플레이어만 감지하도록 셋팅
+    PickupSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+    PickupSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
     // 변수 초기화
     bPickup = false;
-
-
 }
 
 void AC_ItemPickUp::BeginPlay()
 {
 	Super::BeginPlay();
     
-    if (CollisionSphere)
+    if (PickupSphere)
     {
-        CollisionSphere->OnComponentBeginOverlap.AddDynamic(this, &AC_ItemPickUp::OnOverlapBegin);
+        PickupSphere->OnComponentBeginOverlap.AddDynamic(this, &AC_ItemPickUp::OnOverlapBegin);
     }
-	
 }
 
 void AC_ItemPickUp::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -50,34 +69,38 @@ void AC_ItemPickUp::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* 
     // 이미 누군가 주워가는 중이라면 중복 처리 방지
     if (bPickup) return;
 
+    // 2. 충돌한 대상(플레이어 등)에게 인벤토리 컴포넌트가 있는지 확인
     AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(OtherActor);
 
-    // 2. 충돌한 대상(플레이어 등)에게 인벤토리 컴포넌트가 있는지 확인
-    UC_InvenComponent* InvenComp = OtherActor->FindComponentByClass<UC_InvenComponent>();
+    if (!IsValid(Player)) return;
 
-    if (InvenComp)
+    UC_InvenComponent* PlayerInvenComp = Player->GetInvenComponent();
+
+    UC_Util::Print("OverlapBegin");
+
+    if (PlayerInvenComp)
     {
         // 중복 진입 방지 플래그 On
         bPickup = true;
 
         // 3. 인벤토리에 아이템 추가 시도
-        bool bIsAdded = InvenComp->AddItem(ItemData);
+        bool bIsAdded = PlayerInvenComp->AddItem(ItemData);
 
         if (bIsAdded)
         {
             // 4. 아이템 획득에 성공했다면 필드의 아이템 액터 삭제
             Destroy();
+            UC_Util::Print("Success Add Item to Inventory!");
         }
         else
         {
             // 인벤토리가 가득 찼거나 추가에 실패한 경우 플래그 원복
             bPickup = false;
+            UC_Util::Print("Failed Add Item to Inventory!");
+
             // 필요하다면 화면에 "인벤토리가 가득 찼습니다" 메시지 출력
         }
     }
-    
-
-    
 }
 
 void AC_ItemPickUp::OnMeshLoadCompleted(TSoftObjectPtr<UStaticMesh> LoadedSoftMesh)

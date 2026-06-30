@@ -19,7 +19,8 @@ public class Project_Zombie : ModuleRules
 			"GameplayStateTreeModule",
 			"UMG",
 			"Slate",
-			"GameplayTags",
+            "SlateCore",
+            "GameplayTags",
 			"DeveloperSettings"
 		});
 

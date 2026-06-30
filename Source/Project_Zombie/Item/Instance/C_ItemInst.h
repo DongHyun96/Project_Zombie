@@ -7,7 +7,7 @@
 #include "C_ItemInst.generated.h"
 
 /**
- * 
+ * 폐기된 클래스
  */
 UCLASS()
 class PROJECT_ZOMBIE_API UC_ItemInst : public UObject

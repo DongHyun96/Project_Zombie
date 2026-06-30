@@ -1,17 +1,13 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "GlobalData.h"
-#include "C_ItemMagnager.generated.h"
+#include "C_ItemManager.generated.h"
 
-/**
- * 
- */
+
 UCLASS(Blueprintable)
-class PROJECT_ZOMBIE_API UC_ItemMagnager : public UGameInstanceSubsystem
+class PROJECT_ZOMBIE_API UC_ItemManager : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
 	
@@ -23,8 +19,9 @@ public:
 	const FItemData* GetItemData(FName InRowName) const;
 
 	UFUNCTION(BlueprintCallable)
-	class AC_ItemPickUp* SpawnItem(FName InRowName, const FVector& SpawnLocation);
+	class AC_ItemPickUp* SpawnItem(FName InRowName, const FVector& SpawnLocation, const FVector& LaunchVelocity = FVector::ZeroVector);
 private:
+
 	UPROPERTY()
 	UDataTable* ItemDataTable = nullptr;
 	

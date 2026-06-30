@@ -82,6 +82,15 @@ public:
     // ── [실시간 인스턴스 변수 - 무기/장비용] ──
     //UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory | Weapon")
     //float Durability = 100.0f;
+public:
+    void Initialize()
+    {
+        ItemRowName = NAME_None;
+        Count = 0;
+        bIsStack = false;
+        UpgradeLevel = 0;
+        CurAmmo = 0;
+    }
 };
 
 // ******************************
