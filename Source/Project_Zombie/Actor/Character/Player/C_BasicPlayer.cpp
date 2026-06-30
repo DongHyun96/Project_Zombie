@@ -35,6 +35,9 @@ AC_BasicPlayer::AC_BasicPlayer()
 	m_Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("MainCamera"));
 	m_Camera->SetupAttachment(m_SpringArm);
 
+	// 캐릭터 상태 초기화
+	m_PlayerMoveSpeedState = EPlayerMoveSpeedState::Walk;
+
 	// 점프높이 설정
 	GetCharacterMovement()->JumpZVelocity = 600.f;
 
@@ -45,12 +48,13 @@ AC_BasicPlayer::AC_BasicPlayer()
 
 	m_BaseMaxSpeed = m_WalkSpeed;
 
+	m_IsCrouchTransitioning = false;
+
 	GetCharacterMovement()->MaxWalkSpeed = m_WalkSpeed;
 	GetCharacterMovement()->MaxWalkSpeedCrouched = m_CrouchSpeed;
 
 	// 달리기 입력 초기화
 	m_IsSprintInput = false;
-	m_IsSprinting = false;
 
 	// 부스트 초기화
 	m_MaxBoost = 100.f;
@@ -70,7 +74,7 @@ AC_BasicPlayer::AC_BasicPlayer()
 	SetGenericTeamId((uint8)ETeamType::Player);
 
 	// 우리가 만든 InputComponent 클래스를 Player에게 추가.
-	m_InputComponent = CreateDefaultSubobject<UC_BasicPlayerInputComponent>(TEXT("InputComponent"));
+	m_PlayerInputComponent = CreateDefaultSubobject<UC_BasicPlayerInputComponent>(TEXT("PlayerInputComponent"));
 
 	m_EquippedComponent = CreateDefaultSubobject<UC_EquippedComponent>(TEXT("EquippedComponent"));
 	
@@ -99,7 +103,7 @@ void AC_BasicPlayer::Tick(float DeltaTime)
 
 	/// 나중에 스탯 컴포넌트로 분리할 예정
 	// 달리기 중이면 부스트 소모
-	if (m_IsSprinting)
+	if (m_PlayerMoveSpeedState == EPlayerMoveSpeedState::Sprint)
 	{
 		UseBoost(m_SprintBoostUseCost * DeltaTime);
 		
@@ -119,9 +123,9 @@ void AC_BasicPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	if (m_InputComponent)
+	if (m_PlayerInputComponent)
 	{
-		m_InputComponent->InitializePlayerInput(PlayerInputComponent, this);
+		m_PlayerInputComponent->InitializePlayerInput(PlayerInputComponent, this);
 	}
 }
 
@@ -182,10 +186,14 @@ void AC_BasicPlayer::StartSprint()
 		return;
 
 	// 웅크리기 중이거나 웅크리기 전환 중일 때는 달리기 불가
-	if (IsCrouching() || m_IsCrouchTransitioning)
+	if (m_PlayerMoveSpeedState == EPlayerMoveSpeedState::Crouch || m_IsCrouchTransitioning)
 		return;
 
-	m_IsSprinting = true;
+	// 부스트가 없으면 달리기 불가
+	if (m_CurBoost <= 0.f)
+		return;
+
+	m_PlayerMoveSpeedState = EPlayerMoveSpeedState::Sprint;
 
 	ApplyMovementSpeed();
 }
@@ -193,7 +201,8 @@ void AC_BasicPlayer::StartSprint()
 void AC_BasicPlayer::StopSprint()
 {
 	m_IsSprintInput = false;
-	m_IsSprinting = false;
+
+	m_PlayerMoveSpeedState = EPlayerMoveSpeedState::Walk;
 
 	ApplyMovementSpeed();
 }
@@ -203,14 +212,21 @@ void AC_BasicPlayer::ToggleCrouch()
 	if (m_IsCrouchTransitioning)
 		return;
 
-	m_IsCrouching = !m_IsCrouching;
+	if (GetCharacterMovement()->IsFalling())
+		return;
+
 	m_IsCrouchTransitioning = true;
 
 	// 전환 시작 순간 잠깐 정지
 	GetCharacterMovement()->MaxWalkSpeed = 0.f;
 
-	if (m_IsCrouching)
+	if (m_PlayerMoveSpeedState != EPlayerMoveSpeedState::Crouch)
 	{
+		// 웅크리기 시작 시 달리기 입력 해제
+		m_IsSprintInput = false;
+
+		m_PlayerMoveSpeedState = EPlayerMoveSpeedState::Crouch;
+
 		Crouch();
 
 		GetWorldTimerManager().SetTimer(
@@ -223,6 +239,8 @@ void AC_BasicPlayer::ToggleCrouch()
 	}
 	else
 	{
+		m_PlayerMoveSpeedState = EPlayerMoveSpeedState::Walk;
+
 		UnCrouch();
 
 		GetWorldTimerManager().SetTimer(
@@ -250,38 +268,40 @@ void AC_BasicPlayer::ApplyMovementSpeed()
 		return;
 	}
 
-	// 웅크리기 상태
-	if (IsCrouching())
+	// 상태에 따른 이동 속도 적용
+	switch (m_PlayerMoveSpeedState)
 	{
+	case EPlayerMoveSpeedState::Walk:
+		GetCharacterMovement()->MaxWalkSpeed = m_WalkSpeed;
+		break;
+	case EPlayerMoveSpeedState::Sprint:
+		GetCharacterMovement()->MaxWalkSpeed = m_SprintSpeed;
+		break;
+	case EPlayerMoveSpeedState::Crouch:
 		GetCharacterMovement()->MaxWalkSpeed = m_CrouchSpeed;
 		GetCharacterMovement()->MaxWalkSpeedCrouched = m_CrouchSpeed;
-		return;
-	}
-
-	// 달리기 상태
-	if (m_IsSprinting)
-	{
-		GetCharacterMovement()->MaxWalkSpeed = m_SprintSpeed;
-	}
-	else
-	{
-		GetCharacterMovement()->MaxWalkSpeed = m_WalkSpeed; 
+		break;
+	case EPlayerMoveSpeedState::Aim:
+		//GetCharacterMovement()->MaxWalkSpeed = m_AimSpeed;
+		break;
+	default:
+		GetCharacterMovement()->MaxWalkSpeed = m_WalkSpeed;
+		break;
 	}
 }
 
 void AC_BasicPlayer::ApplyCrouchSpeed()
 {
-	GetCharacterMovement()->MaxWalkSpeed = m_CrouchSpeed;
-	GetCharacterMovement()->MaxWalkSpeedCrouched = m_CrouchSpeed;
-
 	m_IsCrouchTransitioning = false;
+
+	ApplyMovementSpeed();
 }
 
 void AC_BasicPlayer::ApplyWalkSpeed()
 {
-	GetCharacterMovement()->MaxWalkSpeed = m_WalkSpeed;
-
 	m_IsCrouchTransitioning = false;
+
+	ApplyMovementSpeed();
 }
 
 void AC_BasicPlayer::UpdateBoostBarHUD() const

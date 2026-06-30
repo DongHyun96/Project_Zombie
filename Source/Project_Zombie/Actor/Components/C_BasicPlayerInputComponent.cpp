@@ -112,6 +112,10 @@ void UC_BasicPlayerInputComponent::MoveAction(const FInputActionValue& Value)
 {
 	if (!Player->GetController()) return;
 
+	// 웅크리기 전환 중이라면, 이동 입력을 무시
+	if (Player->IsCrouchTransitioning())
+		return;
+
 	const FVector2D Input = Value.Get<FVector2D>();
 	const FVector vF      = Player->GetActorForwardVector();
 	const FVector vR      = Player->GetActorRightVector();

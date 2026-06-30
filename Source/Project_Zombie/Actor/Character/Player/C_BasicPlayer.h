@@ -63,7 +63,7 @@ protected:
 
 	// 새로 추가된 우리만의 커스텀 인풋 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (DisplayName = "PlayerInput"))
-	class UC_BasicPlayerInputComponent* m_InputComponent;
+	class UC_BasicPlayerInputComponent* m_PlayerInputComponent;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (DisplayName = "EquippedComponent"))
 	class UC_EquippedComponent* m_EquippedComponent{};
@@ -176,16 +176,16 @@ protected:
 	/// 우선순위... 따로 enum으로 빼서 관리할까 
 	/// 웅크리기 > 조준 > 달리기 > 일반 이동
 	// 달리기 상태
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
-	bool m_IsSprinting;
+	//UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
+	//bool m_IsSprinting;
 
-	// 조준 상태
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
-	bool m_IsAiming;
+	//// 조준 상태
+	//UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
+	//bool m_IsAiming;
 
-	// 웅크리기 상태
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
-	bool m_IsCrouching;
+	//// 웅크리기 상태
+	//UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
+	//bool m_IsCrouching;
 
 
 	// 달리기 중 초당 부스트 소모량
@@ -259,8 +259,11 @@ public:
 	bool IsSprintInput() const { return m_IsSprintInput; }
 	void SetIsSprintInput(bool _IsSprintInput) { m_IsSprintInput = _IsSprintInput; }
 
-	bool IsCrouching() const { return m_IsCrouching; }
-	void SetIsCrouching(bool _IsCrouching) { m_IsCrouching = _IsCrouching; }
+	bool IsCrouchTransitioning() const { return m_IsCrouchTransitioning; }
+
+	bool IsSprinting() const { return m_PlayerMoveSpeedState == EPlayerMoveSpeedState::Sprint; }
+	bool IsCrouching() const { return m_PlayerMoveSpeedState == EPlayerMoveSpeedState::Crouch; }
+
 
 public:
 	/// <summary>
