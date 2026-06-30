@@ -148,7 +148,11 @@ private:
 	void LookAction(const FInputActionValue& Value);
 	void JumpAction();
 	void CrouchAction();
-	void FireAction();
+	
+	
+	void FireStarted();
+	void FireOnGoing();
+	void FireEnd();
 	
 private: // Equip Weapon input 관련
 

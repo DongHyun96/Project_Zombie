@@ -31,7 +31,7 @@ void AC_GunBase::BeginPlay()
 	m_CurrentAmmo = m_MaxAmmo;
 }
 
-void AC_GunBase::StartAttack()
+/*void AC_GunBase::StartAttack()
 {
 	PullTrigger();
 }
@@ -44,7 +44,7 @@ void AC_GunBase::StopAttack()
 void AC_GunBase::Reload()
 {
 	Gun_Reload();
-}
+}*/
 
 void AC_GunBase::Tick(float DeltaTime)
 {
@@ -329,4 +329,28 @@ void AC_GunBase::PlayFireEffects()
 			}
 		}
 	}
+}
+
+bool AC_GunBase::OnStartFire(AC_BasicPlayer* _WeaponUser)
+{
+	// TODO : LMB 첫 눌렸을 시, 동작 처리
+	return false;
+}
+
+bool AC_GunBase::OnFireOnGoing(AC_BasicPlayer* _WeaponUser)
+{
+	// TODO : LMB 눌리고 있을 때의 동작 처리 (ex, 연발 사격 처리 등)
+	return false;
+}
+
+bool AC_GunBase::OnFireEnd(AC_BasicPlayer* _WeaponUser)
+{
+	// TODO : LMB 떼었을 때 시점의 동작 처리(딱히 필요없으면 그냥 FireEnd 함수 Gun에서 지우시면 됩니다(동현))
+	return false;
+}
+
+bool AC_GunBase::Reload(AC_BasicPlayer* _WeaponUser)
+{
+	// TODO : Reload 처리
+	return false;
 }
