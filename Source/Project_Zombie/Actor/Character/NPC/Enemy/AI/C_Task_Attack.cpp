@@ -3,6 +3,10 @@
 
 #include "C_Task_Attack.h"
 #include "../C_Zombie.h"
+#include "../Controller/C_ZombieController.h"
+
+#include "BehaviorTree/BehaviorTreeComponent.h"
+#include "BehaviorTree/BlackboardComponent.h"
 
 UC_Task_Attack::UC_Task_Attack()
 {
@@ -14,6 +18,22 @@ UC_Task_Attack::UC_Task_Attack()
 
 EBTNodeResult::Type UC_Task_Attack::ExecuteTask(UBehaviorTreeComponent& _OwnCom, uint8* _NodeMemory)
 {
+	Super::ExecuteTask(_OwnCom, _NodeMemory);
+
+	AAIController* AI = _OwnCom.GetAIOwner();
+
+	if (AI)
+	{
+		AI->StopMovement();
+	}
+
+	AC_Zombie* pZombie = Cast<AC_Zombie>(_OwnCom.GetAIOwner()->GetPawn());
+
+	if (pZombie)
+	{
+		pZombie->PlayAttack();
+	}
+
 	UE_LOG(LogTemp, Warning, TEXT("!! ATTACK !!"));
 
 	return EBTNodeResult::Succeeded;
