@@ -22,8 +22,19 @@ public:
 
 public:
 
+	/// <summary>
+	/// 공격(클릭) 시작 시 함수
+	/// </summary>
 	virtual void StartAttack() PURE_VIRTUAL(AC_WeaponBase::StartAttack, );
+
+	/// <summary>
+	/// 공격(클릭) 종료 시 함수
+	/// </summary>
 	virtual void StopAttack() PURE_VIRTUAL(AC_WeaponBase::StopAttack, );
+
+	/// <summary>
+	/// 총기 재장전, 무기 검사 함수
+	/// </summary>
 	virtual void Reload() PURE_VIRTUAL(AC_WeaponBase::Reload, );
 
 
