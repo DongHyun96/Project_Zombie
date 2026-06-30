@@ -89,10 +89,10 @@ void UC_TurnInPlaceComponent::InitTurnInPlaceMontages()
     struct FMontagePathConfig
     {
 	    FString Suffix{};
-	    bool bIsLeft{};
+	    bool	bIsLeft{};
     };
 
-    FMontagePathConfig PathConfigs[] = 
+    static const FMontagePathConfig PathConfigs[] = 
     {
         { TEXT("TurnLeft_Montage"),       true },
         { TEXT("TurnLeft_Montage_Lower"), true },
