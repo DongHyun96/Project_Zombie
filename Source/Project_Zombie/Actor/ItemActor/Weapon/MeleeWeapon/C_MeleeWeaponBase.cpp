@@ -23,19 +23,10 @@ void AC_MeleeWeaponBase::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
-void AC_MeleeWeaponBase::StartAttack()
+bool AC_MeleeWeaponBase::OnStartFire(AC_BasicPlayer* _WeaponUser)
 {
-	Super::StartAttack();
-}
-
-void AC_MeleeWeaponBase::StopAttack()
-{
-	Super::StopAttack();
-}
-
-void AC_MeleeWeaponBase::Reload()
-{
-	Super::Reload();
+	// TODO : MeleeWeapon 공격 처리
+	return false;
 }
 
 bool AC_MeleeWeaponBase::AttachToHolster(USceneComponent* _ParentMesh)

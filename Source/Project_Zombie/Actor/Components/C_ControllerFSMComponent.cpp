@@ -37,6 +37,11 @@ void UC_ControllerFSMComponent::TickComponent(float DeltaTime, ELevelTick TickTy
 	HandleFSMStates();
 }
 
+void UC_ControllerFSMComponent::OnTurnInPlaceFin()
+{
+	m_PlayerControllerRotState = EPlayerControllerRotState::IdleStopState;
+}
+
 void UC_ControllerFSMComponent::HandleFSMTransition()
 {
 	/* AnyState to FreeLookState (가장 높은 우선순위 처리) */
@@ -65,7 +70,7 @@ void UC_ControllerFSMComponent::HandleFSMTransition()
 
 		// TurnInPlace 처리 불가 각도
 		if (FMath::Abs(DeltaYaw) <= 90.f) return;
-			
+
 		/* IdleStopState -> TurnInPlaceState Transition*/
 		{
 			m_PlayerControllerRotState = EPlayerControllerRotState::TurnInPlaceState;

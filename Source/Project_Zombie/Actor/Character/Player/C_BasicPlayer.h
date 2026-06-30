@@ -33,6 +33,7 @@ enum class EHandState : uint8
 	WeaponGun,
 	WeaponMelee,
 	WeaponThrowable,
+	Max UMETA(Hidden)
 };
 
 // 시점 상태
@@ -231,7 +232,7 @@ protected:
 
 
 public:
-	UFUNCTION()
+	
 	EPlayerState GetPlayerState() const { return m_PlayerState; }
 	void SetPlayerState(EPlayerState _NewState) { m_PlayerState = _NewState; }
 	
@@ -243,7 +244,6 @@ public:
 
 	UC_EquippedComponent* GetEquippedComponent() const { return m_EquippedComponent; }
 	
-	UFUNCTION()
 	UC_TurnInPlaceComponent* GetTurnInPlaceComponent() const { return m_TurnInPlaceComponent; }
 
 public:

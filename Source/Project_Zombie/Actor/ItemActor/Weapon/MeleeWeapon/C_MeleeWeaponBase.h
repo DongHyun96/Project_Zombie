@@ -25,10 +25,7 @@ public:
 
 public:
 	
-	virtual void StartAttack() override;
-	virtual void StopAttack() override;
-	
-	virtual void Reload() override;
+	virtual bool OnStartFire(AC_BasicPlayer* _WeaponUser) override;
 	
 public:
 	

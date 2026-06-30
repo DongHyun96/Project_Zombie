@@ -25,6 +25,12 @@ public:
 	virtual bool AttachToHolster(USceneComponent* _ParentMesh) override;
 
 
+public:
+	
+	virtual bool OnStartFire(class AC_BasicPlayer* _WeaponUser) override;
+	virtual bool OnFireOnGoing(AC_BasicPlayer* _WeaponUser) override;
+	virtual bool OnFireEnd(AC_BasicPlayer* _WeaponUser) override;
+	
 	/* Socket Name 관련 */
 protected: 
 

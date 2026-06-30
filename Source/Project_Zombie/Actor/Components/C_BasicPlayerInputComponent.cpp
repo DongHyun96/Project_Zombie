@@ -6,6 +6,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
+#include "Actor/ItemActor/Weapon/C_WeaponBase.h"
 #include "Utility/C_Util.h"
 
 UC_BasicPlayerInputComponent::UC_BasicPlayerInputComponent()
@@ -79,7 +80,10 @@ void UC_BasicPlayerInputComponent::InitializePlayerInput(UInputComponent* Player
 		}
 		if (IA_Fire)
 		{
-			EnhancedInputComponent->BindAction(IA_Fire, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::FireAction);
+			EnhancedInputComponent->BindAction(IA_Fire, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::FireStarted);
+			EnhancedInputComponent->BindAction(IA_Fire, ETriggerEvent::Ongoing, this, &UC_BasicPlayerInputComponent::FireOnGoing);
+			EnhancedInputComponent->BindAction(IA_Fire, ETriggerEvent::Completed, this, &UC_BasicPlayerInputComponent::FireEnd);
+			
 		}
 		
 		if (IA_EquipMainWeapon)
@@ -156,9 +160,6 @@ void UC_BasicPlayerInputComponent::JumpAction()
 {
 	if (!Player || !Player->CanJump()) return;
 
-	// Jump 이전, TurnInPlace 모션 중이었다면 중단 처리
-	Player->GetTurnInPlaceComponent()->CancelTurnInPlaceMotionIfNecessary();
-	
 	// Crouch 상태라면, 먼저 Crouch를 풀어주도록 처리
 	if (Player->IsCrouching())
 	{
@@ -178,9 +179,22 @@ void UC_BasicPlayerInputComponent::CrouchAction()
 	Player->ToggleCrouch();
 }
 
-void UC_BasicPlayerInputComponent::FireAction()
+void UC_BasicPlayerInputComponent::FireStarted()
 {
-	// 무기 컴포넌트에서 발사 함수 호출
+	if (AC_WeaponBase* CurWeapon = Player->GetEquippedComponent()->GetCurWeapon())
+		CurWeapon->OnStartFire(Player);
+}
+
+void UC_BasicPlayerInputComponent::FireOnGoing()
+{
+	if (AC_WeaponBase* CurWeapon = Player->GetEquippedComponent()->GetCurWeapon())
+		CurWeapon->OnFireOnGoing(Player);
+}
+
+void UC_BasicPlayerInputComponent::FireEnd()
+{
+	if (AC_WeaponBase* CurWeapon = Player->GetEquippedComponent()->GetCurWeapon())
+		CurWeapon->OnFireEnd(Player);
 }
 
 void UC_BasicPlayerInputComponent::EquipMainWeapon()
