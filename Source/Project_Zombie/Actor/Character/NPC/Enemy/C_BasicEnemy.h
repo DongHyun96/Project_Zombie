@@ -13,8 +13,11 @@ class PROJECT_ZOMBIE_API AC_BasicEnemy : public AC_BasicNPC
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (DisplayName = "StatComponent"))
-	class UC_EnemyStatComponent* m_StatCom;
+	class UC_EnemyStatComponent*			m_StatCom;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (DisplayName = "SkillComponent"))
+	class UC_EnemySkillComponent*			m_SkillCom;
+	
 public:
 	AC_BasicEnemy();
 };

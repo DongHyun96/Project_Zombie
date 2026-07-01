@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "C_BasicEnemy.h"
+#include "../C_BasicEnemy.h"
 #include "C_Zombie.generated.h"
 
 UCLASS()

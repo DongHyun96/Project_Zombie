@@ -2,7 +2,7 @@
 
 #include "C_ZombieAnimInstance.h"
 
-#include "../Actor/Character/NPC/Enemy/C_Zombie.h"
+#include "../Actor/Character/NPC/Enemy/Zombie/C_Zombie.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
 void UC_ZombieAnimInstance::NativeInitializeAnimation()
