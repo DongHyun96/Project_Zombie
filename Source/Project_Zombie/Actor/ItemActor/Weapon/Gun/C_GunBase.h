@@ -26,59 +26,63 @@ class PROJECT_ZOMBIE_API AC_GunBase : public AC_WeaponBase
 {
 	GENERATED_BODY()
 
-protected:
-	// 최대 총알 수
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Data", meta = (ClampMin = "1"))
-	int32					m_MaxAmmo = 30;        
-
-	// 연사 속도 (발사 간의 시간 간격 : 0.1초 = 초당 10발)
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Data")
-	float					m_FireRate = 0.1f;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Weapon|Mesh")
+private:
+	// private으로 내리고 DefaultsOnly를 주면 블루프린트 디테일 패널에서 내부 속성 편집이 거의 막힙니다.
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Mesh", meta = (AllowPrivateAccess = "true"))
 	USkeletalMeshComponent* m_WeaponMesh;
+
+protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon|Components", meta = (DisplayName = "DataComponent"))
 	class UC_GunDataTableComponent* m_DataCom;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Effects")
-	UAnimSequence*			m_FireAnimation;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Effects")
-	UAnimSequence*			m_ReloadAnimation;
-
-	// 에디터에서 등록할 탄피 스태틱 메시 에셋
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Effects")
-	UStaticMesh*			m_ShellMesh;
-
-	// 탄피가 배출구 소켓 기준으로 어느 방향으로 튈지 더해줄 오프셋 힘
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Effects")
-	float					m_ShellEjectImpulse = 150.0f;
-
 protected:
+	// 현재 사격 버튼을 누르고 있는 상태인지 확인
+	bool					m_bIsFiring = false;
+
 	//현재 남아있는 총알 수
 	int32					m_CurrentAmmo;
+
+	int32					m_MaxAmmo;
+
+	float					m_FireRate;
+
+	float					m_ShellEjectImpulse;
 
 	// 연사 타이머를 관리하기 위한 핸들
 	FTimerHandle			m_FireTimerHandle;
 
-	// 현재 사격 버튼을 누르고 있는 상태인지 확인
-	bool m_bIsFiring =		false;
+	UAnimSequence*			m_FireAnimation;
+
+	UAnimSequence*			m_ReloadAnimation;
+
+	UStaticMesh*			m_ShellMesh;
+
+	
 
 private:
 
 	// 이거 희민님이 지정한 오른손 소켓 그냥 써도 되면 그냥 쓰기
 	// Hand Socket Name (각 MeleeWeapon 블루프린트에서 Name 초기화 해줄 것)
 	static const FName s_HandSocketName;
-	
+
 protected:
 	
+	// 에디터에서 프로퍼티(속성)가 변경될 때마다 호출되는 엔진 함수입니다.
+	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+
 	// Holster Socket Name (각 MeleeWeapon 블루프린트에서 Name 초기화 해줄 것)
 	// 이거는 무기마다 Socket Transform 다를 수 있다고 판단됨
 	UPROPERTY(EditDefaultsOnly, meta = (DisplayName = "HolsterSocketName"))
 	FName m_HolsterSocketName{};
 	
 public:
+
+	/// <summary>
+	/// 멤버변수 초기화
+	/// </summary>
+	void Gun_init();
+
 	/// <summary>
 	/// 마우스 왼쪽 버튼 클릭 (사격 시작)
 	/// </summary>

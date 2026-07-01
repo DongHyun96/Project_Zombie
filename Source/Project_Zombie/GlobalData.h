@@ -127,6 +127,10 @@ struct FGunData : public FWeaponData
 {
     GENERATED_BODY()
 
+    // ── [총시 관련 스탯 (Stats)] ──
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+    float MaxAmmo;     // 총기 최대 탄창 수
+
     // ── [총기 부가 설정] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
     float ShellEjectImpulse = 150.0f; // 탄피 배출에 가하는 힘.
