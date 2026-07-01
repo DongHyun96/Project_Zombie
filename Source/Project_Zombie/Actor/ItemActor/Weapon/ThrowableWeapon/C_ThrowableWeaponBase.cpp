@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "C_ThrowableWeaponBase.h"
@@ -99,7 +99,20 @@ bool AC_ThrowableWeaponBase::AttachToHolster(USceneComponent* _ParentMesh)
 
 bool AC_ThrowableWeaponBase::OnStartFire(class AC_BasicPlayer* _WeaponUser)
 {
-	return false;
+	if (!_WeaponUser || m_bIsThrowing)
+		return false;
+
+	// 무기 사용자를 저장해둠 (애님 노티파이 이벤트에서 사용하기 위함)
+	m_WeaponUser = _WeaponUser;
+
+	// 투척 과정 시작
+	m_bIsCharging = true;
+	m_bIsThrowing = true;
+	m_bIsCooking = false;
+	
+	_WeaponUser->PlayAnimMontage(m_RemovePinMontage);
+
+	return true;
 }
 
 bool AC_ThrowableWeaponBase::OnFireOnGoing(AC_BasicPlayer* _WeaponUser)
@@ -110,4 +123,29 @@ bool AC_ThrowableWeaponBase::OnFireOnGoing(AC_BasicPlayer* _WeaponUser)
 bool AC_ThrowableWeaponBase::OnFireEnd(AC_BasicPlayer* _WeaponUser)
 {
 	return false;
+}
+
+void AC_ThrowableWeaponBase::OnRemovePin()
+{
+	// 핀 제거 후, 투척 준비 동작으로 넘어감
+	m_bIsCooking = true;
+
+	m_WeaponUser->PlayAnimMontage(m_ReadyMontage);
+}
+
+void AC_ThrowableWeaponBase::OnThrowReadyLoop()
+{
+	if (!m_bIsThrowing)
+		return;
+
+	// 차징 중이면, 투척 동작으로 넘어가지 않음
+	if (m_bIsCharging)
+		return;
+
+	m_WeaponUser->PlayAnimMontage(m_ThrowMontage);
+}
+
+void AC_ThrowableWeaponBase::OnThrowThrowable()
+{
+
 }
