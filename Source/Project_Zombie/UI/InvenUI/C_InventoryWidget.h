@@ -13,13 +13,23 @@ class PROJECT_ZOMBIE_API UC_InventoryWidget : public UUserWidget
 	GENERATED_BODY()
 	
 public:
+	virtual void NativeConstruct() override;
+	
 	virtual bool NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
 	
 public:
-	class UC_InventoryGridWidget* GetGridWidget() { return GridWidget; }
+	class UC_InventoryGridWidget* GetPlayerGridWidget() { return PlayerGridWidget; }
+	
+	UC_InventoryGridWidget* GetStorageGridWidget() { return StorageGridWidget; }
+	
+	virtual void SetVisibility(ESlateVisibility InVisibility) override;
 
 protected:
-	// 아이템 슬롯을 가지고 있을 그리드 위젯
+	// Player의 아이템 슬롯을 가지고 있을 그리드 위젯
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
-	class UC_InventoryGridWidget* GridWidget = nullptr;
+	class UC_InventoryGridWidget* PlayerGridWidget = nullptr;
+	
+	// Storage(창고)의 아이템 슬롯을 가지고 있을 그리드 위젯
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
+	class UC_InventoryGridWidget* StorageGridWidget = nullptr;
 };

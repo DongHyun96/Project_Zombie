@@ -10,6 +10,22 @@
 #include "GameMode/C_ItemManager.h"
 #include "Utility/C_Util.h"
 
+void UC_InventoryWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+	
+	AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(GetOwningPlayerPawn());
+	
+	UC_InvenComponent* PlayerInvenComponent = Player->GetInvenComponent();
+
+
+
+	PlayerGridWidget->SetInvenComponent(PlayerInvenComponent);
+	
+	// TODO : 오용되는 부분이 생길 수 있음.
+	StorageGridWidget->SetInvenComponent(nullptr);
+}
+
 bool UC_InventoryWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent,
                                       UDragDropOperation* InOperation)
 {
@@ -46,7 +62,21 @@ bool UC_InventoryWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDr
 	ItemMgr->SpawnItem(curSlotItem.ItemRowName, SpawnLocation, LaunchVelocity);
 	invenComp->InitInvenItemAt(DroppedItemIdx);
 	
-	GridWidget->RefreshSlotAt(DroppedItemIdx, invenComp->GetInventoryItems()[DroppedItemIdx]);
+	PlayerGridWidget->RefreshSlotAt(DroppedItemIdx, invenComp->GetInventoryItems()[DroppedItemIdx]);
 	
 	return Super::NativeOnDrop(InGeometry, InDragDropEvent, InOperation);
+}
+
+void UC_InventoryWidget::SetVisibility(ESlateVisibility InVisibility)
+{
+	Super::SetVisibility(InVisibility);
+	
+	if (InVisibility == ESlateVisibility::Visible)
+	{
+		if (StorageGridWidget->GetInvenComponent())
+			StorageGridWidget->SetVisibility(InVisibility);
+		else
+			StorageGridWidget->SetVisibility(ESlateVisibility::Collapsed);
+	}
+	
 }

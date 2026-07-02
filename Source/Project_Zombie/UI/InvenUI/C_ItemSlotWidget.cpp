@@ -76,7 +76,7 @@ void UC_ItemSlotWidget::NativeOnDragDetected(const FGeometry& InGeometry, const 
     DragVisual->Brush.ImageSize = FVector2D(64.f, 64.f);
     Border->SetContent(DragVisual);
     
-    DragOperation->SetItmeEntry(entry);
+    DragOperation->SetItemEntry(entry);
     DragOperation->SetSlotIndex(curSlotIdx);
     
     DragOperation->DefaultDragVisual = Border;
@@ -93,7 +93,21 @@ bool UC_ItemSlotWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDro
     
     UC_InvenComponent* invencomp = Cast<AC_BasicPlayer>(GetOwningPlayerPawn())->GetInvenComponent();
     
-    invencomp->SwapInvenEntry(curSlotIdx, DragOperation->GetSlotIndex());
+    int32 FromSlot = DragOperation->GetSlotIndex();
+    int32 ToSlot = curSlotIdx;
+    
+    if (!invencomp) return Super::NativeOnDrop(InGeometry, InDragDropEvent, InOperation);
+    
+    if (invencomp->SwapInvenEntry(ToSlot, FromSlot))
+    {
+        UC_Util::Print(FromSlot);
+        UC_Util::Print(ToSlot);
+
+        ParentGrid->RefreshSlotAt(FromSlot, invencomp->GetItemAt(FromSlot));
+        ParentGrid->RefreshSlotAt(ToSlot, invencomp->GetItemAt(ToSlot));
+        return true;
+    }
+    
     
     
     

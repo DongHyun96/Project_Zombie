@@ -1,15 +1,15 @@
 #include "Actor/Components/C_InvenComponent.h"
 #include "Utility/C_Util.h"
-#include "GameMode/C_UIManager.h"
-#include "UI/InvenUI/C_InventoryWidget.h"
 #include "UI/InvenUI/C_InventoryGridWidget.h"
-#include "UI/InvenUI/C_ItemSlotWidget.h"
+#include "Net/UnrealNetwork.h"
 UC_InvenComponent::UC_InvenComponent()
 {
 
 	PrimaryComponentTick.bCanEverTick = false;
 
 	InventoryItems.SetNum(MaxSlots);
+	// 컴포넌트 리플리케이션 활성화. 
+	SetIsReplicatedByDefault(true);
 }
 
 
@@ -24,36 +24,12 @@ bool UC_InvenComponent::SwapInvenEntry(int32 SlotIdx1, int32 SlotIdx2)
 	}
     
 	// 같은 슬롯이면 바꿀 필요가 없으므로 무조건 true 반환
-	if (SlotIdx1 == SlotIdx2) return true;
+	if (SlotIdx1 == SlotIdx2) return false;
+	
 
-	// 1. 소유자 액터를 APawn으로 형변환 후 플레이어 컨트롤러 가져오기
-	APawn* OwnerPawn = Cast<APawn>(GetOwner());
-	if (!OwnerPawn) return false;
-
-	APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController());
-	if (!PC) return false;
-
-	// 2. 컨트롤러가 가진 HUD를 AC_UIManager로 형변환
-	AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD());
-	if (!UIManager) return false;
-
-	// 3. 인벤토리 위젯 가져오기
-	UC_InventoryWidget* InvWidget = UIManager->GetInventoryWidget();
-	if (!InvWidget) return false;
-
-	// 4. 데이터 교환 (언리얼 내장 함수 사용으로 한 줄로 단축)
+	// 데이터 교환 (언리얼 내장 함수 사용으로 한 줄로 단축)
 	InventoryItems.Swap(SlotIdx1, SlotIdx2);
-
-	// 5. UI 새로고침 (GridWidget과 SlotArr, 개별 슬롯의 유효성 검사도 곁들이면 안전합니다)
-	if (InvWidget->GetGridWidget() && !InvWidget->GetGridWidget()->GetSlotArr().IsEmpty())
-	{
-		UC_Util::Print(SlotIdx1);
-		UC_Util::Print(SlotIdx2);
-		InvWidget->GetGridWidget()->RefreshSlotAt(SlotIdx1, InventoryItems[SlotIdx1]); 
-		InvWidget->GetGridWidget()->RefreshSlotAt(SlotIdx2, InventoryItems[SlotIdx2]); 
-	}
-
-	// [추가] 성공적으로 끝났으므로 true 반환
+	
 	return true;
 }
 
@@ -168,11 +144,54 @@ bool UC_InvenComponent::AddItem(FInventoryEntry ItemEntry)
 	return false;
 }
 
-//void UC_InvenComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-//{
-//	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-//
-//	// InventoryItems 배열이 서버에서 클라이언트로 복제되도록 등록
-//	DOREPLIFETIME(UC_InvenComponent, InventoryItems);
-//}
+void UC_InvenComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
+	// [최적화] 방장의 부담을 줄이기 위해, 해당 인벤토리의 소유자(클라이언트)에게만 복제
+	DOREPLIFETIME_CONDITION(UC_InvenComponent, InventoryItems, COND_OwnerOnly);
+}
+
+// 서버에서 데이터가 바뀌어 클라이언트로 넘어왔을 때 UI 갱신 알림
+void UC_InvenComponent::OnRep_InventoryItems()
+{
+	for (int32 i = 0; i < InventoryItems.Num(); ++i)
+	{
+		OnInventorySlotChanged.Broadcast(i, InventoryItems[i]);
+	}
+}
+
+// 서로 다른 인벤토리 컴포넌트 간의 아이템 스왑/이동
+bool UC_InvenComponent::TransferItemTo(int32 MySlotIdx, UC_InvenComponent* TargetComp, int32 TargetSlotIdx)
+{
+	if (!InventoryItems.IsValidIndex(MySlotIdx) || !TargetComp || !TargetComp->InventoryItems.IsValidIndex(TargetSlotIdx)) return false;
+
+	FInventoryEntry TempItem = InventoryItems[MySlotIdx];
+	InventoryItems[MySlotIdx] = TargetComp->InventoryItems[TargetSlotIdx];
+	TargetComp->InventoryItems[TargetSlotIdx] = TempItem;
+
+	// 양쪽 인벤토리 모두에게 변경 사항 브로드캐스트
+	this->OnInventorySlotChanged.Broadcast(MySlotIdx, InventoryItems[MySlotIdx]);
+	TargetComp->OnInventorySlotChanged.Broadcast(TargetSlotIdx, TargetComp->InventoryItems[TargetSlotIdx]);
+    
+	return true;
+}
+
+// 클라이언트 -> 서버 이동 요청 RPC 구현부
+bool UC_InvenComponent::Server_RequestMoveItem_Validate(UC_InvenComponent* SrcComp, int32 SrcIdx, UC_InvenComponent* DstComp, int32 DstIdx)
+{
+	if (!SrcComp || !DstComp) return false;
+	return true;
+}
+
+void UC_InvenComponent::Server_RequestMoveItem_Implementation(UC_InvenComponent* SrcComp, int32 SrcIdx, UC_InvenComponent* DstComp, int32 DstIdx)
+{
+	if (SrcComp == DstComp)
+	{
+		SrcComp->SwapInvenEntry(SrcIdx, DstIdx);
+	}
+	else
+	{
+		SrcComp->TransferItemTo(SrcIdx, DstComp, DstIdx);
+	}
+}

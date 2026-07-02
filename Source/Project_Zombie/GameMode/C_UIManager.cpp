@@ -45,5 +45,5 @@ void AC_UIManager::BeginPlay()
 	}
 
 	m_InventoryWidget->AddToViewport();
-	m_InventoryWidget->SetVisibility(ESlateVisibility::Visible);
+	m_InventoryWidget->SetVisibility(ESlateVisibility::Collapsed);
 }

@@ -21,6 +21,8 @@
 #include "Actor/Components/C_TurnInPlaceComponent.h"
 #include "Actor/Components/C_InvenComponent.h"
 #include "GameMode/C_UIManager.h"
+#include "UI/InvenUI/C_InventoryGridWidget.h"
+#include "UI/InvenUI/C_InventoryWidget.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
 
 AC_BasicPlayer::AC_BasicPlayer()
@@ -83,6 +85,8 @@ AC_BasicPlayer::AC_BasicPlayer()
 
 	m_InvenComponent = CreateDefaultSubobject<UC_InvenComponent>(TEXT("InvenComponent"));
 	
+
+	
 	// ControllerFSM Component
 	m_ControllerFSMComponent = CreateDefaultSubobject<UC_ControllerFSMComponent>(TEXT("ControllerFSMComponent"));
 }
@@ -93,6 +97,19 @@ void AC_BasicPlayer::BeginPlay()
 
 	UpdateBoostBarHUD();
 
+	// InventoryWidget에 Player의 InvenComponent 초기화 및 델리게이트 진행
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	
+	if (!PC) return;
+	
+	AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD());
+	
+	if (!UIManager) return;
+	
+	UIManager->GetInventoryWidget()->GetPlayerGridWidget()->SetInvenComponent(m_InvenComponent);
+	// 까지
+	
+	
 	// 입력 시스템 초기화
 	//InitInput();
 }

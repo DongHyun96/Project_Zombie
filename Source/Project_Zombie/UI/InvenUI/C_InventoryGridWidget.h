@@ -26,8 +26,14 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void RefreshSlotAt(int32 SlotIndex, const FInventoryEntry& ItemData);
 
+	// InvenComponent의 델리게이트 신호를 받을 함수
+	//UPROPERTY(ReplicatedUsing = OnRep_InventoryItems, EditAnywhere, BlueprintReadWrite, Category = "Inventory")
+	//void OnComponentSlotChanged(int32 SlotIndex, const FInventoryEntry& ItemData);
 public:
 	const TArray<class UC_ItemSlotWidget*>& GetSlotArr() const { return SlotWidgets; }
+	
+	void SetInvenComponent(class UC_InvenComponent* InventoryComponent);
+	UC_InvenComponent* GetInvenComponent() const {return InvenComp;}
 protected:
 	// C_ItemSlot을 배치할 GridPanel
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
@@ -46,6 +52,8 @@ protected:
 	int32 Column = 0;
 
 	// 생성된 슬롯 위젯들을 순서대로 담아둘 동적 배열
-	UPROPERTY()
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<class UC_ItemSlotWidget*> SlotWidgets;
+	
+	class UC_InvenComponent* InvenComp{};
 };

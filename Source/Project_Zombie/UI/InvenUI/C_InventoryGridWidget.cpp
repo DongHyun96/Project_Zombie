@@ -22,37 +22,41 @@ void UC_InventoryGridWidget::NativeConstruct()
 
         // 슬롯 위젯에게 자신이 몇 번째 칸인지 인덱스를 부여 (드래그 앤 드롭 구현 시 필수)
         NewSlot->SetSlotIndex(i); 
-
+        NewSlot->SetGridWidget(this);
         // 행(Row)과 열(Column) 계산 (이미지의 나누기/나머지 로직)
         int32 CurRow = i / Column;
         int32 CurColumn = i % Column;
-
+        
         ItemGridPanel->AddChildToUniformGrid(NewSlot, CurRow, CurColumn);
-
+        //NewSlot->SetGridWidget(ItemGridPanel);
         // 추적 관리를 위해 배열에 보관 
         SlotWidgets.Add(NewSlot);
     }
 
-    APlayerController* PC = GetOwningPlayer();
-    if (PC && PC->GetPawn())
-    {
-        // 프로젝트 플레이어 캐릭터 타입으로 변환
-        if (AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(PC->GetPawn()))
-        {
-            if (UC_InvenComponent* InvenComp = Player->GetInvenComponent())
-            {
-                // 델리게이트 중복 방지, TODO : 근데 이 부분이 왜 두번 호출됬는지 확인하고 조치를 취할 것.
-                // 두번 호출되진 않는거 같은데 델리게이트 중복 오류가 뜨긴함.
-                InvenComp->OnInventorySlotChanged.RemoveDynamic(this, &UC_InventoryGridWidget::RefreshSlotAt);
-
-                // 인벤의 슬롯이 바뀔 때 마다 내 RefreshSlotAt 함수가 정확한 타겟만 찍어서 수행됩니다.
-                InvenComp->OnInventorySlotChanged.AddDynamic(this, &UC_InventoryGridWidget::RefreshSlotAt);
-
-                // UI 창이 켜지는 최초 시점에는 도화지가 비어있으므로 한 번 정비해줍니다.
-                RefreshAllSlots(InvenComp->GetInventoryItems());
-            }
-        }
-    }
+    if (InvenComp)
+        RefreshAllSlots(InvenComp->GetInventoryItems());
+    
+    
+    //APlayerController* PC = GetOwningPlayer();
+    //if (PC && PC->GetPawn())
+    //{
+    //    // 프로젝트 플레이어 캐릭터 타입으로 변환
+    //    if (AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(PC->GetPawn()))
+    //    {
+    //        if (UC_InvenComponent* pInvenComp = Player->GetInvenComponent())
+    //        {
+    //            // 델리게이트 중복 방지, TODO : 근데 이 부분이 왜 두번 호출됬는지 확인하고 조치를 취할 것.
+    //            // 두번 호출되진 않는거 같은데 델리게이트 중복 오류가 뜨긴함.
+    //            pInvenComp->OnInventorySlotChanged.RemoveDynamic(this, &UC_InventoryGridWidget::RefreshSlotAt);
+    //
+    //            // 인벤의 슬롯이 바뀔 때 마다 내 RefreshSlotAt 함수가 정확한 타겟만 찍어서 수행됩니다.
+    //            pInvenComp->OnInventorySlotChanged.AddDynamic(this, &UC_InventoryGridWidget::RefreshSlotAt);
+    //
+    //            // UI 창이 켜지는 최초 시점에는 도화지가 비어있으므로 한 번 정비해줍니다.
+    //            RefreshAllSlots(InvenComp->GetInventoryItems());
+    //        }
+    //    }
+    //}
     //SetVisibility(ESlateVisibility::Visible);
 }
 
@@ -91,4 +95,27 @@ void UC_InventoryGridWidget::RefreshSlotAt(int32 SlotIndex, const FInventoryEntr
 
         SlotWidgets[SlotIndex]->UpdateSlot(ItemData, CoreData);
     }
+}
+
+void UC_InventoryGridWidget::SetInvenComponent(class UC_InvenComponent* InventoryComponent)
+{
+    if (InventoryComponent == nullptr)
+    {
+        if (InvenComp)
+        {
+            // 기존 델리게이트 제거. TODO : 매번 지우는 방법보다 더 좋은 방법 찾아보기.
+            InvenComp->OnInventorySlotChanged.RemoveDynamic(this, &UC_InventoryGridWidget::RefreshSlotAt);
+        }
+        
+    }
+    else
+    {
+        //InvenComp = InventoryComponent;
+        // 인벤의 슬롯이 바뀔 때 마다 내 RefreshSlotAt 함수가 정확한 타겟만 찍어서 수행됩니다.
+        InventoryComponent->OnInventorySlotChanged.AddDynamic(this, &UC_InventoryGridWidget::RefreshSlotAt);        
+    }
+    
+    InvenComp = InventoryComponent;
+    
+    
 }
