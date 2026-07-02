@@ -6,6 +6,25 @@
 #include "Actor/ItemActor/Weapon/C_WeaponBase.h"
 #include "C_ThrowableWeaponBase.generated.h"
 
+UENUM(BlueprintType)
+enum class EThrowableType : uint8
+{
+	None,
+	Grenade,
+	Molotov,
+};
+
+UENUM(BlueprintType)
+enum class EThrowableState : uint8
+{
+	None,
+	RemovePin,
+	Ready,
+	Thorw,
+	Thrown,
+	Exploded,
+};
+
 UCLASS()
 class PROJECT_ZOMBIE_API AC_ThrowableWeaponBase : public AC_WeaponBase
 {
@@ -75,19 +94,38 @@ protected: // 충돌체 관련
 	
 
 public: // 몽타주 관련
-	
-	// 핀 제거 동작 몽타주
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)
-	UAnimMontage* m_RemovePinMontage;
 
-	// 투척 준비 동작 몽타주
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)
-	UAnimMontage* m_ReadyMontage;
-
-	// 투척 동작 몽타주
+	// 몽타주 (몽타주 안에서 세션 나누어서 애님 노티파이 이벤트 발생)
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)
 	UAnimMontage* m_ThrowMontage;
 
+	// Section 이름들
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)
+	FName m_RemovePinSectionName;
+	
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)
+	FName m_ReadySectionName;
+	
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)
+	FName m_ThrowSectionName;
+
+public: // Throwable Weapon의 특성 관련
+	
+	// 핀 제거 가능 여부
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)
+	bool m_bHasPin;
+
+	// 쿠킹 가능 여부 (R키를 눌렀을 때)
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)
+	bool m_bIsCookable;
+
+	// 폭발까지 걸리는 시간 (핀 제거 후, 폭발까지 걸리는 시간)
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)
+	float m_FuseTime;
+
+	// 투척 속도
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)
+	float m_ThrowSpeed;
 
 protected:
 	
@@ -101,25 +139,33 @@ protected:
 	UPROPERTY()
 	AC_BasicPlayer* m_WeaponUser;
 
+	// Throwable Weapon의 타입
+	EThrowableType m_ThrowableType;
+
+	// Throwable Weapon의 상태
+	EThrowableState m_ThrowableState;
+
+
+private:
 	// 투척 과정 중인지
-	UPROPERTY(BlueprintReadOnly, Category = "Throwable State")
 	bool m_bIsThrowing;
 	
 	// 버튼을 누르고 있는지
-	UPROPERTY(BlueprintReadOnly, Category = "Throwable State")
 	bool m_bIsCharging;
 
 	// 쿠킹이 시작되었는지
-	UPROPERTY(BlueprintReadOnly, Category = "Throwable State")
 	bool m_bIsCooking;
+
+	// 마우스를 떼었는지
+	bool m_bWantsThrow;
 
 protected: 
 
-	// 투척류의 Fuse Time (핀 제거 후, 폭발까지 걸리는 시간)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Throwable Weapon")
-	float m_FuseTime;
+	//// 투척류의 Fuse Time (핀 제거 후, 폭발까지 걸리는 시간)
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Throwable Weapon")
+	//float m_FuseTime;
 
-	// 남은 Fuse Time (핀 제거 후, 폭발까지 남은 시간)
-	UPROPERTY(BlueprintReadOnly, Category = "Throwable Weapon")
-	float m_RemainingFuseTime;
+	//// 남은 Fuse Time (핀 제거 후, 폭발까지 남은 시간)
+	//UPROPERTY(BlueprintReadOnly, Category = "Throwable Weapon")
+	//float m_RemainingFuseTime;
 };

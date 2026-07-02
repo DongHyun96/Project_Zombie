@@ -22,7 +22,22 @@ AC_ThrowableWeaponBase::AC_ThrowableWeaponBase()
 	m_MainCollider = CreateDefaultSubobject<UCapsuleComponent>("Capsule");
 	m_MainCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision); // 직접 투척하기 이전까지는 Collision을 비활성화 처리해주어야 한다
 	SetRootComponent(m_MainCollider);
+
+	// 몽타주 Section 이름 초기화
+	m_RemovePinSectionName = TEXT("RemovePin");
+	m_ReadySectionName = TEXT("Ready");
+	m_ThrowSectionName = TEXT("Throw");
 	
+	// 투척류 상태 초기화
+	m_ThrowableState = EThrowableState::None;
+
+	// 투척류 변수 초기화
+	m_bIsThrowing = false;
+	m_bIsCharging = false;
+	m_bIsCooking = false;
+	m_bWantsThrow = false;
+
+
 	// TODO : PathSpline으로 예측 경로 그리기 처리 시, SplineComponent 및 PredictedEndPoint StaticMesh 또한 CreateDefaultSubobject로 생성해줄 것
 	// TODO : Explosion Sphere (폭발 반경 Sphere) 는 만들어주어야 함
 }
@@ -109,8 +124,12 @@ bool AC_ThrowableWeaponBase::OnStartFire(class AC_BasicPlayer* _WeaponUser)
 	m_bIsCharging = true;
 	m_bIsThrowing = true;
 	m_bIsCooking = false;
+	m_bWantsThrow = false;
 	
-	_WeaponUser->PlayAnimMontage(m_RemovePinMontage);
+	m_ThrowableState = m_bHasPin ? EThrowableState::RemovePin : EThrowableState::Ready;
+	 
+	// 투척류 애니메이션 재생
+	_WeaponUser->PlayAnimMontage(m_ThrowMontage, 1.f, m_bHasPin ? m_RemovePinSectionName : m_ReadySectionName);
 
 	return true;
 }
@@ -122,15 +141,36 @@ bool AC_ThrowableWeaponBase::OnFireOnGoing(AC_BasicPlayer* _WeaponUser)
 
 bool AC_ThrowableWeaponBase::OnFireEnd(AC_BasicPlayer* _WeaponUser)
 {
-	return false;
+	if (!_WeaponUser || !m_bIsThrowing)
+		return false;
+
+	m_bIsCharging = false;
+	m_bWantsThrow = true;
+
+	UAnimInstance* AnimInstance = _WeaponUser->GetMesh()->GetAnimInstance();
+	if (!AnimInstance)
+		return false;
+
+	AnimInstance->Montage_Resume(m_ThrowMontage);
+
+	return true;
 }
 
 void AC_ThrowableWeaponBase::OnRemovePin()
 {
-	// 핀 제거 후, 투척 준비 동작으로 넘어감
-	m_bIsCooking = true;
+	if (!m_bIsThrowing)
+		return;
 
-	m_WeaponUser->PlayAnimMontage(m_ReadyMontage);
+	if (!m_bHasPin)
+		return;
+
+
+	// R 키를 먼저 눌러둔 경우, 핀 제거 후 바로 타이머 시작
+	if (m_bWantsThrow)
+	{
+		m_bIsCooking = true;
+		// TODO : 타이머 시작 (m_FuseTime 이후 폭발 처리)
+	}
 }
 
 void AC_ThrowableWeaponBase::OnThrowReadyLoop()
@@ -138,11 +178,19 @@ void AC_ThrowableWeaponBase::OnThrowReadyLoop()
 	if (!m_bIsThrowing)
 		return;
 
-	// 차징 중이면, 투척 동작으로 넘어가지 않음
-	if (m_bIsCharging)
+	// 마우스를 뗀 경우, Loop에서 바로 투척 동작으로 넘어감
+	if (m_bWantsThrow)
 		return;
 
-	m_WeaponUser->PlayAnimMontage(m_ThrowMontage);
+	// 차징 중이면, 투척 동작으로 넘어가지 않음
+	if (m_bIsCharging)
+	{
+		UAnimInstance* AnimInstance = m_WeaponUser->GetMesh()->GetAnimInstance();
+		if (!AnimInstance)
+			return;
+
+		AnimInstance->Montage_Pause(m_ThrowMontage);
+	}
 }
 
 void AC_ThrowableWeaponBase::OnThrowThrowable()
