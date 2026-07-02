@@ -61,6 +61,9 @@ bool AC_ThrowableWeaponBase::AttachToHand(USceneComponent* _ParentMesh)
 	AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(_ParentMesh->GetOwner());
 	if (!Player) return false; // 장착 시도하는 Owner Character가 Player형이 아닌 경우, return false
 	
+	// 투척류를 장착하는 경우, 투척류 상태 초기화
+	ResetThrowableState();
+
 	SetActorHiddenInGame(false);
 
 	m_ProjectileMovement->Deactivate();
@@ -100,6 +103,9 @@ bool AC_ThrowableWeaponBase::AttachToHolster(USceneComponent* _ParentMesh)
 	// 투척류를 핀까지만 뽑았고 쿠킹을 안했을 시 다시 집어넣음
 	// 투척류를 안전손잡이까지 뽑았다면 현재 위치에 현재 투척류 그냥 바닥에 떨굼
 
+	// 투척류를 집어넣는 경우, 투척류 상태 초기화
+	CancleThrowAction();
+
 	SetActorHiddenInGame(true);
 	m_ProjectileMovement->Deactivate();
 
@@ -114,8 +120,24 @@ bool AC_ThrowableWeaponBase::AttachToHolster(USceneComponent* _ParentMesh)
 
 bool AC_ThrowableWeaponBase::OnStartFire(class AC_BasicPlayer* _WeaponUser)
 {
-	if (!_WeaponUser || m_bIsThrowing)
+	if (!_WeaponUser)
 		return false;
+
+	// 투척 몽타주 꼬이는 경우 방지
+	if (m_bIsThrowing)
+	{
+		// 이미 투척 동작 중이면
+		if (_WeaponUser->GetMesh()->GetAnimInstance()->Montage_IsPlaying(m_ThrowMontage))
+		{
+			return false; 
+		}
+
+		// 투척 동작 중이지만, 애님 몽타주가 끝난 경우 상태 초기화 후 다시 투척 동작 시작
+		else
+		{
+			ResetThrowableState(); 
+		}
+	}
 
 	// 무기 사용자를 저장해둠 (애님 노티파이 이벤트에서 사용하기 위함)
 	m_WeaponUser = _WeaponUser;
@@ -196,4 +218,40 @@ void AC_ThrowableWeaponBase::OnThrowReadyLoop()
 void AC_ThrowableWeaponBase::OnThrowThrowable()
 {
 
+}
+
+void AC_ThrowableWeaponBase::CancleThrowAction()
+{
+	if (!m_WeaponUser)
+		return;
+
+	UAnimInstance* AnimInstance = m_WeaponUser->GetMesh()->GetAnimInstance();
+
+	if (AnimInstance)
+	{
+		// 차징되어 Pause 된 상태라면, Resume 후 Stop 처리
+		if (m_bIsCharging)
+		{
+			AnimInstance->Montage_Resume(m_ThrowMontage);
+		}
+
+		// 투척 동작 취소 처리
+		AnimInstance->Montage_Stop(0.2f, m_ThrowMontage);
+	}
+
+	/// TODO : 타이머 취소 처리
+
+	ResetThrowableState();
+}
+
+void AC_ThrowableWeaponBase::ResetThrowableState()
+{
+	m_ThrowableState = EThrowableState::None;
+
+	m_bIsThrowing = false;
+	m_bIsCharging = false;
+	m_bIsCooking = false;
+	m_bWantsThrow = false;
+
+	m_WeaponUser = nullptr;
 }

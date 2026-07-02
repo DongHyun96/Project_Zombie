@@ -71,6 +71,17 @@ public: // 애님 노티파이 관련
 	UFUNCTION(BlueprintCallable, Category = "Throwable|AnimNotify")
 	void OnThrowThrowable();
 
+private:
+	/// <summary>
+	/// 투척 취소 동작
+	/// </summary> 
+	void CancleThrowAction();
+
+	/// <summary>
+	///	Throwable Weapon의 상태 초기화
+	/// </summary>
+	void ResetThrowableState();
+
 
 	/* Socket Name 관련 */
 protected: 
