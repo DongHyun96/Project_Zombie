@@ -3,3 +3,14 @@
 
 #include "C_EnemySkillBase.h"
 
+#include "C_BasicEnemy.h"
+#include "C_EnemySkillData.h"
+
+UC_EnemySkillBase::UC_EnemySkillBase()
+{
+}
+
+void UC_EnemySkillBase::Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data)
+{
+}
+

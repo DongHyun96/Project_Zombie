@@ -25,12 +25,25 @@ struct FSkillSlotInfo
 {
 	GENERATED_BODY()
 
+public:
+	// 슬롯 종류
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	ESkillSlot								SlotType;
 
 	// 프라이머리 데이터에셋 비동기로딩 사용시 TSoftObjectPtr 사용
+	// 에디터에서 설정할 데이터 에셋
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TSoftObjectPtr<class UC_EnemySkillData>	SkillData; 
+
+	// Transient를 붙이면 에디터에 노출되지 않고 저장도 되지 않는다.
+	// 런타임에 한번만 로드
+	UPROPERTY(Transient)
+	TObjectPtr<class UC_EnemySkillData> LoadedSkillData = nullptr;
+	
+	// 런타임에 한번만 생성
+	UPROPERTY(Transient)
+	TObjectPtr<class UC_EnemySkillBase> SkillInstance = nullptr;
+
 };
 
 
@@ -42,13 +55,22 @@ class PROJECT_ZOMBIE_API UC_EnemySkillComponent : public UActorComponent
 protected:
 	// 스킬 슬롯
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Skill", meta = (TitleProperty = "SlotType"))
-	TArray<FSkillSlotInfo>			m_SkillSlots;
+	TArray<FSkillSlotInfo>		m_SkillSlots;
+
+	// 스킬을 사용중인지 체크
+	UPROPERTY()
+	bool						bUsingSkill = false;
 
 protected:
 	virtual void BeginPlay() override;
+	/// <summary>
+	/// 게임 시작할 때 딱 한번만 실행되는 스킬 초기화 함수
+	/// </summary>
+	void InitializeSkills();
 
 public:	
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	void UseSkill(ESkillSlot _Slot);
 
 public:
 	UC_EnemySkillComponent();

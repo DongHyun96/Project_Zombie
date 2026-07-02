@@ -24,6 +24,9 @@ public:
 	ESkillType SkillType; // 스킬 타입
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillInfo")
+	TSubclassOf<class UC_EnemySkillBase> SkillClass; // 스킬 클래스
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillInfo")
 	FName SkillName; // 스킬 이름
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillInfo")
