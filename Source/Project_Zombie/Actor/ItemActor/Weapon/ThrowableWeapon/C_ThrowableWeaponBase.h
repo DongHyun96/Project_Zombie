@@ -82,6 +82,27 @@ private:
 	/// </summary>
 	void ResetThrowableState();
 
+private: // 투척 관련 처리
+
+	/// <summary>
+	/// 플레이어가 바라보는 방향을 기준으로 투척 방향 반환
+	/// </summary> 
+	FVector GetThrowDirection() const;
+
+	/// <summary>
+	/// 손에 들고 있는 위치를 기준으로 투척 시작 위치 반환
+	/// </summary> 
+	FVector GetLaunchLocation(const FVector& _ThrowDirection) const;
+
+	/// <summary>
+	/// 충돌 활성화하고 플레이어와 충돌하지 않도록 설정
+	/// </summary> 
+	void SetupThrowCollision();
+
+	/// <summary>
+	/// 투척 시작 위치와 방향을 기준으로 Projectile Movement Component를 사용하여 투척
+	///	</summary>
+	void LaunchCurrentActorAsProjectile(const FVector& _ThrowDirection);
 
 	/* Socket Name 관련 */
 protected: 
@@ -123,20 +144,29 @@ public: // 몽타주 관련
 public: // Throwable Weapon의 특성 관련
 	
 	// 핀 제거 가능 여부
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|State")
 	bool m_bHasPin;
 
 	// 쿠킹 가능 여부 (R키를 눌렀을 때)
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|State")
 	bool m_bIsCookable;
 
 	// 폭발까지 걸리는 시간 (핀 제거 후, 폭발까지 걸리는 시간)
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|State")
 	float m_FuseTime;
 
 	// 투척 속도
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|State")
 	float m_ThrowSpeed;
+
+	// Player의 Hand Socket 위치에서 Forward 방향으로 Offset만큼 이동한 위치에서 투척
+	// Player Collider와 충돌하는 문제를 방지하기 위해
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|Launch")
+	float m_LaunchForwardOffset;
+
+	// Player의 Hand Socket 위치에서 Upward 방향으로 Offset만큼 이동한 위치에서 투척
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|Launch")
+	float m_LaunchUpwardOffset;
 
 protected:
 	

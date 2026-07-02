@@ -8,6 +8,7 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "GameMode/C_UIManager.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
+#include "Utility/C_Util.h"
 
 const FName AC_ThrowableWeaponBase::s_HolsterSocketName = TEXT("ThrowableHolsterSocket");
 
@@ -23,20 +24,30 @@ AC_ThrowableWeaponBase::AC_ThrowableWeaponBase()
 	m_MainCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision); // 직접 투척하기 이전까지는 Collision을 비활성화 처리해주어야 한다
 	SetRootComponent(m_MainCollider);
 
+	// Projectile Movement Component의 움직일 대상을 MainCollider로 설정
+	m_ProjectileMovement->SetUpdatedComponent(m_MainCollider);
+
+	// 처음에는 손에 들고 있는 상태이므로 이동 금지
+	m_ProjectileMovement->bAutoActivate = false; 
+
+	// 날아가는 방향따라 회전
+	m_ProjectileMovement->bRotationFollowsVelocity = true;
+
+	// 중력 적용
+	m_ProjectileMovement->ProjectileGravityScale = 1.f; 
+
+
 	// 몽타주 Section 이름 초기화
 	m_RemovePinSectionName = TEXT("RemovePin");
 	m_ReadySectionName = TEXT("Ready");
 	m_ThrowSectionName = TEXT("Throw");
 	
+	// 투척류 Launch 위치 Offset 초기화
+	m_LaunchUpwardOffset = 100.f;
+	m_LaunchForwardOffset = 50.f;
+
 	// 투척류 상태 초기화
-	m_ThrowableState = EThrowableState::None;
-
-	// 투척류 변수 초기화
-	m_bIsThrowing = false;
-	m_bIsCharging = false;
-	m_bIsCooking = false;
-	m_bWantsThrow = false;
-
+	ResetThrowableState();
 
 	// TODO : PathSpline으로 예측 경로 그리기 처리 시, SplineComponent 및 PredictedEndPoint StaticMesh 또한 CreateDefaultSubobject로 생성해줄 것
 	// TODO : Explosion Sphere (폭발 반경 Sphere) 는 만들어주어야 함
@@ -213,11 +224,25 @@ void AC_ThrowableWeaponBase::OnThrowReadyLoop()
 
 		AnimInstance->Montage_Pause(m_ThrowMontage);
 	}
+
+	// TODO: Turn in Place 처리 
+	// 투척류를 들고 있는 상태에서 투척류를 들고 있는 방향으로 플레이어가 회전할 수 있도록 처리
 }
 
 void AC_ThrowableWeaponBase::OnThrowThrowable()
 {
+	if (!m_bIsThrowing || !m_WeaponUser)
+		return;
 
+	if (!m_MainCollider || !m_ProjectileMovement)
+		return;
+
+
+
+	// TODO 
+	// 수류탄 던짐
+	// EquippedComponent의 CurrentWeapon은 nullptr 또는 다음 수류탄으로 변경
+	// 수류탄 개수 감소
 }
 
 void AC_ThrowableWeaponBase::CancleThrowAction()
@@ -254,4 +279,41 @@ void AC_ThrowableWeaponBase::ResetThrowableState()
 	m_bWantsThrow = false;
 
 	m_WeaponUser = nullptr;
+}
+
+FVector AC_ThrowableWeaponBase::GetThrowDirection() const
+{
+	if (!m_WeaponUser)
+		return GetActorForwardVector();
+
+	// 플레이어가 바라보는 방향을 기준으로 투척 방향 반환
+	return m_WeaponUser->GetActorForwardVector();
+}
+
+FVector AC_ThrowableWeaponBase::GetLaunchLocation(const FVector& _ThrowDirection) const
+{
+	FVector LaunchLocation = GetActorLocation();
+
+	if (!m_WeaponUser)
+	{
+		LaunchLocation += _ThrowDirection * m_LaunchForwardOffset;
+		LaunchLocation += FVector::UpVector * m_LaunchUpwardOffset;
+	}
+	else
+	{
+		const FVector PlayerLocation = m_WeaponUser->GetActorLocation();
+
+		LaunchLocation += _ThrowDirection * m_LaunchForwardOffset;
+		LaunchLocation += FVector::UpVector * m_LaunchUpwardOffset;
+	}
+
+	return LaunchLocation;
+}
+
+void AC_ThrowableWeaponBase::SetupThrowCollision()
+{
+}
+
+void AC_ThrowableWeaponBase::LaunchCurrentActorAsProjectile(const FVector& _ThrowDirection)
+{
 }
