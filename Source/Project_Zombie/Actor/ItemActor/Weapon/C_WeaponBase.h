@@ -54,8 +54,6 @@ public:
 	/*virtual void StartAttack(class AC_BasicPlayer* _WeaponUser) PURE_VIRTUAL(AC_WeaponBase::StartAttack, );
 	virtual void StopAttack(AC_BasicPlayer* _WeaponUser) PURE_VIRTUAL(AC_WeaponBase::StopAttack, );*/
 
-
-
 	/// <summary>
 	/// 무기집에 무기 붙이기
 	/// </summary>

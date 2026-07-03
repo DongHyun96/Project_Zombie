@@ -179,7 +179,6 @@ bool AC_GunBase::AttachToHolster(USceneComponent* _ParentMesh)
 void AC_GunBase::CompleteReload()
 {
 	m_CurrentAmmo = m_MaxAmmo;
-	GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Cyan, TEXT("Reload Complete"));
 
 	// 새로 장전된 장탄수 UI 업데이트
 	if (AC_UIManager* UIManager = Cast<AC_UIManager>(GetWorld()->GetFirstPlayerController()->GetHUD()))

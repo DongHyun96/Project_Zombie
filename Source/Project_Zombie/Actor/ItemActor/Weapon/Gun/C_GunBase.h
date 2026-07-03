@@ -110,6 +110,9 @@ public:
 	void PlayFireEffects();
 
 public:
+	USkeletalMeshComponent* GetWeaponMesh() { return m_WeaponMesh; }
+
+public:
 	
 	/// <summary>
 	/// 발사 시작 동작 처리 (기본 키 : LMB Started (발사 키 클릭 이벤트 발생 시))

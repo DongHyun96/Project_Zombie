@@ -25,7 +25,7 @@ protected:
 	// HandState
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player Basic State")
 	EHandState m_HandState;
-	
+
 	// 속도
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
 	float	m_GroundSpeed;
@@ -49,6 +49,10 @@ protected:
 	// 웅크리기
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
 	bool	m_IsCrouch;
+
+	// 애니그래프(AnimGraph)에서 참조할 왼손 IK Transform 변수
+	UPROPERTY(BlueprintReadOnly, Category = "IK")
+	FTransform m_LeftHandIKTransform;
 
 public:
 	virtual void NativeInitializeAnimation() override;

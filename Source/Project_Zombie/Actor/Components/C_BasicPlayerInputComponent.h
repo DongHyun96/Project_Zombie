@@ -155,6 +155,8 @@ private:
 	void FireOnGoing();
 	void FireEnd();
 	
+	void Reload();
+	
 	// 인벤토리를 여닫는 함수
 	void ToggleInventoryWidget();
 

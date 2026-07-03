@@ -1,8 +1,7 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "C_BasicCharacterAnimInstance.h"
-
 #include "AnimMontagePriority/C_MontagePriorityMetaData.h"
 #include "DevloperSetting/C_MontagePrioritySettings.h"
 #include "Utility/C_Util.h"
