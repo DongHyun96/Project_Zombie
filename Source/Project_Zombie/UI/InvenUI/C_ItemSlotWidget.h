@@ -7,6 +7,7 @@
 #include "GlobalData.h"
 #include "C_ItemSlotWidget.generated.h"
 
+class UC_DragDropOperation;
 /**
  * 
  */
@@ -24,7 +25,7 @@ public:
 	void SetGridWidget(class UC_InventoryGridWidget* GridWidget) { ParentGrid = GridWidget; }
 	
 	// 이 슬롯이 소속된 인벤토리 컴포넌트 세팅 및 가져오기
-	void SetAssociatedComponent(class UC_InvenComponent* InComp) { MyAssociatedInvenComp = InComp; }
+	void SetAssociatedComponent(class UC_InvenComponent* InComp) { AssociatedInvenComp = InComp; }
 	
 	// 위젯을 클릭하는 마우스 버튼 감지 함수
 	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
@@ -34,6 +35,10 @@ public:
 	
 	// 위젯에게 드래그된 것이 드롭되었을 때 함수
 	virtual bool NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
+	
+protected:
+	// 드래그시 보이는 이미지 생성 및 이미지 위치설정
+	void InitDragVisual(UC_DragDropOperation* InDragDropOp);
 	
 protected:
 	// 아이템 아이콘
@@ -48,5 +53,5 @@ protected:
 	
 	// 이 슬롯이 참조하는 실제 데이터 컴포넌트
 	UPROPERTY()
-	class UC_InvenComponent* MyAssociatedInvenComp = nullptr;
+	class UC_InvenComponent* AssociatedInvenComp = nullptr;
 };

@@ -56,7 +56,11 @@ FReply UC_ItemSlotWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, c
 
 void UC_ItemSlotWidget::NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& OutOperation)
 {
-    const TArray<FInventoryEntry>& ItemArr = Cast<AC_BasicPlayer>(GetOwningPlayerPawn())->GetInvenComponent()->GetInventoryItems();
+    if (!AssociatedInvenComp) return;
+    
+    const TArray<FInventoryEntry>& ItemArr = AssociatedInvenComp->GetInventoryItems();
+    
+    if (!ItemArr.IsValidIndex(curSlotIdx)) return;
     
     FInventoryEntry entry = ItemArr[curSlotIdx];
 
@@ -64,24 +68,13 @@ void UC_ItemSlotWidget::NativeOnDragDetected(const FGeometry& InGeometry, const 
     
     UC_DragDropOperation* DragOperation = NewObject<UC_DragDropOperation>();
     
-    //UC_Util::Print(curSlotIdx);
-    
     // DragVisual 생성
-    UBorder* Border = NewObject<UBorder>();
-    FLinearColor BorderColor = FLinearColor(1.0f, 1.0f, 1.0f, 0.1f); // (R, G, B, A)
-    Border->SetBrushColor(BorderColor);
-    UImage* DragVisual = NewObject<UImage>(this);
-    
-    DragVisual->SetBrush(ItemSlot->Brush);
-    DragVisual->Brush.ImageSize = FVector2D(64.f, 64.f);
-    Border->SetContent(DragVisual);
+    InitDragVisual(DragOperation);
     
     DragOperation->SetItemEntry(entry);
     DragOperation->SetSlotIndex(curSlotIdx);
-    
-    DragOperation->DefaultDragVisual = Border;
-    
-    DragOperation->Pivot = EDragPivot::CenterCenter;
+    DragOperation->SetSourceComponent(AssociatedInvenComp);
+
     
     OutOperation = DragOperation;
 }
@@ -91,25 +84,35 @@ bool UC_ItemSlotWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDro
 {
     UC_DragDropOperation* DragOperation = Cast<UC_DragDropOperation>(InOperation);
     
-    UC_InvenComponent* invencomp = Cast<AC_BasicPlayer>(GetOwningPlayerPawn())->GetInvenComponent();
+    if (!DragOperation) return false;
+    
+    if (!AssociatedInvenComp) return false;
+    
+    UC_InvenComponent* FromInvenComp = DragOperation->GetSourceComponent();
+    UC_InvenComponent* ToInvenComp = AssociatedInvenComp;;
+    
+    if (!FromInvenComp || !ToInvenComp) return false;
     
     int32 FromSlot = DragOperation->GetSlotIndex();
     int32 ToSlot = curSlotIdx;
     
-    if (!invencomp) return Super::NativeOnDrop(InGeometry, InDragDropEvent, InOperation);
+    ToInvenComp->Server_RequestMoveItem(FromInvenComp, FromSlot, ToInvenComp, ToSlot);
     
-    if (invencomp->SwapInvenEntry(ToSlot, FromSlot))
-    {
-        UC_Util::Print(FromSlot);
-        UC_Util::Print(ToSlot);
+    return true;
+}
 
-        ParentGrid->RefreshSlotAt(FromSlot, invencomp->GetItemAt(FromSlot));
-        ParentGrid->RefreshSlotAt(ToSlot, invencomp->GetItemAt(ToSlot));
-        return true;
-    }
+void UC_ItemSlotWidget::InitDragVisual(UC_DragDropOperation* InDragDropOp)
+{
+    UBorder* Border = NewObject<UBorder>();
+    FLinearColor BorderColor = FLinearColor(1.0f, 1.0f, 1.0f, 0.1f); // (R, G, B, A)
+    Border->SetBrushColor(BorderColor);
+    UImage* DragVisual = NewObject<UImage>(this);
     
+    DragVisual->SetBrush(ItemSlot->Brush);
+    DragVisual->Brush.ImageSize = FVector2D(64.f, 64.f);
+    Border->SetContent(DragVisual);
     
+    InDragDropOp->DefaultDragVisual = Border;
     
-    
-    return Super::NativeOnDrop(InGeometry, InDragDropEvent, InOperation);
+    InDragDropOp->Pivot = EDragPivot::CenterCenter;
 }

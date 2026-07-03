@@ -21,7 +21,7 @@ AC_Storage::AC_Storage()
 	RootComponent = MeshComp;
 	
 	SphereComp =  CreateDefaultSubobject<USphereComponent>(TEXT("SphereCollisionComp"));
-	SphereComp->SetSphereRadius(50.f);
+	SphereComp->SetSphereRadius(100.f);
 	SphereComp->SetupAttachment(RootComponent);
 	
 	InvenComp = CreateDefaultSubobject<UC_InvenComponent>(TEXT("InvenComponent"));
@@ -38,6 +38,7 @@ void AC_Storage::BeginPlay()
 		SphereComp->OnComponentEndOverlap.AddDynamic(this, &AC_Storage::OnOverlapEnd);
 		
 	}
+	
 }
 
 void AC_Storage::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,

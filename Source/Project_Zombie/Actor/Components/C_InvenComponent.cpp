@@ -30,6 +30,9 @@ bool UC_InvenComponent::SwapInvenEntry(int32 SlotIdx1, int32 SlotIdx2)
 	// 데이터 교환 (언리얼 내장 함수 사용으로 한 줄로 단축)
 	InventoryItems.Swap(SlotIdx1, SlotIdx2);
 	
+	OnInventorySlotChanged.Broadcast(SlotIdx1, InventoryItems[SlotIdx1]);
+	OnInventorySlotChanged.Broadcast(SlotIdx2, InventoryItems[SlotIdx2]);
+	
 	return true;
 }
 

@@ -4,6 +4,7 @@
 #include "C_UIManager.h"
 
 #include "Blueprint/UserWidget.h"
+#include "UI/InvenUI/C_InventoryGridWidget.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
 #include "UI/InvenUI/C_InventoryWidget.h"
 #include "Utility/C_Util.h"
@@ -43,7 +44,9 @@ void AC_UIManager::BeginPlay()
 		UC_Util::Print("From AC_UIManager::BeginPlay : InventoryWidget creation failed", FColor::Red, 5.f);
 		return;
 	}
-
+	//m_InventoryWidget->GetPlayerGridWidget()->InitializeGrid(nullptr);
+	//m_InventoryWidget->GetStorageGridWidget()->InitializeGrid(nullptr);
+	
 	m_InventoryWidget->AddToViewport();
 	m_InventoryWidget->SetVisibility(ESlateVisibility::Collapsed);
 }

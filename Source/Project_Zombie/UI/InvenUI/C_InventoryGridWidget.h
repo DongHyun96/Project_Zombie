@@ -12,6 +12,9 @@
  */
 //struct FInventoryEntry; // FInventoryEntry 전방선언.
 
+class UC_InvenComponent;
+class UC_ItemSlotWidget;
+
 UCLASS()
 class PROJECT_ZOMBIE_API UC_InventoryGridWidget : public UUserWidget
 {
@@ -25,14 +28,17 @@ public:
 	// 특정 슬롯만 콕 집어서 업데이트하고 싶을 때 (아이템 획득/소모/이동 시)
 	UFUNCTION(BlueprintCallable)
 	void RefreshSlotAt(int32 SlotIndex, const FInventoryEntry& ItemData);
-
+	virtual bool Initialize() override;
+	// 최초 1회 초기화
+	void InitializeGrid(UC_InvenComponent* InInvenComponent);
+	
 	// InvenComponent의 델리게이트 신호를 받을 함수
 	//UPROPERTY(ReplicatedUsing = OnRep_InventoryItems, EditAnywhere, BlueprintReadWrite, Category = "Inventory")
 	//void OnComponentSlotChanged(int32 SlotIndex, const FInventoryEntry& ItemData);
 public:
-	const TArray<class UC_ItemSlotWidget*>& GetSlotArr() const { return SlotWidgets; }
+	const TArray<UC_ItemSlotWidget*>& GetSlotArr() const { return SlotWidgets; }
 	
-	void SetInvenComponent(class UC_InvenComponent* InventoryComponent);
+	void SetInvenComponent(UC_InvenComponent* InventoryComponent);
 	UC_InvenComponent* GetInvenComponent() const {return InvenComp;}
 protected:
 	// C_ItemSlot을 배치할 GridPanel
@@ -41,7 +47,7 @@ protected:
 
 	// 에디터 디테일 패널에서 생성할 슬롯 위젯의 클래스를 지정합니다.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	TSubclassOf<class UC_ItemSlotWidget> SlotWidgetClass;
+	TSubclassOf<UC_ItemSlotWidget> SlotWidgetClass;
 
 	// 총 몇칸을 만들 예정인지.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -53,7 +59,7 @@ protected:
 
 	// 생성된 슬롯 위젯들을 순서대로 담아둘 동적 배열
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TArray<class UC_ItemSlotWidget*> SlotWidgets;
+	TArray<UC_ItemSlotWidget*> SlotWidgets;
 	
-	class UC_InvenComponent* InvenComp{};
+	UC_InvenComponent* InvenComp{};
 };
