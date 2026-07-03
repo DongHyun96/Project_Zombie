@@ -54,7 +54,7 @@ void AC_GunBase::Gun_init()
 	if (!m_DataCom) return;
 
 	// 외형(Mesh) 로드
-	if (USkeletalMesh* WeaponMeshAsset = Cast<USkeletalMesh>(m_DataCom->GetAssetData("WeaponMesh").LoadSynchronous()))
+	if (USkeletalMesh* WeaponMeshAsset = Cast<USkeletalMesh>(m_DataCom->GetAssetData("WeaponSkeletalMesh").LoadSynchronous()))
 	{
 		if (m_WeaponMesh)
 		{
@@ -74,6 +74,7 @@ void AC_GunBase::Gun_init()
 		return;
 	}
 
+	m_BaseDamage		= m_DataCom->GetData("BaseDamage");
 	m_MaxAmmo			= m_DataCom->GetData("MaxAmmo");
 	m_CurrentAmmo		= m_MaxAmmo;
 	m_FireRate			= m_DataCom->GetData("AttackRate");

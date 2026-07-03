@@ -40,6 +40,8 @@ protected:
 	// 현재 사격 버튼을 누르고 있는 상태인지 확인
 	bool					m_bIsFiring = false;
 
+	float					m_BaseDamage;
+
 	//현재 남아있는 총알 수
 	int32					m_CurrentAmmo;
 
@@ -52,10 +54,13 @@ protected:
 	// 연사 타이머를 관리하기 위한 핸들
 	FTimerHandle			m_FireTimerHandle;
 
+	UPROPERTY()
 	UAnimSequence*			m_FireAnimation;
 
+	UPROPERTY()
 	UAnimSequence*			m_ReloadAnimation;
 
+	UPROPERTY()
 	UStaticMesh*			m_ShellMesh;
 
 	
@@ -68,8 +73,10 @@ private:
 
 protected:
 	
+#if WITH_EDITOR
 	// 에디터에서 프로퍼티(속성)가 변경될 때마다 호출되는 엔진 함수입니다.
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
 
 	// Holster Socket Name (각 MeleeWeapon 블루프린트에서 Name 초기화 해줄 것)
 	// 이거는 무기마다 Socket Transform 다를 수 있다고 판단됨
@@ -101,12 +108,12 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void Gun_Reload();
 
-	/// <summary>
-	/// 방아쇠를 당겼을 때 애니메이션 재생 함수
-	/// <summary>
 	UFUNCTION(BlueprintCallable)
 	void CompleteReload();
 
+	/// <summary>
+	/// 방아쇠를 당겼을 때 애니메이션 재생 함수
+	/// <summary>
 	void PlayFireEffects();
 
 public:
