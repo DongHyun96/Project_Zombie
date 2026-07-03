@@ -2,6 +2,7 @@
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
 #include "GlobalEnum.h"
+#include "Net/Serialization/FastArraySerializer.h"
 #include "GlobalData.generated.h" // UHT	
 
 // 데이터 테이블로 관리할 아이템 정보
@@ -53,11 +54,15 @@ struct FItemData : public FTableRowBase
 
 // 인벤에 들어가 있는 아이템 정보
 USTRUCT(BlueprintType)
-struct FInventoryEntry
+struct FInventoryEntry : public FFastArraySerializerItem
 {
     GENERATED_BODY()
 
 public:
+    // ── [네트워크 및 UI용 인덱스] ──
+    UPROPERTY(BlueprintReadOnly, Category = "Inventory")
+    int32 SlotIndex = -1; //이 슬롯이 몇 번째 칸인지 기억하게 합니다.
+    
     // ── [식별 정보] ──
     // 데이터 테이블에서 해당 아이템을 찾을 고유 키 (예: "Weapon_M4", "Consumable_Potion")
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
@@ -83,7 +88,11 @@ public:
     //UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory | Weapon")
     //float Durability = 100.0f;
 public:
-    void Initialize()
+    // 빈 슬롯인지 확인하는 함수.
+    bool IsEmpty() const {return ItemRowName.IsNone() || Count == 0;}
+    
+    // 비우는 함수
+    void Clear()
     {
         ItemRowName = NAME_None;
         Count = 0;

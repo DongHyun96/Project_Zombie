@@ -321,6 +321,8 @@ void AC_BasicPlayer::ApplyWalkSpeed()
 	ApplyMovementSpeed();
 }
 
+
+
 void AC_BasicPlayer::UpdateBoostBarHUD() const
 {
 	if (APlayerController* PC = GetController<APlayerController>())
@@ -354,6 +356,28 @@ ETeamAttitude::Type AC_BasicPlayer::GetTeamAttitudeTowards(const AActor& _Other)
 	// 팀 설정 기능이 없는 Actor 인 경우 중립
 	return ETeamAttitude::Neutral;
 }
+
+bool AC_BasicPlayer::Server_RequestMoveItem_Validate(UC_InvenComponent* SrcComp, int32 SrcIdx,
+	UC_InvenComponent* DstComp, int32 DstIdx)
+{
+	return (SrcComp != nullptr && DstComp != nullptr);
+}
+
+void AC_BasicPlayer::Server_RequestMoveItem_Implementation(UC_InvenComponent* SrcComp, int32 SrcIdx,
+	UC_InvenComponent* DstComp, int32 DstIdx)
+{
+	if (SrcComp == DstComp)
+	{
+		// 동일 인벤토리 내부 스왑인 경우
+		SrcComp->SwapInvenEntry(SrcIdx, DstIdx);
+	}
+	else
+	{
+		// 플레이어 가방 <-> 창고 컴포넌트 간 이동인 경우
+		SrcComp->TransferItemTo(SrcIdx, DstComp, DstIdx);
+	}
+}
+
 
 
 //void AC_BasicPlayer::InitInput()

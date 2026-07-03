@@ -308,6 +308,11 @@ public:
 	
 	void ApplyCrouchSpeed();
 	void ApplyWalkSpeed();
+	
+public:
+	// UI 드롭 시 서버에 안전하게 요청을 도달시켜 줄 확성기 RPC
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_RequestMoveItem(UC_InvenComponent* SrcComp, int32 SrcIdx, UC_InvenComponent* DstComp, int32 DstIdx);
 
 protected:
 	virtual void BeginPlay() override;

@@ -78,7 +78,7 @@ void UC_InventoryGridWidget::RefreshAllSlots(const TArray<FInventoryEntry>& Inve
 
         // 아이템 매니저를 통해 데이터 테이블의 원본 비주얼/기본 스펙 데이터를 가져옴
         const FItemData* CoreData = ItemManager->GetItemData(Entry.ItemRowName);
-        if (!CoreData) continue; // TODO : 인벤에 없는 데이터인 경우 따로 처리해주기.
+        //if (!CoreData) continue; // TODO : 인벤에 없는 데이터인 경우 따로 처리해주기.
         // 실시간 인스턴스 데이터(Entry)와 원본 스펙 데이터(CoreData)를 함께 넘겨줌
         SlotWidgets[i]->UpdateSlot(Entry, CoreData);
     }
@@ -171,24 +171,29 @@ void UC_InventoryGridWidget::InitializeGrid(UC_InvenComponent* InInvenComponent)
 
 void UC_InventoryGridWidget::SetInvenComponent(class UC_InvenComponent* InventoryComponent)
 {
-    if (InventoryComponent == nullptr)
+    if (InvenComp)
     {
-        if (InvenComp)
-        {
-            // 기존 델리게이트 제거. TODO : 매번 지우는 방법보다 더 좋은 방법 찾아보기.
-            InvenComp->OnInventorySlotChanged.RemoveDynamic(this, &UC_InventoryGridWidget::RefreshSlotAt);
-        }
+        InvenComp->OnInventorySlotChanged.RemoveDynamic(this, &UC_InventoryGridWidget::RefreshSlotAt);
+    }
+    
+    // 컴포넌트 교체
+    InvenComp = InventoryComponent;
+    
+    // [새로운 바인딩 등록] 새로 들어온 컴포넌트가 유효하다면 연결을 맺고 갱신합니다.
+    if (InvenComp)
+    {
+        // 중복 등록 방지를 위해 한 번 더 확실히 지우고 등록하는 안전장치
+        InvenComp->OnInventorySlotChanged.RemoveDynamic(this, &UC_InventoryGridWidget::RefreshSlotAt);
+        InvenComp->OnInventorySlotChanged.AddDynamic(this, &UC_InventoryGridWidget::RefreshSlotAt);
         
+        // 전체 슬롯 다시 그리기
+        RefreshAllSlots(InvenComp->GetInventoryItems());
     }
     else
     {
-        //InvenComp = InventoryComponent;
-        // 인벤의 슬롯이 바뀔 때 마다 내 RefreshSlotAt 함수가 정확한 타겟만 찍어서 수행됩니다.
-        InventoryComponent->OnInventorySlotChanged.AddDynamic(this, &UC_InventoryGridWidget::RefreshSlotAt);
+        // 만약 nullptr이 들어왔다면(창고에서 멀어졌다면) UI의 흔적을 청소해 줍니다.
+        // (필요에 따라 빈 배열을 넘겨 슬롯을 다 비우거나 비활성화 처리)
+        TArray<FInventoryEntry> EmptyArray;
+        RefreshAllSlots(EmptyArray);
     }
-    
-    InvenComp = InventoryComponent;
-    if (InvenComp) RefreshAllSlots(InvenComp->GetInventoryItems());
-    
-    
 }

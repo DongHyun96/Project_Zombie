@@ -6,100 +6,78 @@ UC_InvenComponent::UC_InvenComponent()
 {
 
 	PrimaryComponentTick.bCanEverTick = false;
-
-	InventoryItems.SetNum(MaxSlots);
+	
+	//InventoryContainer.Items.Init(FInventoryEntry(), MaxSlots);
 	// 컴포넌트 리플리케이션 활성화. 
 	SetIsReplicatedByDefault(true);
-}
-
-
-bool UC_InvenComponent::SwapInvenEntry(int32 SlotIdx1, int32 SlotIdx2)
-{
-	UC_Util::Print(SlotIdx1);				 // 드롭된 슬롯
-	UC_Util::Print(SlotIdx2, FColor::Green); // 드래그된 슬롯
-	
-	if (!InventoryItems.IsValidIndex(SlotIdx1) || !InventoryItems.IsValidIndex(SlotIdx2))
-	{
-		return false;
-	}
-    
-	// 같은 슬롯이면 바꿀 필요가 없으므로 무조건 true 반환
-	if (SlotIdx1 == SlotIdx2) return false;
-	
-
-	// 데이터 교환 (언리얼 내장 함수 사용으로 한 줄로 단축)
-	InventoryItems.Swap(SlotIdx1, SlotIdx2);
-	
-	OnInventorySlotChanged.Broadcast(SlotIdx1, InventoryItems[SlotIdx1]);
-	OnInventorySlotChanged.Broadcast(SlotIdx2, InventoryItems[SlotIdx2]);
-	
-	return true;
-}
-
-void UC_InvenComponent::InitInvenItemAt(int32 idx)
-{
-	InventoryItems[idx].Initialize();
 }
 
 void UC_InvenComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// ◀ 컴포넌트 자체가 네트워크 복제가 되도록 설정해야 내부 변수도 복제됩니다.
-	//SetIsReplicatedByDefault(true);
+	InventoryContainer.OwnerComponent = this;
+	
+	if (GetOwner()->HasAuthority())
+	{
+		// 서버는 무조건 45개로 초기화 (기존 데이터가 있다면 덮어씀)
+		InventoryContainer.Items.SetNum(MaxSlots);
+       
+		for (int32 i = 0; i < MaxSlots; ++i)
+		{
+			// 데이터가 비어있을 때만 Clear, 이미 데이터가 있다면(세이브 로드 등) 건드리지 않음
+			if (InventoryContainer.Items[i].ItemRowName == NAME_None)
+			{
+				InventoryContainer.Items[i].Clear();
+			}
+			InventoryContainer.Items[i].SlotIndex = i;
+		}
+       
+		InventoryContainer.MarkArrayDirty();
+	}
 }
 
+bool UC_InvenComponent::SwapInvenEntry(int32 SlotIdx1, int32 SlotIdx2)
+{
+	if (!GetOwner()->HasAuthority()) return false; // 서버가 아니면 컷
+	if (!InventoryContainer.Items.IsValidIndex(SlotIdx1) || !InventoryContainer.Items.IsValidIndex(SlotIdx2)) return false;
+	if (SlotIdx1 == SlotIdx2) return false;
 
-//void UC_InvenComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
-//{
-//	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-//
-//}
+	// 데이터 교환 (SlotIndex 주소값은 유지하고 알맹이 데이터만 스왑)
+	FName TempRowName = InventoryContainer.Items[SlotIdx1].ItemRowName;
+	int32 TempCount = InventoryContainer.Items[SlotIdx1].Count;
+	int32 TempUpgrade = InventoryContainer.Items[SlotIdx1].UpgradeLevel;
+	int32 TempAmmo = InventoryContainer.Items[SlotIdx1].CurAmmo;
+
+	InventoryContainer.Items[SlotIdx1].ItemRowName = InventoryContainer.Items[SlotIdx2].ItemRowName;
+	InventoryContainer.Items[SlotIdx1].Count = InventoryContainer.Items[SlotIdx2].Count;
+	InventoryContainer.Items[SlotIdx1].UpgradeLevel = InventoryContainer.Items[SlotIdx2].UpgradeLevel;
+	InventoryContainer.Items[SlotIdx1].CurAmmo = InventoryContainer.Items[SlotIdx2].CurAmmo;
+
+	InventoryContainer.Items[SlotIdx2].ItemRowName = TempRowName;
+	InventoryContainer.Items[SlotIdx2].Count = TempCount;
+	InventoryContainer.Items[SlotIdx2].UpgradeLevel = TempUpgrade;
+	InventoryContainer.Items[SlotIdx2].CurAmmo = TempAmmo;
+
+	// ⭐️ 언리얼 엔진에게 바뀐 슬롯 2개만 선별해서 패킷 쏘라고 지시 (클라이언트 자동 연동)
+	InventoryContainer.MarkItemDirty(InventoryContainer.Items[SlotIdx1]);
+	InventoryContainer.MarkItemDirty(InventoryContainer.Items[SlotIdx2]);
+
+	// 서버(리슨서버 방장) 로컬 UI도 즉시 동기화
+	OnInventorySlotChanged.Broadcast(SlotIdx1, InventoryContainer.Items[SlotIdx1]);
+	OnInventorySlotChanged.Broadcast(SlotIdx2, InventoryContainer.Items[SlotIdx2]);
+
+	return true;
+}
+
+void UC_InvenComponent::InitInvenItemAt(int32 idx)
+{
+	InventoryContainer.Items[idx].Clear();
+}
 
 bool UC_InvenComponent::AddItem(FInventoryEntry ItemEntry)
 {
 	// TODO : 멀티 환경 적용하기, 더 좋은 방법이 분명 존재해 보임.
-	// 쌓을 수 있는 아이템이라면
-	//if (ItemEntry.bIsStack == false)
-	//{
-	//	for (int i = 0; i < MaxSlots; ++i)
-	//	{
-	//		// 빈칸이면 바로 아이템 넣기
-	//		if (InventoryItems[i].ItemRowName == NAME_None)
-	//		{
-	//			InventoryItems[i] = ItemEntry;
-	//			break;
-	//		}
-	//	}
-
-	//	return false;
-	//}
-	//// 쌓을 수 없는 아이템이라면
-	//else
-	//{
-	//	int FirstEmptySlotNum = MaxSlots;
-	//	for (int i = 0; i < MaxSlots; ++i)
-	//	{
-	//		// 같은 아이템을 찾았다면 Count 더해주기
-	//		if (InventoryItems[i].ItemRowName == ItemEntry.ItemRowName)
-	//		{
-	//			InventoryItems[i].Count += ItemEntry.Count;
-	//			break;
-	//		}
-	//		// 같은 아이템이 없는 경우를 고려해서 
-	//		else if (InventoryItems[i].ItemRowName == NAME_None)
-	//		{
-	//			FirstEmptySlotNum = FMath::Min(FirstEmptySlotNum, i);
-	//		}
-	//	}
-	//	
-	//	if (FirstEmptySlotNum == MaxSlots)
-	//		return false; // MaxSlots이면 인벤에 못넣는 상태.(idx : 0~MaxSlots-1 ; num : MaxSlots)
-	//	else 
-	//		InventoryItems[FirstEmptySlotNum] = ItemEntry;
-	//}
-
-	//return true;
 
 	int32 TargetIndex = -1;
 
@@ -108,9 +86,9 @@ bool UC_InvenComponent::AddItem(FInventoryEntry ItemEntry)
 	{
 		for (int32 i = 0; i < MaxSlots; ++i)
 		{
-			if (InventoryItems[i].ItemRowName == ItemEntry.ItemRowName)
+			if (InventoryContainer.Items[i].ItemRowName == ItemEntry.ItemRowName)
 			{
-				InventoryItems[i].Count += ItemEntry.Count;
+				InventoryContainer.Items[i].Count += ItemEntry.Count;
 				TargetIndex = i;
 				break; // 찾았으니 즉시 종료
 			}
@@ -122,9 +100,9 @@ bool UC_InvenComponent::AddItem(FInventoryEntry ItemEntry)
 	{
 		for (int32 i = 0; i < MaxSlots; ++i)
 		{
-			if (InventoryItems[i].ItemRowName == NAME_None)
+			if (InventoryContainer.Items[i].ItemRowName == NAME_None)
 			{
-				InventoryItems[i] = ItemEntry;
+				InventoryContainer.Items[i] = ItemEntry;
 				TargetIndex = i;
 				break; // 빈 칸에 넣었으니 즉시 종료
 			}
@@ -135,11 +113,11 @@ bool UC_InvenComponent::AddItem(FInventoryEntry ItemEntry)
 	if (TargetIndex != -1)
 	{
 		// UI 및 리스너들에게 변경 사항 브로드캐스트
-		
-		OnInventorySlotChanged.Broadcast(TargetIndex, InventoryItems[TargetIndex]);
-		UC_Util::Print(InventoryItems[TargetIndex].ItemRowName.ToString());
+		InventoryContainer.MarkItemDirty(InventoryContainer.Items[TargetIndex]);
+		OnInventorySlotChanged.Broadcast(TargetIndex, InventoryContainer.Items[TargetIndex]);
+		UC_Util::Print(InventoryContainer.Items[TargetIndex].ItemRowName.ToString());
 
-		UC_Util::Print(InventoryItems[TargetIndex].Count);
+		UC_Util::Print(InventoryContainer.Items[TargetIndex].Count);
 		return true;
 	}
 
@@ -147,54 +125,69 @@ bool UC_InvenComponent::AddItem(FInventoryEntry ItemEntry)
 	return false;
 }
 
+// 서로 다른 인벤토리 컴포넌트 간의 아이템 스왑/이동
+bool UC_InvenComponent::TransferItemTo(int32 MySlotIdx, UC_InvenComponent* TargetComp, int32 TargetSlotIdx)
+{
+	if (!GetOwner()->HasAuthority() || !TargetComp) return false;
+	if (!InventoryContainer.Items.IsValidIndex(MySlotIdx) || !TargetComp->InventoryContainer.Items.IsValidIndex(TargetSlotIdx)) return false;
+
+	// 내 가방 데이터 백업
+	FName TempRowName = InventoryContainer.Items[MySlotIdx].ItemRowName;
+	int32 TempCount = InventoryContainer.Items[MySlotIdx].Count;
+	int32 TempUpgrade = InventoryContainer.Items[MySlotIdx].UpgradeLevel;
+	int32 TempAmmo = InventoryContainer.Items[MySlotIdx].CurAmmo;
+
+	// 내 가방 <- 타겟(창고) 데이터 복사
+	InventoryContainer.Items[MySlotIdx].ItemRowName = TargetComp->InventoryContainer.Items[TargetSlotIdx].ItemRowName;
+	InventoryContainer.Items[MySlotIdx].Count = TargetComp->InventoryContainer.Items[TargetSlotIdx].Count;
+	InventoryContainer.Items[MySlotIdx].UpgradeLevel = TargetComp->InventoryContainer.Items[TargetSlotIdx].UpgradeLevel;
+	InventoryContainer.Items[MySlotIdx].CurAmmo = TargetComp->InventoryContainer.Items[TargetSlotIdx].CurAmmo;
+
+	// 타겟(창고) <- 내 가방 백업 데이터 복사
+	TargetComp->InventoryContainer.Items[TargetSlotIdx].ItemRowName = TempRowName;
+	TargetComp->InventoryContainer.Items[TargetSlotIdx].Count = TempCount;
+	TargetComp->InventoryContainer.Items[TargetSlotIdx].UpgradeLevel = TempUpgrade;
+	TargetComp->InventoryContainer.Items[TargetSlotIdx].CurAmmo = TempAmmo;
+
+	// ⭐️ 양쪽 인벤토리의 변경된 슬롯 마킹 (각각 알아서 최적화되어 날아감)
+	InventoryContainer.MarkItemDirty(InventoryContainer.Items[MySlotIdx]);
+	TargetComp->InventoryContainer.MarkItemDirty(TargetComp->InventoryContainer.Items[TargetSlotIdx]);
+
+	InventoryContainer.MarkArrayDirty();
+	TargetComp->InventoryContainer.MarkArrayDirty();
+	
+	// 서버(리슨서버 방장) 로컬 UI 즉시 동기화
+	OnInventorySlotChanged.Broadcast(MySlotIdx, InventoryContainer.Items[MySlotIdx]);
+	TargetComp->OnInventorySlotChanged.Broadcast(TargetSlotIdx, TargetComp->InventoryContainer.Items[TargetSlotIdx]);
+
+	return true;
+}
+
 void UC_InvenComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	// [최적화] 방장의 부담을 줄이기 위해, 해당 인벤토리의 소유자(클라이언트)에게만 복제
-	DOREPLIFETIME_CONDITION(UC_InvenComponent, InventoryItems, COND_OwnerOnly);
+	//DOREPLIFETIME_CONDITION(UC_InvenComponent, InventoryContainer, COND_OwnerOnly);
+	DOREPLIFETIME(UC_InvenComponent, InventoryContainer);
+	
 }
 
-// 서버에서 데이터가 바뀌어 클라이언트로 넘어왔을 때 UI 갱신 알림
-void UC_InvenComponent::OnRep_InventoryItems()
+void UC_InvenComponent::OnRep_InventoryContainer()
 {
-	for (int32 i = 0; i < InventoryItems.Num(); ++i)
+	// 복제된 데이터가 45개가 아니라면 강제로 맞춤
+	if (InventoryContainer.Items.Num() > MaxSlots)
 	{
-		OnInventorySlotChanged.Broadcast(i, InventoryItems[i]);
+		InventoryContainer.Items.SetNum(MaxSlots);
 	}
-}
-
-// 서로 다른 인벤토리 컴포넌트 간의 아이템 스왑/이동
-bool UC_InvenComponent::TransferItemTo(int32 MySlotIdx, UC_InvenComponent* TargetComp, int32 TargetSlotIdx)
-{
-	if (!InventoryItems.IsValidIndex(MySlotIdx) || !TargetComp || !TargetComp->InventoryItems.IsValidIndex(TargetSlotIdx)) return false;
-
-	FInventoryEntry TempItem = InventoryItems[MySlotIdx];
-	InventoryItems[MySlotIdx] = TargetComp->InventoryItems[TargetSlotIdx];
-	TargetComp->InventoryItems[TargetSlotIdx] = TempItem;
-
-	// 양쪽 인벤토리 모두에게 변경 사항 브로드캐스트
-	this->OnInventorySlotChanged.Broadcast(MySlotIdx, InventoryItems[MySlotIdx]);
-	TargetComp->OnInventorySlotChanged.Broadcast(TargetSlotIdx, TargetComp->InventoryItems[TargetSlotIdx]);
-    
-	return true;
-}
-
-// 클라이언트 -> 서버 이동 요청 RPC 구현부
-bool UC_InvenComponent::Server_RequestMoveItem_Validate(UC_InvenComponent* SrcComp, int32 SrcIdx, UC_InvenComponent* DstComp, int32 DstIdx)
-{
-	if (!SrcComp || !DstComp) return false;
-	return true;
-}
-
-void UC_InvenComponent::Server_RequestMoveItem_Implementation(UC_InvenComponent* SrcComp, int32 SrcIdx, UC_InvenComponent* DstComp, int32 DstIdx)
-{
-	if (SrcComp == DstComp)
+	
+	InventoryContainer.OwnerComponent = this;
+	
+	for (int32 i = 0; i < MaxSlots; ++i)
 	{
-		SrcComp->SwapInvenEntry(SrcIdx, DstIdx);
-	}
-	else
-	{
-		SrcComp->TransferItemTo(SrcIdx, DstComp, DstIdx);
+		if (InventoryContainer.Items.IsValidIndex(i))
+		{
+			OnInventorySlotChanged.Broadcast(i, InventoryContainer.Items[i]);
+		}
 	}
 }

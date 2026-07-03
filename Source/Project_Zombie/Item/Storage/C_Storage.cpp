@@ -16,7 +16,9 @@ AC_Storage::AC_Storage()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
-
+	
+	bReplicates = true;
+	
 	MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComp"));
 	RootComponent = MeshComp;
 	
@@ -59,6 +61,15 @@ void AC_Storage::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* Oth
 	UIManager->GetInventoryWidget()->GetStorageGridWidget()->SetInvenComponent(InvenComp);
 	UIManager->GetInventoryWidget()->GetStorageGridWidget()->RefreshAllSlots(InvenComp->GetInventoryItems());
 	UC_Util::Print("Storage Overlap!");
+	
+	if (InvenComp)
+	{
+		UC_Util::Print("Storage Inven Items Num: " + FString::FromInt(InvenComp->GetInventoryItems().Num()));
+	}
+	else
+	{
+		UC_Util::Print("Storage InvenComponent is NULL!");
+	}
 }
 
 void AC_Storage::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
