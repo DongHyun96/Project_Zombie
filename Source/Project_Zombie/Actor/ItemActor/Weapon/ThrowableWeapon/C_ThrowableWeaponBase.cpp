@@ -43,8 +43,10 @@ AC_ThrowableWeaponBase::AC_ThrowableWeaponBase()
 	m_ThrowSectionName = TEXT("Throw");
 	
 	// 투척류 Launch 위치 Offset 초기화
-	m_LaunchUpwardOffset = 100.f;
+	m_LaunchUpwardOffset = 10.f;
 	m_LaunchForwardOffset = 50.f;
+
+	m_ThrowSpeed = 1500.f;
 
 	// 투척류 상태 초기화
 	ResetThrowableState();
@@ -237,7 +239,32 @@ void AC_ThrowableWeaponBase::OnThrowThrowable()
 	if (!m_MainCollider || !m_ProjectileMovement)
 		return;
 
+	// 투척 방향과 투척 시작 위치 계산
+	const FVector ThrowDirection = GetThrowDirection();
+	const FVector LaunchLocation = GetLaunchLocation(ThrowDirection);
+	const FRotator LaunchRotation = ThrowDirection.Rotation();
 
+	// 현재 붙어있는 손 소켓에서 분리하고 월드 Transform 은 유지
+	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+	
+	// 손보다 앞에서 투척 시작
+	SetActorLocationAndRotation
+	(
+		LaunchLocation,
+		LaunchRotation,
+		false, // 이동 경로 충돌 검사					// 이거 true로 하면 투척류가 손에서 분리될 때, 손과 충돌해서 튕겨나가는 현상 발생
+		nullptr, // 충돌 정보 받을 포인터
+		ETeleportType::TeleportPhysics
+	);
+
+	// 투척류 Projectile Movement 활성화
+	LaunchCurrentActorAsProjectile(ThrowDirection);
+
+	m_ThrowableState = EThrowableState::Thrown;
+
+	m_bIsThrowing = false;
+	m_bIsCharging = false;
+	m_bWantsThrow = false;
 
 	// TODO 
 	// 수류탄 던짐
@@ -294,15 +321,17 @@ FVector AC_ThrowableWeaponBase::GetLaunchLocation(const FVector& _ThrowDirection
 {
 	FVector LaunchLocation = GetActorLocation();
 
-	if (!m_WeaponUser)
+	if (m_WeaponUser)
 	{
+		// TODO : 캐릭터 방향 위치 / 카메라 기준 으로 투척 시작 위치를 잡을 것인지 결정 필요
+		// 카메라 Forward를 기준으로 투척 방향을 잡는 경우, 카메라 Forward를 기준으로 LaunchLocation을 잡아야 함
+		const FVector CharacterForard = m_WeaponUser->GetActorForwardVector().GetSafeNormal();
+
 		LaunchLocation += _ThrowDirection * m_LaunchForwardOffset;
 		LaunchLocation += FVector::UpVector * m_LaunchUpwardOffset;
 	}
 	else
 	{
-		const FVector PlayerLocation = m_WeaponUser->GetActorLocation();
-
 		LaunchLocation += _ThrowDirection * m_LaunchForwardOffset;
 		LaunchLocation += FVector::UpVector * m_LaunchUpwardOffset;
 	}
@@ -312,8 +341,89 @@ FVector AC_ThrowableWeaponBase::GetLaunchLocation(const FVector& _ThrowDirection
 
 void AC_ThrowableWeaponBase::SetupThrowCollision()
 {
+	// Actor 전체 충돌 활성화												////// 수정?
+	SetActorEnableCollision(true);
+
+	// 이 Actor의 모든 PrimitiveComponent를 가져옴
+	TArray<UPrimitiveComponent*> PrimitiveComponents;
+	GetComponents<UPrimitiveComponent>(PrimitiveComponents);
+
+	for (UPrimitiveComponent* Component : PrimitiveComponents)
+	{
+		// Visibility 활성화
+		Component->SetVisibility(true, true);
+		// Hidden 상태 해제
+		Component->SetHiddenInGame(false, true);
+		
+		//// Owner가 이 Actor를 보지 못하도록 설정
+		//Component->SetOwnerNoSee(false);
+		//// Owner가 이 Actor를 볼 수 있도록 설정
+		//Component->SetOnlyOwnerSee(false);
+
+		// MainCollider 만 충돌 활성화, 나머지 Collider는 충돌 비활성화 처리
+		if (Component != m_MainCollider)
+		{
+			Component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		}
+	}
+
+	if (!m_MainCollider)
+		return;
+
+	// MainCollider 충돌 활성화
+	m_MainCollider->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	m_MainCollider->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic); 
+
+	// 일단 모든 채널에 Block
+	// TODO: 나중에 Projectile Channel을 만들어야?
+	m_MainCollider->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
+
+	// Hit 이벤트 발생
+	m_MainCollider->SetNotifyRigidBodyCollision(true);
+
+	// ProjectileMovement 로 날아가니까 Physics Simulation은 끄기
+	m_MainCollider->SetSimulatePhysics(false);
+
+	if (m_WeaponUser)
+	{
+		// Owner와 충돌하지 않도록 설정
+		m_MainCollider->IgnoreActorWhenMoving(m_WeaponUser, true);
+		m_WeaponUser->GetCapsuleComponent()->IgnoreActorWhenMoving(this, true);
+	}
 }
 
 void AC_ThrowableWeaponBase::LaunchCurrentActorAsProjectile(const FVector& _ThrowDirection)
 {
+	// 숨김 해제
+	SetActorHiddenInGame(false);
+
+	// 충돌 활성화
+	SetupThrowCollision();
+
+	if (!m_ProjectileMovement)
+		return;
+
+	// ProjectileMovementComponent 활성화
+	if (m_MainCollider)
+	{
+		m_ProjectileMovement->SetUpdatedComponent(m_MainCollider);
+	}
+
+	// 현재 이동 정지 (기존 속도 제거)
+	m_ProjectileMovement->StopMovementImmediately();
+
+	if (m_ThrowSpeed <= 0.f)
+	{
+		m_ThrowSpeed = 1500.f; // 기본 투척 속도 설정
+	}
+
+	// 투척 속도 설정
+	m_ProjectileMovement->InitialSpeed = m_ThrowSpeed;
+	m_ProjectileMovement->MaxSpeed = FMath::Max(m_ProjectileMovement->MaxSpeed, m_ThrowSpeed);
+
+	// 방향 설정
+	m_ProjectileMovement->Velocity = _ThrowDirection.GetSafeNormal() * m_ThrowSpeed;
+
+	// 실행
+	m_ProjectileMovement->Activate(true);
 }
