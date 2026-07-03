@@ -35,4 +35,8 @@ public:
 	virtual void NativeBeginPlay() override;
 	virtual void NativeUpdateAnimation(float _DT) override;
 
+public:
+	UFUNCTION()
+	void AnimNotify_SkillEnd();
+
 };

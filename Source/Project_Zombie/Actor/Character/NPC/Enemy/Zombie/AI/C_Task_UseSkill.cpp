@@ -8,18 +8,23 @@
 
 UC_Task_UseSkill::UC_Task_UseSkill()
 {
-	bCreateNodeInstance = false;
+	bCreateNodeInstance = true;
 
 	// 매 프레임마다 TickTask 를 호출받을지 설정
-	bNotifyTick = true;
+	//bNotifyTick = true;
 }
 
 EBTNodeResult::Type UC_Task_UseSkill::ExecuteTask(UBehaviorTreeComponent& _OwnCom, uint8* _NodeMemory)
 {
 	Super::ExecuteTask(_OwnCom, _NodeMemory);
 
-	// 초기화
-	*reinterpret_cast<float*>(_NodeMemory) = 0.f;
+	AAIController* AI = _OwnCom.GetAIOwner();
+
+	if (AI)
+	{
+		AI->StopMovement();
+	}
+
 
 	// Task 를 실행중인 Controller 를 가져옴
 	AAIController* pController = _OwnCom.GetAIOwner();
@@ -31,14 +36,30 @@ EBTNodeResult::Type UC_Task_UseSkill::ExecuteTask(UBehaviorTreeComponent& _OwnCo
 		return EBTNodeResult::Failed;
 
 	UC_EnemySkillComponent* pSkillCom = pZombie->GetComponentByClass<UC_EnemySkillComponent>();
+
 	if (nullptr == pSkillCom)
 		return EBTNodeResult::Failed;
 
+	pSkillCom->m_SkillEndDelegate.AddUObject(this, &UC_Task_UseSkill::OnSkillEnd, &_OwnCom);
+
+
 	pSkillCom->UseSkill(m_SkillSlot);
 
-	return EBTNodeResult::Succeeded;
+
+	return EBTNodeResult::InProgress;
 }
 
 void UC_Task_UseSkill::TickTask(UBehaviorTreeComponent& _OwnCom, uint8* _NodeMemory, float _DeltaSeconds)
 {
+}
+
+void UC_Task_UseSkill::OnSkillEnd(AC_BasicEnemy* _SkillUser, UBehaviorTreeComponent* _BTCom)
+{
+	if (_SkillUser && _BTCom)
+	{
+		UC_EnemySkillComponent* pSkillCom = _SkillUser->GetComponentByClass<UC_EnemySkillComponent>();
+		pSkillCom->m_SkillEndDelegate.RemoveAll(this);
+	}
+
+	FinishLatentTask(*_BTCom, EBTNodeResult::Succeeded);
 }

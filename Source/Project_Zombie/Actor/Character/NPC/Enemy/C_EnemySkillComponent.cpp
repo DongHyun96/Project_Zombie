@@ -26,7 +26,6 @@ UC_EnemySkillComponent::UC_EnemySkillComponent()
 
 }
 
-
 void UC_EnemySkillComponent::BeginPlay()
 {
 	Super::BeginPlay();
@@ -65,13 +64,14 @@ void UC_EnemySkillComponent::UseSkill(ESkillSlot _Slot)
 	if (bUsingSkill)
 		return;
 	
-	// 스킬 사용중으로 설정
-	bUsingSkill = true;
+	UE_LOG(LogTemp, Warning, TEXT("UseSkill"));
+
 
 	AC_BasicEnemy* Owner = Cast<AC_BasicEnemy>(GetOwner());
 	
 	if (!Owner)
 		return;
+
 
 	for(FSkillSlotInfo& Info : m_SkillSlots)
 	{
@@ -81,10 +81,25 @@ void UC_EnemySkillComponent::UseSkill(ESkillSlot _Slot)
 		if (!Info.LoadedSkillData)
 			return;
 
+		m_CurSkillData = Info.LoadedSkillData;
+
+		// 스킬 사용중으로 설정
+		bUsingSkill = true;
+
 		Info.SkillInstance->Activate(Owner, Info.LoadedSkillData);
 
 		return;
 	}
+
+}
+
+void UC_EnemySkillComponent::EndSkill()
+{
+	bUsingSkill = false;
+
+	m_SkillEndDelegate.Broadcast(Cast<AC_BasicEnemy>(GetOwner()));
+
+	m_CurSkillData = nullptr;
 
 }
 

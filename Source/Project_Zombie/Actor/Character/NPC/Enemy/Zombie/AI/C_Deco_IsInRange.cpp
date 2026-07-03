@@ -27,7 +27,7 @@ bool UC_Deco_IsInRange::CalculateRawConditionValue(UBehaviorTreeComponent& _OwnC
 
 	AActor* pTargetActor = Cast<AActor>(pBBCom->GetValueAsObject(m_Target.SelectedKeyName));
 
-	float Dist = FVector::Dist(pZombie->GetTargetLocation(), pTargetActor->GetActorLocation());
+	float Dist = FVector::Dist(pZombie->GetActorLocation(), pTargetActor->GetActorLocation());
 
 	return (Dist < 200.f);
 }

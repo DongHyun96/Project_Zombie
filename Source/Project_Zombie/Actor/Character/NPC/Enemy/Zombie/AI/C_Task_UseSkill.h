@@ -25,6 +25,9 @@ public:
 	virtual void TickTask(UBehaviorTreeComponent& _OwnCom, uint8* _NodeMemory, float _DeltaSeconds);
 
 public:
+	void OnSkillEnd(AC_BasicEnemy* _SkillUser, UBehaviorTreeComponent* _BTCom);
+	
+public:
 	UC_Task_UseSkill();
 	
 };

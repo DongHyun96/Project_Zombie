@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 
+#include "C_BasicEnemy.h"
+
 // 비동기 로딩 관련 헤더
 #include "Engine/StreamableManager.h"
 
@@ -47,6 +49,8 @@ public:
 };
 
 
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnSkillEnd, AC_BasicEnemy*);
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class PROJECT_ZOMBIE_API UC_EnemySkillComponent : public UActorComponent
 {
@@ -55,11 +59,24 @@ class PROJECT_ZOMBIE_API UC_EnemySkillComponent : public UActorComponent
 protected:
 	// 스킬 슬롯
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Skill", meta = (TitleProperty = "SlotType"))
-	TArray<FSkillSlotInfo>		m_SkillSlots;
+	TArray<FSkillSlotInfo>						m_SkillSlots;
 
 	// 스킬을 사용중인지 체크
 	UPROPERTY()
-	bool						bUsingSkill = false;
+	bool										bUsingSkill = false;
+
+	// 현재 사용중인 스킬
+	UPROPERTY(Transient)
+	TObjectPtr<class UC_EnemySkillData>			m_CurSkillData;
+
+	// 쿨타임 기록 컨테이너
+	// 스킬의 고유 ( 경로 + 카테고리명 ) 을 키값으로 사용한다
+	// 스킬을 사용한 시점때의 월드 시간값을 저장
+	TMap<FPrimaryAssetId, float>				m_mapSkillCoolTime;
+
+public:
+	// 스킬사용후 종료시 호출시켜줄 Delegate 들을 등록받을 수 있는 자료형
+	FOnSkillEnd									m_SkillEndDelegate;
 
 protected:
 	virtual void BeginPlay() override;
@@ -71,6 +88,8 @@ protected:
 public:	
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	void UseSkill(ESkillSlot _Slot);
+
+	void EndSkill();
 
 public:
 	UC_EnemySkillComponent();
