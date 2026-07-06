@@ -46,20 +46,39 @@ void AC_Storage::BeginPlay()
 void AC_Storage::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
 	int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	if (HasAuthority())
+		UC_Util::Print("Server Executed");
+	else
+		UC_Util::Print("Client Executed");
+	
 	AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(OtherActor);
 	
-	if (!Player) return;
+	if (!Player)
+	{
+		UC_Util::Print("Can't find player!");
+		return;
+	}
+	
+	if (!Player->IsLocallyControlled()) return;
 	
 	APlayerController* PC = Cast<APlayerController>(Player->GetController());
 	
-	if (!PC) return;
+	if (!PC)
+	{
+		UC_Util::Print("Can't find player controller!");
+		return;
+	}
 	
 	AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD());
 	
-	if (!UIManager) return;
+	if (!UIManager)
+	{
+		UC_Util::Print("Can't find UIManager!");
+		return;
+	}
 	
 	UIManager->GetInventoryWidget()->GetStorageGridWidget()->SetInvenComponent(InvenComp);
-	UIManager->GetInventoryWidget()->GetStorageGridWidget()->RefreshAllSlots(InvenComp->GetInventoryItems());
+	//UIManager->GetInventoryWidget()->GetStorageGridWidget()->RefreshAllSlots(InvenComp->GetInventoryItems());
 	UC_Util::Print("Storage Overlap!");
 	
 	if (InvenComp)
