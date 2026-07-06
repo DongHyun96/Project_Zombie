@@ -95,6 +95,8 @@ void UC_EnemySkillComponent::UseSkill(ESkillSlot _Slot)
 
 void UC_EnemySkillComponent::EndSkill()
 {
+	UE_LOG(LogTemp, Warning, TEXT("EndSkill"));
+
 	bUsingSkill = false;
 
 	m_SkillEndDelegate.Broadcast(Cast<AC_BasicEnemy>(GetOwner()));
