@@ -86,6 +86,9 @@ protected:
 	// Player 상황 별, Controller rotation 처리 State machine 기능 담당
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (DisplayName = "PlayerControllerFSMCom"))
 	class UC_ControllerFSMComponent* m_ControllerFSMComponent{};
+
+	UPROPERTY(VisibleAnywhere, Category = "Components", meta = (DisplayName = "PingSystemComponent"))
+	class UC_PingSystemComponent* m_PingSystemComponent{};
 	
 // [Status]
 protected:
@@ -245,6 +248,8 @@ public:
 	UC_EquippedComponent* GetEquippedComponent() const { return m_EquippedComponent; }
 	
 	UC_TurnInPlaceComponent* GetTurnInPlaceComponent() const { return m_TurnInPlaceComponent; }
+	
+	UC_PingSystemComponent* GetPingSystemComponent() const { return m_PingSystemComponent; }
 
 public:
 	bool IsDead() const { return m_IsDead; }

@@ -1,6 +1,7 @@
 #include "Actor/Components/C_BasicPlayerInputComponent.h"
 
 #include "C_EquippedComponent.h"
+#include "C_PingSystemComponent.h"
 #include "C_TurnInPlaceComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
@@ -93,19 +94,13 @@ void UC_BasicPlayerInputComponent::InitializePlayerInput(UInputComponent* Player
 			EnhancedInputComponent->BindAction(IA_EquipMainWeapon, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::EquipMainWeapon);
 		
 		if (IA_EquipMeleeWeapon)
-		{
 			EnhancedInputComponent->BindAction(IA_EquipMeleeWeapon, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::EquipMeleeWeapon);
-		}
 		
 		if (IA_EquipThrowable)
-		{
 			EnhancedInputComponent->BindAction(IA_EquipThrowable, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::EquipThrowable);
-		}
 		
 		if (IA_ToggleArmed)
-		{
 			EnhancedInputComponent->BindAction(IA_ToggleArmed, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::ToggleArmed);
-		}
 		
 		if (IA_FreeLook)
 		{
@@ -117,6 +112,9 @@ void UC_BasicPlayerInputComponent::InitializePlayerInput(UInputComponent* Player
 		{
 			EnhancedInputComponent->BindAction(IA_ToggleInventory, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::ToggleInventoryWidget);
 		}
+		
+		if (IA_MarkPing)
+			EnhancedInputComponent->BindAction(IA_MarkPing, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::MarkPing);
 	}
 }
 
@@ -271,13 +269,16 @@ void UC_BasicPlayerInputComponent::ToggleArmed()
 
 void UC_BasicPlayerInputComponent::FreeLookHolStart()
 {
-	UC_Util::Print("FreeLook");
 	Player->SetIsFreeLook(true);
 }
 
 void UC_BasicPlayerInputComponent::FreeLookHoldEnd()
 {
-	UC_Util::Print("NonFreeLook");
 	Player->SetIsFreeLook(false);
+}
+
+void UC_BasicPlayerInputComponent::MarkPing()
+{
+	Player->GetPingSystemComponent()->TrySpawnPing();
 }
 

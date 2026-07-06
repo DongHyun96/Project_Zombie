@@ -21,7 +21,8 @@ public class Project_Zombie : ModuleRules
 			"Slate",
             "SlateCore",
             "GameplayTags",
-			"DeveloperSettings"
+			"DeveloperSettings",
+			"Niagara"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });
