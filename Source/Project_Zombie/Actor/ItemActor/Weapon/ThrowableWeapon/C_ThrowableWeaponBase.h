@@ -20,7 +20,6 @@ enum class EThrowableState : uint8
 	None,
 	RemovePin,
 	Ready,
-	Thorw,
 	Thrown,
 	Exploded,
 };
@@ -49,6 +48,7 @@ public:
 	virtual bool OnStartFire(class AC_BasicPlayer* _WeaponUser) override;
 	virtual bool OnFireOnGoing(AC_BasicPlayer* _WeaponUser) override;
 	virtual bool OnFireEnd(AC_BasicPlayer* _WeaponUser) override;
+	virtual bool Reload(AC_BasicPlayer* _WeaponUser) override;
 	
 public: // 애님 노티파이 관련
 
@@ -70,6 +70,22 @@ public: // 애님 노티파이 관련
 	/// </summary>
 	UFUNCTION(BlueprintCallable, Category = "Throwable|AnimNotify")
 	void OnThrowThrowable();
+
+public: // 쿠킹 입력
+
+	/// <summary>
+	/// R키를 눌렀을 때 쿠킹 시작 처리
+	/// </summary>
+	UFUNCTION(BlueprintCallable, Category = "Throwable|Cooking")
+	bool OnStartCookInput();
+
+protected: // 폭발
+
+	/// <summary>
+	/// 폭발 처리
+	/// 실제 폭방은 I_ExplodeStrategy를 상속받은 클래스에서 처리할 예정
+	/// </summary>
+	void Explode();
 
 private:
 	/// <summary>
@@ -103,6 +119,29 @@ private: // 투척 관련 처리
 	/// 투척 시작 위치와 방향을 기준으로 Projectile Movement Component를 사용하여 투척
 	///	</summary>
 	void LaunchCurrentActorAsProjectile(const FVector& _ThrowDirection);
+
+private: // 타이머 관련
+
+	/// <summary>
+	///  타이머를 가지고 있는지 여부 반환
+	/// </summary>
+	bool HasFuseTimer() const;
+
+	/// <summary>
+	/// 폭발 타이머 시작 
+	/// R키 쿠킹 or 던지는 순간에 호출
+	/// </summary>
+	bool StartFuseTimer();
+
+	/// <summary>
+	/// 폭발 타이머 제거
+	/// </summary>
+	void ClearFuseTimer();
+
+	/// <summary>
+	/// 폭발 타이머가 끝났을 때 호출
+	/// </summary>
+	void OnFuseTimerFinished();
 
 	/* Socket Name 관련 */
 protected: 
@@ -141,13 +180,15 @@ public: // 몽타주 관련
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)
 	FName m_ThrowSectionName;
 
-public: // Throwable Weapon의 특성 관련
+public: // Throwable Weapon의 투척 특성 관련
 	
-	// 핀 제거 가능 여부
+	// 핀 제거 가능 여부 
+	// 핀 제거 동작 몽타주를 넣을 것인가?
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|State")
 	bool m_bHasPin;
 
-	// 쿠킹 가능 여부 (R키를 눌렀을 때)
+	// 쿠킹 가능 여부 
+	// R키를 눌렀을 때 쿠킹 가능한가?
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|State")
 	bool m_bIsCookable;
 
@@ -188,6 +229,10 @@ protected:
 
 
 private:
+
+	// 투척류의 Fuse Timer (핀 제거 후, 폭발까지 걸리는 시간)
+	FTimerHandle m_FuseTimerHandle;
+
 	// 투척 과정 중인지
 	bool m_bIsThrowing;
 	
@@ -200,13 +245,9 @@ private:
 	// 마우스를 떼었는지
 	bool m_bWantsThrow;
 
-protected: 
+	// 쿠킹을 원하는지
+	bool m_bWantsCook;
 
-	//// 투척류의 Fuse Time (핀 제거 후, 폭발까지 걸리는 시간)
-	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Throwable Weapon")
-	//float m_FuseTime;
-
-	//// 남은 Fuse Time (핀 제거 후, 폭발까지 남은 시간)
-	//UPROPERTY(BlueprintReadOnly, Category = "Throwable Weapon")
-	//float m_RemainingFuseTime;
+	// 폭발이 발생했는지
+	bool m_bHasExploded;
 };

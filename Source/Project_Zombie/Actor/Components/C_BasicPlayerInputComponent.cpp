@@ -88,6 +88,11 @@ void UC_BasicPlayerInputComponent::InitializePlayerInput(UInputComponent* Player
 			EnhancedInputComponent->BindAction(IA_Fire, ETriggerEvent::Completed, this, &UC_BasicPlayerInputComponent::FireEnd);
 			
 		}
+
+		if (IA_Reload)
+		{
+			EnhancedInputComponent->BindAction(IA_Reload, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::ReloadAction);
+		}
 		
 		if (IA_EquipMainWeapon)
 			EnhancedInputComponent->BindAction(IA_EquipMainWeapon, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::EquipMainWeapon);
@@ -207,6 +212,12 @@ void UC_BasicPlayerInputComponent::FireEnd()
 {
 	if (AC_WeaponBase* CurWeapon = Player->GetEquippedComponent()->GetCurWeapon())
 		CurWeapon->OnFireEnd(Player);
+}
+
+void UC_BasicPlayerInputComponent::ReloadAction()
+{
+	if (AC_WeaponBase* CurWeapon = Player->GetEquippedComponent()->GetCurWeapon())
+		CurWeapon->Reload(Player);
 }
 
 void UC_BasicPlayerInputComponent::ToggleInventoryWidget()

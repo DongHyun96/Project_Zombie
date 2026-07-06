@@ -160,6 +160,8 @@ bool AC_ThrowableWeaponBase::OnStartFire(class AC_BasicPlayer* _WeaponUser)
 	m_bIsThrowing = true;
 	m_bIsCooking = false;
 	m_bWantsThrow = false;
+	m_bWantsCook = false;
+	m_bHasExploded = false;
 	
 	m_ThrowableState = m_bHasPin ? EThrowableState::RemovePin : EThrowableState::Ready;
 	 
@@ -167,6 +169,17 @@ bool AC_ThrowableWeaponBase::OnStartFire(class AC_BasicPlayer* _WeaponUser)
 	_WeaponUser->PlayAnimMontage(m_ThrowMontage, 1.f, m_bHasPin ? m_RemovePinSectionName : m_ReadySectionName);
 
 	return true;
+}
+
+bool AC_ThrowableWeaponBase::Reload(AC_BasicPlayer* _WeaponUser)
+{
+	if (!_WeaponUser)
+		return false;
+
+	if (m_WeaponUser != _WeaponUser)
+		m_WeaponUser = _WeaponUser;
+
+	return OnStartCookInput();
 }
 
 bool AC_ThrowableWeaponBase::OnFireOnGoing(AC_BasicPlayer* _WeaponUser)
@@ -186,10 +199,13 @@ bool AC_ThrowableWeaponBase::OnFireEnd(AC_BasicPlayer* _WeaponUser)
 	if (!AnimInstance)
 		return false;
 
+	// 차징 중이면, Pause 된 상태에서 Resume 처리
 	AnimInstance->Montage_Resume(m_ThrowMontage);
 
 	return true;
 }
+
+// ----------------- 애님 노티파이 관련 처리 -----------------
 
 void AC_ThrowableWeaponBase::OnRemovePin()
 {
@@ -199,12 +215,12 @@ void AC_ThrowableWeaponBase::OnRemovePin()
 	if (!m_bHasPin)
 		return;
 
+	m_ThrowableState = EThrowableState::Ready;
 
 	// R 키를 먼저 눌러둔 경우, 핀 제거 후 바로 타이머 시작
-	if (m_bWantsThrow)
+	if (m_bWantsCook)
 	{
-		m_bIsCooking = true;
-		// TODO : 타이머 시작 (m_FuseTime 이후 폭발 처리)
+		StartFuseTimer();
 	}
 }
 
@@ -216,6 +232,8 @@ void AC_ThrowableWeaponBase::OnThrowReadyLoop()
 	// 마우스를 뗀 경우, Loop에서 바로 투척 동작으로 넘어감
 	if (m_bWantsThrow)
 		return;
+
+	m_ThrowableState = EThrowableState::Ready;
 
 	// 차징 중이면, 투척 동작으로 넘어가지 않음
 	if (m_bIsCharging)
@@ -252,7 +270,7 @@ void AC_ThrowableWeaponBase::OnThrowThrowable()
 	(
 		LaunchLocation,
 		LaunchRotation,
-		false, // 이동 경로 충돌 검사					// 이거 true로 하면 투척류가 손에서 분리될 때, 손과 충돌해서 튕겨나가는 현상 발생
+		false, // 이동 경로 충돌 검사			// 이거 true로 하면 투척류가 손에서 분리될 때, 손과 충돌해서 튕겨나가는 현상 발생
 		nullptr, // 충돌 정보 받을 포인터
 		ETeleportType::TeleportPhysics
 	);
@@ -266,11 +284,53 @@ void AC_ThrowableWeaponBase::OnThrowThrowable()
 	m_bIsCharging = false;
 	m_bWantsThrow = false;
 
+	// 타이머 시작
+	if (HasFuseTimer())
+	{
+		StartFuseTimer();
+	}
+
 	// TODO 
 	// 수류탄 던짐
 	// EquippedComponent의 CurrentWeapon은 nullptr 또는 다음 수류탄으로 변경
 	// 수류탄 개수 감소
 }
+
+// ----------------- 쿠킹 관련 처리 -----------------
+
+bool AC_ThrowableWeaponBase::OnStartCookInput()
+{
+	UC_Util::Print("OnStartCookInput");
+
+	// 이미 폭발했거나 쿠킹 중이면 쿠킹 불가
+	if (m_bHasExploded || m_bIsCooking)
+		return false;
+
+	// 투척 과정이 아니거나, 쿠킹 불가한 경우
+	if (!m_bIsThrowing || !m_bIsCookable)
+		return false;
+
+	// 타이머가 없는 경우 쿠킹 불가
+	if (!HasFuseTimer())
+		return false;
+
+	// 핀 제거 동작 이후에 R키를 누르면 타이머 시작
+	if (m_ThrowableState == EThrowableState::Ready)
+	{
+		m_bWantsCook = true;
+		return StartFuseTimer();
+	}
+
+	// 핀 제거가 끝나고 Ready 상태에서 R키를 누르면 바로 타이머 시작
+	return StartFuseTimer();
+}
+
+void AC_ThrowableWeaponBase::Explode()
+{
+	// 폭발 처리는 I_ExplodeStrategy를 상속받은 클래스에서 처리할 예정
+}
+
+// ----------------- 투척 취소 관련 처리 -----------------
 
 void AC_ThrowableWeaponBase::CancleThrowAction()
 {
@@ -304,17 +364,34 @@ void AC_ThrowableWeaponBase::ResetThrowableState()
 	m_bIsCharging = false;
 	m_bIsCooking = false;
 	m_bWantsThrow = false;
+	m_bWantsCook = false;
+	m_bHasExploded = false;
 
 	m_WeaponUser = nullptr;
 }
+
+
+// ----------------- 투척 관련 처리 -----------------
 
 FVector AC_ThrowableWeaponBase::GetThrowDirection() const
 {
 	if (!m_WeaponUser)
 		return GetActorForwardVector();
 
-	// 플레이어가 바라보는 방향을 기준으로 투척 방향 반환
-	return m_WeaponUser->GetActorForwardVector();
+	// 플레이어가 바라보는 방향을 기준으로 투척 방향 계산
+	FVector ThrowDirection = m_WeaponUser->GetActorForwardVector();
+
+	// 마우스 방향을 기준으로 투척 방향 계산
+	if (AController* Controller = m_WeaponUser->GetController())
+	{
+		FRotator ControlRotation = Controller->GetControlRotation();
+		ThrowDirection = ControlRotation.Vector();
+	}
+
+	// 투척류를 들고 있는 위치에서 약간 위로 보정
+	ThrowDirection += FVector::UpVector * 0.15f;
+
+	return ThrowDirection.GetSafeNormal();
 }
 
 FVector AC_ThrowableWeaponBase::GetLaunchLocation(const FVector& _ThrowDirection) const
@@ -323,15 +400,15 @@ FVector AC_ThrowableWeaponBase::GetLaunchLocation(const FVector& _ThrowDirection
 
 	if (m_WeaponUser)
 	{
-		// TODO : 캐릭터 방향 위치 / 카메라 기준 으로 투척 시작 위치를 잡을 것인지 결정 필요
-		// 카메라 Forward를 기준으로 투척 방향을 잡는 경우, 카메라 Forward를 기준으로 LaunchLocation을 잡아야 함
+		// 캐릭터가 바라보는 방향을 기준으로 투척 시작 위치 계산
 		const FVector CharacterForard = m_WeaponUser->GetActorForwardVector().GetSafeNormal();
 
-		LaunchLocation += _ThrowDirection * m_LaunchForwardOffset;
+		LaunchLocation += CharacterForard * m_LaunchForwardOffset;
 		LaunchLocation += FVector::UpVector * m_LaunchUpwardOffset;
 	}
 	else
 	{
+		// 투척 방향을 기준으로 투척 시작 위치 계산
 		LaunchLocation += _ThrowDirection * m_LaunchForwardOffset;
 		LaunchLocation += FVector::UpVector * m_LaunchUpwardOffset;
 	}
@@ -341,7 +418,7 @@ FVector AC_ThrowableWeaponBase::GetLaunchLocation(const FVector& _ThrowDirection
 
 void AC_ThrowableWeaponBase::SetupThrowCollision()
 {
-	// Actor 전체 충돌 활성화												////// 수정?
+	// 이 Actor 는 충돌을 할거야
 	SetActorEnableCollision(true);
 
 	// 이 Actor의 모든 PrimitiveComponent를 가져옴
@@ -354,11 +431,6 @@ void AC_ThrowableWeaponBase::SetupThrowCollision()
 		Component->SetVisibility(true, true);
 		// Hidden 상태 해제
 		Component->SetHiddenInGame(false, true);
-		
-		//// Owner가 이 Actor를 보지 못하도록 설정
-		//Component->SetOwnerNoSee(false);
-		//// Owner가 이 Actor를 볼 수 있도록 설정
-		//Component->SetOnlyOwnerSee(false);
 
 		// MainCollider 만 충돌 활성화, 나머지 Collider는 충돌 비활성화 처리
 		if (Component != m_MainCollider)
@@ -426,4 +498,58 @@ void AC_ThrowableWeaponBase::LaunchCurrentActorAsProjectile(const FVector& _Thro
 
 	// 실행
 	m_ProjectileMovement->Activate(true);
+}
+
+
+// --------------- 타이머 관련 ------------------
+
+bool AC_ThrowableWeaponBase::HasFuseTimer() const
+{
+	// FuseTime이 0보다 크면 타이머가 있는 것으로 간주
+	return m_FuseTime > 0.f;
+}
+
+bool AC_ThrowableWeaponBase::StartFuseTimer()
+{
+	if (!HasFuseTimer())
+		return false;
+
+	// 이미 쿠킹 중이거나 폭발한 경우, 타이머 시작 불가
+	if (m_bIsCooking || m_bHasExploded)
+		return false;
+
+	m_bIsCooking = true;
+	m_bWantsCook = false; // 쿠킹 시작했으므로 WantsCook 초기화
+
+	// 타이머 설정
+	UWorld* World = GetWorld();
+	World->GetTimerManager().SetTimer
+	(
+		m_FuseTimerHandle, 
+		this, 
+		&AC_ThrowableWeaponBase::OnFuseTimerFinished,
+		m_FuseTime,
+		false
+	);
+	
+	UC_Util::Print("Start Fuse Timer");
+
+	return true;
+}
+
+void AC_ThrowableWeaponBase::ClearFuseTimer()
+{
+	// 타이머 취소
+	UWorld* World = GetWorld();
+	World->GetTimerManager().ClearTimer(m_FuseTimerHandle);
+
+	m_bIsCooking = false;
+	m_bWantsCook = false; // 쿠킹 취소했으므로 WantsCook 초기화
+}
+
+void AC_ThrowableWeaponBase::OnFuseTimerFinished()
+{
+	UC_Util::Print("Finish Fuse Timer");
+
+	Explode();
 }
