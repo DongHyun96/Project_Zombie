@@ -1,4 +1,6 @@
 #include "Actor/Components/C_InvenComponent.h"
+
+#include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Utility/C_Util.h"
 #include "UI/InvenUI/C_InventoryGridWidget.h"
 #include "Net/UnrealNetwork.h"
@@ -32,7 +34,11 @@ void UC_InvenComponent::BeginPlay()
 			}
 			InventoryContainer.Items[i].SlotIndex = i;
 		}
-       
+		
+		//FInventoryEntry InventoryEntry{};
+		//InventoryEntry.ItemRowName = FName("Item_Zombium");
+		//InventoryEntry.Count = 1;
+		//AddItem(InventoryEntry);
 		InventoryContainer.MarkArrayDirty();
 	}
 }
@@ -59,10 +65,13 @@ bool UC_InvenComponent::SwapInvenEntry(int32 SlotIdx1, int32 SlotIdx2)
 	InventoryContainer.Items[SlotIdx2].UpgradeLevel = TempUpgrade;
 	InventoryContainer.Items[SlotIdx2].CurAmmo = TempAmmo;
 
-	// ⭐️ 언리얼 엔진에게 바뀐 슬롯 2개만 선별해서 패킷 쏘라고 지시 (클라이언트 자동 연동)
+	// 언리얼 엔진에게 바뀐 슬롯 2개만 선별해서 패킷 쏘라고 지시 (클라이언트 자동 연동)
 	InventoryContainer.MarkItemDirty(InventoryContainer.Items[SlotIdx1]);
 	InventoryContainer.MarkItemDirty(InventoryContainer.Items[SlotIdx2]);
 
+	if (!GetOwner()->HasAuthority()) return true;
+	
+	
 	// 서버(리슨서버 방장) 로컬 UI도 즉시 동기화
 	OnInventorySlotChanged.Broadcast(SlotIdx1, InventoryContainer.Items[SlotIdx1]);
 	OnInventorySlotChanged.Broadcast(SlotIdx2, InventoryContainer.Items[SlotIdx2]);
@@ -103,6 +112,7 @@ bool UC_InvenComponent::AddItem(FInventoryEntry ItemEntry)
 			if (InventoryContainer.Items[i].ItemRowName == NAME_None)
 			{
 				InventoryContainer.Items[i] = ItemEntry;
+				InventoryContainer.Items[i].SlotIndex = i;
 				TargetIndex = i;
 				break; // 빈 칸에 넣었으니 즉시 종료
 			}
@@ -113,8 +123,11 @@ bool UC_InvenComponent::AddItem(FInventoryEntry ItemEntry)
 	if (TargetIndex != -1)
 	{
 		// UI 및 리스너들에게 변경 사항 브로드캐스트
+		if (GetOwner()->HasAuthority())
+		{
+			OnInventorySlotChanged.Broadcast(TargetIndex, InventoryContainer.Items[TargetIndex]);
+		}
 		InventoryContainer.MarkItemDirty(InventoryContainer.Items[TargetIndex]);
-		OnInventorySlotChanged.Broadcast(TargetIndex, InventoryContainer.Items[TargetIndex]);
 		UC_Util::Print(InventoryContainer.Items[TargetIndex].ItemRowName.ToString());
 
 		UC_Util::Print(InventoryContainer.Items[TargetIndex].Count);
@@ -123,6 +136,11 @@ bool UC_InvenComponent::AddItem(FInventoryEntry ItemEntry)
 
 	// 인벤토리가 가득 차서 공간이 없음
 	return false;
+}
+
+void UC_InvenComponent::ForceRepInven()
+{
+	InventoryContainer.MarkArrayDirty();
 }
 
 // 서로 다른 인벤토리 컴포넌트 간의 아이템 스왑/이동
@@ -149,17 +167,22 @@ bool UC_InvenComponent::TransferItemTo(int32 MySlotIdx, UC_InvenComponent* Targe
 	TargetComp->InventoryContainer.Items[TargetSlotIdx].UpgradeLevel = TempUpgrade;
 	TargetComp->InventoryContainer.Items[TargetSlotIdx].CurAmmo = TempAmmo;
 
-	// ⭐️ 양쪽 인벤토리의 변경된 슬롯 마킹 (각각 알아서 최적화되어 날아감)
+	// 양쪽 인벤토리의 변경된 슬롯 마킹 (각각 알아서 최적화되어 날아감)
 	InventoryContainer.MarkItemDirty(InventoryContainer.Items[MySlotIdx]);
 	TargetComp->InventoryContainer.MarkItemDirty(TargetComp->InventoryContainer.Items[TargetSlotIdx]);
 
-	InventoryContainer.MarkArrayDirty();
-	TargetComp->InventoryContainer.MarkArrayDirty();
+	//InventoryContainer.MarkArrayDirty();
+	//TargetComp->InventoryContainer.MarkArrayDirty();
 	
-	// 서버(리슨서버 방장) 로컬 UI 즉시 동기화
-	OnInventorySlotChanged.Broadcast(MySlotIdx, InventoryContainer.Items[MySlotIdx]);
-	TargetComp->OnInventorySlotChanged.Broadcast(TargetSlotIdx, TargetComp->InventoryContainer.Items[TargetSlotIdx]);
 
+	
+	if (GetOwner()->HasAuthority())
+	{
+		// 서버(리슨서버 방장) 로컬 UI 즉시 동기화
+		OnInventorySlotChanged.Broadcast(MySlotIdx, InventoryContainer.Items[MySlotIdx]);
+		TargetComp->OnInventorySlotChanged.Broadcast(TargetSlotIdx, TargetComp->InventoryContainer.Items[TargetSlotIdx]);
+	}
+	
 	return true;
 }
 
@@ -169,25 +192,11 @@ void UC_InvenComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 
 	// [최적화] 방장의 부담을 줄이기 위해, 해당 인벤토리의 소유자(클라이언트)에게만 복제
 	//DOREPLIFETIME_CONDITION(UC_InvenComponent, InventoryContainer, COND_OwnerOnly);
-	DOREPLIFETIME(UC_InvenComponent, InventoryContainer);
 	
+	DOREPLIFETIME(UC_InvenComponent, InventoryContainer);
 }
 
 void UC_InvenComponent::OnRep_InventoryContainer()
 {
-	// 복제된 데이터가 45개가 아니라면 강제로 맞춤
-	if (InventoryContainer.Items.Num() > MaxSlots)
-	{
-		InventoryContainer.Items.SetNum(MaxSlots);
-	}
-	
 	InventoryContainer.OwnerComponent = this;
-	
-	for (int32 i = 0; i < MaxSlots; ++i)
-	{
-		if (InventoryContainer.Items.IsValidIndex(i))
-		{
-			OnInventorySlotChanged.Broadcast(i, InventoryContainer.Items[i]);
-		}
-	}
 }

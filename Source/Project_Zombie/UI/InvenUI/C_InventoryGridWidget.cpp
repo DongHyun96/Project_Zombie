@@ -4,6 +4,8 @@
 #include "GameMode/C_ItemManager.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/Components/C_InvenComponent.h"
+#include "Utility/C_Util.h"
+
 void UC_InventoryGridWidget::NativeConstruct()
 {
     Super::NativeConstruct();
@@ -72,7 +74,7 @@ void UC_InventoryGridWidget::RefreshAllSlots(const TArray<FInventoryEntry>& Inve
     for (int32 i = 0; i < LoopCount; ++i)
     {
         if (!SlotWidgets[i]) continue;
-
+        
         SlotWidgets[i]->SetAssociatedComponent(InvenComp);
         const FInventoryEntry& Entry = InventoryItems[i];
 
@@ -89,7 +91,6 @@ void UC_InventoryGridWidget::RefreshSlotAt(int32 SlotIndex, const FInventoryEntr
     UC_ItemManager* ItemManager = GetGameInstance()->GetSubsystem<UC_ItemManager>();
     if (!ItemManager) return;
 
-    // 인덱스 안정성 검사 후 해당 슬롯만 변경
     if (SlotWidgets.IsValidIndex(SlotIndex) && SlotWidgets[SlotIndex])
     {
         const FItemData* CoreData = ItemManager->GetItemData(ItemData.ItemRowName);
@@ -112,7 +113,7 @@ bool UC_InventoryGridWidget::Initialize()
     for (int32 i = 0; i < MaxSlots; ++i)
     {
         UC_ItemSlotWidget* NewSlot = CreateWidget<UC_ItemSlotWidget>(this, SlotWidgetClass);
-        if (!NewSlot) continue;
+        //if (!NewSlot) continue;
 
         NewSlot->SetSlotIndex(i); 
         NewSlot->SetGridWidget(this);
@@ -125,48 +126,6 @@ bool UC_InventoryGridWidget::Initialize()
     }
 
     return true;
-}
-
-void UC_InventoryGridWidget::InitializeGrid(UC_InvenComponent* InInvenComponent)
-{
-    if (!InInvenComponent || !ItemGridPanel || !SlotWidgetClass) return;
-
-    // 1. 기존 바인딩 안전하게 해제 (중복 방지)
-    //if (InvenComp)
-    //{
-    //    InvenComp->OnInventorySlotChanged.RemoveDynamic(this, &UC_InventoryGridWidget::RefreshSlotAt);
-    //}
-    //
-    //InvenComp = InInvenComponent;
-    //
-    //// 2. 델리게이트 구독 (데이터 변경 시 이 그리드의 RefreshSlotAt 호출)
-    //InvenComp->OnInventorySlotChanged.AddDynamic(this, &UC_InventoryGridWidget::RefreshSlotAt);  
-
-    // 3. 컴포넌트의 맥스 슬롯 수에 맞춰 동적으로 슬롯 생성
-    ItemGridPanel->ClearChildren();
-    SlotWidgets.Reset();
-
-    // 구조체 배열의 크기나 설정된 MaxSlots 사용
-    int32 TotalSlots = MaxSlots; 
-
-    for (int32 i = 0; i < TotalSlots; ++i)
-    {
-        UC_ItemSlotWidget* NewSlot = CreateWidget<UC_ItemSlotWidget>(this, SlotWidgetClass);
-        if (!NewSlot) continue;
-
-        NewSlot->SetSlotIndex(i); 
-        //NewSlot->SetAssociatedComponent(InvenComp);
-       
-
-        int32 CurRow = i / Column;
-        int32 CurColumn = i % Column;
-        
-        ItemGridPanel->AddChildToUniformGrid(NewSlot, CurRow, CurColumn);
-        SlotWidgets.Add(NewSlot);
-    }
-
-    // 4. 최초 1회 전체 리프레시
-    //RefreshAllSlots(InvenComp->GetInventoryItems());
 }
 
 void UC_InventoryGridWidget::SetInvenComponent(class UC_InvenComponent* InventoryComponent)

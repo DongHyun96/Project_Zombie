@@ -16,6 +16,7 @@ class PROJECT_ZOMBIE_API UC_ItemSlotWidget : public UUserWidget
 {
 	GENERATED_BODY()
 public:
+	// SlotUpdate 함수.
 	//UFUNCTION(BlueprintCallable)
 	void UpdateSlot(const FInventoryEntry& ItemData, const FItemData* CoreData);
 

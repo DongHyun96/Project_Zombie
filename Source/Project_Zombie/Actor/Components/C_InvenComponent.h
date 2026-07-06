@@ -10,6 +10,7 @@
 
 struct FInventoryContainer;
 
+// C_InventoryGridWidget의 ItemSlot업데이트를 위한 델리게이트
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnInventorySlotChanged, int32, SlotIndex, const FInventoryEntry&, ItemData);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -27,7 +28,8 @@ public:
 	// 특정 슬롯의 아이템 반환
 	const FInventoryEntry& GetItemAt(int32 SlotIndex) const {return InventoryContainer.Items[SlotIndex];}
 
-	// 아이템 위치 스위칭
+public:
+	// 아이템 위치 스위칭(자신의 InventoryContainer 내에서 스위칭)
     bool SwapInvenEntry(int32 SlotIdx1, int32 SlotIdx2);
 
 	// 특정 슬롯의 아이템 초기화
@@ -38,6 +40,11 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	bool AddItem(FInventoryEntry ItemEntry);
+
+	// 인벤토리 강제 동기화
+	UFUNCTION(BlueprintCallable)
+	void ForceRepInven();
+	
 protected:
 	virtual void BeginPlay() override;
 	//virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
@@ -49,19 +56,16 @@ protected:
     /// </summary>
     virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable)
 	void OnRep_InventoryContainer();
 protected:
     // C_IneventoryGridWidget에서 grid slot의 갯수와 일치 시킬 변수
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
     int32 MaxSlots = 45; 
-
-    // 인벤토리에서 담고 있을 아이템 정보 구조체 배열
-	//UPROPERTY(ReplicatedUsing = OnRep_InventoryItems, EditAnywhere, BlueprintReadWrite, Category = "Inventory")
-    //TArray<FInventoryEntry> InventoryItems;
 	
 	// Fast Array Container
-	UPROPERTY(ReplicatedUsing = OnRep_InventoryContainer, BlueprintReadOnly, Category = "Inventory")
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
+	UPROPERTY(ReplicatedUsing = OnRep_InventoryContainer,EditAnywhere, BlueprintReadWrite, Category = "Inventory")
 	FInventoryContainer InventoryContainer;
 public:
     UPROPERTY(BlueprintAssignable)

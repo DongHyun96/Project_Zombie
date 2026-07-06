@@ -28,17 +28,15 @@ public:
 	// 특정 슬롯만 콕 집어서 업데이트하고 싶을 때 (아이템 획득/소모/이동 시)
 	UFUNCTION(BlueprintCallable)
 	void RefreshSlotAt(int32 SlotIndex, const FInventoryEntry& ItemData);
-	virtual bool Initialize() override;
-	// 최초 1회 초기화
-	void InitializeGrid(UC_InvenComponent* InInvenComponent);
 	
-	// InvenComponent의 델리게이트 신호를 받을 함수
-	//UPROPERTY(ReplicatedUsing = OnRep_InventoryItems, EditAnywhere, BlueprintReadWrite, Category = "Inventory")
-	//void OnComponentSlotChanged(int32 SlotIndex, const FInventoryEntry& ItemData);
+	// 최초 1회 초기화, 아이템 슬롯 생성 및 배열에 넣어줌.
+	virtual bool Initialize() override;
 public:
 	const TArray<UC_ItemSlotWidget*>& GetSlotArr() const { return SlotWidgets; }
-	
+
+	// 창고, 플레이어에 InvenComponent를 추가할 때 델리게이트를 연결하기 위한 함수.
 	void SetInvenComponent(UC_InvenComponent* InventoryComponent);
+	
 	UC_InvenComponent* GetInvenComponent() const {return InvenComp;}
 protected:
 	// C_ItemSlot을 배치할 GridPanel
