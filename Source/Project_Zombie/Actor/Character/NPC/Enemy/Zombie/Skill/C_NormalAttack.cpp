@@ -12,7 +12,5 @@ UC_NormalAttack::UC_NormalAttack()
 
 void UC_NormalAttack::Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data)
 {
-	UAnimInstance* Anim = _Owner->GetMesh()->GetAnimInstance();
-
-	Anim->Montage_Play(_Data->Montage);
+	_Owner->PlayAnimMontage(_Data->Montage);
 }
