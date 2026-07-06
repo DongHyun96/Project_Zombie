@@ -9,6 +9,9 @@
 UC_EquippedComponent::UC_EquippedComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
+
+	// 각 Slot칸 nullptr로 미리 확보
+	m_Weapons.SetNum(static_cast<uint8>(EWeaponSlot::Max));
 }
 
 
@@ -23,9 +26,6 @@ void UC_EquippedComponent::BeginPlay()
 		UC_Util::Print("From UC_EquippedComponent::BeginPlay : OwnerPlayer init failed!", FColor::Red, 10.f);
 		UE_LOG(LogTemp, Error, TEXT("From UC_EquippedComponent::BeginPlay : OwnerPlayer init failed!"));
 	}
-
-	// 각 Slot칸 nullptr로 미리 확보
-	m_Weapons.SetNum(static_cast<uint8>(EWeaponSlot::Max));
 	
 	// Test용으로 무기 미리 스폰
 	for (const TTuple<EWeaponSlot, TSubclassOf<AC_WeaponBase>>& WeaponClassPair : m_WeaponClassToSpawn)

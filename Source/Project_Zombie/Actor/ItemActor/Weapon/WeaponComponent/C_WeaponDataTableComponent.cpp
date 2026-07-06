@@ -5,7 +5,7 @@
 
 UC_WeaponDataTableComponent::UC_WeaponDataTableComponent()
 {
-	PrimaryComponentTick.bCanEverTick = true;
+	PrimaryComponentTick.bCanEverTick = false;
 
 }
 
@@ -45,6 +45,7 @@ void UC_WeaponDataTableComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	InitData();
 }
 
 void UC_WeaponDataTableComponent::PostEditChangeProperty(FPropertyChangedEvent& _Event)

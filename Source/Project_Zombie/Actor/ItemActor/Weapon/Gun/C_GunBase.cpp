@@ -33,27 +33,61 @@ void AC_GunBase::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	m_CurrentAmmo = m_MaxAmmo;
+	Gun_init();
 }
-
-/*void AC_GunBase::StartAttack()
-{
-	PullTrigger();
-}
-
-void AC_GunBase::StopAttack()
-{
-	ReleaseTrigger();
-}
-
-void AC_GunBase::Reload()
-{
-	Gun_Reload();
-}*/
 
 void AC_GunBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+}
+
+void AC_GunBase::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+
+	Gun_init();
+}
+
+void AC_GunBase::Gun_init()
+{
+	if (!m_DataCom) return;
+
+	// 외형(Mesh) 로드
+	if (USkeletalMesh* WeaponMeshAsset = Cast<USkeletalMesh>(m_DataCom->GetAssetData("WeaponSkeletalMesh").LoadSynchronous()))
+	{
+		if (m_WeaponMesh)
+		{
+			m_WeaponMesh->SetSkeletalMesh(WeaponMeshAsset);
+		}
+	}
+	else
+	{
+		// 테이블에 에셋이 없을 때만 경고
+		UE_LOG(LogTemp, Warning, TEXT("데이터 테이블에 WeaponMesh가 없음!"));
+	}
+
+	// 에디터 뷰포트에서 총기를 드래그해 움직일 때는 아래 '무거운 로직/수치 계산'을 패스
+	// HasActorBegunPlay()는 실제 게임 플레이 버튼을 눌렀을 때만 true
+	if (!HasActorBegunPlay())
+	{
+		return;
+	}
+
+	m_BaseDamage		= m_DataCom->GetData("BaseDamage");
+	m_MaxAmmo			= m_DataCom->GetData("MaxAmmo");
+	m_CurrentAmmo		= m_MaxAmmo;
+	m_FireRate			= m_DataCom->GetData("AttackRate");
+	m_ShellEjectImpulse = m_DataCom->GetData("ShellEjectImpulse");
+
+	m_FireAnimation		= Cast<UAnimSequence>(m_DataCom->GetAssetData("FireAnimation").LoadSynchronous());
+	m_ReloadAnimation	= Cast<UAnimSequence>(m_DataCom->GetAssetData("ReloadAnimation").LoadSynchronous());
+	m_ShellMesh			= Cast<UStaticMesh>(m_DataCom->GetAssetData("ShellMesh").LoadSynchronous());
+
+
+	if (!m_FireAnimation) { UE_LOG(LogTemp, Warning, TEXT("FireAnimation 로드 실패")); }
+	if (!m_ReloadAnimation) { UE_LOG(LogTemp, Warning, TEXT("ReloadAnimation 로드 실패")); }
+	if (!m_ShellMesh) { UE_LOG(LogTemp, Warning, TEXT("ShellMesh 로드 실패")); }
 
 }
 
@@ -86,7 +120,7 @@ void AC_GunBase::Gun_Reload()
 {
 	ReleaseTrigger();
 
-	if (m_CurrentAmmo == m_MaxAmmo) 
+	if (m_CurrentAmmo == m_MaxAmmo)
 		return;
 
 	// 재장전 애니메이션 재생
@@ -146,7 +180,6 @@ bool AC_GunBase::AttachToHolster(USceneComponent* _ParentMesh)
 void AC_GunBase::CompleteReload()
 {
 	m_CurrentAmmo = m_MaxAmmo;
-	GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Cyan, TEXT("Reload Complete"));
 
 	// 새로 장전된 장탄수 UI 업데이트
 	if (AC_UIManager* UIManager = Cast<AC_UIManager>(GetWorld()->GetFirstPlayerController()->GetHUD()))
@@ -220,8 +253,6 @@ void AC_GunBase::PlayFireEffects()
 				MeshComp->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);  // 벽, 땅 바닥
 				MeshComp->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Block); // 움직이는 장애물
 
-				/* 제미나이 도움받음*******/
-
 				float RandomRightForce = FMath::FRandRange(130.0f, 220.0f); // 오른쪽으로 튕기는 힘 (최소 130 ~ 최대 220)
 				float RandomUpForce = FMath::FRandRange(60.0f, 130.0f);  // 위로 솟구치는 힘   (최소 60 ~ 최대 130)
 				float RandomForwardForce = FMath::FRandRange(-40.0f, 40.0f); // 앞뒤로 미세하게 흔들리는 힘
@@ -240,8 +271,6 @@ void AC_GunBase::PlayFireEffects()
 					FMath::FRandRange(-50.0f, 50.0f),
 					FMath::FRandRange(-50.0f, 50.0f));
 				MeshComp->AddAngularImpulseInRadians(RandomTorque, NAME_None, true);
-
-				/*******제미나이 도움받음 */
 
 				// 3초 뒤 월드에서 자동으로 파괴되도록 수명 설정
 				SpawnedShell->SetLifeSpan(3.0f);
@@ -323,23 +352,47 @@ void AC_GunBase::PlayFireEffects()
 bool AC_GunBase::OnStartFire(AC_BasicPlayer* _WeaponUser)
 {
 	// TODO : LMB 첫 눌렸을 시, 동작 처리
-	return false;
+	if (nullptr == _WeaponUser)
+	{
+		return false;
+	}
+	else
+	{
+		PullTrigger();
+		return true;
+	}
 }
 
 bool AC_GunBase::OnFireOnGoing(AC_BasicPlayer* _WeaponUser)
 {
 	// TODO : LMB 눌리고 있을 때의 동작 처리 (ex, 연발 사격 처리 등)
-	return false;
+		return false;
 }
 
 bool AC_GunBase::OnFireEnd(AC_BasicPlayer* _WeaponUser)
 {
 	// TODO : LMB 떼었을 때 시점의 동작 처리(딱히 필요없으면 그냥 FireEnd 함수 Gun에서 지우시면 됩니다(동현))
-	return false;
+	if (nullptr == _WeaponUser)
+	{
+		return false;
+	}
+	else
+	{
+		ReleaseTrigger();
+		return true;
+	}
 }
 
 bool AC_GunBase::Reload(AC_BasicPlayer* _WeaponUser)
 {
 	// TODO : Reload 처리
-	return false;
+	if (nullptr == _WeaponUser)
+	{
+		return false;
+	}
+	else
+	{
+		Gun_Reload();
+		return true;
+	}
 }

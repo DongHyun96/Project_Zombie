@@ -125,7 +125,10 @@ struct FWeaponData : public FTableRowBase
 
     // ── [무기 공통 매쉬 (Mesh)] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual")
-    TSoftObjectPtr<USkeletalMesh> WeaponMesh;
+    TSoftObjectPtr<USkeletalMesh> WeaponSkeletalMesh;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual")
+    TSoftObjectPtr<UStaticMesh> WeaponStaticMesh;
 
 
 };
@@ -135,6 +138,10 @@ USTRUCT(BlueprintType)
 struct FGunData : public FWeaponData
 {
     GENERATED_BODY()
+
+    // ── [총시 관련 스탯 (Stats)] ──
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+    float MaxAmmo;     // 총기 최대 탄창 수
 
     // ── [총기 부가 설정] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
@@ -152,6 +159,16 @@ struct FGunData : public FWeaponData
     TSoftObjectPtr<UAnimSequence> ReloadAnimation;
 };
 
+USTRUCT(BlueprintType)
+struct FMeleeData : public FWeaponData
+{
+    GENERATED_BODY()
+
+    // ── [플레이어 근접무기 애니메이션 (Animations)] ──
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animations")
+    TSoftObjectPtr<UAnimMontage> PlayerAttackAnimation;
+};
+
 // ******************************
-// 무기 데이터테이블 구조체 선언부
+// 무기 데이터 테이블 구조체 선언부
 // ******************************
