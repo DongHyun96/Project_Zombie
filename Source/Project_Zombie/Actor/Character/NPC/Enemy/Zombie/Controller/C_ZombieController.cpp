@@ -18,9 +18,9 @@
 #include "BehaviorTree/BlackboardData.h"
 
 // StatComponent
-#include "../C_EnemyStatComponent.h"
+#include "../../C_EnemyStatComponent.h"
 
-#include "../../../../../GlobalEnum.h"
+#include "../../../../../../GlobalEnum.h"
 
 #include "../C_Zombie.h"
 

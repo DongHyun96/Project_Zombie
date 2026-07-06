@@ -2,8 +2,9 @@
 
 #include "C_ZombieAnimInstance.h"
 
-#include "../Actor/Character/NPC/Enemy/C_Zombie.h"
+#include "../Actor/Character/NPC/Enemy/Zombie/C_Zombie.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "../Actor/Character/NPC/Enemy/C_EnemySkillComponent.h"
 
 void UC_ZombieAnimInstance::NativeInitializeAnimation()
 {
@@ -37,4 +38,11 @@ void UC_ZombieAnimInstance::NativeUpdateAnimation(float _DT)
 		m_Direction = CalculateDirection(Valocity, m_Zombie->GetActorRotation());
 
 	m_VerticalSpeed = m_MovementComponent->Velocity.Z;
+}
+
+void UC_ZombieAnimInstance::AnimNotify_SkillEnd()
+{
+	UE_LOG(LogTemp, Warning, TEXT("AN_SkillEnd"));
+
+	m_Zombie->GetSkillComponent()->EndSkill();
 }
