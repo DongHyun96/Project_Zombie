@@ -113,6 +113,11 @@ protected:
 	//UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	//UInputAction* IA_ToggleMode;
 
+	// 핑 찍기 마우스 가운데 버튼
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+	UInputAction* IA_MarkPing{};
+	
+
 private:
 	// 조종할 대상 캐릭터와 무브먼트 컴포넌트 주소 저장용
 	UPROPERTY()
@@ -172,5 +177,9 @@ private: // FreeLook 관련
 	
 	void FreeLookHolStart();
 	void FreeLookHoldEnd();
+	
+private: // Ping system 관련
+	
+	void MarkPing();
 	
 };

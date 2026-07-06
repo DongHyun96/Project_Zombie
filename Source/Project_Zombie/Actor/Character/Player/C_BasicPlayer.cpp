@@ -20,6 +20,7 @@
 #include "Actor/Components/C_EquippedComponent.h"
 #include "Actor/Components/C_TurnInPlaceComponent.h"
 #include "Actor/Components/C_InvenComponent.h"
+#include "Actor/Components/C_PingSystemComponent.h"
 #include "GameMode/C_UIManager.h"
 #include "UI/InvenUI/C_InventoryGridWidget.h"
 #include "UI/InvenUI/C_InventoryWidget.h"
@@ -89,6 +90,9 @@ AC_BasicPlayer::AC_BasicPlayer()
 	
 	// ControllerFSM Component
 	m_ControllerFSMComponent = CreateDefaultSubobject<UC_ControllerFSMComponent>(TEXT("ControllerFSMComponent"));
+	
+	// PingSystem Component
+	m_PingSystemComponent = CreateDefaultSubobject<UC_PingSystemComponent>(TEXT("PingSystemComponent"));
 }
 
 void AC_BasicPlayer::BeginPlay()
