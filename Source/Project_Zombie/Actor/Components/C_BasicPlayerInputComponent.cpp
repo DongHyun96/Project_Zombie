@@ -91,7 +91,7 @@ void UC_BasicPlayerInputComponent::InitializePlayerInput(UInputComponent* Player
 
 		if (IA_Reload)
 		{
-			EnhancedInputComponent->BindAction(IA_Reload, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::Reload);
+			EnhancedInputComponent->BindAction(IA_Reload, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::ReloadAction);
 		}
 		
 		if (IA_EquipMainWeapon)
@@ -214,7 +214,8 @@ void UC_BasicPlayerInputComponent::FireEnd()
 		CurWeapon->OnFireEnd(Player);
 }
 
-void UC_BasicPlayerInputComponent::Reload()
+
+void UC_BasicPlayerInputComponent::ReloadAction()
 {
 	if (AC_WeaponBase* CurWeapon = Player->GetEquippedComponent()->GetCurWeapon())
 		CurWeapon->Reload(Player);
