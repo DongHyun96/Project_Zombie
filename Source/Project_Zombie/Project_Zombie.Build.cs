@@ -22,7 +22,7 @@ public class Project_Zombie : ModuleRules
             "SlateCore",
             "GameplayTags",
 			"DeveloperSettings",
-			"NetCore" 
+			"NetCore",
 			"Niagara"
 		});
 
