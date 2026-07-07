@@ -113,6 +113,17 @@ void AC_BasicPlayer::BeginPlay()
 	UIManager->GetInventoryWidget()->GetPlayerGridWidget()->SetInvenComponent(m_InvenComponent);
 	// 까지
 	
+	// 테스트용 삭제 예정
+	if (m_Camera)
+	{
+		BaseFOV = m_Camera->FieldOfView;
+	}
+
+	// 테스트용 삭제 예정
+	if (m_SpringArm)
+	{
+		BaseCameraOffset = m_SpringArm->SocketOffset;
+	}
 	
 	// 입력 시스템 초기화
 	//InitInput();
@@ -138,6 +149,13 @@ void AC_BasicPlayer::Tick(float DeltaTime)
 	{
 		RecoverBoost(m_BoostRecoverCost * DeltaTime);
 	}
+
+	// [Aim] 카메라 변환 중일 때만 함수 호출
+	if (bIsTransitioningCamera)
+	{
+		UpdateCameraInterpolation(DeltaTime);
+	}
+
 }
 
 void AC_BasicPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -323,6 +341,56 @@ void AC_BasicPlayer::ApplyWalkSpeed()
 	m_IsCrouchTransitioning = false;
 
 	ApplyMovementSpeed();
+}
+
+void AC_BasicPlayer::OnAimPressed()
+{
+	bIsAiming = true;
+	bIsTransitioningCamera = true;
+}
+
+void AC_BasicPlayer::OnAimReleased()
+{
+	bIsAiming = false;
+	bIsTransitioningCamera = true;
+}
+
+void AC_BasicPlayer::UpdateCameraInterpolation(float DeltaTime)
+{
+	AC_GunBase* GunBase = Cast<AC_GunBase>(m_EquippedComponent->GetCurWeapon());
+
+	// 무기 데이터 체크
+	if (!GunBase)
+	{
+		bIsTransitioningCamera = false;
+		return;
+	}
+
+	// 데이터 테이블 컴포넌트에서 필요한 조준 데이터 추출 (예시 변수명 반영)
+	float TargetFOV = bIsAiming ? GunBase->GetTargetFOV() : BaseFOV;
+	FVector TargetOffset = bIsAiming ? GunBase->GetCameraOffset() : BaseCameraOffset;
+	float AimSpeed = GunBase->GetAimSpeed();
+
+	// 0 방지 예외 처리
+	if (AimSpeed <= 0.f) AimSpeed = 10.f;
+
+	// 부드러운 보간 처리
+	m_Camera->FieldOfView = FMath::FInterpTo(m_Camera->FieldOfView, TargetFOV, DeltaTime, AimSpeed);
+	m_SpringArm->SocketOffset = FMath::VInterpTo(m_SpringArm->SocketOffset, TargetOffset, DeltaTime, AimSpeed);
+
+	// 목표치에 거의 도달했는지 체크
+	bool bFOVFinished = FMath::IsNearlyEqual(m_Camera->FieldOfView, TargetFOV, 0.1f);
+	bool bOffsetFinished = m_SpringArm->SocketOffset.Equals(TargetOffset, 0.5f);
+
+	if (bFOVFinished && bOffsetFinished)
+	{
+		// 목표 값으로 미세한 떨림 방지
+		m_Camera->FieldOfView = TargetFOV;
+		m_SpringArm->SocketOffset = TargetOffset;
+
+		// 조준 완료 또는 해제 완료되었으므로 다음 상태 변화 전까지 Tick 연산 Off
+		bIsTransitioningCamera = false;
+	}
 }
 
 

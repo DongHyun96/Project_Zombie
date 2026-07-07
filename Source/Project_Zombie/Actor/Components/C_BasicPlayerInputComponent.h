@@ -161,7 +161,8 @@ private:
 	void FireEnd();
 	void ReloadAction();
 	
-	void Reload();
+	void KeepAimActionStart();
+	void KeepAimActionEnd();
 	
 	// 인벤토리를 여닫는 함수
 	void ToggleInventoryWidget();

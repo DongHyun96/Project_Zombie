@@ -15,11 +15,19 @@ struct FWeaponDataValue
 	UPROPERTY()
 	bool					bIsAsset = false;
 
+	// 이 데이터가 FVector인지 구분
+	UPROPERTY()
+	bool					bIsVector = false;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (EditCondition = "!bIsAsset", EditConditionHides))
 	float					FloatValue = 0.f;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (EditCondition = "bIsAsset", EditConditionHides))
 	TSoftObjectPtr<UObject> AssetValue = nullptr;
+	
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (EditCondition = "bIsVector", EditConditionHides))
+	FVector VectorValue = FVector::ZeroVector;
 };
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -42,6 +50,7 @@ public:
 	{
 		FWeaponDataValue NewValue;
 		NewValue.bIsAsset = false;
+		NewValue.bIsVector = false;
 		NewValue.FloatValue = _Amount;
 		NewValue.AssetValue = nullptr;
 
@@ -53,8 +62,20 @@ public:
 	{
 		FWeaponDataValue NewValue;
 		NewValue.bIsAsset = true;
+		NewValue.bIsVector = false;
 		NewValue.FloatValue = 0.f;
 		NewValue.AssetValue = _Asset;
+
+		m_Data.Add(_StatName, NewValue);
+	}
+
+	// FVector 데이터 추가 함수
+	void AddVectorData(FName _StatName, const FVector& _Value)
+	{
+		FWeaponDataValue NewValue;
+		NewValue.bIsAsset = false;
+		NewValue.bIsVector = true;
+		NewValue.VectorValue = _Value;
 
 		m_Data.Add(_StatName, NewValue);
 	}
@@ -85,6 +106,19 @@ public:
 			}
 		}
 		return nullptr;
+	}
+
+	// FVector 데이터 Get 함수
+		FVector GetVectorData(FName _StatName)
+	{
+		if (FWeaponDataValue* pData = m_Data.Find(_StatName))
+		{
+			if (pData->bIsVector)
+			{
+				return pData->VectorValue;
+			}
+		}
+		return FVector::ZeroVector;
 	}
 
 	// Float 데이터 수정 (사용 할 때 대비)

@@ -150,7 +150,6 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
 	float 				m_MouseSensitivity;
 
-
 // [Movement]
 protected:
 	// 걷기 속도
@@ -213,6 +212,19 @@ protected:
 
 	// 웅크리기 전환 타이머 핸들
 	FTimerHandle m_CrouchTransitionTimerHandle;
+
+	// [Aim]
+protected:
+	bool bIsAiming = false;
+
+	// 카메라가 조준/해제 상태로 이동 중인지 여부
+	bool bIsTransitioningCamera = false;
+
+	// 임시 변수 삭제 예정
+	float BaseFOV;
+
+	// 임시 변수 삭제 예정
+	FVector BaseCameraOffset;
 
 private:
 	// Free look 상태 (Hold Alt 상태)
@@ -314,6 +326,15 @@ public:
 	void ApplyCrouchSpeed();
 	void ApplyWalkSpeed();
 	
+	// [Aim]
+public:
+	// 조준 입력 시 호출될 함수
+	void OnAimPressed();
+	void OnAimReleased();
+
+	// 매 프레임 카메라 시점을 에임으로 구동할 함수
+	void UpdateCameraInterpolation(float DeltaTime);
+
 public:
 	// UI 드롭 시 서버에 안전하게 요청을 도달시켜 줄 확성기 RPC
 	UFUNCTION(Server, Reliable, WithValidation)

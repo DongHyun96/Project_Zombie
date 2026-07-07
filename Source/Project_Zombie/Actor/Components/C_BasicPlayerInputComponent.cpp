@@ -90,6 +90,12 @@ void UC_BasicPlayerInputComponent::InitializePlayerInput(UInputComponent* Player
 			
 		}
 
+		if (IA_Aim)
+		{
+			EnhancedInputComponent->BindAction(IA_Aim, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::KeepAimActionStart);
+			EnhancedInputComponent->BindAction(IA_Aim, ETriggerEvent::Completed, this, &UC_BasicPlayerInputComponent::KeepAimActionEnd);
+		}
+
 		if (IA_Reload)
 		{
 			EnhancedInputComponent->BindAction(IA_Reload, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::ReloadAction);
@@ -217,6 +223,18 @@ void UC_BasicPlayerInputComponent::ReloadAction()
 {
 	if (AC_WeaponBase* CurWeapon = Player->GetEquippedComponent()->GetCurWeapon())
 		CurWeapon->Reload(Player);
+}
+
+void UC_BasicPlayerInputComponent::KeepAimActionStart()
+{
+	if(Player)
+		Player->OnAimPressed();
+}
+
+void UC_BasicPlayerInputComponent::KeepAimActionEnd()
+{
+	if (Player)
+		Player->OnAimReleased();
 }
 
 void UC_BasicPlayerInputComponent::ToggleInventoryWidget()

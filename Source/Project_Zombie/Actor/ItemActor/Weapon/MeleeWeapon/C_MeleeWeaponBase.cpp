@@ -131,11 +131,8 @@ void AC_MeleeWeaponBase::Attack(AC_BasicPlayer* _WeaponUser)
 {
 	if (!_WeaponUser || !m_PlayerAttackAnimation) return;
 
-	if (USkeletalMeshComponent* Mesh = _WeaponUser->GetMesh())
-	{
-		if (UAnimInstance* AnimInstance = Mesh->GetAnimInstance())
-		{
-			AnimInstance->Montage_Play(m_PlayerAttackAnimation);
-		}
-	}
+	FVector CurSockPos = m_WeaponMesh->GetSocketLocation(TEXT("HitBoxSock"));
+
+	_WeaponUser->PlayAnimMontage(m_PlayerAttackAnimation);
+
 }
