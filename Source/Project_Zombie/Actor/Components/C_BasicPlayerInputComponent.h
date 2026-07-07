@@ -49,75 +49,10 @@ protected:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Input")
 	class UInputMappingContext* DefaultMappingContext{};
 
-	// 이동			// WASD
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
-	class UInputAction* IA_Move;
-
-	// 시점 회전		// Mouse
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
-	UInputAction* IA_Look;
-
-	// 점프			// SpaceBar
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
-	UInputAction* IA_Jump;
-
-	// 웅크리기		// Ctrl
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
-	UInputAction* IA_Crouch;
-
-	// 달리기		// Shift
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
-	UInputAction* IA_Sprint;
-
-	// 공격			// LMB
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
-	UInputAction* IA_Fire;
-
-	// 시점 전환		// RMB
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
-	UInputAction* IA_Aim;
-
-	// 재장전		// R
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
-	UInputAction* IA_Reload;
-
-	// 주무기 장착 // 1
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
-	UInputAction* IA_EquipMainWeapon;
-
-	// 근접무기 장착 // 2
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
-	UInputAction* IA_EquipMeleeWeapon;
-
-	// 투척류 무기 장착 // 3
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
-	UInputAction* IA_EquipThrowable;
-
-	// 무장, 비무장 상태 전환 // X
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
-	UInputAction* IA_ToggleArmed;
-
-	// 인벤토리 열기	// Tab
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
-	UInputAction* IA_ToggleInventory;
-
-	// 상호작용		// E
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
-	UInputAction* IA_Interact;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
-	UInputAction* IA_FreeLook{};
-
-
-	// 인칭 전환
-	//UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
-	//UInputAction* IA_ToggleMode;
-
-	// 핑 찍기 마우스 가운데 버튼
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
-	UInputAction* IA_MarkPing{};
+	// Default mapping context와 연결된 InputAction들
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Input")
+	TMap<FString, const class UInputAction*> m_mapIA{};
 	
-
 private:
 	// 조종할 대상 캐릭터와 무브먼트 컴포넌트 주소 저장용
 	UPROPERTY()
@@ -144,6 +79,10 @@ public:
 	// 플레이어의 SetupPlayerInputComponent에서 호출해 줄 초기화 함수
 	void InitializePlayerInput(UInputComponent* PlayerInputComponent, AC_BasicPlayer* InPlayer);
 
+private:
+	
+	const UInputAction* FindIAByName(const FString& _Name);
+	
 private:
 	
 	void MoveAction(const FInputActionValue& Value);
