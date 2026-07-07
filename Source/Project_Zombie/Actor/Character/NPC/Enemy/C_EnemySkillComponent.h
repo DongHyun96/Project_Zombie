@@ -87,8 +87,13 @@ protected:
 
 public:	
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-	void UseSkill(ESkillSlot _Slot);
 
+	/// <summary>
+	/// 스킬이 사용중인지 체크하는 함수
+	/// </summary>
+	/// <returns></returns>
+	bool IsUsingSkill() const { return bUsingSkill; }
+	void UseSkill(ESkillSlot _Slot);
 	void EndSkill();
 
 public:

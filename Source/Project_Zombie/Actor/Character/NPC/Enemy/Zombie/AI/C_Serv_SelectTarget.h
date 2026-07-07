@@ -7,7 +7,7 @@
 #include "C_Serv_SelectTarget.generated.h"
 
 /// <summary>
-/// 인지 대상중 어그로 수치에 따라 추적할 타겟 고르는 서비스 
+/// 가장 가까운 플레이어를 타겟으로 선택하는 서비스
 /// </summary>
 
 UCLASS()

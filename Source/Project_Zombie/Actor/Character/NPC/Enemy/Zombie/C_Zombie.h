@@ -25,10 +25,5 @@ public:
 public:	
 	virtual void Tick(float DeltaTime) override;
 
-	/// <summary>
-	/// 공격 애니메이션 테스트용 임시 함수
-	/// </summary>
-	void PlayAttack();
-
 	AC_Zombie();
 };

@@ -20,22 +20,6 @@ EBTNodeResult::Type UC_Task_Attack::ExecuteTask(UBehaviorTreeComponent& _OwnCom,
 {
 	Super::ExecuteTask(_OwnCom, _NodeMemory);
 
-	AAIController* AI = _OwnCom.GetAIOwner();
-
-	if (AI)
-	{
-		AI->StopMovement();
-	}
-
-	AC_Zombie* pZombie = Cast<AC_Zombie>(_OwnCom.GetAIOwner()->GetPawn());
-
-	if (pZombie)
-	{
-		pZombie->PlayAttack();
-	}
-
-	UE_LOG(LogTemp, Warning, TEXT("!! ATTACK !!"));
-
 	return EBTNodeResult::Succeeded;
 }
 

@@ -5,6 +5,9 @@
 
 #include "../Controller/C_ZombieController.h"
 #include "../C_Zombie.h"
+#include "../../../../Player/C_BasicPlayer.h"
+
+#include "Kismet/GameplayStatics.h"
 
 #include "BehaviorTree/BlackboardComponent.h"
 
@@ -28,7 +31,7 @@ void UC_Serv_SelectTarget::TickNode(UBehaviorTreeComponent& _OwnCom, uint8* _Nod
 	if (!pZombie)
 		return;
 
-	// 인지범위를 벗어난 대상이 일정시간이 지나면 인지목록에서 제거
+	/*// 인지범위를 벗어난 대상이 일정시간이 지나면 인지목록에서 제거
 	pController->ClearSensedTarget(3.f);
 
 	float MaxAggro = -1.f;
@@ -63,7 +66,30 @@ void UC_Serv_SelectTarget::TickNode(UBehaviorTreeComponent& _OwnCom, uint8* _Nod
 				Pos = Info.Target->GetActorLocation();
 			}
 		}
+	}*/
+
+	// 플레이어 목록을 가져온다
+	TArray<AActor*> Players;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AC_BasicPlayer::StaticClass(), Players);
+
+	// 가장 가까운 플레이어를 찾는다
+	AActor* pBestTarget = nullptr;
+	float MinDist = FLT_MAX;
+
+	for (AActor* pPlayer : Players)
+	{
+		if (!pPlayer)
+			continue;
+
+		float Dist = FVector::Dist(pPlayer->GetActorLocation(), pZombie->GetActorLocation());
+
+		if (Dist < MinDist)
+		{
+			MinDist = Dist;
+			pBestTarget = pPlayer;
+		}
 	}
+
 
 	UBlackboardComponent* pBBCom = _OwnCom.GetBlackboardComponent();
 	if (!pBBCom)
