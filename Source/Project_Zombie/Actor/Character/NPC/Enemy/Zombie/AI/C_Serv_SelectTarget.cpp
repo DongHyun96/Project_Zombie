@@ -90,11 +90,11 @@ void UC_Serv_SelectTarget::TickNode(UBehaviorTreeComponent& _OwnCom, uint8* _Nod
 		}
 	}
 
-
+	// 가장 가까운 플레이어를 블랙보드에 타겟으로 설정
 	UBlackboardComponent* pBBCom = _OwnCom.GetBlackboardComponent();
 	if (!pBBCom)
 		return;
-
+	
 	pBBCom->SetValueAsObject(m_Target.SelectedKeyName, pBestTarget);
 
 }
