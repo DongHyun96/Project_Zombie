@@ -30,7 +30,8 @@ public:
 	/// </summary>
 	void SetPingMarkerColor(const FLinearColor& _Color) { PingMarkerImage->SetColorAndOpacity(_Color); }
 
-	void TogglePingMarker(bool _Visible);
+	void ShowPingWidget(const FVector& _WorldPingSpawnedLocation);
+	void HidePingWidget();
 	
 	void SetSpawnedLocation(const FVector& _SpawnedLocation) { m_SpawnedLocation = _SpawnedLocation; }
 	
@@ -55,5 +56,7 @@ private:
 
 	// MyPlayer와의 거리를 잴 때, 자신이 spawn된 World 위치를 저장, 거리를 잴 때 사용
 	FVector m_SpawnedLocation{};
-	
+
+	// Player HUD CompassBar 내에 위치한 대응되는 CompassMarkerWidget -> 이 친구의 Meter 정보를 여기서 일괄 업데이트 시킴
+	class UC_CompassMarkerWidget* m_TargetCompassMarkerWidget{};
 };

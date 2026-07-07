@@ -25,6 +25,10 @@ public:
 private:
 	
 	void SetDisplayDegreeText(float _RotationYaw);
+	
+public:
+	
+	class UC_CompassMarkerWidget* GetCompassMarkerWidget() const { return CompassPingMarker; } // TODO : 추후 해당 인원에 맞는 CompassMarkerWidget을 return 시켜주어야 함
 
 protected:
 
@@ -37,6 +41,11 @@ protected: // CompassBar 이미지 및 Material 관련
 
 	UPROPERTY(meta = (BindWidget))
 	class UImage* CompassBarImage{};
+
+	/* Compass Marker */
+	
+	UPROPERTY(meta = (BindWidget))
+	UC_CompassMarkerWidget* CompassPingMarker{}; // TODO : 추후, 최대 인원수만큼 늘려놔야하는 구조로 수정해야 함
 	
 private:
 	
@@ -56,5 +65,5 @@ private:
 		{0,		FText::FromString(TEXT("N"))},
 	};
 	
-	const FLinearColor m_ZeroDegColor = FLinearColor(FColor(255, 220, 0, 255));
+	const FLinearColor m_ZeroDegColor = FLinearColor(FColor(142, 234, 0, 255));
 };
