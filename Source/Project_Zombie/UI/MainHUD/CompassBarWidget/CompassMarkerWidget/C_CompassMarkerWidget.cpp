@@ -55,8 +55,7 @@ void UC_CompassMarkerWidget::NativeTick(const FGeometry& MyGeometry, float InDel
 	float DeltaYaw = RawLookAtYaw - RawControllerYaw;
 	DeltaYaw = FRotator::NormalizeAxis(DeltaYaw);
 
-	// TODO : 이거 Static
-	const float CompassHalfFOV = 210.f * 0.5f;   // 나침반 UI가 화면에 보여줄 총 각도 범위 (예: 좌우 90도씩 총 180도)
+	static const float CompassHalfFOV = 210.f * 0.5f;   // 나침반 UI가 화면에 보여줄 총 각도 범위 (예: 좌우 90도씩 총 180도)
 
 	// 마커가 나침반 가시 범위 안에 있을 때만 위치를 계산하고 표시합니다.
 	if (FMath::Abs(DeltaYaw) > CompassHalfFOV)

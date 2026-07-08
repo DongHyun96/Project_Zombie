@@ -84,8 +84,6 @@ float UC_BasicCharacterAnimInstance::Montage_PlayInternal
 	/* 구한 Priority 값 비교 */
 	if (IncomingPriority >= CurPlayingPriority)
 	{
-		UC_Util::Print("Playing new Montage on " + TargetGroup.ToString(), FColor::Red, 10.f);
-		
 		m_CurPriorityAnimMontage[TargetGroup] = MontageToPlay;
 		return Super::Montage_PlayInternal(MontageToPlay, BlendInSettings, InPlayRate, ReturnValueType, InTimeToStartMontageAt, bStopAllMontages);
 	}
