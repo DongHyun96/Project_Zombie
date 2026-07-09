@@ -16,7 +16,7 @@ public:
 	/// <summary>
 	/// 스킬 구현함수
 	/// </summary>
-	virtual void Activate(class AC_BasicEnemy* _Owner, class UC_EnemySkillData* _Data);
+	virtual void Activate(class AC_BasicEnemy* _Owner, class UC_EnemySkillData* _Data) {}
 
 public:
 	UC_EnemySkillBase();
