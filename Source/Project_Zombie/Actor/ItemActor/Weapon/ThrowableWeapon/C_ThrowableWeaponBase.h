@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "Actor/ItemActor/Weapon/C_WeaponBase.h"
+#include "Engine/EngineTypes.h"
+#include "CollisionQueryParams.h"
 #include "C_ThrowableWeaponBase.generated.h"
 
 UENUM(BlueprintType)
@@ -17,11 +19,13 @@ enum class EThrowableType : uint8
 UENUM(BlueprintType)
 enum class EThrowableState : uint8
 {
-	None,
-	RemovePin,
-	Ready,
-	Thrown,
-	Exploded,
+	Idle,		// 기본 상태
+	RemovePin,	// 핀 제거
+	Ready,		// 투척 준비 
+	ReadyLoop,	// 투척 준비 동작 루프
+	Throwing,	// 투척 중
+	Thrown,		// 투척 
+	Exploded,	// 폭발 
 };
 
 UCLASS()
@@ -79,6 +83,21 @@ public: // 쿠킹 입력
 	UFUNCTION(BlueprintCallable, Category = "Throwable|Cooking")
 	bool OnStartCookInput();
 
+public:  // Getter & Setter
+	
+	AC_BasicPlayer* GetThrowableUser() const { return m_WeaponUser; }
+
+	float GetExplosionRadius() const { return m_ExplosionRadius; }
+	void SetExplosionRadius(float _ExplosionRadius) { m_ExplosionRadius = _ExplosionRadius; }
+
+	float GetMaxDamage() const { return m_MaxDamage; }
+	void SetMaxDamage(float _MaxDamage) { m_MaxDamage = _MaxDamage; }
+
+	float GetMinDamage() const { return m_MinDamage; }
+	void SetMinDamage(float _MinDamage) { m_MinDamage = _MinDamage; }
+
+	ECollisionChannel GetExplosionTraceChannel() const { return m_ExplosionTraceChannel; }
+
 protected: // 폭발
 
 	/// <summary>
@@ -120,6 +139,25 @@ private: // 투척 관련 처리
 	///	</summary>
 	void LaunchCurrentActorAsProjectile(const FVector& _ThrowDirection);
 
+	/// <summary>
+	///  충돌 이벤트 함수
+	/// </summary>
+	/// <param name="HitComponent"></param>
+	/// <param name="OtherActor"></param>
+	/// <param name="OtherComp"></param>
+	/// <param name="NormalImpulse"></param>
+	/// <param name="Hit"></param>
+	UFUNCTION()
+	void OnThrowableHit
+	(
+		UPrimitiveComponent* HitComponent,	// 충돌한 컴포넌트
+		AActor* OtherActor,					// 충돌한 액터
+		UPrimitiveComponent* OtherComp,		// 충돌한 액터의 컴포넌트
+		FVector NormalImpulse,				// 충돌 시 발생한 힘의 방향과 크기
+		const FHitResult& Hit				// 충돌 정보
+	);
+
+
 private: // 타이머 관련
 
 	/// <summary>
@@ -149,7 +187,7 @@ protected:
 	// Hand Socket Name (각 Throwable 블루프린트에서 Name 초기화 해줄 것)
 	UPROPERTY(EditDefaultsOnly, meta = (DisplayName = "HandSocketName"))
 	FName m_HandSocketName{};
-	
+
 private:
 	
 	// Holster(무기집 위치) Socket Name (모든 Throwable 공통 무기집 위치 사용할 예정)
@@ -166,9 +204,17 @@ protected: // 충돌체 관련
 
 public: // 몽타주 관련
 
-	// 몽타주 (몽타주 안에서 세션 나누어서 애님 노티파이 이벤트 발생)
+	// 몽타주
+	//UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)
+	//UAnimMontage* m_RemovePinMontage;
+
+	//UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)
+	//UAnimMontage* m_ReadyMontage;
+
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)
 	UAnimMontage* m_ThrowMontage;
+
+public: 
 
 	// Section 이름들
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)
@@ -176,6 +222,9 @@ public: // 몽타주 관련
 	
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)
 	FName m_ReadySectionName;
+
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)
+	FName m_LoopSectionName;
 	
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)
 	FName m_ThrowSectionName;
@@ -192,8 +241,14 @@ public: // Throwable Weapon의 투척 특성 관련
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|State")
 	bool m_bIsCookable;
 
-	// 폭발까지 걸리는 시간 (핀 제거 후, 폭발까지 걸리는 시간)
+	// 충돌 시 폭발 여부
+	// 충돌하면 바로 폭발하는가?
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|State")
+	bool m_bExplodeOnImpact;
+
+	// 폭발까지 걸리는 시간 (핀 제거 후, 폭발까지 걸리는 시간)
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|State",
+		meta = (EditCondition = "!m_bExplodeOnImpact", EditConditionHides, ClampMin = "0.0"))
 	float m_FuseTime;
 
 	// 투척 속도
@@ -208,6 +263,26 @@ public: // Throwable Weapon의 투척 특성 관련
 	// Player의 Hand Socket 위치에서 Upward 방향으로 Offset만큼 이동한 위치에서 투척
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|Launch")
 	float m_LaunchUpwardOffset;
+
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|Launch")
+	TSubclassOf<class UObject> m_ExplodeStrategyClass;
+
+	// 폭발 반경
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|Explosion")
+	float m_ExplosionRadius;
+
+	// 최대 데미지
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|Explosion")
+	float m_MaxDamage;
+
+	// 최소 데미지
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|Explosion")
+	float m_MinDamage;
+
+	// 폭발 데미지를 줄 때 사용할 Trace Channel
+	// 폭발 위치와 대상 사이에 벽 있는지 확인
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|Explosion")
+	TEnumAsByte<ECollisionChannel> m_ExplosionTraceChannel = ECC_Visibility;
 
 protected:
 	
@@ -227,27 +302,22 @@ protected:
 	// Throwable Weapon의 상태
 	EThrowableState m_ThrowableState;
 
+	// 폭발 실제 Object
+	UPROPERTY()
+	UObject* m_ExplodeStrategyObject = nullptr;
+
 
 private:
 
 	// 투척류의 Fuse Timer (핀 제거 후, 폭발까지 걸리는 시간)
 	FTimerHandle m_FuseTimerHandle;
-
-	// 투척 과정 중인지
-	bool m_bIsThrowing;
 	
 	// 버튼을 누르고 있는지
 	bool m_bIsCharging;
-
-	// 쿠킹이 시작되었는지
-	bool m_bIsCooking;
 
 	// 마우스를 떼었는지
 	bool m_bWantsThrow;
 
 	// 쿠킹을 원하는지
 	bool m_bWantsCook;
-
-	// 폭발이 발생했는지
-	bool m_bHasExploded;
 };
