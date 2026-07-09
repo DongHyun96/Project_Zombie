@@ -9,57 +9,6 @@
 void UC_InventoryGridWidget::NativeConstruct()
 {
     Super::NativeConstruct();
-
-    //if (!ItemGridPanel || !SlotWidgetClass) return;
-    //
-    //// 기존 그리드와 배열 청소
-    //ItemGridPanel->ClearChildren();
-    //SlotWidgets.Reset();
-    //
-    //for (int32 i = 0; i < MaxSlots; ++i)
-    //{
-    //    // 슬롯 위젯 생성
-    //    UC_ItemSlotWidget* NewSlot = CreateWidget<UC_ItemSlotWidget>(this, SlotWidgetClass);
-    //    if (!NewSlot) continue;
-    //
-    //    // 슬롯 위젯에게 자신이 몇 번째 칸인지 인덱스를 부여 (드래그 앤 드롭 구현 시 필수)
-    //    NewSlot->SetSlotIndex(i); 
-    //    NewSlot->SetGridWidget(this);
-    //    // 행(Row)과 열(Column) 계산 (이미지의 나누기/나머지 로직)
-    //    int32 CurRow = i / Column;
-    //    int32 CurColumn = i % Column;
-    //    
-    //    ItemGridPanel->AddChildToUniformGrid(NewSlot, CurRow, CurColumn);
-    //    //NewSlot->SetGridWidget(ItemGridPanel);
-    //    // 추적 관리를 위해 배열에 보관 
-    //    SlotWidgets.Add(NewSlot);
-    //}
-
-    //if (InvenComp)
-    //    RefreshAllSlots(InvenComp->GetInventoryItems());
-    
-    
-    //APlayerController* PC = GetOwningPlayer();
-    //if (PC && PC->GetPawn())
-    //{
-    //    // 프로젝트 플레이어 캐릭터 타입으로 변환
-    //    if (AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(PC->GetPawn()))
-    //    {
-    //        if (UC_InvenComponent* pInvenComp = Player->GetInvenComponent())
-    //        {
-    //            // 델리게이트 중복 방지, TODO : 근데 이 부분이 왜 두번 호출됬는지 확인하고 조치를 취할 것.
-    //            // 두번 호출되진 않는거 같은데 델리게이트 중복 오류가 뜨긴함.
-    //            pInvenComp->OnInventorySlotChanged.RemoveDynamic(this, &UC_InventoryGridWidget::RefreshSlotAt);
-    //
-    //            // 인벤의 슬롯이 바뀔 때 마다 내 RefreshSlotAt 함수가 정확한 타겟만 찍어서 수행됩니다.
-    //            pInvenComp->OnInventorySlotChanged.AddDynamic(this, &UC_InventoryGridWidget::RefreshSlotAt);
-    //
-    //            // UI 창이 켜지는 최초 시점에는 도화지가 비어있으므로 한 번 정비해줍니다.
-    //            RefreshAllSlots(InvenComp->GetInventoryItems());
-    //        }
-    //    }
-    //}
-    //SetVisibility(ESlateVisibility::Visible);
 }
 
 void UC_InventoryGridWidget::RefreshAllSlots(const TArray<FInventoryEntry>& InventoryItems)
@@ -156,3 +105,4 @@ void UC_InventoryGridWidget::SetInvenComponent(class UC_InvenComponent* Inventor
         RefreshAllSlots(EmptyArray);
     }
 }
+

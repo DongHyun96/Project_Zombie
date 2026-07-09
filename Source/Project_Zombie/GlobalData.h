@@ -120,6 +120,14 @@ struct FCusorItem
     int32 SourceSlotIndex   = -1;     // 몇 번째 슬롯이었나?
     
     bool bIsValid = false;             // 현재 커서에 아이템이 들려있는가?
+    
+    void Clear()
+    {
+        Item.Clear();
+        SourceContainerID = -1;
+        SourceSlotIndex   = -1;
+        bIsValid = false;
+    }
 };
 
 
