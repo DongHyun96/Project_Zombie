@@ -12,6 +12,12 @@ UC_PoisonAttack::UC_PoisonAttack()
 
 void UC_PoisonAttack::Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data)
 {
+	//UE_LOG(LogTemp, Warning, TEXT("PoisonAttack Activate"));
+
 	_Owner->PlayAnimMontage(_Data->Montage);
+}
+
+void UC_PoisonAttack::Fire(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data)
+{
 }
 

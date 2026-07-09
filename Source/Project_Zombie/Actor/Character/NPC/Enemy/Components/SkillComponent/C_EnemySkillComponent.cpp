@@ -106,3 +106,32 @@ void UC_EnemySkillComponent::EndSkill()
 
 }
 
+void UC_EnemySkillComponent::Fire()
+{
+	if (!m_CurSkillData)
+		return;
+
+	for (FSkillSlotInfo& Info : m_SkillSlots)
+	{
+		if (Info.LoadedSkillData == m_CurSkillData)
+		{
+			Info.SkillInstance->Fire(Cast<AC_BasicEnemy>(GetOwner()), Info.LoadedSkillData);
+			
+			return;
+		}
+	}
+}
+
+float UC_EnemySkillComponent::GetSkillRange(ESkillSlot _Slot) const
+{
+	for (const FSkillSlotInfo& Info : m_SkillSlots)
+	{
+		if (Info.SlotType == _Slot && Info.LoadedSkillData)
+		{
+			return Info.LoadedSkillData->Range;
+		}
+	}
+
+	return 0.f;
+}
+
