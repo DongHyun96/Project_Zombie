@@ -101,6 +101,20 @@ bool UC_PlayerStatWidget::ToggleAmmoInfoVisibility
 		if (!m_bAmmoInfoPlayedReverseFlag) // 역재생 Animation 처리로 마지막에 호출하지 않았을 때 역재생 새로이 재생
 		{
 			// 이전까지 보여줬던 FireMode 전용 ShowAnimation 역으로 재생처리
+			// Idx 0번을 메인으로 띄워줘야 함 -> 이미 Idx 0번이면 처리할 필요 x
+			// 1번을 보여주던 상태에서 역재생으로 보이지 않게끔 처리할 때, 0번 Idx로 맞추고 동시에 내용도 1번 Idx 내용물로 바꿔야한다
+			if (m_bCurrentShowingMagTextIdx)
+			{
+				PasteCurrentShowingMagTextToHidden(); // 내용물 현재 보여지는 내용물로 세팅
+				m_bCurrentShowingMagTextIdx = false; // idx 0번으로 세팅
+			}
+			
+			if (m_bCurrentShowingLeftAmmoTextIdx)
+			{
+				PasteCurrentShowingLeftAmmoTextToHidden(); // 내용물 현재 보여지는 내용물로 세팅
+				m_bCurrentShowingLeftAmmoTextIdx = false; // idx 0번으로 세팅
+			}
+			
 			PlayAnimation(m_ShowAmmoInfosAnims[m_CurrentShowingFireMode], 0.f, 1, EUMGSequencePlayMode::Reverse);
 			m_bAmmoInfoPlayedReverseFlag = true;
 		}
@@ -115,11 +129,11 @@ bool UC_PlayerStatWidget::ToggleAmmoInfoVisibility
 	m_CurrentShowingFireMode = _FireMode;
 
 	m_bCurrentShowingMagTextIdx   = false; // IDX 0
-	m_bCurrentShowingLeftAmmoText = false;
+	m_bCurrentShowingLeftAmmoTextIdx = false;
 
 	// 들어온 총알 값 세팅
-	SetMagazineText(_MagazineAmmo);
-	SetLeftAmmoText(_LeftAmmoTotalCount);
+	SetCurrentShowingMagazineText(_MagazineAmmo);
+	SetCurrentShowingLeftAmmoText(_LeftAmmoTotalCount);
 
 	// 현재의 FireMode에 맞는 ShowingAmmoInfoAnim 재생 (만약 이전에 역방향 재생처리를 했었다면)
 	if (m_bAmmoInfoPlayedReverseFlag)
@@ -137,7 +151,7 @@ void UC_PlayerStatWidget::UpdateMagazineAmmoCount(int32 _AmmoCount)
 	m_bCurrentShowingMagTextIdx = !m_bCurrentShowingMagTextIdx;
 
 	// 실질적인 장탄 수 입력
-	SetMagazineText(_AmmoCount);
+	SetCurrentShowingMagazineText(_AmmoCount);
 	
 	// Animation 재생
 	PlayAnimation(m_UpdateMagazineTextAnimations[static_cast<int32>(m_bCurrentShowingMagTextIdx)]);
@@ -146,13 +160,13 @@ void UC_PlayerStatWidget::UpdateMagazineAmmoCount(int32 _AmmoCount)
 void UC_PlayerStatWidget::UpdateLeftAmmoTotalCount(int32 _LeftAmmoTotalCount)
 {
 	// 다음으로 보여줄 Text로 지속적으로 Swapping
-	m_bCurrentShowingLeftAmmoText = !m_bCurrentShowingLeftAmmoText;
+	m_bCurrentShowingLeftAmmoTextIdx = !m_bCurrentShowingLeftAmmoTextIdx;
 
 	// 실질적인 전체 탄수 정보 세팅
-	SetLeftAmmoText(_LeftAmmoTotalCount);
+	SetCurrentShowingLeftAmmoText(_LeftAmmoTotalCount);
 	
 	// Animation 재생
-	PlayAnimation(m_UpdateTotalLeftAmmoAnimations[static_cast<int32>(m_bCurrentShowingLeftAmmoText)]);
+	PlayAnimation(m_UpdateTotalLeftAmmoAnimations[static_cast<int32>(m_bCurrentShowingLeftAmmoTextIdx)]);
 }
 
 void UC_PlayerStatWidget::LerpProgressBar(UProgressBar* _TargetProgressBar, float _LerpAlphaSpeed, float _DestRatio, float _DeltaTime)
@@ -162,7 +176,7 @@ void UC_PlayerStatWidget::LerpProgressBar(UProgressBar* _TargetProgressBar, floa
 	_TargetProgressBar->SetPercent(Ratio);
 }
 
-void UC_PlayerStatWidget::SetMagazineText(int32 _AmmoAmount)
+void UC_PlayerStatWidget::SetCurrentShowingMagazineText(int32 _AmmoAmount)
 {
 	static FLinearColor MAG_NORMAL_COLOR = { 0.71875f, 0.71875f, 0.71875f, 1.f };
 
@@ -174,11 +188,27 @@ void UC_PlayerStatWidget::SetMagazineText(int32 _AmmoAmount)
 	TargetTextBlock->SetColorAndOpacity(_AmmoAmount > 0 ? FSlateColor(MAG_NORMAL_COLOR) : FSlateColor(FLinearColor::Red));
 }
 
-void UC_PlayerStatWidget::SetLeftAmmoText(int32 _AmmoAmount)
+void UC_PlayerStatWidget::SetCurrentShowingLeftAmmoText(int32 _AmmoAmount)
 {
 	const FString DisplayString = FString(TEXT("/ ")) + FString::FromInt(_AmmoAmount);
 	
 	// m_LeftAmmoTexts[static_cast<int32>(m_bCurrentShowingLeftAmmoText)]->SetText(FText::AsNumber(_AmmoAmount));
-	m_LeftAmmoTexts[static_cast<int32>(m_bCurrentShowingLeftAmmoText)]->SetText(FText::FromString(std::move(DisplayString)));
+	m_LeftAmmoTexts[static_cast<int32>(m_bCurrentShowingLeftAmmoTextIdx)]->SetText(FText::FromString(std::move(DisplayString)));
+}
+
+void UC_PlayerStatWidget::PasteCurrentShowingMagTextToHidden()
+{
+	UTextBlock* HiddenTextBlock  = m_MagazineTexts[static_cast<int32>(!m_bCurrentShowingMagTextIdx)];
+	UTextBlock* ShowingTextBlock = m_MagazineTexts[static_cast<int32>(m_bCurrentShowingMagTextIdx)];
+	
+	HiddenTextBlock->SetText(ShowingTextBlock->GetText());
+}
+
+void UC_PlayerStatWidget::PasteCurrentShowingLeftAmmoTextToHidden()
+{
+	UTextBlock* HiddenTextBlock  = m_LeftAmmoTexts[static_cast<int32>(!m_bCurrentShowingLeftAmmoTextIdx)];
+	UTextBlock* ShowingTextBlock = m_LeftAmmoTexts[static_cast<int32>(m_bCurrentShowingLeftAmmoTextIdx)];
+	
+	HiddenTextBlock->SetText(ShowingTextBlock->GetText());
 }
 

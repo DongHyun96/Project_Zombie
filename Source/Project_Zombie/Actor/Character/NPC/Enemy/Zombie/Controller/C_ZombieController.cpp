@@ -18,11 +18,11 @@
 #include "BehaviorTree/BlackboardData.h"
 
 // StatComponent
-#include "../../C_EnemyStatComponent.h"
 
 #include "../../../../../../GlobalEnum.h"
 
 #include "../C_Zombie.h"
+#include "Actor/Character/NPC/Enemy/Components/StatComponent/C_EnemyStatComponent.h"
 
 AC_ZombieController::AC_ZombieController()
 {

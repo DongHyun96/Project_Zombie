@@ -3,8 +3,8 @@
 
 #include "Actor/Character/NPC/Enemy/C_BasicEnemy.h"
 
-#include "C_EnemyStatComponent.h"
-#include "C_EnemySkillComponent.h"
+#include "Components/SkillComponent/C_EnemySkillComponent.h"
+#include "Components/StatComponent/C_EnemyStatComponent.h"
 
 AC_BasicEnemy::AC_BasicEnemy()
 {
