@@ -1,0 +1,73 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Components/ActorComponent.h"
+#include "GlobalData.h"
+#include "Multi/C_InvenStructures.h"
+#include "C_InvenComponent.generated.h"
+
+struct FInventoryContainer;
+
+// C_InventoryGridWidget의 ItemSlot업데이트를 위한 델리게이트
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnInventorySlotChanged, int32, SlotIndex, const FInventoryEntry&, ItemData);
+
+UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+class PROJECT_ZOMBIE_API UC_InvenComponent : public UActorComponent
+{
+	GENERATED_BODY()
+
+public:	
+	// Sets default values for this component's properties
+	UC_InvenComponent();
+
+public:
+    const TArray<FInventoryEntry>& GetInventoryItems() const { return InventoryContainer.Items; }
+	
+	// 특정 슬롯의 아이템 반환
+	const FInventoryEntry& GetItemAt(int32 SlotIndex) const {return InventoryContainer.Items[SlotIndex];}
+
+public:
+	// 아이템 위치 스위칭(자신의 InventoryContainer 내에서 스위칭)
+    bool SwapInvenEntry(int32 SlotIdx1, int32 SlotIdx2);
+
+	// 특정 슬롯의 아이템 초기화
+	void InitInvenItemAt(int32 idx);
+
+	// 다른 인벤(창고)와 아이템을 교환 / 이동할 때 사용하는 함수.
+	bool TransferItemTo(int32 MySlotIdx, UC_InvenComponent* TargetComp, int32 TargetSlotIdx);
+
+	UFUNCTION(BlueprintCallable)
+	bool AddItem(FInventoryEntry ItemEntry);
+
+	// 인벤토리 강제 동기화
+	UFUNCTION(BlueprintCallable)
+	void ForceRepInven();
+	
+protected:
+	virtual void BeginPlay() override;
+	//virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+
+    // 이 함수는 현재 사용하지 않을 예정
+    /// <summary>
+    /// 언리얼 엔진의 네트워크 시스템이 액터나 컴포넌트가 처음 생성될 때 그리고 네트워크 상에 등록될 때 
+    /// 엔진 내부에서 자동으로 호출해주는 함수.
+    /// </summary>
+    virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	UFUNCTION(BlueprintCallable)
+	void OnRep_InventoryContainer();
+protected:
+    // C_IneventoryGridWidget에서 grid slot의 갯수와 일치 시킬 변수
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
+    int32 MaxSlots = 45; 
+	
+	// Fast Array Container
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
+	UPROPERTY(ReplicatedUsing = OnRep_InventoryContainer,EditAnywhere, BlueprintReadWrite, Category = "Inventory")
+	FInventoryContainer InventoryContainer;
+public:
+    UPROPERTY(BlueprintAssignable)
+    FOnInventorySlotChanged OnInventorySlotChanged; // 델리게이트 알림용 변수
+};

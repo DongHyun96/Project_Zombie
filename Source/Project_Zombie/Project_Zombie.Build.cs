@@ -18,27 +18,33 @@ public class Project_Zombie : ModuleRules
 			"StateTreeModule",
 			"GameplayStateTreeModule",
 			"UMG",
-			"Slate"
+			"Slate",
+            "SlateCore",
+            "GameplayTags",
+			"DeveloperSettings",
+			"NetCore",
+			"Niagara"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });
 
+		// 현재 경로가 달라지면서 경고가 뜸.
 		PublicIncludePaths.AddRange(new string[] {
 			"Project_Zombie",
-			"Project_Zombie/Variant_Platforming",
-			"Project_Zombie/Variant_Platforming/Animation",
-			"Project_Zombie/Variant_Combat",
-			"Project_Zombie/Variant_Combat/AI",
-			"Project_Zombie/Variant_Combat/Animation",
-			"Project_Zombie/Variant_Combat/Gameplay",
-			"Project_Zombie/Variant_Combat/Interfaces",
-			"Project_Zombie/Variant_Combat/UI",
-			"Project_Zombie/Variant_SideScrolling",
-			"Project_Zombie/Variant_SideScrolling/AI",
-			"Project_Zombie/Variant_SideScrolling/Gameplay",
-			"Project_Zombie/Variant_SideScrolling/Interfaces",
-			"Project_Zombie/Variant_SideScrolling/UI"
-		});
+			"Project_Zombie/EngineProvided_TPSTemplate/Variant_Platforming",
+			"Project_Zombie/EngineProvided_TPSTemplate/Variant_Platforming/Animation",
+			"Project_Zombie/EngineProvided_TPSTemplate/Variant_Combat",
+			"Project_Zombie/EngineProvided_TPSTemplate/Variant_Combat/AI",
+			"Project_Zombie/EngineProvided_TPSTemplate/Variant_Combat/Animation",
+			"Project_Zombie/EngineProvided_TPSTemplate/Variant_Combat/Gameplay",
+			"Project_Zombie/EngineProvided_TPSTemplate/Variant_Combat/Interfaces",
+			"Project_Zombie/EngineProvided_TPSTemplate/Variant_Combat/UI",
+			"Project_Zombie/EngineProvided_TPSTemplate/Variant_SideScrolling",
+			"Project_Zombie/EngineProvided_TPSTemplate/Variant_SideScrolling/AI",
+			"Project_Zombie/EngineProvided_TPSTemplate/Variant_SideScrolling/Gameplay",
+			"Project_Zombie/EngineProvided_TPSTemplate/Variant_SideScrolling/Interfaces",
+            "Project_Zombie/EngineProvided_TPSTemplate/Variant_SideScrolling/UI"
+        });
 
 		// Uncomment if you are using Slate UI
 		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });

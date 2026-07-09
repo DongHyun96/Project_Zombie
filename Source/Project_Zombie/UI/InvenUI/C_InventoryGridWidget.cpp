@@ -1,0 +1,158 @@
+#include "UI/InvenUI/C_InventoryGridWidget.h"
+#include "Components/UniformGridPanel.h"
+#include "C_ItemSlotWidget.h"
+#include "GameMode/C_ItemManager.h"
+#include "Actor/Character/Player/C_BasicPlayer.h"
+#include "Actor/Components/C_InvenComponent.h"
+#include "Utility/C_Util.h"
+
+void UC_InventoryGridWidget::NativeConstruct()
+{
+    Super::NativeConstruct();
+
+    //if (!ItemGridPanel || !SlotWidgetClass) return;
+    //
+    //// 기존 그리드와 배열 청소
+    //ItemGridPanel->ClearChildren();
+    //SlotWidgets.Reset();
+    //
+    //for (int32 i = 0; i < MaxSlots; ++i)
+    //{
+    //    // 슬롯 위젯 생성
+    //    UC_ItemSlotWidget* NewSlot = CreateWidget<UC_ItemSlotWidget>(this, SlotWidgetClass);
+    //    if (!NewSlot) continue;
+    //
+    //    // 슬롯 위젯에게 자신이 몇 번째 칸인지 인덱스를 부여 (드래그 앤 드롭 구현 시 필수)
+    //    NewSlot->SetSlotIndex(i); 
+    //    NewSlot->SetGridWidget(this);
+    //    // 행(Row)과 열(Column) 계산 (이미지의 나누기/나머지 로직)
+    //    int32 CurRow = i / Column;
+    //    int32 CurColumn = i % Column;
+    //    
+    //    ItemGridPanel->AddChildToUniformGrid(NewSlot, CurRow, CurColumn);
+    //    //NewSlot->SetGridWidget(ItemGridPanel);
+    //    // 추적 관리를 위해 배열에 보관 
+    //    SlotWidgets.Add(NewSlot);
+    //}
+
+    //if (InvenComp)
+    //    RefreshAllSlots(InvenComp->GetInventoryItems());
+    
+    
+    //APlayerController* PC = GetOwningPlayer();
+    //if (PC && PC->GetPawn())
+    //{
+    //    // 프로젝트 플레이어 캐릭터 타입으로 변환
+    //    if (AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(PC->GetPawn()))
+    //    {
+    //        if (UC_InvenComponent* pInvenComp = Player->GetInvenComponent())
+    //        {
+    //            // 델리게이트 중복 방지, TODO : 근데 이 부분이 왜 두번 호출됬는지 확인하고 조치를 취할 것.
+    //            // 두번 호출되진 않는거 같은데 델리게이트 중복 오류가 뜨긴함.
+    //            pInvenComp->OnInventorySlotChanged.RemoveDynamic(this, &UC_InventoryGridWidget::RefreshSlotAt);
+    //
+    //            // 인벤의 슬롯이 바뀔 때 마다 내 RefreshSlotAt 함수가 정확한 타겟만 찍어서 수행됩니다.
+    //            pInvenComp->OnInventorySlotChanged.AddDynamic(this, &UC_InventoryGridWidget::RefreshSlotAt);
+    //
+    //            // UI 창이 켜지는 최초 시점에는 도화지가 비어있으므로 한 번 정비해줍니다.
+    //            RefreshAllSlots(InvenComp->GetInventoryItems());
+    //        }
+    //    }
+    //}
+    //SetVisibility(ESlateVisibility::Visible);
+}
+
+void UC_InventoryGridWidget::RefreshAllSlots(const TArray<FInventoryEntry>& InventoryItems)
+{
+    UC_ItemManager* ItemManager = GetGameInstance()->GetSubsystem<UC_ItemManager>();
+    if (!ItemManager) return;
+
+    // 데이터 배열과 위젯 배열의 크기 중 작은 것을 기준으로 안전하게 순회
+    int32 LoopCount = FMath::Min(SlotWidgets.Num(), InventoryItems.Num());
+
+
+    for (int32 i = 0; i < LoopCount; ++i)
+    {
+        if (!SlotWidgets[i]) continue;
+        
+        SlotWidgets[i]->SetAssociatedComponent(InvenComp);
+        const FInventoryEntry& Entry = InventoryItems[i];
+
+        // 아이템 매니저를 통해 데이터 테이블의 원본 비주얼/기본 스펙 데이터를 가져옴
+        const FItemData* CoreData = ItemManager->GetItemData(Entry.ItemRowName);
+        //if (!CoreData) continue; // TODO : 인벤에 없는 데이터인 경우 따로 처리해주기.
+        // 실시간 인스턴스 데이터(Entry)와 원본 스펙 데이터(CoreData)를 함께 넘겨줌
+        SlotWidgets[i]->UpdateSlot(Entry, CoreData);
+    }
+}
+
+void UC_InventoryGridWidget::RefreshSlotAt(int32 SlotIndex, const FInventoryEntry& ItemData)
+{
+    UC_ItemManager* ItemManager = GetGameInstance()->GetSubsystem<UC_ItemManager>();
+    if (!ItemManager) return;
+
+    if (SlotWidgets.IsValidIndex(SlotIndex) && SlotWidgets[SlotIndex])
+    {
+        const FItemData* CoreData = ItemManager->GetItemData(ItemData.ItemRowName);
+
+        SlotWidgets[SlotIndex]->UpdateSlot(ItemData, CoreData);
+    }
+}
+
+bool UC_InventoryGridWidget::Initialize()
+{
+    if (!Super::Initialize()) return false;
+
+    // 에디터에서 컴포넌트나 클래스가 제대로 세팅되었는지 최소한의 방어선만 확인
+    if (!ItemGridPanel || !SlotWidgetClass) return true;
+
+    // [조건문 없음] 평생 딱 한 번만 실행되므로 그냥 냅다 만듭니다.
+    ItemGridPanel->ClearChildren();
+    SlotWidgets.Reset();
+
+    for (int32 i = 0; i < MaxSlots; ++i)
+    {
+        UC_ItemSlotWidget* NewSlot = CreateWidget<UC_ItemSlotWidget>(this, SlotWidgetClass);
+        //if (!NewSlot) continue;
+
+        NewSlot->SetSlotIndex(i); 
+        NewSlot->SetGridWidget(this);
+
+        int32 CurRow = i / Column;
+        int32 CurColumn = i % Column;
+        
+        ItemGridPanel->AddChildToUniformGrid(NewSlot, CurRow, CurColumn);
+        SlotWidgets.Add(NewSlot);
+    }
+
+    return true;
+}
+
+void UC_InventoryGridWidget::SetInvenComponent(class UC_InvenComponent* InventoryComponent)
+{
+    if (InvenComp)
+    {
+        InvenComp->OnInventorySlotChanged.RemoveDynamic(this, &UC_InventoryGridWidget::RefreshSlotAt);
+    }
+    
+    // 컴포넌트 교체
+    InvenComp = InventoryComponent;
+    
+    // [새로운 바인딩 등록] 새로 들어온 컴포넌트가 유효하다면 연결을 맺고 갱신합니다.
+    if (InvenComp)
+    {
+        // 중복 등록 방지를 위해 한 번 더 확실히 지우고 등록하는 안전장치
+        InvenComp->OnInventorySlotChanged.RemoveDynamic(this, &UC_InventoryGridWidget::RefreshSlotAt);
+        InvenComp->OnInventorySlotChanged.AddDynamic(this, &UC_InventoryGridWidget::RefreshSlotAt);
+        
+        // 전체 슬롯 다시 그리기
+        RefreshAllSlots(InvenComp->GetInventoryItems());
+    }
+    else
+    {
+        // 만약 nullptr이 들어왔다면(창고에서 멀어졌다면) UI의 흔적을 청소해 줍니다.
+        // (필요에 따라 빈 배열을 넘겨 슬롯을 다 비우거나 비활성화 처리)
+        TArray<FInventoryEntry> EmptyArray;
+        RefreshAllSlots(EmptyArray);
+    }
+}

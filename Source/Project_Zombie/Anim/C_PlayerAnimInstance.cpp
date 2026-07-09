@@ -3,7 +3,10 @@
 
 #include "C_PlayerAnimInstance.h"
 
+#include "../Actor/ItemActor/Weapon/Gun/C_GunBase.h"
 #include "../Actor/Character/Player/C_BasicPlayer.h"
+#include "../Actor/Components/C_EquippedComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 void UC_PlayerAnimInstance::NativeInitializeAnimation()
 {
@@ -29,9 +32,39 @@ void UC_PlayerAnimInstance::NativeUpdateAnimation(float _DT)
 	if (nullptr == m_Character || nullptr == m_MovementComponent)
 		return;
 
+	// HandState 갱신
+	m_HandState = m_Character->GetHandState();
+
+	// Crouch 여부 갱신
+	m_IsCrouch = m_Character->IsCrouching();
+
+	// 속도 갱신
 	FVector Velocity = m_Character->GetVelocity();
 	m_GroundSpeed = Velocity.Size2D();
 
+	// 속도가 10 이상일 때만 방향 갱신 (속도가 낮으면 방향이 불안정하게 나와서)
 	if (m_GroundSpeed > 10.f)
 		m_Direction = CalculateDirection(Velocity, m_Character->GetActorRotation());
+
+	// 낙하, 수직 속도 갱신
+	m_IsFall = m_MovementComponent->IsFalling();
+	m_VerticalSpeed = m_MovementComponent->Velocity.Z;
+
+	// 점프 입력 여부 갱신
+	m_IsJumpInput = m_Character->IsJumpInput();
+
+	// 에디터 화면일 때는 아래 로직을 아예 실행하지 않고 리턴.
+	if (GetWorld() && GetWorld()->WorldType == EWorldType::EditorPreview)
+		return;
+
+	if (!m_Character) return;
+
+	if (AC_GunBase* CurrentGun = Cast<AC_GunBase>(m_Character->GetEquippedComponent()->GetCurWeapon()))
+	{
+		if (USkeletalMeshComponent* WeaponMesh = CurrentGun->GetWeaponMesh())
+		{
+			m_LeftHandIKTransform = WeaponMesh->GetSocketTransform(TEXT("IK_Socket_LeftHand"), RTS_World);
+		}
+	}
+
 }
