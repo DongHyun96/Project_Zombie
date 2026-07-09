@@ -3,8 +3,8 @@
 
 #include "C_PoisonAttack.h"
 
-#include "../../C_BasicEnemy.h"
-#include "../../C_EnemySkillData.h"
+#include "Actor/Character/NPC/Enemy/C_BasicEnemy.h"
+#include "Actor/Character/NPC/Enemy/Zombie/Skill/C_EnemySkillData.h"
 
 UC_PoisonAttack::UC_PoisonAttack()
 {

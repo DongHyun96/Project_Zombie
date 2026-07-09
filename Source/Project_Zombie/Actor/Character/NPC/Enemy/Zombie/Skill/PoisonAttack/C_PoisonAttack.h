@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Actor/Character/NPC/Enemy/C_EnemySkillBase.h"
+#include "Actor/Character/NPC/Enemy/Zombie/Skill/C_EnemySkillBase.h"
 #include "C_PoisonAttack.generated.h"
 
 UCLASS()

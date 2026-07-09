@@ -3,10 +3,10 @@
 
 #include "C_Serv_SelectTarget.h"
 
-#include "../../../../Player/C_BasicPlayer.h"
 #include "Kismet/GameplayStatics.h"
 #include "Actor/Character/NPC/Enemy/Zombie/C_Zombie.h"
 #include "Actor/Character/NPC/Enemy/Zombie/Controller/C_ZombieController.h"
+#include "Actor/Character/Player/C_BasicPlayer.h"
 
 #include "BehaviorTree/BlackboardComponent.h"
 
