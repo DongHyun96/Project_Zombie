@@ -3,6 +3,7 @@
 
 #include "C_CompassBarWidget.h"
 
+#include "CompassMarkerWidget/C_CompassMarkerWidget.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
 #include "Utility/C_Util.h"
@@ -32,9 +33,11 @@ void UC_CompassBarWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaT
 	APlayerController* PlayerController = GetWorld()->GetFirstPlayerController();
 	if (!PlayerController) return;
 
-	const float PCYaw = PlayerController->GetControlRotation().Yaw;
+	const float PCYaw        = PlayerController->GetControlRotation().Yaw;
+	const float MtrlYawValue = PCYaw / 360.f;
 	
-	m_CompassBarDynamicMtrl->SetScalarParameterValue(TEXT("yaw"), PCYaw / 360.f);
+	m_CompassBarDynamicMtrl->SetScalarParameterValue(TEXT("yaw"), MtrlYawValue);
+
 	SetDisplayDegreeText(PCYaw);
 }
 

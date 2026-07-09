@@ -6,6 +6,8 @@
 #include "Animation/AnimInstance.h"
 #include "C_BasicCharacterAnimInstance.generated.h"
 
+struct FMontageBlendSettings;
+
 /**
  * 게임 내의 모든 캐릭터 Anim Blueprint용 AnimInstance의 최상위 부모
  * AnimMontage 우선순위 처리 재생 기능 구현

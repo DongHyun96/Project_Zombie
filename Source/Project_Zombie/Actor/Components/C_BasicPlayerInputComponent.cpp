@@ -5,6 +5,7 @@
 #include "C_TurnInPlaceComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "InputMappingContext.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/ItemActor/Weapon/C_WeaponBase.h"
@@ -39,6 +40,12 @@ void UC_BasicPlayerInputComponent::InitializePlayerInput(UInputComponent* Player
 	Player = InPlayer;
 	if (!Player) return;
 
+	if (!DefaultMappingContext)
+	{
+		UC_Util::Print("UC_BasicPlayerInputComponent::InitializePlayerInput : Init DefaultMappingContext on BPC_Player InputComponent", FColor::Red, 10.f);
+		return;
+	}
+	
 	// 캐릭터의 무브먼트 컴포넌트 주소 확보
 	PlayerMovement = Player->GetCharacterMovement();
 
@@ -51,76 +58,79 @@ void UC_BasicPlayerInputComponent::InitializePlayerInput(UInputComponent* Player
 			// Look 쪽 매핑이 등록되어 있으면 기존 매핑을 제거하고 새로 등록
 			Subsystem->ClearAllMappings();
 
-			if (DefaultMappingContext)
-			{
-				Subsystem->AddMappingContext(DefaultMappingContext, 0);
-			}
+			if (DefaultMappingContext) Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
 	}
-
-	// 2. Enhanced Input 컴포넌트 바인딩 (대상을 캐릭터가 아닌 'this(나 자신)'로 지정)
-	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
+	
+	// 2. Add input actions to m_mapIA
+	for (const FEnhancedActionKeyMapping& Mapping : DefaultMappingContext->GetMappings())
 	{
-		if (IA_Move)
-		{
-			EnhancedInputComponent->BindAction(IA_Move, ETriggerEvent::Triggered, this, &UC_BasicPlayerInputComponent::MoveAction);
-		}
-		if (IA_Look)
-		{
-			EnhancedInputComponent->BindAction(IA_Look, ETriggerEvent::Triggered, this, &UC_BasicPlayerInputComponent::LookAction);
-		}
-		if (IA_Jump)
-		{
-			EnhancedInputComponent->BindAction(IA_Jump, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::JumpAction);
-		}
-		if (IA_Sprint)
-		{
-			EnhancedInputComponent->BindAction(IA_Sprint, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::SprintStart);
-			EnhancedInputComponent->BindAction(IA_Sprint, ETriggerEvent::Completed, this, &UC_BasicPlayerInputComponent::SprintEnd);	
-		}
-		if (IA_Crouch)
-		{
-			EnhancedInputComponent->BindAction(IA_Crouch, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::CrouchAction);
-		}
-		if (IA_Fire)
-		{
-			EnhancedInputComponent->BindAction(IA_Fire, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::FireStarted);
-			EnhancedInputComponent->BindAction(IA_Fire, ETriggerEvent::Ongoing, this, &UC_BasicPlayerInputComponent::FireOnGoing);
-			EnhancedInputComponent->BindAction(IA_Fire, ETriggerEvent::Completed, this, &UC_BasicPlayerInputComponent::FireEnd);
-			
-		}
-
-		if (IA_Reload)
-		{
-			EnhancedInputComponent->BindAction(IA_Reload, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::ReloadAction);
-		}
+		if (!Mapping.Action) continue;
 		
-		if (IA_EquipMainWeapon)
-			EnhancedInputComponent->BindAction(IA_EquipMainWeapon, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::EquipMainWeapon);
+		const FString ActionName = Mapping.Action->GetName();
 		
-		if (IA_EquipMeleeWeapon)
-			EnhancedInputComponent->BindAction(IA_EquipMeleeWeapon, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::EquipMeleeWeapon);
-		
-		if (IA_EquipThrowable)
-			EnhancedInputComponent->BindAction(IA_EquipThrowable, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::EquipThrowable);
-		
-		if (IA_ToggleArmed)
-			EnhancedInputComponent->BindAction(IA_ToggleArmed, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::ToggleArmed);
-		
-		if (IA_FreeLook)
-		{
-			EnhancedInputComponent->BindAction(IA_FreeLook, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::FreeLookHolStart);
-			EnhancedInputComponent->BindAction(IA_FreeLook, ETriggerEvent::Completed, this, &UC_BasicPlayerInputComponent::FreeLookHoldEnd);
-		}
-
-		if (IA_ToggleInventory)
-		{
-			EnhancedInputComponent->BindAction(IA_ToggleInventory, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::ToggleInventoryWidget);
-		}
-		
-		if (IA_MarkPing)
-			EnhancedInputComponent->BindAction(IA_MarkPing, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::MarkPing);
+		if (!m_mapIA.Contains(ActionName))
+			m_mapIA.Add(ActionName, Mapping.Action);
 	}
+	
+
+	UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent);
+	if (!EnhancedInputComponent)
+	{
+		UC_Util::Print("UC_BasicPlayerInputComponent::InitializePlayerInput : Plead use EnhancedInputComponent", FColor::Red, 10.f);
+		return;
+	}
+	
+	// 3. Enhanced Input 컴포넌트 바인딩 (대상을 캐릭터가 아닌 'this(나 자신)'로 지정)
+	if (const UInputAction* IA = FindIAByName(TEXT("IA_PlayerMove")))   EnhancedInputComponent->BindAction(IA, ETriggerEvent::Triggered, this, &UC_BasicPlayerInputComponent::MoveAction);
+	if (const UInputAction* IA = FindIAByName(TEXT("IA_PlayerLook")))   EnhancedInputComponent->BindAction(IA, ETriggerEvent::Triggered, this, &UC_BasicPlayerInputComponent::LookAction);
+	if (const UInputAction* IA = FindIAByName(TEXT("IA_PlayerJump")))   EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::JumpAction);
+	if (const UInputAction* IA = FindIAByName(TEXT("IA_PlayerCrouch"))) EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::CrouchAction);
+	if (const UInputAction* IA = FindIAByName(TEXT("IA_PlayerReload"))) EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::ReloadAction);
+
+	if (const UInputAction* IA = FindIAByName(TEXT("IA_EquipMainWeapon")))  EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::EquipMainWeapon);
+	if (const UInputAction* IA = FindIAByName(TEXT("IA_EquipMeleeWeapon"))) EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::EquipMeleeWeapon);
+	if (const UInputAction* IA = FindIAByName(TEXT("IA_EquipThrowable")))   EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::EquipThrowable);
+		
+	
+	if (const UInputAction* IA = FindIAByName(TEXT("IA_ToggleArmed")))     EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::ToggleArmed);
+	if (const UInputAction* IA = FindIAByName(TEXT("IA_ToggleInventory"))) EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::ToggleInventoryWidget);
+	if (const UInputAction* IA = FindIAByName(TEXT("IA_MarkPing")))        EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::MarkPing);
+		
+	
+	if (const UInputAction* IA = FindIAByName(TEXT("IA_PlayerSprint")))
+	{
+		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::SprintStart);
+		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Completed, this, &UC_BasicPlayerInputComponent::SprintEnd);	
+	}
+		
+	if (const UInputAction* IA = FindIAByName(TEXT("IA_PlayerFire")))
+	{
+		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::FireStarted);
+		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Ongoing, this, &UC_BasicPlayerInputComponent::FireOnGoing);
+		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Completed, this, &UC_BasicPlayerInputComponent::FireEnd);
+	}
+	
+	
+	if (const UInputAction* IA = FindIAByName(TEXT("IA_FreeLook")))
+	{
+		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::FreeLookHolStart);
+		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Completed, this, &UC_BasicPlayerInputComponent::FreeLookHoldEnd);
+	}
+}
+
+const UInputAction* UC_BasicPlayerInputComponent::FindIAByName(const FString& _Name)
+{
+	const UInputAction** pAction = m_mapIA.Find(_Name);
+
+	if (!pAction)
+	{
+		UC_Util::Print("From UC_BasicPlayerInputComponent::FindIAByName : " +  _Name + " -> Cannot find corresponding IA name", FColor::Red, 10.f);
+		return nullptr;
+	}
+	
+	// return !pAction ? nullptr : *pAction;
+	return *pAction;
 }
 
 void UC_BasicPlayerInputComponent::MoveAction(const FInputActionValue& Value)
