@@ -107,11 +107,6 @@ protected: // 폭발
 	void Explode();
 
 private:
-
-	void SetThrowableState(EThrowableState _NewState) { m_ThrowableState = _NewState; }
-
-
-private:
 	/// <summary>
 	/// 투척 취소 동작
 	/// </summary> 
@@ -144,6 +139,25 @@ private: // 투척 관련 처리
 	///	</summary>
 	void LaunchCurrentActorAsProjectile(const FVector& _ThrowDirection);
 
+	/// <summary>
+	///  충돌 이벤트 함수
+	/// </summary>
+	/// <param name="HitComponent"></param>
+	/// <param name="OtherActor"></param>
+	/// <param name="OtherComp"></param>
+	/// <param name="NormalImpulse"></param>
+	/// <param name="Hit"></param>
+	UFUNCTION()
+	void OnThrowableHit
+	(
+		UPrimitiveComponent* HitComponent,	// 충돌한 컴포넌트
+		AActor* OtherActor,					// 충돌한 액터
+		UPrimitiveComponent* OtherComp,		// 충돌한 액터의 컴포넌트
+		FVector NormalImpulse,				// 충돌 시 발생한 힘의 방향과 크기
+		const FHitResult& Hit				// 충돌 정보
+	);
+
+
 private: // 타이머 관련
 
 	/// <summary>
@@ -173,7 +187,7 @@ protected:
 	// Hand Socket Name (각 Throwable 블루프린트에서 Name 초기화 해줄 것)
 	UPROPERTY(EditDefaultsOnly, meta = (DisplayName = "HandSocketName"))
 	FName m_HandSocketName{};
-	
+
 private:
 	
 	// Holster(무기집 위치) Socket Name (모든 Throwable 공통 무기집 위치 사용할 예정)
@@ -227,8 +241,14 @@ public: // Throwable Weapon의 투척 특성 관련
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|State")
 	bool m_bIsCookable;
 
-	// 폭발까지 걸리는 시간 (핀 제거 후, 폭발까지 걸리는 시간)
+	// 충돌 시 폭발 여부
+	// 충돌하면 바로 폭발하는가?
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|State")
+	bool m_bExplodeOnImpact;
+
+	// 폭발까지 걸리는 시간 (핀 제거 후, 폭발까지 걸리는 시간)
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|State",
+		meta = (EditCondition = "!m_bExplodeOnImpact", EditConditionHides, ClampMin = "0.0"))
 	float m_FuseTime;
 
 	// 투척 속도

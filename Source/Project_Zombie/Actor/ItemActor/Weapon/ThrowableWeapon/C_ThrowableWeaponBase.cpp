@@ -25,6 +25,10 @@ AC_ThrowableWeaponBase::AC_ThrowableWeaponBase()
 	m_MainCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision); // 직접 투척하기 이전까지는 Collision을 비활성화 처리해주어야 한다
 	SetRootComponent(m_MainCollider);
 
+	// 충돌 이벤트 연결
+	m_MainCollider->OnComponentHit.AddDynamic(this, &AC_ThrowableWeaponBase::OnThrowableHit);
+
+
 	// Projectile Movement Component의 움직일 대상을 MainCollider로 설정
 	m_ProjectileMovement->SetUpdatedComponent(m_MainCollider);
 
@@ -291,8 +295,8 @@ void AC_ThrowableWeaponBase::OnThrowThrowable()
 	m_ThrowableState = EThrowableState::Thrown;
 	m_bIsCharging = false;
 
-	// 타이머 시작
-	if (HasFuseTimer())
+	// 타이머형 투척류만 타이머 시작
+	if (!m_bExplodeOnImpact && HasFuseTimer())
 	{
 		StartFuseTimer();
 	}
@@ -307,8 +311,6 @@ void AC_ThrowableWeaponBase::OnThrowThrowable()
 
 bool AC_ThrowableWeaponBase::OnStartCookInput()
 {
-	UC_Util::Print("OnStartCookInput");
-
 	// 쿠킹 불가한 경우
 	if (!m_bIsCookable)
 		return false;
@@ -317,11 +319,12 @@ bool AC_ThrowableWeaponBase::OnStartCookInput()
 	if (!HasFuseTimer())
 		return false;
 
-	// 핀 제거 동작 전에는 쿠킹 불가
-	if (m_ThrowableState != EThrowableState::Ready || m_ThrowableState != EThrowableState::ReadyLoop)
+	// 핀 제거 전 단계는 쿠킹 불가
+	if (m_ThrowableState == EThrowableState::Idle || m_ThrowableState == EThrowableState::RemovePin)
 		return false;
 
-	// 핀 제거가 끝나고 Ready 상태에서 R키를 누르면 바로 타이머 시작
+	UC_Util::Print("OnStartCookInput");
+
 	return StartFuseTimer();
 }
 
@@ -330,6 +333,20 @@ void AC_ThrowableWeaponBase::Explode()
 	// 폭발 처리는 II_ExplodeStrategy를 상속받은 클래스에서 처리할 예정
 	if (m_ThrowableState == EThrowableState::Exploded)
 		return;
+
+	const EThrowableState PrevState = m_ThrowableState;
+
+	/// TODO : 폭발 시, 투척류 애님 몽타주가 재생 중이면 Stop 처리
+	/// 수류탄을 들고있는 기본 상태보다 아무것도 들고있지 않는 기본 상태로
+	if (PrevState != EThrowableState::Thrown && PrevState != EThrowableState::Throwing)
+	{
+		UAnimInstance* AnimInstance = m_WeaponUser->GetMesh()->GetAnimInstance();
+
+		if (AnimInstance)
+		{
+			AnimInstance->Montage_Stop(0.2f, m_ThrowMontage);
+		}
+	}
 
 	m_ThrowableState = EThrowableState::Exploded;
 
@@ -527,6 +544,20 @@ void AC_ThrowableWeaponBase::LaunchCurrentActorAsProjectile(const FVector& _Thro
 		m_ThrowSpeed = 1500.f; // 기본 투척 속도 설정
 	}
 
+	if (m_bExplodeOnImpact)
+	{
+		// 충돌 시 폭발 처리이므로 튕김 비활성화
+		m_ProjectileMovement->bShouldBounce = false; 
+	}
+	else
+	{
+		// 충돌해도 복발 안하므로 튕김 활성화
+		m_ProjectileMovement->bShouldBounce = true; 
+		m_ProjectileMovement->Bounciness = 0.3f;
+		m_ProjectileMovement->Friction = 0.7f;
+		m_ProjectileMovement->BounceVelocityStopSimulatingThreshold = 30.f;
+	}
+
 	// 투척 속도 설정
 	m_ProjectileMovement->InitialSpeed = m_ThrowSpeed;
 	m_ProjectileMovement->MaxSpeed = FMath::Max(m_ProjectileMovement->MaxSpeed, m_ThrowSpeed);
@@ -538,8 +569,25 @@ void AC_ThrowableWeaponBase::LaunchCurrentActorAsProjectile(const FVector& _Thro
 	m_ProjectileMovement->Activate(true);
 }
 
+void AC_ThrowableWeaponBase::OnThrowableHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+{
+	// 던져진 상태가 아니면 Hit 이벤트 무시
+	if (m_ThrowableState != EThrowableState::Thrown)
+		return;
+	
+	// 혹시 투척류를 던진 플레이어와 충돌했을 경우 손에서 터질 수 있으므로 충돌 무시
+	if (OtherActor == m_WeaponUser)
+		return;
+
+	// 충돌 시 폭발 하도록 설정되어 있지 않으면 무시
+	if (!m_bExplodeOnImpact)
+		return;
+
+	Explode();
+}
 
 // --------------- 타이머 관련 ------------------
+
 
 bool AC_ThrowableWeaponBase::HasFuseTimer() const
 {
@@ -552,10 +600,17 @@ bool AC_ThrowableWeaponBase::StartFuseTimer()
 	if (!HasFuseTimer())
 		return false;
 
-	m_bWantsCook = false; // 쿠킹 시작했으므로 WantsCook 초기화
-
 	// 타이머 설정
 	UWorld* World = GetWorld();
+	
+	// 이미 타이머가 활성화되어 있다면, 중복 설정 방지
+	if (World->GetTimerManager().IsTimerActive(m_FuseTimerHandle))
+	{
+		return true;
+	}
+	
+	m_bWantsCook = false; // 쿠킹 시작했으므로 WantsCook 초기화
+
 	World->GetTimerManager().SetTimer
 	(
 		m_FuseTimerHandle, 
