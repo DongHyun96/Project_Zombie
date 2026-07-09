@@ -40,6 +40,7 @@ AC_ThrowableWeaponBase::AC_ThrowableWeaponBase()
 	// 몽타주 Section 이름 초기화
 	m_RemovePinSectionName = TEXT("RemovePin");
 	m_ReadySectionName = TEXT("Ready");
+	m_LoopSectionName = TEXT("Loop");
 	m_ThrowSectionName = TEXT("Throw");
 	
 	// 투척류 Launch 위치 Offset 초기화
@@ -136,37 +137,30 @@ bool AC_ThrowableWeaponBase::OnStartFire(class AC_BasicPlayer* _WeaponUser)
 	if (!_WeaponUser)
 		return false;
 
-	// 투척 몽타주 꼬이는 경우 방지
-	if (m_bIsThrowing)
+	if (m_ThrowableState != EThrowableState::Idle)
 	{
-		// 이미 투척 동작 중이면
-		if (_WeaponUser->GetMesh()->GetAnimInstance()->Montage_IsPlaying(m_ThrowMontage))
-		{
-			return false; 
-		}
+		return false;
+	}
 
-		// 투척 동작 중이지만, 애님 몽타주가 끝난 경우 상태 초기화 후 다시 투척 동작 시작
-		else
-		{
-			ResetThrowableState(); 
-		}
+	if (_WeaponUser->GetMesh()->GetAnimInstance()->Montage_IsPlaying(m_ThrowMontage))
+	{
+		return false;
 	}
 
 	// 무기 사용자를 저장해둠 (애님 노티파이 이벤트에서 사용하기 위함)
 	m_WeaponUser = _WeaponUser;
 
 	// 투척 과정 시작
-	m_bIsCharging = true;
-	m_bIsThrowing = true;
-	m_bIsCooking = false;
-	m_bWantsThrow = false;
+	m_bIsCharging = false;
 	m_bWantsCook = false;
-	m_bHasExploded = false;
 	
+	// 핀이 있는 투척류면 핀 제거 동작 / 핀이 없는 투척류면 바로 차징 동작 부터 시작
+	const FName StartSectionName = m_bHasPin ? m_RemovePinSectionName : m_ReadySectionName;
+
 	m_ThrowableState = m_bHasPin ? EThrowableState::RemovePin : EThrowableState::Ready;
 	 
 	// 투척류 애니메이션 재생
-	_WeaponUser->PlayAnimMontage(m_ThrowMontage, 1.f, m_bHasPin ? m_RemovePinSectionName : m_ReadySectionName);
+	_WeaponUser->PlayAnimMontage(m_ThrowMontage, 1.f, StartSectionName);
 
 	return true;
 }
@@ -184,23 +178,20 @@ bool AC_ThrowableWeaponBase::Reload(AC_BasicPlayer* _WeaponUser)
 
 bool AC_ThrowableWeaponBase::OnFireOnGoing(AC_BasicPlayer* _WeaponUser)
 {
-	return false;
+	if (!_WeaponUser)
+		return false;
+
+	m_bIsCharging = true;
+
+	return true;
 }
 
 bool AC_ThrowableWeaponBase::OnFireEnd(AC_BasicPlayer* _WeaponUser)
 {
-	if (!_WeaponUser || !m_bIsThrowing)
+	if (!_WeaponUser)
 		return false;
 
 	m_bIsCharging = false;
-	m_bWantsThrow = true;
-
-	UAnimInstance* AnimInstance = _WeaponUser->GetMesh()->GetAnimInstance();
-	if (!AnimInstance)
-		return false;
-
-	// 차징 중이면, Pause 된 상태에서 Resume 처리
-	AnimInstance->Montage_Resume(m_ThrowMontage);
 
 	return true;
 }
@@ -209,9 +200,6 @@ bool AC_ThrowableWeaponBase::OnFireEnd(AC_BasicPlayer* _WeaponUser)
 
 void AC_ThrowableWeaponBase::OnRemovePin()
 {
-	if (!m_bIsThrowing)
-		return;
-
 	if (!m_bHasPin)
 		return;
 
@@ -226,32 +214,51 @@ void AC_ThrowableWeaponBase::OnRemovePin()
 
 void AC_ThrowableWeaponBase::OnThrowReadyLoop()
 {
-	if (!m_bIsThrowing)
+	UAnimInstance* AnimInstance = m_WeaponUser->GetMesh()->GetAnimInstance();
+	if (!AnimInstance)
 		return;
-
-	// 마우스를 뗀 경우, Loop에서 바로 투척 동작으로 넘어감
-	if (m_bWantsThrow)
-		return;
-
-	m_ThrowableState = EThrowableState::Ready;
-
-	// 차징 중이면, 투척 동작으로 넘어가지 않음
+	
+	// 차징 중이면, ReadyLoop 상태로 넘어가고 투척 동작으로 넘어가지 않음
 	if (m_bIsCharging)
 	{
-		UAnimInstance* AnimInstance = m_WeaponUser->GetMesh()->GetAnimInstance();
-		if (!AnimInstance)
-			return;
-
-		AnimInstance->Montage_Pause(m_ThrowMontage);
+		// TODO : 차징 중이면 예상 경로를 그려주기
+		m_ThrowableState = EThrowableState::ReadyLoop;
+		return;
 	}
 
-	// TODO: Turn in Place 처리 
-	// 투척류를 들고 있는 상태에서 투척류를 들고 있는 방향으로 플레이어가 회전할 수 있도록 처리
+	// 차징 중이 아니면, 투척 동작으로 넘어감
+	const int32 ThrowSectionIndex = m_ThrowMontage->GetSectionIndex(m_ThrowSectionName);
+	if (ThrowSectionIndex == INDEX_NONE)
+		return;
+
+	m_ThrowableState = EThrowableState::Throwing;
+
+	/// 자꾸 투척 몽타주가 빠르게 재생되는 현상 발견해서 gpt 사용...
+	float ThrowSectionStartTime = 0.f;
+	float ThrowSectionEndTime = 0.f;
+
+	m_ThrowMontage->GetSectionStartAndEndTime(
+		ThrowSectionIndex,
+		ThrowSectionStartTime,
+		ThrowSectionEndTime
+	);
+
+	AnimInstance->Montage_SetPlayRate(m_ThrowMontage, 0.8f);
+	
+	AnimInstance->Montage_SetPosition(
+		m_ThrowMontage,
+		ThrowSectionStartTime
+	);
+
+	AnimInstance->Montage_JumpToSection(
+		m_ThrowSectionName,
+		m_ThrowMontage
+	);
 }
 
 void AC_ThrowableWeaponBase::OnThrowThrowable()
 {
-	if (!m_bIsThrowing || !m_WeaponUser)
+	if (!m_WeaponUser)
 		return;
 
 	if (!m_MainCollider || !m_ProjectileMovement)
@@ -279,10 +286,7 @@ void AC_ThrowableWeaponBase::OnThrowThrowable()
 	LaunchCurrentActorAsProjectile(ThrowDirection);
 
 	m_ThrowableState = EThrowableState::Thrown;
-
-	m_bIsThrowing = false;
 	m_bIsCharging = false;
-	m_bWantsThrow = false;
 
 	// 타이머 시작
 	if (HasFuseTimer())
@@ -302,24 +306,17 @@ bool AC_ThrowableWeaponBase::OnStartCookInput()
 {
 	UC_Util::Print("OnStartCookInput");
 
-	// 이미 폭발했거나 쿠킹 중이면 쿠킹 불가
-	if (m_bHasExploded || m_bIsCooking)
-		return false;
-
-	// 투척 과정이 아니거나, 쿠킹 불가한 경우
-	if (!m_bIsThrowing || !m_bIsCookable)
+	// 쿠킹 불가한 경우
+	if (!m_bIsCookable)
 		return false;
 
 	// 타이머가 없는 경우 쿠킹 불가
 	if (!HasFuseTimer())
 		return false;
 
-	// 핀 제거 동작 이후에 R키를 누르면 타이머 시작
-	if (m_ThrowableState == EThrowableState::Ready)
-	{
-		m_bWantsCook = true;
-		return StartFuseTimer();
-	}
+	// 핀 제거 동작 전에는 쿠킹 불가
+	if (m_ThrowableState != EThrowableState::Ready || m_ThrowableState != EThrowableState::ReadyLoop)
+		return false;
 
 	// 핀 제거가 끝나고 Ready 상태에서 R키를 누르면 바로 타이머 시작
 	return StartFuseTimer();
@@ -327,7 +324,7 @@ bool AC_ThrowableWeaponBase::OnStartCookInput()
 
 void AC_ThrowableWeaponBase::Explode()
 {
-	// 폭발 처리는 I_ExplodeStrategy를 상속받은 클래스에서 처리할 예정
+	// 폭발 처리는 IExplodeStrategy를 상속받은 클래스에서 처리할 예정
 }
 
 // ----------------- 투척 취소 관련 처리 -----------------
@@ -342,7 +339,7 @@ void AC_ThrowableWeaponBase::CancleThrowAction()
 	if (AnimInstance)
 	{
 		// 차징되어 Pause 된 상태라면, Resume 후 Stop 처리
-		if (m_bIsCharging)
+		if (m_ThrowableState == EThrowableState::ReadyLoop)
 		{
 			AnimInstance->Montage_Resume(m_ThrowMontage);
 		}
@@ -358,14 +355,10 @@ void AC_ThrowableWeaponBase::CancleThrowAction()
 
 void AC_ThrowableWeaponBase::ResetThrowableState()
 {
-	m_ThrowableState = EThrowableState::None;
+	m_ThrowableState = EThrowableState::Idle;
 
-	m_bIsThrowing = false;
 	m_bIsCharging = false;
-	m_bIsCooking = false;
-	m_bWantsThrow = false;
 	m_bWantsCook = false;
-	m_bHasExploded = false;
 
 	m_WeaponUser = nullptr;
 }
@@ -514,11 +507,6 @@ bool AC_ThrowableWeaponBase::StartFuseTimer()
 	if (!HasFuseTimer())
 		return false;
 
-	// 이미 쿠킹 중이거나 폭발한 경우, 타이머 시작 불가
-	if (m_bIsCooking || m_bHasExploded)
-		return false;
-
-	m_bIsCooking = true;
 	m_bWantsCook = false; // 쿠킹 시작했으므로 WantsCook 초기화
 
 	// 타이머 설정
@@ -543,7 +531,6 @@ void AC_ThrowableWeaponBase::ClearFuseTimer()
 	UWorld* World = GetWorld();
 	World->GetTimerManager().ClearTimer(m_FuseTimerHandle);
 
-	m_bIsCooking = false;
 	m_bWantsCook = false; // 쿠킹 취소했으므로 WantsCook 초기화
 }
 

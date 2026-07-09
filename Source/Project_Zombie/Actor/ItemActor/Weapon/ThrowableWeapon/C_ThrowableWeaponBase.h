@@ -17,11 +17,13 @@ enum class EThrowableType : uint8
 UENUM(BlueprintType)
 enum class EThrowableState : uint8
 {
-	None,
-	RemovePin,
-	Ready,
-	Thrown,
-	Exploded,
+	Idle,		// 기본 상태
+	RemovePin,	// 핀 제거
+	Ready,		// 투척 준비 
+	ReadyLoop,	// 투척 준비 동작 루프
+	Throwing,	// 투척 중
+	Thrown,		// 투척 
+	Exploded,	// 폭발 
 };
 
 UCLASS()
@@ -79,6 +81,17 @@ public: // 쿠킹 입력
 	UFUNCTION(BlueprintCallable, Category = "Throwable|Cooking")
 	bool OnStartCookInput();
 
+public:  // Getter & Setter
+
+	float GetExplosionRadius() const { return m_ExplosionRadius; }
+	void SetExplosionRadius(float _ExplosionRadius) { m_ExplosionRadius = _ExplosionRadius; }
+
+	float GetMaxDamage() const { return m_MaxDamage; }
+	void SetMaxDamage(float _MaxDamage) { m_MaxDamage = _MaxDamage; }
+
+	float GetMinDamage() const { return m_MinDamage; }
+	void SetMinDamage(float _MinDamage) { m_MinDamage = _MinDamage; }
+
 protected: // 폭발
 
 	/// <summary>
@@ -86,6 +99,11 @@ protected: // 폭발
 	/// 실제 폭방은 I_ExplodeStrategy를 상속받은 클래스에서 처리할 예정
 	/// </summary>
 	void Explode();
+
+private:
+
+	void SetThrowableState(EThrowableState _NewState) { m_ThrowableState = _NewState; }
+
 
 private:
 	/// <summary>
@@ -166,9 +184,21 @@ protected: // 충돌체 관련
 
 public: // 몽타주 관련
 
-	// 몽타주 (몽타주 안에서 세션 나누어서 애님 노티파이 이벤트 발생)
+	// 몽타주
+	//UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)
+	//UAnimMontage* m_RemovePinMontage;
+
+	//UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)
+	//UAnimMontage* m_ReadyMontage;
+
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)
 	UAnimMontage* m_ThrowMontage;
+
+public: // 몽타주 연결 델리게이트
+
+	//FOnMontageEnded m_RemovePinEndedDelegate;
+	//FOnMontageEnded m_ReadyEndedDelegate;
+	//FOnMontageEnded m_ThrowEndedDelegate;
 
 	// Section 이름들
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)
@@ -176,6 +206,9 @@ public: // 몽타주 관련
 	
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)
 	FName m_ReadySectionName;
+
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)
+	FName m_LoopSectionName;
 	
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)
 	FName m_ThrowSectionName;
@@ -209,6 +242,18 @@ public: // Throwable Weapon의 투척 특성 관련
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|Launch")
 	float m_LaunchUpwardOffset;
 
+	// 폭발 반경
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|Explosion")
+	float m_ExplosionRadius;
+
+	// 최대 데미지
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|Explosion")
+	float m_MaxDamage;
+
+	// 최소 데미지
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|Explosion")
+	float m_MinDamage;
+
 protected:
 	
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, meta = (DisplayName = "ProjectileMovementCom"))
@@ -232,22 +277,13 @@ private:
 
 	// 투척류의 Fuse Timer (핀 제거 후, 폭발까지 걸리는 시간)
 	FTimerHandle m_FuseTimerHandle;
-
-	// 투척 과정 중인지
-	bool m_bIsThrowing;
 	
 	// 버튼을 누르고 있는지
 	bool m_bIsCharging;
-
-	// 쿠킹이 시작되었는지
-	bool m_bIsCooking;
 
 	// 마우스를 떼었는지
 	bool m_bWantsThrow;
 
 	// 쿠킹을 원하는지
 	bool m_bWantsCook;
-
-	// 폭발이 발생했는지
-	bool m_bHasExploded;
 };
