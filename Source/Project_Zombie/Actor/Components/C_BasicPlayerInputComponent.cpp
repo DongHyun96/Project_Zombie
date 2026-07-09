@@ -39,7 +39,7 @@ void UC_BasicPlayerInputComponent::TickComponent(float DeltaTime, ELevelTick Tic
 
 void UC_BasicPlayerInputComponent::InitializePlayerInput(UInputComponent* PlayerInputComponent, AC_BasicPlayer* InPlayer)
 {
-	Player = InPlayer;
+		Player = InPlayer;
 	if (!Player) return;
 
 	if (!DefaultMappingContext)
@@ -68,46 +68,6 @@ void UC_BasicPlayerInputComponent::InitializePlayerInput(UInputComponent* Player
 	for (const FEnhancedActionKeyMapping& Mapping : DefaultMappingContext->GetMappings())
 	{
 		if (!Mapping.Action) continue;
-
-		if (IA_Move)
-		{
-			EnhancedInputComponent->BindAction(IA_Move, ETriggerEvent::Triggered, this, &UC_BasicPlayerInputComponent::MoveAction);
-		}
-		if (IA_Look)
-		{
-			EnhancedInputComponent->BindAction(IA_Look, ETriggerEvent::Triggered, this, &UC_BasicPlayerInputComponent::LookAction);
-		}
-		if (IA_Jump)
-		{
-			EnhancedInputComponent->BindAction(IA_Jump, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::JumpAction);
-		}
-		if (IA_Sprint)
-		{
-			EnhancedInputComponent->BindAction(IA_Sprint, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::SprintStart);
-			EnhancedInputComponent->BindAction(IA_Sprint, ETriggerEvent::Completed, this, &UC_BasicPlayerInputComponent::SprintEnd);	
-		}
-		if (IA_Crouch)
-		{
-			EnhancedInputComponent->BindAction(IA_Crouch, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::CrouchAction);
-		}
-		if (IA_Fire)
-		{
-			EnhancedInputComponent->BindAction(IA_Fire, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::FireStarted);
-			EnhancedInputComponent->BindAction(IA_Fire, ETriggerEvent::Ongoing, this, &UC_BasicPlayerInputComponent::FireOnGoing);
-			EnhancedInputComponent->BindAction(IA_Fire, ETriggerEvent::Completed, this, &UC_BasicPlayerInputComponent::FireEnd);
-			
-		}
-
-		if (IA_Aim)
-		{
-			EnhancedInputComponent->BindAction(IA_Aim, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::KeepAimActionStart);
-			EnhancedInputComponent->BindAction(IA_Aim, ETriggerEvent::Completed, this, &UC_BasicPlayerInputComponent::KeepAimActionEnd);
-		}
-
-		if (IA_Reload)
-		{
-			EnhancedInputComponent->BindAction(IA_Reload, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::ReloadAction);
-		}
 		
 		const FString ActionName = Mapping.Action->GetName();
 		
@@ -158,6 +118,12 @@ void UC_BasicPlayerInputComponent::InitializePlayerInput(UInputComponent* Player
 	{
 		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::FreeLookHolStart);
 		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Completed, this, &UC_BasicPlayerInputComponent::FreeLookHoldEnd);
+	}
+	
+	if (const UInputAction* IA = FindIAByName(TEXT("IA_PlayerAim")))
+	{
+		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::KeepAimActionStart);
+		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Completed, this, &UC_BasicPlayerInputComponent::KeepAimActionEnd);
 	}
 }
 

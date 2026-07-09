@@ -28,7 +28,7 @@ public:
 	// 특정 슬롯의 아이템 반환
 	const FInventoryEntry& GetItemAt(int32 SlotIndex) const {return InventoryContainer.Items[SlotIndex];}
 
-	void SetContainerID(int32 ContainerID) { ContainerID = ContainerID; }
+	void SetContainerID(int32 _ContainerID) { ContainerID = _ContainerID; }
 	
 	int32 GetContainerID() { return ContainerID; }
 	
@@ -85,7 +85,7 @@ protected:
 	
 	// 고유 ID
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	uint32 ContainerID;
+	int32 ContainerID;
 public:
     UPROPERTY(BlueprintAssignable)
     FOnInventorySlotChanged OnInventorySlotChanged; // 델리게이트 알림용 변수

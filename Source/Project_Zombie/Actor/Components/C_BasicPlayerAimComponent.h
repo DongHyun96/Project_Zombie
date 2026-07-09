@@ -6,6 +6,7 @@
 #include "Components/ActorComponent.h"
 #include "C_BasicPlayerAimComponent.generated.h"
 
+
 UENUM(BlueprintType)
 enum class EAimState : uint8
 {
@@ -20,7 +21,7 @@ class PROJECT_ZOMBIE_API UC_BasicPlayerAimComponent : public UActorComponent
 	GENERATED_BODY()
 
 protected:
-	AC_BasicPlayer* m_CurPlayer;
+	class AC_BasicPlayer* m_CurPlayer;
 
 	// [Aim]
 protected:
