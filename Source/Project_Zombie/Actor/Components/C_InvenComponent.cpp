@@ -12,6 +12,11 @@ UC_InvenComponent::UC_InvenComponent()
 	//InventoryContainer.Items.Init(FInventoryEntry(), MaxSlots);
 	// 컴포넌트 리플리케이션 활성화. 
 	SetIsReplicatedByDefault(true);
+	
+	if (GetOwner())
+	{
+		ContainerID = GetOwner()->GetUniqueID();
+	}
 }
 
 void UC_InvenComponent::BeginPlay()
@@ -194,6 +199,25 @@ void UC_InvenComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 	//DOREPLIFETIME_CONDITION(UC_InvenComponent, InventoryContainer, COND_OwnerOnly);
 	
 	DOREPLIFETIME(UC_InvenComponent, InventoryContainer);
+}
+
+void UC_InvenComponent::Server_PickUpItem_Implementation(int32 SlotIndex)
+{
+	// 유효성 검사
+	if (!InventoryContainer.Items.IsValidIndex(SlotIndex)) return;
+	if (InventoryContainer.Items[SlotIndex].ItemRowName == NAME_None) return; // 아이템이 없으면 컷
+
+	// 아이템을 커서(손)로 옮기기
+	CursorSlot.Item = InventoryContainer.Items[SlotIndex]; // 데이터 복사
+	CursorSlot.SourceContainerID = ContainerID; // 
+	CursorSlot.SourceSlotIndex = SlotIndex;
+	CursorSlot.bIsValid = true;
+
+	// 창고에서 아이템 삭제 (초기화)
+	InitInvenItemAt(SlotIndex); 
+    
+	// 동기화 (창고 슬롯이 변했음을 알림)
+	InventoryContainer.MarkItemDirty(InventoryContainer.Items[SlotIndex]);
 }
 
 void UC_InvenComponent::OnRep_InventoryContainer()

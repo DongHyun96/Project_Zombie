@@ -29,18 +29,34 @@ protected:
 	// 로드가 완료되면 호출될 콜백 함수 (반드시 ufunction이어야 합니다)
 	UFUNCTION(BlueprintCallable)
 	void OnMeshLoadCompleted(TSoftObjectPtr<UStaticMesh> LoadedSoftMesh);
+	
+	
 public:	
 	virtual void Tick(float DeltaTime) override;
 
 	// 외부(매니저)에서 호출할 비동기 로드 시작 함수
 	void SetPickupMeshAsync(TSoftObjectPtr<UStaticMesh> InSoftMesh);
+	
+	void SetMeshRef(TSoftObjectPtr<UStaticMesh> InMeshRef) { MeshRef = InMeshRef; }
+	
+	TSoftObjectPtr<UStaticMesh> GetMeshRef() { return MeshRef; }
+	
+	// 서버 함수
+public:
+	UFUNCTION(Server, Reliable)
+	void Server_RequestPickup(AC_BasicPlayer* Player);
+	
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	
+	UFUNCTION()
+	void OnRep_MeshRef();
 public:
 	// 아이템 정보
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FInventoryEntry ItemData;
 
 	// 플레이어가 해당 아이템을 습득중인지 판별해줄 bool변수
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite)
 	bool bPickup = false;
 
 protected:
@@ -56,6 +72,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	class UStaticMeshComponent* MeshComp;
 
+	// 클라이언트가 이 변수가 변경될 때마다 메시를 로드합니다.
+	UPROPERTY(ReplicatedUsing = OnRep_MeshRef, EditAnywhere, BlueprintReadWrite)
+	TSoftObjectPtr<UStaticMesh> MeshRef;
+	
 	// 비동기 로드를 관리할 핸들러 포인터 유지
 	TSharedPtr<struct FStreamableHandle> AssetLoadHandle;
 };

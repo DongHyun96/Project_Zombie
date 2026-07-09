@@ -58,7 +58,8 @@ AC_ItemPickUp* UC_ItemManager::SpawnItem(FName InRowName, const FVector& SpawnLo
         NewItem->ItemData.ItemRowName = InRowName;
         NewItem->ItemData.Count = Data->Count;
         NewItem->ItemData.bIsStack = Data->bIsStack;
-        NewItem->SetPickupMeshAsync(Data->DropMesh);
+        NewItem->SetMeshRef(Data->DropMesh);
+        NewItem->SetPickupMeshAsync(NewItem->GetMeshRef());
         
         // --- 마인크래프트식 툭 던지기 물리 로직 추가 ---
         // AC_ItemPickUp 내부에 루트 컴포넌트 혹은 핵심 메쉬 컴포넌트(예: StaticMeshComponent)가 있다고 가정합니다.

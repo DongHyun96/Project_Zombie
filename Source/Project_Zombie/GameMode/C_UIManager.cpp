@@ -29,14 +29,14 @@ void AC_UIManager::BeginPlay()
 	}
 
 	m_MainHUDWidget->AddToViewport();
-
+	
+	// InventoryWidget 불러오기.
 	if (!m_InventoryWidgetClass)
 	{
 		UC_Util::Print("From AC_UIManager::BeginPlay : InventoryWidget Subclass nullptr", FColor::Red, 5.f);
 		return;
 	}
 
-	// 이거 명확한 HUD(UUserWidget) 상위 부모 클래스가 있다하면 해당 Type으로 Casting 시도할 것
 	m_InventoryWidget = Cast<UC_InventoryWidget>(CreateWidget(GetOwningPlayerController(), m_InventoryWidgetClass));
 
 	if (!m_InventoryWidget)

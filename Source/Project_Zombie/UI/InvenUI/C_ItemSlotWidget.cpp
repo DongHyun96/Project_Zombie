@@ -63,6 +63,8 @@ void UC_ItemSlotWidget::NativeOnDragDetected(const FGeometry& InGeometry, const 
     if (!ItemArr.IsValidIndex(curSlotIdx)) return;
     
     FInventoryEntry entry = ItemArr[curSlotIdx];
+    
+    
 
     if (entry.ItemRowName == NAME_None) return;
     

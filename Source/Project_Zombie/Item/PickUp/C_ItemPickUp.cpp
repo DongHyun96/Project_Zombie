@@ -5,12 +5,16 @@
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
+#include "Net/UnrealNetwork.h"
 #include "Utility/C_Util.h"
 
 AC_ItemPickUp::AC_ItemPickUp()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
+    bReplicates = true;
+    SetReplicateMovement(true);
+    
     // 물리 구체를 생성하고 루트 컴포넌트로 설정합니다.
     PhysicsSphere = CreateDefaultSubobject<USphereComponent>(TEXT("PhysicsSphere"));
     RootComponent = PhysicsSphere;
@@ -49,6 +53,9 @@ AC_ItemPickUp::AC_ItemPickUp()
     PickupSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
     // 변수 초기화
     bPickup = false;
+    
+    bReplicates = true;
+    SetReplicateMovement(true);
 }
 
 void AC_ItemPickUp::BeginPlay()
@@ -63,44 +70,14 @@ void AC_ItemPickUp::BeginPlay()
 
 void AC_ItemPickUp::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-    // 1. 자기 자신과의 충돌 방지 및 유효성 검사
-    if (!OtherActor || OtherActor == this) return;
+    // 물리 이벤트는 서버에서만 처리
+    if (!HasAuthority()) return;
 
-    // 이미 누군가 주워가는 중이라면 중복 처리 방지
-    if (bPickup) return;
-
-    // 2. 충돌한 대상(플레이어 등)에게 인벤토리 컴포넌트가 있는지 확인
     AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(OtherActor);
+    if (!Player) return;
 
-    if (!IsValid(Player)) return;
-
-    UC_InvenComponent* PlayerInvenComp = Player->GetInvenComponent();
-
-    UC_Util::Print("OverlapBegin");
-
-    if (PlayerInvenComp)
-    {
-        // 중복 진입 방지 플래그 On
-        bPickup = true;
-
-        // 3. 인벤토리에 아이템 추가 시도
-        bool bIsAdded = PlayerInvenComp->AddItem(ItemData);
-
-        if (bIsAdded)
-        {
-            // 4. 아이템 획득에 성공했다면 필드의 아이템 액터 삭제
-            Destroy();
-            UC_Util::Print("Success Add Item to Inventory!");
-        }
-        else
-        {
-            // 인벤토리가 가득 찼거나 추가에 실패한 경우 플래그 원복
-            bPickup = false;
-            UC_Util::Print("Failed Add Item to Inventory!");
-
-            // 필요하다면 화면에 "인벤토리가 가득 찼습니다" 메시지 출력
-        }
-    }
+    // 서버 함수 호출
+    Server_RequestPickup(Player);
 }
 
 void AC_ItemPickUp::OnMeshLoadCompleted(TSoftObjectPtr<UStaticMesh> LoadedSoftMesh)
@@ -135,6 +112,32 @@ void AC_ItemPickUp::SetPickupMeshAsync(TSoftObjectPtr<UStaticMesh> InSoftMesh)
         InSoftMesh.ToSoftObjectPath(),
         FStreamableDelegate::CreateUFunction(this, FName("OnMeshLoadCompleted"), InSoftMesh)
     );
+}
+
+void AC_ItemPickUp::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+    Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+    
+    DOREPLIFETIME(AC_ItemPickUp, bPickup);
+    DOREPLIFETIME(AC_ItemPickUp, MeshRef);
+}
+
+void AC_ItemPickUp::OnRep_MeshRef()
+{
+    SetPickupMeshAsync(MeshRef);
+}
+
+void AC_ItemPickUp::Server_RequestPickup_Implementation(AC_BasicPlayer* Player)
+{
+    if (bPickup) return; // 이미 누가 먹었으면 무시
+    
+    UC_InvenComponent* PlayerInvenComp = Player->GetInvenComponent();
+    
+    if (PlayerInvenComp && PlayerInvenComp->AddItem(ItemData))
+    {
+        bPickup = true; // 서버에서 상태 변경(모든 클라이언트에 복제됨)
+        Destroy();      // 서버에서 파괴(모든 클라이언트의 액터가 삭제됨)
+    }
 }
 
 void AC_ItemPickUp::Tick(float DeltaTime)

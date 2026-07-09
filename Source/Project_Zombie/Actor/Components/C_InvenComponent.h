@@ -28,6 +28,10 @@ public:
 	// 특정 슬롯의 아이템 반환
 	const FInventoryEntry& GetItemAt(int32 SlotIndex) const {return InventoryContainer.Items[SlotIndex];}
 
+	void SetContainerID(int32 ContainerID) { ContainerID = ContainerID; }
+	
+	int32 GetContainerID() { return ContainerID; }
+	
 public:
 	// 아이템 위치 스위칭(자신의 InventoryContainer 내에서 스위칭)
     bool SwapInvenEntry(int32 SlotIdx1, int32 SlotIdx2);
@@ -56,8 +60,16 @@ protected:
     /// </summary>
     virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	// 드래그 시작
+	UFUNCTION(Server, Reliable)
+	void Server_PickUpItem(int32 SlotIndex);
+	
 	UFUNCTION(BlueprintCallable)
 	void OnRep_InventoryContainer();
+	
+	// 커서 슬롯 변경 시 호출할 함수
+	//UFUNCTION()
+	//void OnRep_CursorSlot();
 protected:
     // C_IneventoryGridWidget에서 grid slot의 갯수와 일치 시킬 변수
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
@@ -67,6 +79,13 @@ protected:
 	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
 	UPROPERTY(ReplicatedUsing = OnRep_InventoryContainer,EditAnywhere, BlueprintReadWrite, Category = "Inventory")
 	FInventoryContainer InventoryContainer;
+
+	UPROPERTY(Replicated)
+	FCusorItem CursorSlot;
+	
+	// 고유 ID
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	uint32 ContainerID;
 public:
     UPROPERTY(BlueprintAssignable)
     FOnInventorySlotChanged OnInventorySlotChanged; // 델리게이트 알림용 변수
