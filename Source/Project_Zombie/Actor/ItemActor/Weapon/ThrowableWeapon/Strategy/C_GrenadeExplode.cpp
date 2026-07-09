@@ -4,6 +4,7 @@
 #include "C_GrenadeExplode.h"
 #include "Engine/OverlapResult.h"
 #include "Kismet/GameplayStatics.h"
+#include "DrawDebugHelpers.h"
 
 #include "../../../../Character/Player/C_BasicPlayer.h"
 #include "../C_ThrowableWeaponBase.h"
@@ -142,8 +143,20 @@ bool UC_GrenadeExplode::UseStrategy_Implementation(AC_ThrowableWeaponBase* _Thro
 			TraceParams										// Trace 옵션
 		);
 
-		// Trace 가 막혔으면 데미지 적용하지 않음
-		if (bBlocked)
+		const FColor TraceColor = bBlocked ? FColor::Red : FColor::Green;
+		DrawDebugLine(
+			GetWorld(),
+			ExplosionLocation,
+			TargetLocation,
+			TraceColor,
+			false,
+			2.0f,
+			0,
+			1.5f
+		);
+
+		// Trace 가 막혔으면 데미지 적용하지 않음 (자기자신 제외)
+		if (bBlocked && BlockHit.GetActor() != Target)
 			continue;
 		
 		// 4. 데미지를 입히기
