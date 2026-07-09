@@ -4,9 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/BTTaskNode.h"
-#include "../../C_EnemySkillComponent.h"
-
 #include "C_Task_UseSkill.generated.h"
+
+enum class ESkillSlot : uint8;
 
 UCLASS()
 class PROJECT_ZOMBIE_API UC_Task_UseSkill : public UBTTaskNode
@@ -25,7 +25,7 @@ public:
 	virtual void TickTask(UBehaviorTreeComponent& _OwnCom, uint8* _NodeMemory, float _DeltaSeconds);
 
 public:
-	void OnSkillEnd(AC_BasicEnemy* _SkillUser, UBehaviorTreeComponent* _BTCom);
+	void OnSkillEnd(class AC_BasicEnemy* _SkillUser, UBehaviorTreeComponent* _BTCom);
 	
 public:
 	UC_Task_UseSkill();

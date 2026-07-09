@@ -3,8 +3,6 @@
 
 #include "C_EnemySkillBase.h"
 
-#include "C_BasicEnemy.h"
-#include "C_EnemySkillData.h"
 
 UC_EnemySkillBase::UC_EnemySkillBase()
 {

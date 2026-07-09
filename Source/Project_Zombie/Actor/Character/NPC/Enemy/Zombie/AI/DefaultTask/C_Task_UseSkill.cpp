@@ -3,8 +3,10 @@
 
 #include "C_Task_UseSkill.h"
 
-#include "../C_Zombie.h"
-#include "../Controller/C_ZombieController.h"
+#include "AIController.h"
+#include "Actor/Character/NPC/Enemy/Components/SkillComponent/C_EnemySkillComponent.h"
+#include "Actor/Character/NPC/Enemy/Zombie/C_Zombie.h"
+
 
 UC_Task_UseSkill::UC_Task_UseSkill()
 {

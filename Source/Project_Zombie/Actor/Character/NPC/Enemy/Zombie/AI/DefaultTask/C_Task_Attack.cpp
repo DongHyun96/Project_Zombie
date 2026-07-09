@@ -2,9 +2,10 @@
 
 
 #include "C_Task_Attack.h"
-#include "../C_Zombie.h"
-#include "../Controller/C_ZombieController.h"
 
+
+#include "AIController.h"
+#include "Actor/Character/NPC/Enemy/Zombie/C_Zombie.h"
 #include "BehaviorTree/BehaviorTreeComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
 

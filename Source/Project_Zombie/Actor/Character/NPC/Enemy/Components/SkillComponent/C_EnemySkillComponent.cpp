@@ -3,8 +3,8 @@
 
 #include "C_EnemySkillComponent.h"
 
-#include "C_EnemySkillBase.h"
-#include "C_EnemySkillData.h"
+#include "Actor/Character/NPC/Enemy/Zombie/Skill/C_EnemySkillBase.h"
+#include "Actor/Character/NPC/Enemy/Zombie/Skill/C_EnemySkillData.h"
 
 // 비동기 로딩 관련 헤더
 #include "Engine/AssetManager.h"
@@ -13,6 +13,7 @@
 #include "GenericTeamAgentInterface.h"
 
 // 키즈멧
+#include "Actor/Character/NPC/Enemy/C_BasicEnemy.h"
 #include "Kismet/GameplayStatics.h"
 
 UC_EnemySkillComponent::UC_EnemySkillComponent()

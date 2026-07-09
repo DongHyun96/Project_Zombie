@@ -5,10 +5,8 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 
-#include "C_BasicEnemy.h"
-
 // 비동기 로딩 관련 헤더
-#include "Engine/StreamableManager.h"
+// #include "Actor/Character/NPC/Enemy/C_BasicEnemy.h"
 
 #include "C_EnemySkillComponent.generated.h"
 
@@ -49,7 +47,7 @@ public:
 };
 
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnSkillEnd, AC_BasicEnemy*);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnSkillEnd, class AC_BasicEnemy*);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class PROJECT_ZOMBIE_API UC_EnemySkillComponent : public UActorComponent
