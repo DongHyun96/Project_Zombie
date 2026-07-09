@@ -6,7 +6,9 @@
 #include "../Actor/ItemActor/Weapon/Gun/C_GunBase.h"
 #include "../Actor/Character/Player/C_BasicPlayer.h"
 #include "../Actor/Components/C_EquippedComponent.h"
+#include "../Actor/Components/C_ControllerFSMComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/KismetMathLibrary.h"
 
 void UC_PlayerAnimInstance::NativeInitializeAnimation()
 {
@@ -63,8 +65,23 @@ void UC_PlayerAnimInstance::NativeUpdateAnimation(float _DT)
 	{
 		if (USkeletalMeshComponent* WeaponMesh = CurrentGun->GetWeaponMesh())
 		{
-			m_LeftHandIKTransform = WeaponMesh->GetSocketTransform(TEXT("IK_Socket_LeftHand"), RTS_World);
+			m_LeftHandIKTransform = WeaponMesh->GetSocketTransform(TEXT("IK_Socket_LeftHand"), RTS_World).GetLocation();;
 		}
 	}
 
+	// 캐릭터의 기본 조준 회전값(Aim Rotation) 가져오기
+	FRotator AimRotation = m_Character->GetBaseAimRotation();
+
+	// 캐릭터 자체의 회전값 가져오기
+	FRotator ActorRotation = m_Character->GetActorRotation();
+
+	// 캐릭터 회전과 조준 회전의 차이 계산
+	// 조준 각도가 캐릭터 정면을 기준으로 얼마나 위/아래로 꺾였는지 계산
+	FRotator DeltaRotation = UKismetMathLibrary::NormalizedDeltaRotator(AimRotation, ActorRotation);
+
+	// 피치 값 할당
+	m_Pitch = DeltaRotation.Pitch;
+	// 턴 인 플레이스의 야값 할당
+	m_Yaw = m_Character->GetControllerFSM()->GetDeltaYaw();
+	
 }

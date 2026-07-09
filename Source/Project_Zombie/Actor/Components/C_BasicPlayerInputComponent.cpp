@@ -6,6 +6,8 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
+#include "C_BasicPlayerAimComponent.h"
+
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/ItemActor/Weapon/C_WeaponBase.h"
@@ -66,6 +68,46 @@ void UC_BasicPlayerInputComponent::InitializePlayerInput(UInputComponent* Player
 	for (const FEnhancedActionKeyMapping& Mapping : DefaultMappingContext->GetMappings())
 	{
 		if (!Mapping.Action) continue;
+
+		if (IA_Move)
+		{
+			EnhancedInputComponent->BindAction(IA_Move, ETriggerEvent::Triggered, this, &UC_BasicPlayerInputComponent::MoveAction);
+		}
+		if (IA_Look)
+		{
+			EnhancedInputComponent->BindAction(IA_Look, ETriggerEvent::Triggered, this, &UC_BasicPlayerInputComponent::LookAction);
+		}
+		if (IA_Jump)
+		{
+			EnhancedInputComponent->BindAction(IA_Jump, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::JumpAction);
+		}
+		if (IA_Sprint)
+		{
+			EnhancedInputComponent->BindAction(IA_Sprint, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::SprintStart);
+			EnhancedInputComponent->BindAction(IA_Sprint, ETriggerEvent::Completed, this, &UC_BasicPlayerInputComponent::SprintEnd);	
+		}
+		if (IA_Crouch)
+		{
+			EnhancedInputComponent->BindAction(IA_Crouch, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::CrouchAction);
+		}
+		if (IA_Fire)
+		{
+			EnhancedInputComponent->BindAction(IA_Fire, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::FireStarted);
+			EnhancedInputComponent->BindAction(IA_Fire, ETriggerEvent::Ongoing, this, &UC_BasicPlayerInputComponent::FireOnGoing);
+			EnhancedInputComponent->BindAction(IA_Fire, ETriggerEvent::Completed, this, &UC_BasicPlayerInputComponent::FireEnd);
+			
+		}
+
+		if (IA_Aim)
+		{
+			EnhancedInputComponent->BindAction(IA_Aim, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::KeepAimActionStart);
+			EnhancedInputComponent->BindAction(IA_Aim, ETriggerEvent::Completed, this, &UC_BasicPlayerInputComponent::KeepAimActionEnd);
+		}
+
+		if (IA_Reload)
+		{
+			EnhancedInputComponent->BindAction(IA_Reload, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::ReloadAction);
+		}
 		
 		const FString ActionName = Mapping.Action->GetName();
 		
@@ -227,6 +269,18 @@ void UC_BasicPlayerInputComponent::ReloadAction()
 {
 	if (AC_WeaponBase* CurWeapon = Player->GetEquippedComponent()->GetCurWeapon())
 		CurWeapon->Reload(Player);
+}
+
+void UC_BasicPlayerInputComponent::KeepAimActionStart()
+{
+	if (Player)
+		Player->GetAimComponent()->OnAimPressed();
+}
+
+void UC_BasicPlayerInputComponent::KeepAimActionEnd()
+{
+	if (Player)
+		Player->GetAimComponent()->OnAimReleased();
 }
 
 void UC_BasicPlayerInputComponent::ToggleInventoryWidget()

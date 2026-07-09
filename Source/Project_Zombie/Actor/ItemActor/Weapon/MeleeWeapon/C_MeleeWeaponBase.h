@@ -36,6 +36,10 @@ protected:
 	UPROPERTY()
 	UAnimMontage*				m_PlayerAttackAnimation;
 
+	FVector						m_PrevHitBoxSockPos;
+
+	TSet<TWeakObjectPtr<AActor>>	m_HitActors;
+
 protected:
 	
 	virtual void BeginPlay() override;

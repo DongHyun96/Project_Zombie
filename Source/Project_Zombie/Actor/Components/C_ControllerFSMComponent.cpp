@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "C_ControllerFSMComponent.h"
@@ -53,6 +53,10 @@ void UC_ControllerFSMComponent::HandleFSMTransition()
 
 	const bool bIsMovingOrFalling = m_PlayerMovement->Velocity.SizeSquared() > 0.f; 
 	
+	// Idle -> Turn in place state
+	// 0 360
+	m_DeltaYaw = UKismetMathLibrary::NormalizedDeltaRotator(m_OwnerPlayer->GetControlRotation(), m_OwnerPlayer->GetActorRotation()).Yaw;
+
 	switch (m_PlayerControllerRotState)
 	{
 	case EPlayerControllerRotState::IdleStopState:
@@ -64,17 +68,13 @@ void UC_ControllerFSMComponent::HandleFSMTransition()
 			return;
 		}
 		
-		// Idle -> Turn in place state
-		// 0 360
-		const float DeltaYaw = UKismetMathLibrary::NormalizedDeltaRotator(m_OwnerPlayer->GetControlRotation(), m_OwnerPlayer->GetActorRotation()).Yaw;
-
 		// TurnInPlace 처리 불가 각도
-		if (FMath::Abs(DeltaYaw) <= 90.f) return;
+		if (FMath::Abs(m_DeltaYaw) <= 90.f) return;
 
 		/* IdleStopState -> TurnInPlaceState Transition*/
 		{
 			m_PlayerControllerRotState = EPlayerControllerRotState::TurnInPlaceState;
-			m_OwnerPlayer->GetTurnInPlaceComponent()->StartTurnInPlaceMotion(DeltaYaw);
+			m_OwnerPlayer->GetTurnInPlaceComponent()->StartTurnInPlaceMotion(m_DeltaYaw);
 		}
 	}
 		return;
