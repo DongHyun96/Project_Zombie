@@ -76,6 +76,10 @@ public: // 무기 상태 정보 업데이트 관련
 	/// <param name="_LeftAmmoTotalCount"> : 해당 무기의 사용할 수 있는 총 탄약 수 </param>
 	void UpdateLeftAmmoTotalCount(int32 _LeftAmmoTotalCount);
 
+public:
+	
+	class UC_CompassBarWidget* GetCompassBarWidget() const { return CompassBarWidget; }
+	
 public: // Ingame Log 관련
 	
 	/// <summary>
@@ -85,7 +89,7 @@ public: // Ingame Log 관련
 	/// <returns> : 제대로 추가되지 않았다면 return false </returns>
 	UFUNCTION(BlueprintCallable)
 	bool AddPlayerWarningLog(const FString& WarningLog);
-	
+
 protected:
 
 	UPROPERTY(meta = (BindWidget))
@@ -93,5 +97,8 @@ protected:
 	
 	UPROPERTY(meta = (BindWidget))
 	class UC_InformWidget* InformWidget{};
+
+	UPROPERTY(meta = (BindWidget))
+	UC_CompassBarWidget* CompassBarWidget{};
 
 };

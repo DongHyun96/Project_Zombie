@@ -56,12 +56,10 @@ void AC_WorldPingActor::SpawnPingActorToWorld(const FHitResult& _TraceHitResult)
 	// 이전 핑 지우기용 처리
 	HidePing();
 	
-	m_PingWidget->TogglePingMarker(true);
-	
 	if (!bIsFloor)
 	{
 		m_PingWidgetComponent->SetWorldLocation(_TraceHitResult.ImpactPoint);
-		m_PingWidget->SetSpawnedLocation(_TraceHitResult.ImpactPoint);
+		m_PingWidget->ShowPingWidget(_TraceHitResult.ImpactPoint);
 		return;
 	}
 	
@@ -87,7 +85,7 @@ void AC_WorldPingActor::SpawnPingActorToWorld(const FHitResult& _TraceHitResult)
 
 	// Adjusting WidgetComponent Location
 	m_PingWidgetComponent->SetWorldLocation(SplineEndPos + FVector::UnitZ() * 25.f);
-	m_PingWidget->SetSpawnedLocation((_TraceHitResult.ImpactPoint + SplineEndPos) * 0.5f);
+	m_PingWidget->ShowPingWidget((_TraceHitResult.ImpactPoint + SplineEndPos) * 0.5f);
 }
 
 void AC_WorldPingActor::HidePing()
@@ -100,6 +98,6 @@ void AC_WorldPingActor::HidePing()
 	m_SplineMeshComponent->SetHiddenInGame(true);
 	
 	// Hide Ping Widget
-	m_PingWidget->TogglePingMarker(false);
+	m_PingWidget->HidePingWidget();
 }
 

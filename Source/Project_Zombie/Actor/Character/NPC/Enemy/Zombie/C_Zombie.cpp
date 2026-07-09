@@ -3,7 +3,7 @@
 
 #include "C_Zombie.h"
 
-#include "../C_EnemyStatComponent.h"
+
 #include "../../../GlobalEnum.h"
 
 AC_Zombie::AC_Zombie()

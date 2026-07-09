@@ -87,14 +87,25 @@ private:
 	void LerpProgressBar(class UProgressBar* _TargetProgressBar, float _LerpAlphaSpeed, float _DestRatio, float _DeltaTime);
 
 	/// <summary>
-	/// MagazineText 내용 업데이트
+	/// 현재 보여주고 있는 MagazineText 내용 업데이트
 	/// </summary>
-	void SetMagazineText(int32 _AmmoAmount);
+	void SetCurrentShowingMagazineText(int32 _AmmoAmount);
+
 	
 	/// <summary>
-	/// LeftAmmoText 내용 업데이트 
+	/// 현재 보여주고 있는 LeftAmmoText 내용 업데이트 
 	/// </summary>
-	void SetLeftAmmoText(int32 _AmmoAmount);
+	void SetCurrentShowingLeftAmmoText(int32 _AmmoAmount);
+	
+	/// <summary>
+	/// 현재 보여주고 있지 않는 Hidden mag text 내용, 보여지는 Mag Text 내용과 동일하게 세팅 
+	/// </summary>
+	void PasteCurrentShowingMagTextToHidden();
+
+	/// <summary>
+	/// 현재 보여주고 있지 않는 Hidden LeftAmmoText 내용, 보여지는 LeftAmmoText 내용과 동일하게 세팅
+	/// </summary>
+	void PasteCurrentShowingLeftAmmoTextToHidden();
 	
 	/* Main HPBar 관련 */
 protected:
@@ -140,7 +151,7 @@ private: // 현재 Main으로 표기중인 정보
 
 	// True, false로 처리할 예정
 	bool m_bCurrentShowingMagTextIdx{}; 
-	bool m_bCurrentShowingLeftAmmoText{};
+	bool m_bCurrentShowingLeftAmmoTextIdx{};
 	
 	TArray<class UTextBlock*> m_MagazineTexts{};
 	TArray<UTextBlock*> m_LeftAmmoTexts{};

@@ -4,7 +4,7 @@
 
 #include "../Actor/Character/NPC/Enemy/Zombie/C_Zombie.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "../Actor/Character/NPC/Enemy/C_EnemySkillComponent.h"
+#include "Actor/Character/NPC/Enemy/Components/SkillComponent/C_EnemySkillComponent.h"
 
 void UC_ZombieAnimInstance::NativeInitializeAnimation()
 {
