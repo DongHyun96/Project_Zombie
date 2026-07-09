@@ -13,10 +13,6 @@ class PROJECT_ZOMBIE_API AC_Zombie : public AC_BasicEnemy
 	GENERATED_BODY()
 
 protected:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation")
-	UAnimMontage* m_AttackMontage;
-
-protected:
 	virtual void BeginPlay() override;
 
 public:

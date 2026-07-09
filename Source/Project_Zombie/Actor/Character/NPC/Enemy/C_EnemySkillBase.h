@@ -7,7 +7,7 @@
 #include "C_EnemySkillBase.generated.h"
 
 // 모든 스킬의 최상위 클래스, 스킬의 공통적인 기능을 정의
-UCLASS(Abstract)
+UCLASS()
 class PROJECT_ZOMBIE_API UC_EnemySkillBase : public UObject
 {
 	GENERATED_BODY()

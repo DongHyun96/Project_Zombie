@@ -3,3 +3,6 @@
 
 #include "C_PoisonZombie.h"
 
+AC_PoisonZombie::AC_PoisonZombie()
+{
+}

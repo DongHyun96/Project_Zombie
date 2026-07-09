@@ -11,4 +11,6 @@ class PROJECT_ZOMBIE_API AC_PoisonZombie : public AC_Zombie
 {
 	GENERATED_BODY()
 	
+public:
+	AC_PoisonZombie();
 };
