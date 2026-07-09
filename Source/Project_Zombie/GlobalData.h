@@ -147,15 +147,6 @@ struct FGunData : public FWeaponData
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
     float ShellEjectImpulse = 150.0f; // 탄피 배출에 가하는 힘.
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Aim")
-    float TargetFOV = 60.f; // 조준 시 변경될 FOV (기본은 90)
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Aim")
-    FVector CameraOffset = FVector(0.f, 40.f, 20.f); // 조준 시 카메라 위치 조정용
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Aim")
-    float AimSpeed = 10.f; // 조준 속도
-
     // ── [총기 관련 매쉬 (Mesh)] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual")
     TSoftObjectPtr<UStaticMesh> ShellMesh;   // 총기 탄피 매쉬

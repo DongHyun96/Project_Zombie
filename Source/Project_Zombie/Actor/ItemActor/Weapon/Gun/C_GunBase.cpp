@@ -80,14 +80,9 @@ void AC_GunBase::Gun_init()
 	m_FireRate			= m_DataCom->GetData(TEXT("AttackRate"));
 	m_ShellEjectImpulse = m_DataCom->GetData(TEXT("ShellEjectImpulse"));
 
-	m_TargetFOV			= m_DataCom->GetData(TEXT("TargetFOV"));
-	m_CameraOffset		= m_DataCom->GetVectorData(TEXT("CameraOffset"));
-	m_AimSpeed			= m_DataCom->GetData(TEXT("AimSpeed"));
-
 	m_FireAnimation		= Cast<UAnimSequence>(m_DataCom->GetAssetData("FireAnimation").LoadSynchronous());
 	m_ReloadAnimation	= Cast<UAnimSequence>(m_DataCom->GetAssetData("ReloadAnimation").LoadSynchronous());
 	m_ShellMesh			= Cast<UStaticMesh>(m_DataCom->GetAssetData("ShellMesh").LoadSynchronous());
-
 
 	if (!m_FireAnimation) { UE_LOG(LogTemp, Warning, TEXT("FireAnimation 로드 실패")); }
 	if (!m_ReloadAnimation) { UE_LOG(LogTemp, Warning, TEXT("ReloadAnimation 로드 실패")); }

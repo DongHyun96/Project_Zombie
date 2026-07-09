@@ -5,6 +5,7 @@
 #include "C_TurnInPlaceComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "C_BasicPlayerAimComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/ItemActor/Weapon/C_WeaponBase.h"
@@ -227,14 +228,14 @@ void UC_BasicPlayerInputComponent::ReloadAction()
 
 void UC_BasicPlayerInputComponent::KeepAimActionStart()
 {
-	if(Player)
-		Player->OnAimPressed();
+	if (Player)
+		Player->GetAimComponent()->OnAimPressed();
 }
 
 void UC_BasicPlayerInputComponent::KeepAimActionEnd()
 {
 	if (Player)
-		Player->OnAimReleased();
+		Player->GetAimComponent()->OnAimReleased();
 }
 
 void UC_BasicPlayerInputComponent::ToggleInventoryWidget()

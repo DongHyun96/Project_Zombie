@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -66,5 +66,12 @@ protected:
 	
 	UPROPERTY(VisibleAnywhere)
 	EPlayerControllerRotState			m_PlayerControllerRotState{};
+
+protected:
+
+	float m_DeltaYaw{};
+
+public:
+	float GetDeltaYaw() { return m_DeltaYaw; }
 
 };

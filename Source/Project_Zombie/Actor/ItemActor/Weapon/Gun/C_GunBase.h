@@ -51,16 +51,6 @@ protected:
 
 	float					m_ShellEjectImpulse;
 
-	/* ADS (조준) 설정 */
-
-	float					m_TargetFOV;
-
-	FVector					m_CameraOffset;
-
-	float					m_AimSpeed;
-
-	/* ADS (조준) 설정 */
-
 	// 연사 타이머를 관리하기 위한 핸들
 	FTimerHandle			m_FireTimerHandle;
 
@@ -129,11 +119,6 @@ public:
 public:
 	USkeletalMeshComponent* GetWeaponMesh() { return m_WeaponMesh; }
 
-	float GetTargetFOV() { return m_TargetFOV; }
-
-	FVector	GetCameraOffset() { return m_CameraOffset; }
-
-	float GetAimSpeed() { return m_AimSpeed; }
 
 public:
 	
