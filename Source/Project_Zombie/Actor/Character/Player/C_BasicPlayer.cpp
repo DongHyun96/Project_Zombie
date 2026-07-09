@@ -21,6 +21,7 @@
 #include "Actor/Components/C_TurnInPlaceComponent.h"
 #include "Actor/Components/C_InvenComponent.h"
 #include "Actor/Components/C_PingSystemComponent.h"
+#include "Actor/Components/C_BasicPlayerAimComponent.h"
 #include "GameMode/C_UIManager.h"
 #include "UI/InvenUI/C_InventoryGridWidget.h"
 #include "UI/InvenUI/C_InventoryWidget.h"
@@ -93,6 +94,9 @@ AC_BasicPlayer::AC_BasicPlayer()
 	
 	// PingSystem Component
 	m_PingSystemComponent = CreateDefaultSubobject<UC_PingSystemComponent>(TEXT("PingSystemComponent"));
+
+	// PlayerAim Component
+	m_PlayerAimComponent = CreateDefaultSubobject<UC_BasicPlayerAimComponent>(TEXT("PlayerAimComponent"));
 }
 
 void AC_BasicPlayer::BeginPlay()
@@ -112,7 +116,6 @@ void AC_BasicPlayer::BeginPlay()
 	
 	UIManager->GetInventoryWidget()->GetPlayerGridWidget()->SetInvenComponent(m_InvenComponent);
 	// 까지
-	
 	
 	// 입력 시스템 초기화
 	//InitInput();
@@ -138,6 +141,13 @@ void AC_BasicPlayer::Tick(float DeltaTime)
 	{
 		RecoverBoost(m_BoostRecoverCost * DeltaTime);
 	}
+
+	// [Aim] 카메라 변환 중일 때만 함수 호출
+	if (m_PlayerAimComponent->IsTransitioningCamera())
+	{
+		m_PlayerAimComponent->UpdateCameraInterpolation(DeltaTime);
+	}
+
 }
 
 void AC_BasicPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -325,8 +335,6 @@ void AC_BasicPlayer::ApplyWalkSpeed()
 	ApplyMovementSpeed();
 }
 
-
-
 void AC_BasicPlayer::UpdateBoostBarHUD() const
 {
 	if (APlayerController* PC = GetController<APlayerController>())
@@ -382,7 +390,17 @@ void AC_BasicPlayer::Server_RequestMoveItem_Implementation(UC_InvenComponent* Sr
 	}
 }
 
+void AC_BasicPlayer::SetSpringArmSocketOffset(FVector _SocketOffset)
+{
+	if(m_SpringArm)
+		m_SpringArm->SocketOffset = _SocketOffset;
+}
 
+void AC_BasicPlayer::SetCameraFOV(float _FOV)
+{
+	if(m_Camera)
+		m_Camera->FieldOfView = _FOV;
+}
 
 //void AC_BasicPlayer::InitInput()
 //{

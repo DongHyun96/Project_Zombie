@@ -19,5 +19,6 @@ protected:
 	class UC_EnemySkillComponent*			m_SkillCom;
 	
 public:
+	void BeginPlay() override;
 	AC_BasicEnemy();
 };

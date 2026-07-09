@@ -18,6 +18,13 @@ public:
 	/// </summary>
 	virtual void Activate(class AC_BasicEnemy* _Owner, class UC_EnemySkillData* _Data) {}
 
+	/// <summary>
+	/// 애니메이션 Notify에서 호출되는 함수, 스킬의 실제 효과를 발동시키는 함수
+	/// </summary>
+	/// <param name="_Owner"></param>
+	/// <param name="_Data"></param>
+	virtual void Fire(class AC_BasicEnemy* _Owner, class UC_EnemySkillData* _Data);
+
 public:
 	UC_EnemySkillBase();
 };

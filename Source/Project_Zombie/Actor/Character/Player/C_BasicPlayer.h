@@ -69,12 +69,15 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (DisplayName = "EquippedComponent"))
 	class UC_EquippedComponent* m_EquippedComponent{};
 
-
 	// TurnInPlace 처리 담당 Actor Component (속도가 0인 상황에서, 왼쪽 오른쪽 회전 시 몸체 회전 모션 처리를 자연스럽게 도와준다)
 	// 해당 기능은 PlayerCharacter만 처리를 할 예정
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (DisplayName = "TurnInPlaceComponent"))
 	class UC_TurnInPlaceComponent* m_TurnInPlaceComponent{};
 
+	// TurnInPlace 처리 담당 Actor Component (속도가 0인 상황에서, 왼쪽 오른쪽 회전 시 몸체 회전 모션 처리를 자연스럽게 도와준다)
+	// 해당 기능은 PlayerCharacter만 처리를 할 예정
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (DisplayName = "PlayerAimComponent"))
+	class UC_BasicPlayerAimComponent* m_PlayerAimComponent;
 
 	/// <summary>
 	/// InvenComponent,
@@ -149,7 +152,6 @@ protected:
 	// 마우스 감도
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
 	float 				m_MouseSensitivity;
-
 
 // [Movement]
 protected:
@@ -248,8 +250,12 @@ public:
 	UC_EquippedComponent* GetEquippedComponent() const { return m_EquippedComponent; }
 	
 	UC_TurnInPlaceComponent* GetTurnInPlaceComponent() const { return m_TurnInPlaceComponent; }
+
+	UC_ControllerFSMComponent* GetControllerFSM() const { return m_ControllerFSMComponent; }
 	
 	UC_PingSystemComponent* GetPingSystemComponent() const { return m_PingSystemComponent; }
+
+	UC_BasicPlayerAimComponent* GetAimComponent() const { return m_PlayerAimComponent; }
 
 public:
 	bool IsDead() const { return m_IsDead; }
@@ -313,7 +319,7 @@ public:
 	
 	void ApplyCrouchSpeed();
 	void ApplyWalkSpeed();
-	
+
 public:
 	// UI 드롭 시 서버에 안전하게 요청을 도달시켜 줄 확성기 RPC
 	UFUNCTION(Server, Reliable, WithValidation)
@@ -321,6 +327,13 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+
+public:
+	USpringArmComponent* GetSpringArm() { return m_SpringArm; }
+	void SetSpringArmSocketOffset(FVector _SocketOffset);
+
+	UCameraComponent* GetCamera() { return m_Camera; }
+	void SetCameraFOV(float _FOV);
 
 private:
 	EPlayerMoveSpeedState DetermineMoveSpeedState() const;

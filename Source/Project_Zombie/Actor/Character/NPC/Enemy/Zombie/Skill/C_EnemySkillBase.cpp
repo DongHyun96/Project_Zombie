@@ -3,8 +3,11 @@
 
 #include "C_EnemySkillBase.h"
 
-
 UC_EnemySkillBase::UC_EnemySkillBase()
+{
+}
+
+void UC_EnemySkillBase::Fire(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data)
 {
 }
 

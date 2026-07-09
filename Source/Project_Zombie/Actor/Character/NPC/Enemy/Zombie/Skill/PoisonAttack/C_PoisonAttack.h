@@ -17,6 +17,8 @@ public:
 	/// </summary>
 	virtual void Activate(class AC_BasicEnemy* _Owner, class UC_EnemySkillData* _Data) override;
 
+	virtual void Fire(class AC_BasicEnemy* _Owner, class UC_EnemySkillData* _Data) override;
+
 public:
 	UC_PoisonAttack();
 };

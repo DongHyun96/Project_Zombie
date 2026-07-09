@@ -42,7 +42,18 @@ void UC_ZombieAnimInstance::NativeUpdateAnimation(float _DT)
 
 void UC_ZombieAnimInstance::AnimNotify_SkillEnd()
 {
-	UE_LOG(LogTemp, Warning, TEXT("AN_SkillEnd"));
+	//UE_LOG(LogTemp, Warning, TEXT("AN_SkillEnd"));
 
-	m_Zombie->GetSkillComponent()->EndSkill();
+	if (m_Zombie)
+	{
+		m_Zombie->GetSkillComponent()->EndSkill();
+	}
+}
+
+void UC_ZombieAnimInstance::AnimNotify_Fire()
+{
+	if(m_Zombie)
+	{
+		m_Zombie->GetSkillComponent()->Fire();
+	}
 }

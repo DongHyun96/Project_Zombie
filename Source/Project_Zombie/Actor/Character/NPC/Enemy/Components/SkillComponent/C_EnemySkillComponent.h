@@ -93,6 +93,9 @@ public:
 	bool IsUsingSkill() const { return bUsingSkill; }
 	void UseSkill(ESkillSlot _Slot);
 	void EndSkill();
+	void Fire();
+
+	float GetSkillRange(ESkillSlot _Slot) const;
 
 public:
 	UC_EnemySkillComponent();

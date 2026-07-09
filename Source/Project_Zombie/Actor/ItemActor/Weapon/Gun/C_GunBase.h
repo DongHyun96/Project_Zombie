@@ -82,7 +82,7 @@ protected:
 	// 이거는 무기마다 Socket Transform 다를 수 있다고 판단됨
 	UPROPERTY(EditDefaultsOnly, meta = (DisplayName = "HolsterSocketName"))
 	FName m_HolsterSocketName{};
-	
+
 public:
 
 	/// <summary>
@@ -118,6 +118,7 @@ public:
 
 public:
 	USkeletalMeshComponent* GetWeaponMesh() { return m_WeaponMesh; }
+
 
 public:
 	

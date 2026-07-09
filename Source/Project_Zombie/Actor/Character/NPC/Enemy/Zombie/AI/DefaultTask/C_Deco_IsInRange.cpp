@@ -5,6 +5,7 @@
 
 #include "Actor/Character/NPC/Enemy/Zombie/C_Zombie.h"
 #include "Actor/Character/NPC/Enemy/Zombie/Controller/C_ZombieController.h"
+#include "Actor/Character/NPC/Enemy/Components/SkillComponent/C_EnemySkillComponent.h"
 
 #include "BehaviorTree/BlackboardComponent.h"
 
@@ -30,6 +31,10 @@ bool UC_Deco_IsInRange::CalculateRawConditionValue(UBehaviorTreeComponent& _OwnC
 
 	float Dist = FVector::Dist(pZombie->GetActorLocation(), pTargetActor->GetActorLocation());
 
-	return (Dist < 200.f);
+	UC_EnemySkillComponent* SkillCom = pZombie->GetSkillComponent();
+
+	float AttackRange = SkillCom->GetSkillRange(ESkillSlot::Skill_1);
+
+	return Dist <= AttackRange;
 }
 

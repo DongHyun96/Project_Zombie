@@ -74,16 +74,15 @@ void AC_GunBase::Gun_init()
 		return;
 	}
 
-	m_BaseDamage		= m_DataCom->GetData("BaseDamage");
-	m_MaxAmmo			= m_DataCom->GetData("MaxAmmo");
+	m_BaseDamage		= m_DataCom->GetData(TEXT("BaseDamage"));
+	m_MaxAmmo			= m_DataCom->GetData(TEXT("MaxAmmo"));
 	m_CurrentAmmo		= m_MaxAmmo;
-	m_FireRate			= m_DataCom->GetData("AttackRate");
-	m_ShellEjectImpulse = m_DataCom->GetData("ShellEjectImpulse");
+	m_FireRate			= m_DataCom->GetData(TEXT("AttackRate"));
+	m_ShellEjectImpulse = m_DataCom->GetData(TEXT("ShellEjectImpulse"));
 
 	m_FireAnimation		= Cast<UAnimSequence>(m_DataCom->GetAssetData("FireAnimation").LoadSynchronous());
 	m_ReloadAnimation	= Cast<UAnimSequence>(m_DataCom->GetAssetData("ReloadAnimation").LoadSynchronous());
 	m_ShellMesh			= Cast<UStaticMesh>(m_DataCom->GetAssetData("ShellMesh").LoadSynchronous());
-
 
 	if (!m_FireAnimation) { UE_LOG(LogTemp, Warning, TEXT("FireAnimation 로드 실패")); }
 	if (!m_ReloadAnimation) { UE_LOG(LogTemp, Warning, TEXT("ReloadAnimation 로드 실패")); }
