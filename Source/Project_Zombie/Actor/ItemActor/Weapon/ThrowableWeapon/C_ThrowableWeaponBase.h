@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "Actor/ItemActor/Weapon/C_WeaponBase.h"
+#include "Engine/EngineTypes.h"
+#include "CollisionQueryParams.h"
 #include "C_ThrowableWeaponBase.generated.h"
 
 UENUM(BlueprintType)
@@ -82,6 +84,8 @@ public: // 쿠킹 입력
 	bool OnStartCookInput();
 
 public:  // Getter & Setter
+	
+	AC_BasicPlayer* GetThrowableUser() const { return m_WeaponUser; }
 
 	float GetExplosionRadius() const { return m_ExplosionRadius; }
 	void SetExplosionRadius(float _ExplosionRadius) { m_ExplosionRadius = _ExplosionRadius; }
@@ -91,6 +95,8 @@ public:  // Getter & Setter
 
 	float GetMinDamage() const { return m_MinDamage; }
 	void SetMinDamage(float _MinDamage) { m_MinDamage = _MinDamage; }
+
+	ECollisionChannel GetExplosionTraceChannel() const { return m_ExplosionTraceChannel; }
 
 protected: // 폭발
 
@@ -194,11 +200,7 @@ public: // 몽타주 관련
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)
 	UAnimMontage* m_ThrowMontage;
 
-public: // 몽타주 연결 델리게이트
-
-	//FOnMontageEnded m_RemovePinEndedDelegate;
-	//FOnMontageEnded m_ReadyEndedDelegate;
-	//FOnMontageEnded m_ThrowEndedDelegate;
+public: 
 
 	// Section 이름들
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)
@@ -242,6 +244,9 @@ public: // Throwable Weapon의 투척 특성 관련
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|Launch")
 	float m_LaunchUpwardOffset;
 
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|Launch")
+	TSubclassOf<class UObject> m_ExplodeStrategyClass;
+
 	// 폭발 반경
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|Explosion")
 	float m_ExplosionRadius;
@@ -253,6 +258,11 @@ public: // Throwable Weapon의 투척 특성 관련
 	// 최소 데미지
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|Explosion")
 	float m_MinDamage;
+
+	// 폭발 데미지를 줄 때 사용할 Trace Channel
+	// 폭발 위치와 대상 사이에 벽 있는지 확인
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|Explosion")
+	TEnumAsByte<ECollisionChannel> m_ExplosionTraceChannel = ECC_Visibility;
 
 protected:
 	
@@ -271,6 +281,10 @@ protected:
 
 	// Throwable Weapon의 상태
 	EThrowableState m_ThrowableState;
+
+	// 폭발 실제 Object
+	UPROPERTY()
+	UObject* m_ExplodeStrategyObject = nullptr;
 
 
 private:

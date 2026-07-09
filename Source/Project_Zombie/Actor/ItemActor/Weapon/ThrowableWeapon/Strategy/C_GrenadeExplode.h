@@ -4,11 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
-#include "../Interface/ExplodeStrategy.h"
+#include "../Interface/I_ExplodeStrategy.h"
 #include "C_GrenadeExplode.generated.h"
 
 UCLASS()
-class PROJECT_ZOMBIE_API UC_GrenadeExplode : public UObject, public IExplodeStrategy
+class PROJECT_ZOMBIE_API UC_GrenadeExplode : public UObject, public II_ExplodeStrategy
 {
 	GENERATED_BODY()
 	

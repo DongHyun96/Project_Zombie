@@ -2,7 +2,13 @@
 
 
 #include "C_GrenadeExplode.h"
+#include "Engine/OverlapResult.h"
+#include "Kismet/GameplayStatics.h"
+
+#include "../../../../Character/Player/C_BasicPlayer.h"
 #include "../C_ThrowableWeaponBase.h"
+
+#include "Utility/C_Util.h"
 
 
 bool UC_GrenadeExplode::UseStrategy_Implementation(AC_ThrowableWeaponBase* _ThrowableWeapon)
@@ -22,16 +28,27 @@ bool UC_GrenadeExplode::UseStrategy_Implementation(AC_ThrowableWeaponBase* _Thro
 	// 폭발로 인한 최소 데미지
 	const float MinDamage = _ThrowableWeapon->GetMinDamage();
 
-	// 폭발 데미지 적용 제외 액터 설정
-	TArray<AActor*> IgnoreActors;
-	IgnoreActors.Add(_ThrowableWeapon);
+
+	// 찾을 액터의 충돌 채널 설정
+	FCollisionObjectQueryParams ObjectQueryParams;
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_Pawn); // 나중에 좀비 추가하면 변경
+
 
 	FCollisionQueryParams QueryParams;
-	QueryParams.AddIgnoredActors(IgnoreActors);
 
-	// 단순 충돌 체크
+	// 폭발 데미지 적용 제외 액터 설정
+	//TArray<AActor*> IgnoreActors;
+	//IgnoreActors.Add();
+	//QueryParams.AddIgnoredActors(IgnoreActors);
+	
+	// 자기 자신 제외
+	QueryParams.AddIgnoredActor(_ThrowableWeapon);
+
+	// 단순 충돌
 	QueryParams.bTraceComplex = false;
 
+
+	/*
 	// 충돌 결과를 저장할 배열
 	TArray<FHitResult> HitResults;
 
@@ -49,6 +66,22 @@ bool UC_GrenadeExplode::UseStrategy_Implementation(AC_ThrowableWeaponBase* _Thro
 		FCollisionShape::MakeSphere(ExplosionRadius), // 충돌 범위 설정
 		QueryParams			// 충돌 무시 등의 옵션
 	);
+	*/
+
+	// 충돌 결과를 저장할 배열
+	TArray<FOverlapResult> OverlapResults;
+
+	// 1. 폭발 반경 안의 대상 검색
+	const bool bHasOverlap = GetWorld()->OverlapMultiByObjectType
+	(
+		OverlapResults,
+		ExplosionLocation,
+		FQuat::Identity,
+		ObjectQueryParams,
+		FCollisionShape::MakeSphere(ExplosionRadius),
+		QueryParams
+	);
+
 
 	// ------------ 디버그용 ------------- 
 	DrawDebugSphere(
@@ -62,10 +95,76 @@ bool UC_GrenadeExplode::UseStrategy_Implementation(AC_ThrowableWeaponBase* _Thro
 	);
 	// -----------------------------------
 
+	UC_Util::Print("[UC_GrenadeExplode::UseStrategy_Implementation] Debug");
+
+
 	// 아무도 충돌하지 않으면 폭발만 발생
-	if (!bHit)
+	if (!bHasOverlap)
 		return true; 
+
+	// 중복 제거를 위해 Set 사용
+	TSet<AActor*> DamagedActors;
 	
+	for (const FOverlapResult& Result : OverlapResults)
+	{
+		AActor* Target = Result.GetActor();
+		
+		if (!Target)
+			continue;
+
+		// 이미 데미지를 입은 타겟은 건너뜀
+		if (DamagedActors.Contains(Target))
+			continue;
+		
+		// 2. 위치 구하기
+		FVector TargetLocation = Target->GetActorLocation();
+
+		// 폭발 위치와 타겟 위치 거리
+		const float Distance = FVector::Distance(ExplosionLocation, TargetLocation);
+
+		if (Distance > ExplosionRadius)
+			continue;
+
+		// 3. 가려짐 확인
+		FHitResult BlockHit;
+
+		// LineTrace 옵션 설정
+		FCollisionQueryParams TraceParams;
+		
+		// 자기자신 무시
+		TraceParams.AddIgnoredActor(_ThrowableWeapon);
+
+		const bool bBlocked = GetWorld()->LineTraceSingleByChannel(
+			BlockHit,										// 결과 저장
+			ExplosionLocation,
+			TargetLocation,
+			_ThrowableWeapon->GetExplosionTraceChannel(),	// Trace Channel 설정
+			TraceParams										// Trace 옵션
+		);
+
+		// Trace 가 막혔으면 데미지 적용하지 않음
+		if (bBlocked)
+			continue;
+		
+		// 4. 데미지를 입히기
+		AController* InstigatorController = nullptr;
+		if (AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(_ThrowableWeapon->GetThrowableUser()))
+		{
+			InstigatorController = Player->GetController();
+		}
+
+		// 데미지 이벤트 전달
+		UGameplayStatics::ApplyDamage(
+			Target,						// 데미지 받는 대상
+			FMath::Lerp(MaxDamage, MinDamage, Distance / ExplosionRadius), // 거리 비례 데미지 계산
+			InstigatorController,		// 데미지를 입힌 주체
+			_ThrowableWeapon,			// 데미지를 입힌 무기
+			UDamageType::StaticClass()	// 데미지 타입
+		);
+
+		// 5. 데미지를 입은 액터를 Set에 추가하여 중복 방지
+		DamagedActors.Add(Target);
+	}
 	
-	return false;
+	return true;
 }

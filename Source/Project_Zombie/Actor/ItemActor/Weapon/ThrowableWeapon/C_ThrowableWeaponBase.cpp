@@ -7,6 +7,7 @@
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "GameMode/C_UIManager.h"
+#include "Interface/I_ExplodeStrategy.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
 #include "Utility/C_Util.h"
 
@@ -36,6 +37,23 @@ AC_ThrowableWeaponBase::AC_ThrowableWeaponBase()
 	// 중력 적용
 	m_ProjectileMovement->ProjectileGravityScale = 1.f; 
 
+	// 튕김 적용
+	m_ProjectileMovement->bShouldBounce = true;
+
+	// 튕김 정도
+	m_ProjectileMovement->Bounciness = 0.3f; 
+
+	// 튕김 시 마찰 정도 
+	m_ProjectileMovement->Friction = 0.7f;
+
+	// 튕김 시 속도가 해당 수치 이하로 떨어지면 더 이상 튕기지 않고 정지 처리
+	m_ProjectileMovement->BounceVelocityStopSimulatingThreshold = 30.f;
+
+	// 충돌 활성화 (투척류는 충돌이 있어야 함)
+	m_ProjectileMovement->bSweepCollision = true;
+	
+	// Sub-Stepping 강제 활성화 (투척류는 날아가는 궤적이 직선이 아니므로, Sub-Stepping 활성화 필요)
+	m_ProjectileMovement->bForceSubStepping = true; 
 
 	// 몽타주 Section 이름 초기화
 	m_RemovePinSectionName = TEXT("RemovePin");
@@ -61,6 +79,15 @@ void AC_ThrowableWeaponBase::BeginPlay()
 {
 	Super::BeginPlay();
 	m_ProjectileMovement->Deactivate();
+
+	// 폭발 전략 클래스가 지정되어 있다면, 해당 클래스의 객체를 생성
+	if (m_ExplodeStrategyClass)
+	{
+		if (m_ExplodeStrategyClass->ImplementsInterface(UI_ExplodeStrategy::StaticClass()))
+		{
+			m_ExplodeStrategyObject = NewObject<UObject>(this, m_ExplodeStrategyClass);
+		}
+	}
 }
 
 // Called every frame
@@ -226,34 +253,10 @@ void AC_ThrowableWeaponBase::OnThrowReadyLoop()
 		return;
 	}
 
-	// 차징 중이 아니면, 투척 동작으로 넘어감
-	const int32 ThrowSectionIndex = m_ThrowMontage->GetSectionIndex(m_ThrowSectionName);
-	if (ThrowSectionIndex == INDEX_NONE)
-		return;
-
+	// 차징이 끝났으면, 투척 동작으로 넘어감
 	m_ThrowableState = EThrowableState::Throwing;
 
-	/// 자꾸 투척 몽타주가 빠르게 재생되는 현상 발견해서 gpt 사용...
-	float ThrowSectionStartTime = 0.f;
-	float ThrowSectionEndTime = 0.f;
-
-	m_ThrowMontage->GetSectionStartAndEndTime(
-		ThrowSectionIndex,
-		ThrowSectionStartTime,
-		ThrowSectionEndTime
-	);
-
-	AnimInstance->Montage_SetPlayRate(m_ThrowMontage, 0.8f);
-	
-	AnimInstance->Montage_SetPosition(
-		m_ThrowMontage,
-		ThrowSectionStartTime
-	);
-
-	AnimInstance->Montage_JumpToSection(
-		m_ThrowSectionName,
-		m_ThrowMontage
-	);
+	m_WeaponUser->PlayAnimMontage(m_ThrowMontage, 1.f, m_ThrowSectionName);
 }
 
 void AC_ThrowableWeaponBase::OnThrowThrowable()
@@ -324,7 +327,49 @@ bool AC_ThrowableWeaponBase::OnStartCookInput()
 
 void AC_ThrowableWeaponBase::Explode()
 {
-	// 폭발 처리는 IExplodeStrategy를 상속받은 클래스에서 처리할 예정
+	// 폭발 처리는 II_ExplodeStrategy를 상속받은 클래스에서 처리할 예정
+	if (m_ThrowableState == EThrowableState::Exploded)
+		return;
+
+	m_ThrowableState = EThrowableState::Exploded;
+
+	// 타이머 초기화
+	ClearFuseTimer();
+
+	// 이동 정지
+	if (m_ProjectileMovement)
+	{
+		m_ProjectileMovement->StopMovementImmediately(); // 속도 제거
+		m_ProjectileMovement->Deactivate(); // Projectile Movement 비활성화
+	}
+
+	// 충돌 비활성화
+	if (m_MainCollider)
+	{
+		m_MainCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+
+	SetActorEnableCollision(false);
+
+	// 해당 객체가 Interface를 구현했는지 확인
+	if (!m_ExplodeStrategyObject->GetClass()->ImplementsInterface(UI_ExplodeStrategy::StaticClass()))
+	{
+		UC_Util::Print("[AC_ThrowableWeaponBase::Explode] Not Implements Interface");
+		
+		SetActorHiddenInGame(true);
+		Destroy();
+		return;
+	}
+
+	bool bExploded = II_ExplodeStrategy::Execute_UseStrategy(m_ExplodeStrategyObject, this);
+
+	if (bExploded)
+	{
+		// 폭발 처리 완료 후, Actor 제거
+	}
+
+	SetActorHiddenInGame(true);
+	Destroy();
 }
 
 // ----------------- 투척 취소 관련 처리 -----------------

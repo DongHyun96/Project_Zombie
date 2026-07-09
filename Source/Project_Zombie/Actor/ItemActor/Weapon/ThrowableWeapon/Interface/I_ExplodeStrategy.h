@@ -4,18 +4,18 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
-#include "ExplodeStrategy.generated.h"
+#include "I_ExplodeStrategy.generated.h"
 
 class AC_ThrowableWeaponBase;
 
 // 전략 인터페이스
 UINTERFACE(MinimalAPI)
-class UExplodeStrategy : public UInterface
+class UI_ExplodeStrategy : public UInterface
 {
 	GENERATED_BODY()
 };
 
-class PROJECT_ZOMBIE_API IExplodeStrategy
+class PROJECT_ZOMBIE_API II_ExplodeStrategy
 {
 	GENERATED_BODY()
 
