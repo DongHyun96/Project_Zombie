@@ -78,7 +78,7 @@ public:
 
     // ── [실시간 공통 데이터] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
-    bool bIsLocked = false;
+    int32 LockedByPlayerID = INDEX_NONE; // INDEX_NONE == -1
     
     // ── [실시간 인스턴스 변수 - 무기/장비용] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory | Weapon")
