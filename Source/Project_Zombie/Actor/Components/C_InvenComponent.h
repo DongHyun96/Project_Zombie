@@ -62,7 +62,7 @@ protected:
 
 	// 드래그 시작
 	UFUNCTION(Server, Reliable)
-	void Server_PickUpItem(int32 SlotIndex);
+	bool Server_RequestDragItemSlot(int32 SlotIndex);
 	
 	UFUNCTION(BlueprintCallable)
 	void OnRep_InventoryContainer();
@@ -80,10 +80,12 @@ protected:
 	UPROPERTY(ReplicatedUsing = OnRep_InventoryContainer,EditAnywhere, BlueprintReadWrite, Category = "Inventory")
 	FInventoryContainer InventoryContainer;
 
-	UPROPERTY(Replicated)
-	FCusorItem CursorSlot;
+	//UPROPERTY(Replicated)
+	//FCusorItem CursorSlot;
 	
-	// 고유 ID
+	// TODO : 현재 미사용 중, 현재 포인터를 패킷으로 보내고 있는데(엔진에서 GUID로 변환해줌.)
+	//		  이걸 사용하면 int32를 패킷으로 보내서 서버에서 해당 id의 객체를 찾아 접근 할 수 있음
+	// 고유 ID 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	int32 ContainerID;
 public:

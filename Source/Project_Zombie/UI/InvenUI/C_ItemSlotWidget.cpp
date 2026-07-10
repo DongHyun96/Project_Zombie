@@ -20,13 +20,13 @@ void UC_ItemSlotWidget::UpdateSlot(const FInventoryEntry& ItemData, const FItemD
 {
     if (ItemData.ItemRowName == NAME_None)
     {
-        ItemSlot->SetBrushFromTexture(nullptr);
+        ItemIcon->SetBrushFromTexture(nullptr);
     }
     else
     {
         if (CoreData->IconTexture.IsValid())
         {
-            ItemSlot->SetBrushFromTexture(CoreData->IconTexture.Get());
+            ItemIcon->SetBrushFromTexture(CoreData->IconTexture.Get());
             SetVisibility(ESlateVisibility::Visible);
         }
         else
@@ -35,10 +35,13 @@ void UC_ItemSlotWidget::UpdateSlot(const FInventoryEntry& ItemData, const FItemD
             UTexture2D* LoadedTexture = CoreData->IconTexture.LoadSynchronous();
             if (LoadedTexture)
             {
-                ItemSlot->SetBrushFromTexture(LoadedTexture);
+                ItemIcon->SetBrushFromTexture(LoadedTexture);
                 SetVisibility(ESlateVisibility::Visible);
             }
         }
+        // 드래그 중이면 오퍼시티를 .5로 변경 
+        if (ItemData.bIsLocked == true) ItemIcon->SetOpacity(.5);
+        else ItemIcon->SetOpacity(1.0);
     }
 }
 
@@ -57,16 +60,18 @@ FReply UC_ItemSlotWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, c
 void UC_ItemSlotWidget::NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& OutOperation)
 {
     if (!AssociatedInvenComp) return;
+
+    // 이 함수 내부에서 모든 검증과 처리 진행하면 될까?
+    if (!AssociatedInvenComp->Server_RequestDragItemSlot_Implementation(curSlotIdx)) return;
     
     const TArray<FInventoryEntry>& ItemArr = AssociatedInvenComp->GetInventoryItems();
     
-    if (!ItemArr.IsValidIndex(curSlotIdx)) return;
-    
     FInventoryEntry entry = ItemArr[curSlotIdx];
     
-    
+    /*if (!ItemArr.IsValidIndex(curSlotIdx)) return;
 
     if (entry.ItemRowName == NAME_None) return;
+    */
     
     UC_DragDropOperation* DragOperation = NewObject<UC_DragDropOperation>();
     
@@ -112,7 +117,7 @@ void UC_ItemSlotWidget::InitDragVisual(UC_DragDropOperation* InDragDropOp)
     Border->SetBrushColor(BorderColor);
     UImage* DragVisual = NewObject<UImage>(this);
     
-    DragVisual->SetBrush(ItemSlot->Brush);
+    DragVisual->SetBrush(ItemIcon->Brush);
     DragVisual->Brush.ImageSize = FVector2D(64.f, 64.f);
     Border->SetContent(DragVisual);
     

@@ -13,10 +13,11 @@ UC_InvenComponent::UC_InvenComponent()
 	// 컴포넌트 리플리케이션 활성화. 
 	SetIsReplicatedByDefault(true);
 	
-	if (GetOwner())
-	{
-		ContainerID = GetOwner()->GetUniqueID();
-	}
+	//if (GetOwner())
+	//{
+	//	ContainerID = GetOwner()->GetUniqueID();
+	//	이러면 actor의 id를 받아오는것이라 따로 고유 번호를 주는 방법을 사용하면 좋을 듯?
+	//}
 }
 
 void UC_InvenComponent::BeginPlay()
@@ -53,8 +54,13 @@ bool UC_InvenComponent::SwapInvenEntry(int32 SlotIdx1, int32 SlotIdx2)
 	if (!GetOwner()->HasAuthority()) return false; // 서버가 아니면 컷
 	if (!InventoryContainer.Items.IsValidIndex(SlotIdx1) || !InventoryContainer.Items.IsValidIndex(SlotIdx2)) return false;
 	if (SlotIdx1 == SlotIdx2) return false;
+	
+	// 이건 외부 인벤에서만 발생할 수 있는 상황이지만 혹시 모르니 방어 코드 작성
+	if (InventoryContainer.Items[SlotIdx1].bIsLocked != false) return false; 
+	
+	InventoryContainer.Items[SlotIdx1].bIsLocked = false;
 
-	// 데이터 교환 (SlotIndex 주소값은 유지하고 알맹이 데이터만 스왑)
+	// 데이터 교환 (SlotIndex 주소값은 유지하고 알맹이 데이터만 스왑), IsDragging(혹은 bIsLocked)는 둘 이 시점에 둘 다 false여야 해서 굳이 복사 안함.
 	FName TempRowName = InventoryContainer.Items[SlotIdx1].ItemRowName;
 	int32 TempCount = InventoryContainer.Items[SlotIdx1].Count;
 	int32 TempUpgrade = InventoryContainer.Items[SlotIdx1].UpgradeLevel;
@@ -154,7 +160,12 @@ bool UC_InvenComponent::TransferItemTo(int32 MySlotIdx, UC_InvenComponent* Targe
 	if (!GetOwner()->HasAuthority() || !TargetComp) return false;
 	if (!InventoryContainer.Items.IsValidIndex(MySlotIdx) || !TargetComp->InventoryContainer.Items.IsValidIndex(TargetSlotIdx)) return false;
 
-	// 내 가방 데이터 백업
+	// 드롭된 아이템 슬롯의 아이템이 잠김 상태라면 차단.
+	if (TargetComp->GetInventoryItems()[TargetSlotIdx].bIsLocked) return false;
+	
+	InventoryContainer.Items[MySlotIdx].bIsLocked = true;
+	
+	// 내 가방 데이터 백업, IsDragging(혹은 bIsLocked)는 둘 이 시점에 둘 다 false여야 해서 굳이 복사 안함.
 	FName TempRowName = InventoryContainer.Items[MySlotIdx].ItemRowName;
 	int32 TempCount = InventoryContainer.Items[MySlotIdx].Count;
 	int32 TempUpgrade = InventoryContainer.Items[MySlotIdx].UpgradeLevel;
@@ -201,24 +212,18 @@ void UC_InvenComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 	DOREPLIFETIME(UC_InvenComponent, InventoryContainer);
 }
 
-void UC_InvenComponent::Server_PickUpItem_Implementation(int32 SlotIndex)
+bool UC_InvenComponent::Server_RequestDragItemSlot_Implementation(int32 SlotIndex)
 {
-	// 유효성 검사
-	if (!InventoryContainer.Items.IsValidIndex(SlotIndex)) return;
-	if (InventoryContainer.Items[SlotIndex].ItemRowName == NAME_None) return; // 아이템이 없으면 컷
-
-	// 아이템을 커서(손)로 옮기기
-	CursorSlot.Item = InventoryContainer.Items[SlotIndex]; // 데이터 복사
-	CursorSlot.SourceContainerID = ContainerID; // 
-	CursorSlot.SourceSlotIndex = SlotIndex;
-	CursorSlot.bIsValid = true;
-
-	// 창고에서 아이템 삭제 (초기화)
-	InitInvenItemAt(SlotIndex); 
-    
-	// 동기화 (창고 슬롯이 변했음을 알림)
-	InventoryContainer.MarkItemDirty(InventoryContainer.Items[SlotIndex]);
+	if (!InventoryContainer.Items.IsValidIndex(SlotIndex)) return false;
+	
+	if (InventoryContainer.Items[SlotIndex].ItemRowName == NAME_None) return false;
+	
+	if (InventoryContainer.Items[SlotIndex].bIsLocked == true) return false;
+	
+	InventoryContainer.Items[SlotIndex].bIsLocked = true;
+	
 }
+
 
 void UC_InvenComponent::OnRep_InventoryContainer()
 {

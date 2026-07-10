@@ -44,7 +44,7 @@ protected:
 protected:
 	// 아이템 아이콘
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget))
-	class UImage* ItemSlot;
+	class UImage* ItemIcon;
 
 	// ItemSlot 자신의 Inventory에서 어떤 Index인지 기억.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
