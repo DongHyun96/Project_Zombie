@@ -30,13 +30,14 @@ public:
 	
 	// 위젯을 클릭하는 마우스 버튼 감지 함수
 	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
-
+	
 	// 위젯에 대한 드래그 감지 함수
 	virtual void NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& OutOperation) override;
 	
 	// 위젯에게 드래그된 것이 드롭되었을 때 함수
 	virtual bool NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
 	
+	virtual void NativeOnDragCancelled(const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
 protected:
 	// 드래그시 보이는 이미지 생성 및 이미지 위치설정
 	void InitDragVisual(UC_DragDropOperation* InDragDropOp);
