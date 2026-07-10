@@ -22,6 +22,7 @@
 #include "Actor/Components/C_InvenComponent.h"
 #include "Actor/Components/C_PingSystemComponent.h"
 #include "Actor/Components/C_BasicPlayerAimComponent.h"
+#include "GameMode/C_GameLevelManager.h"
 #include "GameMode/C_UIManager.h"
 #include "UI/InvenUI/C_InventoryGridWidget.h"
 #include "UI/InvenUI/C_InventoryWidget.h"
@@ -103,6 +104,10 @@ void AC_BasicPlayer::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// GameLevelManager에 해당 Player 등록
+	if (UC_GameLevelManager* LevelManager = GetWorld()->GetSubsystem<UC_GameLevelManager>())
+		LevelManager->AddPlayer(this);
+	
 	UpdateBoostBarHUD();
 
 	// InventoryWidget에 Player의 InvenComponent 초기화 및 델리게이트 진행

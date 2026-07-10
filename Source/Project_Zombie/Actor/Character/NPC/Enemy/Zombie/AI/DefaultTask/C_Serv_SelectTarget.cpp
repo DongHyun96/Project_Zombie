@@ -3,12 +3,12 @@
 
 #include "C_Serv_SelectTarget.h"
 
-#include "Kismet/GameplayStatics.h"
 #include "Actor/Character/NPC/Enemy/Zombie/C_Zombie.h"
 #include "Actor/Character/NPC/Enemy/Zombie/Controller/C_ZombieController.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
 
 #include "BehaviorTree/BlackboardComponent.h"
+#include "GameMode/C_GameLevelManager.h"
 
 UC_Serv_SelectTarget::UC_Serv_SelectTarget()
 {
@@ -67,24 +67,25 @@ void UC_Serv_SelectTarget::TickNode(UBehaviorTreeComponent& _OwnCom, uint8* _Nod
 		}
 	}*/
 
-	// 플레이어 목록을 가져온다
-	TArray<AActor*> Players;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AC_BasicPlayer::StaticClass(), Players);
-
 	// 가장 가까운 플레이어를 찾는다
 	AActor* pBestTarget = nullptr;
-	float MinDist = FLT_MAX;
+	float MinDist       = FLT_MAX;
 
-	for (AActor* pPlayer : Players)
+	if (!m_GameLevelManager)
 	{
-		if (!pPlayer)
-			continue;
+		m_GameLevelManager = GetWorld()->GetSubsystem<UC_GameLevelManager>();
+		if (!m_GameLevelManager) return;
+	}
+	
+	for (AC_BasicPlayer* pPlayer : m_GameLevelManager->GetPlayers())
+	{
+		if (!pPlayer) continue;
 
-		float Dist = FVector::Dist(pPlayer->GetActorLocation(), pZombie->GetActorLocation());
+		const float Dist = FVector::Dist(pPlayer->GetActorLocation(), pZombie->GetActorLocation());
 
 		if (Dist < MinDist)
 		{
-			MinDist = Dist;
+			MinDist     = Dist;
 			pBestTarget = pPlayer;
 		}
 	}

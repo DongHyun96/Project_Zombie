@@ -8,6 +8,7 @@
 #include "Actor/Character/NPC/Enemy/Components/SkillComponent/C_EnemySkillComponent.h"
 
 #include "BehaviorTree/BlackboardComponent.h"
+#include "Utility/C_Util.h"
 
 UC_Deco_IsInRange::UC_Deco_IsInRange()
 {
@@ -33,7 +34,8 @@ bool UC_Deco_IsInRange::CalculateRawConditionValue(UBehaviorTreeComponent& _OwnC
 
 	UC_EnemySkillComponent* SkillCom = pZombie->GetSkillComponent();
 
-	float AttackRange = SkillCom->GetSkillRange(ESkillSlot::Skill_1);
+	// TODO : 에디터 BehaviorTree 에서 해당 SkillSlot으로 초기화해줄 것 (기본은 1번 Slot으로 되어있음)
+	float AttackRange = SkillCom->GetSkillRange(m_SkillSlot);
 
 	return Dist <= AttackRange;
 }

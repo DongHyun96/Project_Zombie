@@ -15,6 +15,7 @@
 // 키즈멧
 #include "Actor/Character/NPC/Enemy/C_BasicEnemy.h"
 #include "Kismet/GameplayStatics.h"
+#include "Utility/C_Util.h"
 
 UC_EnemySkillComponent::UC_EnemySkillComponent()
 {
@@ -67,31 +68,27 @@ void UC_EnemySkillComponent::UseSkill(ESkillSlot _Slot)
 	
 	UE_LOG(LogTemp, Warning, TEXT("UseSkill"));
 
-
 	AC_BasicEnemy* Owner = Cast<AC_BasicEnemy>(GetOwner());
 	
 	if (!Owner)
 		return;
 
 
-	for(FSkillSlotInfo& Info : m_SkillSlots)
+	const uint8 TargetSlotIdx  = static_cast<uint8>(_Slot);
+	const FSkillSlotInfo& Info = m_SkillSlots[TargetSlotIdx];
+	
+	if (!Info.LoadedSkillData)
 	{
-		if (Info.SlotType != _Slot)
-			continue;
-
-		if (!Info.LoadedSkillData)
-			return;
-
-		m_CurSkillData = Info.LoadedSkillData;
-
-		// 스킬 사용중으로 설정
-		bUsingSkill = true;
-
-		Info.SkillInstance->Activate(Owner, Info.LoadedSkillData);
-
+		UC_Util::Print("From UC_EnemySkillComponent::UseSkill : TargetSlot skill not loaded!", FColor::Red, 10.f);
 		return;
 	}
+	
+	m_CurSkillData = Info.LoadedSkillData;
 
+	// 스킬 사용중으로 설정
+	bUsingSkill = true;
+
+	Info.SkillInstance->Activate(Owner, Info.LoadedSkillData);
 }
 
 void UC_EnemySkillComponent::EndSkill()

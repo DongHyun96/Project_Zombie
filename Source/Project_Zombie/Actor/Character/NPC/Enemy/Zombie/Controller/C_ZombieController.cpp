@@ -38,12 +38,12 @@ AC_ZombieController::AC_ZombieController()
 	if (m_SightConfig)
 	{
 		// 시야 기본값 세팅
-		m_SightConfig->SightRadius = 3000.f; // AI 가 대상을 처음 감지할 수 있는 거리
-		m_SightConfig->LoseSightRadius = 3500.f; // AI 가 대상을 처음 감지할 수 있는 거리
-		m_SightConfig->PeripheralVisionAngleDegrees = 60.f; // 시전 정면방향을 기준으로, 반경 각도, 최대시야각은 x2 
-		m_SightConfig->DetectionByAffiliation.bDetectEnemies = true; // 감지대상이 적대관계인경우 탐지한것으로 인정
+		m_SightConfig->SightRadius                              = 3000.f; // AI 가 대상을 처음 감지할 수 있는 거리
+		m_SightConfig->LoseSightRadius                          = 3500.f; // AI 가 대상을 처음 감지할 수 있는 거리
+		m_SightConfig->PeripheralVisionAngleDegrees             = 60.f; // 시전 정면방향을 기준으로, 반경 각도, 최대시야각은 x2 
+		m_SightConfig->DetectionByAffiliation.bDetectEnemies    = true; // 감지대상이 적대관계인경우 탐지한것으로 인정
 		m_SightConfig->DetectionByAffiliation.bDetectFriendlies = true; // 감지대상이 우호관계인경우 탐지한것으로 인정
-		m_SightConfig->DetectionByAffiliation.bDetectNeutrals = true; // 감지대상이 중립관계인경우 탐지한것으로 인정
+		m_SightConfig->DetectionByAffiliation.bDetectNeutrals   = true; // 감지대상이 중립관계인경우 탐지한것으로 인정
 
 		m_PerceptionCom->ConfigureSense(*m_SightConfig); // 인지 컴포넌트에 시각정보 추가
 		m_PerceptionCom->SetDominantSense(m_SightConfig->GetSenseImplementation()); // 시각정보를 최우선 감각으로 사용할 것
@@ -54,9 +54,9 @@ AC_ZombieController::AC_ZombieController()
 		// 청각 기본값 세팅
 		m_HearingConfig->HearingRange = 2000.f;
 
-		m_HearingConfig->DetectionByAffiliation.bDetectEnemies = true;
+		m_HearingConfig->DetectionByAffiliation.bDetectEnemies    = true;
 		m_HearingConfig->DetectionByAffiliation.bDetectFriendlies = false;
-		m_HearingConfig->DetectionByAffiliation.bDetectNeutrals = false;
+		m_HearingConfig->DetectionByAffiliation.bDetectNeutrals   = false;
 
 		m_PerceptionCom->ConfigureSense(*m_HearingConfig); // 인지 컴포넌트에 청각정보 추가
 	}
