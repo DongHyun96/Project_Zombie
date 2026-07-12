@@ -2,7 +2,7 @@
 
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/ItemActor/Weapon/C_WeaponBase.h"
-#include "GameMode/C_UIManager.h"
+#include "GameModeAndManager/C_UIManager.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
 #include "Utility/C_Util.h"
 

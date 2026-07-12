@@ -1,10 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "GameMode/C_GameLevelManager.h"
-
-#include "C_GameMode_GameLv.h"
-#include "GameFramework/GameModeBase.h"
+#include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 
 UC_GameLevelManager::UC_GameLevelManager()
 {

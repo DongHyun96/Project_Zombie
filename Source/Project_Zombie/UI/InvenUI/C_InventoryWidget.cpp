@@ -7,7 +7,7 @@
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/Components/C_InvenComponent.h"
 #include "DragDropOperation/C_DragDropOperation.h"
-#include "GameMode/C_ItemManager.h"
+#include "GameModeAndManager/C_ItemManager.h"
 #include "Utility/C_Util.h"
 
 void UC_InventoryWidget::NativeConstruct()

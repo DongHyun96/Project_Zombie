@@ -6,7 +6,7 @@
 #include "../WeaponComponent/MeleeComponent/C_MeleeDataTableComponent.h"
 
 #include "Actor/Character/Player/C_BasicPlayer.h"
-#include "GameMode/C_UIManager.h"
+#include "GameModeAndManager/C_UIManager.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
 
 

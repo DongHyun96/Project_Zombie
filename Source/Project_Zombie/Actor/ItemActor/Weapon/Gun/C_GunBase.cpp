@@ -12,7 +12,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 
-#include "GameMode/C_UIManager.h"
+#include "GameModeAndManager/C_UIManager.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
 #include "Utility/C_Util.h"
 

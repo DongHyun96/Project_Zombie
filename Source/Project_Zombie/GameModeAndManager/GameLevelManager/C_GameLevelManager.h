@@ -39,4 +39,7 @@ private:
 	// 이 레벨을 플레이 중인 모든 플레이어 객체
 	TArray<AC_BasicPlayer*> m_Players{};
 	
+	
+	
+	
 };

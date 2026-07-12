@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "GameMode/C_ItemManager.h"
+#include "GameModeAndManager/C_ItemManager.h"
 #include "../Item/PickUp/C_ItemPickUp.h"
 void UC_ItemManager::Initialize(FSubsystemCollectionBase& Collection)
 {

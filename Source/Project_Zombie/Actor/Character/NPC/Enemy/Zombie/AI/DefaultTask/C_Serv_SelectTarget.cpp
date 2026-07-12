@@ -8,7 +8,7 @@
 #include "Actor/Character/Player/C_BasicPlayer.h"
 
 #include "BehaviorTree/BlackboardComponent.h"
-#include "GameMode/C_GameLevelManager.h"
+#include "GameModeAndManager/GameLevelmanager/C_GameLevelManager.h"
 
 UC_Serv_SelectTarget::UC_Serv_SelectTarget()
 {
