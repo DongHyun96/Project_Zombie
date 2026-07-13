@@ -61,7 +61,31 @@ public:
 
 	void AddStat(const FName& _StatName, float _Amount);
 	float GetStat(const FName& _StatName);
-	void SetStat(const FName& _StatName, float _Value);
+
+public: /* 범용적으로 사용 가능한 Stat 처리 관련 함수 */
+
+	/// <returns> : 해당하는 Stat이 없거나 Value가 음수값인 경우(이건 좀 더 따져봐야할듯) </returns>
+	bool SetStat(const FName& _StatName, float _Value);
+
+	/// <summary>
+	/// 특정 Stat IncreaseAmount 만큼 증가 처리
+	/// </summary>
+	/// <returns> : 해당하는 Stat이 없거나 Amount가 음수인 경우 return false </returns>
+	bool IncreaseStat(const FName& _StatName, float _IncreaseAmount);
+
+	/// <summary>
+	/// 특정 Stat DecreaseAmount 만큼 감소 처리 
+	/// </summary>
+	/// <returns> 해당하는 Stat이 없거나 Amount가 음수인 경우 return false </returns>
+	bool DecreaseStat(const FName& _StatName, float _DecreaseAmount);
+
+public: /* 공용 Stat 처리 함수 */
+	
+	bool SetCurHP(float _HP);
+	float GetCurHP() const { return m_Stats[TEXT("CurHP")]; }
+	
+	bool IncreaseCurHP(float _IncreaseAmount);
+	bool DecreaseCurHP(float _DecreaseAmount);
 	
 private:
 	

@@ -3,6 +3,8 @@
 
 #include "Actor/Character/C_BasicCharacter.h"
 
+#include "Actor/Components/StatComponent/C_StatComponentBase.h"
+
 AC_BasicCharacter::AC_BasicCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -18,9 +20,21 @@ void AC_BasicCharacter::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
-void AC_BasicCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+float AC_BasicCharacter::TakeDamage
+(
+	float				_DamageAmount,
+	FDamageEvent const& _DamageEvent,
+	AController*		_EventInstigator,
+	AActor*				_DamageCauser
+)
 {
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
+	// Damage 총량 계산
+	const float DamageAmount = Super::TakeDamage(_DamageAmount, _DamageEvent, _EventInstigator, _DamageCauser);
+	
+	// Invalid DamageAmount early return
+	if (DamageAmount <= 0.f) return 0.f;
 
+	m_StatComponent->DecreaseCurHP(DamageAmount);
+	
+	return DamageAmount;
 }
-

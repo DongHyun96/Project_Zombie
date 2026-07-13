@@ -62,9 +62,6 @@ void UC_StatComponentBase::InitStat(bool _bModifyForEditor)
 		return;
 	}
 
-	if (_bModifyForEditor)
-		Modify();
-
 	// 모든 스탯을 다 지운다
 	m_Stats.Empty();
 
@@ -80,16 +77,16 @@ void UC_StatComponentBase::InitStat(bool _bModifyForEditor)
 
 	// 추가로 추가할 공용 Stat 추가
 	InitAdditionalStat();
+	
+	if (_bModifyForEditor) Modify();
 }
 
 void UC_StatComponentBase::InitAdditionalStat()
 {
-	const float InitialMaxHPValue = GetStat("InitialMaxHP");
-	if (InitialMaxHPValue)
-	{
-		AddStat(TEXT("MaxHP"), InitialMaxHPValue); // 최대 체력
-		AddStat(TEXT("CurHP"), InitialMaxHPValue); // 현제 체력 또한 Stat 정보에 추가
-	}
+	const float InitialMaxHPValue = GetStat(TEXT("InitialMaxHP"));
+	
+	AddStat(TEXT("CurMaxHP"), InitialMaxHPValue);	// 최대 체력
+	AddStat(TEXT("CurHP"), InitialMaxHPValue);		// 현제 체력 또한 Stat 정보에 추가
 }
 
 void UC_StatComponentBase::InitStatFromStruct(UScriptStruct* _InStruct, const void* _StructPtr)
@@ -132,14 +129,65 @@ float UC_StatComponentBase::GetStat(const FName& _StatName)
 	return 0.f;
 }
 
-void UC_StatComponentBase::SetStat(const FName& _StatName, float _Value)
+bool UC_StatComponentBase::SetStat(const FName& _StatName, float _Value)
 {
-	if (float* pStatValue = m_Stats.Find(_StatName))
-	{
-		*pStatValue = _Value;
+	if (_Value < 0.f) return false;
 
-		/*// 체력 Stat 업데이트의 경우 Delegate 호출
-		if (_StatName == TEXT("CurHP"))
-			m_OnTakeDamage.Broadcast(this);*/
-	}
+	float* pTargetStatValue = m_Stats.Find(_StatName);
+	if (!pTargetStatValue) return false;
+	
+	*pTargetStatValue = _Value;
+	return true;
+	
+	/*// 체력 Stat 업데이트의 경우 Delegate 호출 -> 
+	if (_StatName == TEXT("CurHP"))
+		m_OnTakeDamage.Broadcast(this);*/
+}
+
+bool UC_StatComponentBase::IncreaseStat(const FName& _StatName, float _IncreaseAmount)
+{
+	if (_IncreaseAmount < 0.f) return false;
+	
+	float* pTargetStatValue = m_Stats.Find(_StatName);
+	if (!pTargetStatValue) return false;
+	
+	*pTargetStatValue += _IncreaseAmount;
+	return true;
+}
+
+bool UC_StatComponentBase::DecreaseStat(const FName& _StatName, float _DecreaseAmount)
+{
+	if (_DecreaseAmount < 0.f) return false;
+	
+	float* pTargetStatValue = m_Stats.Find(_StatName);
+	if (!pTargetStatValue) return false;
+
+	*pTargetStatValue = FMath::Max(0.f, *pTargetStatValue - _DecreaseAmount); // 음수값 방지
+	return true;
+}
+
+bool UC_StatComponentBase::SetCurHP(float _HP)
+{
+	if (_HP > GetStat("CurMaxHP")) return false; // 음수 체크는 SetStat에서 처리됨
+	return SetStat(TEXT("CurHP"), _HP);
+}
+
+bool UC_StatComponentBase::IncreaseCurHP(float _IncreaseAmount)
+{
+	if (_IncreaseAmount < 0.f) return false;
+
+	float* pCurHP = m_Stats.Find(TEXT("CurHP"));
+	*pCurHP       = FMath::Min(*pCurHP + _IncreaseAmount, GetStat("CurMaxHP"));
+	
+	return true;
+}
+
+bool UC_StatComponentBase::DecreaseCurHP(float _DecreaseAmount)
+{
+	if (_DecreaseAmount < 0.f) return false;
+
+	float* pCurHP = m_Stats.Find(TEXT("CurHP"));
+	*pCurHP       = FMath::Max(0.f, *pCurHP - _DecreaseAmount);
+	
+	return true;
 }

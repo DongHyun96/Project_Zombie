@@ -23,8 +23,14 @@ public:
 	
 	virtual void Tick(float DeltaTime) override;
 
-	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
-
+	virtual float TakeDamage
+	(
+		float				_DamageAmount,
+		FDamageEvent const& _DamageEvent,
+		AController*		_EventInstigator,
+		AActor*				_DamageCauser
+	) override;
+	
 protected:
 
 	// Player 및 Enemy 생성자에서 자기자신에게 맞는 StatComponent 생성 처리 중

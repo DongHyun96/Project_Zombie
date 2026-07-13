@@ -45,6 +45,7 @@ private:
 
 	UPROPERTY()
 	TSubclassOf<UC_ZombieManager> m_ZombieManagerClass{};
+	
 	UPROPERTY()
 	UC_ZombieManager* m_ZombieManager{};
 	

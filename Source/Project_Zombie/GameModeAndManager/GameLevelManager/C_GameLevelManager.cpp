@@ -3,6 +3,7 @@
 
 #include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 
+#include "NativeGameplayTags.h"
 #include "GameModeAndManager/C_ZombieManager.h"
 #include "Utility/C_Util.h"
 

@@ -5,6 +5,7 @@
 
 #include "Components/SkillComponent/C_EnemySkillComponent.h"
 #include "Components/StatComponent/C_EnemyStatComponent.h"
+#include "Utility/C_Util.h"
 
 AC_BasicEnemy::AC_BasicEnemy()
 {
@@ -25,7 +26,7 @@ float AC_BasicEnemy::TakeDamage
 {
 	const float DamageAmount = Super::TakeDamage(_DamageAmount, _DamageEvent, _EventInstigator, _DamageCauser);
 	
-		
+	UC_Util::Print("Zombie Damaged", FColor::Red, 10.f);
 	
 	return DamageAmount;
 }
