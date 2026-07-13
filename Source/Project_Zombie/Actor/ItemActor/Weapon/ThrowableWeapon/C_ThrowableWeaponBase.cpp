@@ -7,6 +7,10 @@
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "GameMode/C_UIManager.h"
+
+#include "Kismet/GameplayStatics.h"
+#include "Particles/ParticleSystem.h"
+
 #include "Interface/I_ExplodeStrategy.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
 #include "Utility/C_Util.h"
@@ -71,6 +75,8 @@ AC_ThrowableWeaponBase::AC_ThrowableWeaponBase()
 
 	m_ThrowSpeed = 1500.f;
 
+	m_ExplosionEffectScale = 1.0f;
+	d
 	// 투척류 상태 초기화
 	ResetThrowableState();
 
@@ -379,12 +385,21 @@ void AC_ThrowableWeaponBase::Explode()
 	}
 
 	bool bExploded = II_ExplodeStrategy::Execute_UseStrategy(m_ExplodeStrategyObject, this);
-
 	if (bExploded)
 	{
-		// 폭발 처리 완료 후, Actor 제거
+		if (m_ExplosionEffect)
+		{
+			// 폭발 이펙트 생성
+			UGameplayStatics::SpawnEmitterAtLocation(GetWorld()
+				, m_ExplosionEffect
+				, GetActorLocation()
+				, GetActorRotation()
+				, FVector(m_ExplosionEffectScale) 
+				, true);	// 재생 종료 후 자동 제거
+		}
 	}
-
+	
+	// 폭발 처리 완료 후, Actor 제거
 	SetActorHiddenInGame(true);
 	Destroy();
 }

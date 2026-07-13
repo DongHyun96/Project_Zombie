@@ -284,6 +284,16 @@ public: // Throwable Weapon의 투척 특성 관련
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|Explosion")
 	TEnumAsByte<ECollisionChannel> m_ExplosionTraceChannel = ECC_Visibility;
 
+	/// ---------나중에 스킬 데이터로 따로 빠질수도-----------
+	// 폭발 이펙트 
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|Effect")
+	TObjectPtr<UParticleSystem> m_ExplosionEffect;
+
+	// 폭발 이펙트 크기 (1.0 = 기본 크기)
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|Effect")
+	float m_ExplosionEffectScale;
+
+
 protected:
 	
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, meta = (DisplayName = "ProjectileMovementCom"))

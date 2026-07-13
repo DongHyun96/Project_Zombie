@@ -96,9 +96,6 @@ bool UC_GrenadeExplode::UseStrategy_Implementation(AC_ThrowableWeaponBase* _Thro
 	);
 	// -----------------------------------
 
-	UC_Util::Print("[UC_GrenadeExplode::UseStrategy_Implementation] Debug");
-
-
 	// 아무도 충돌하지 않으면 폭발만 발생
 	if (!bHasOverlap)
 		return true; 
@@ -135,30 +132,58 @@ bool UC_GrenadeExplode::UseStrategy_Implementation(AC_ThrowableWeaponBase* _Thro
 		// 자기자신 무시
 		TraceParams.AddIgnoredActor(_ThrowableWeapon);
 
+		// TODO
+		// 나중에 바닥도 무시할 수 있도록 추가
+
+		// 몸체 중심쪽 검사를 위해 Z축을 살짝 올려서 Trace 시작점과 끝점을 설정
+		const FVector TraceStart = ExplosionLocation + FVector(0.f, 0.f, 100.f);
+		const FVector TraceEnd = TargetLocation + FVector(0.f, 0.f, 100.f);
+
+		// LineTrace 사용하여 폭발 위치와 타겟 위치 사이에 장애물이 있는지 확인
 		const bool bBlocked = GetWorld()->LineTraceSingleByChannel(
 			BlockHit,										// 결과 저장
-			ExplosionLocation,
-			TargetLocation,
+			TraceStart,
+			TraceEnd,
 			_ThrowableWeapon->GetExplosionTraceChannel(),	// Trace Channel 설정
 			TraceParams										// Trace 옵션
 		);
 
-		const FColor TraceColor = bBlocked ? FColor::Red : FColor::Green;
+
+		// ----------- TraceColor 는 디버그용 -------------
+		// Trace 가 막혔으면 데미지 적용하지 않음 (자기자신 제외)
+		if (bBlocked && BlockHit.GetActor() != Target)
+		{
+			const FColor TraceColor = FColor::Red;
+			DrawDebugLine(
+				GetWorld(),
+				TraceStart,
+				TraceEnd,
+				TraceColor,
+				false,
+				2.0f,
+				0,
+				1.5f
+			);
+
+			continue;
+		}
+
+
+		const FColor TraceColor = FColor::Green;
 		DrawDebugLine(
 			GetWorld(),
-			ExplosionLocation,
-			TargetLocation,
+			TraceStart,
+			TraceEnd,
 			TraceColor,
 			false,
 			2.0f,
 			0,
 			1.5f
 		);
+		// -----------------------------------
 
-		// Trace 가 막혔으면 데미지 적용하지 않음 (자기자신 제외)
-		if (bBlocked && BlockHit.GetActor() != Target)
-			continue;
-		
+
+
 		// 4. 데미지를 입히기
 		AController* InstigatorController = nullptr;
 		if (AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(_ThrowableWeapon->GetThrowableUser()))
@@ -177,6 +202,8 @@ bool UC_GrenadeExplode::UseStrategy_Implementation(AC_ThrowableWeaponBase* _Thro
 
 		// 5. 데미지를 입은 액터를 Set에 추가하여 중복 방지
 		DamagedActors.Add(Target);
+
+		UC_Util::Print("[UC_GrenadeExplode::UseStrategy_Implementation] Hit");
 	}
 	
 	return true;
