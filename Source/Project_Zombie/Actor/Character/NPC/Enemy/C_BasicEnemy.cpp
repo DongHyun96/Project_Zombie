@@ -19,8 +19,4 @@ void AC_BasicEnemy::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (m_StatCom)
-	{
-		//GetCharacterMovement()->MaxWalkSpeed = m_StatCom->GetStat("MoveSpeed");
-	}
 }

@@ -8,14 +8,14 @@
 
 AC_Zombie::AC_Zombie()
 {
-	// 팀 설정
-	SetGenericTeamId((uint8)ETeamType::Enemy);
 }
 
 void AC_Zombie::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
+	// 팀 설정
+	SetGenericTeamId((uint8)ETeamType::Enemy);
 }
 
 void AC_Zombie::Tick(float DeltaTime)

@@ -4,10 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "Actor/Character/NPC/Enemy/Zombie/Skill/C_EnemySkillBase.h"
-#include "C_PoisonAttack.generated.h"
+#include "C_ToxicAttack.generated.h"
 
 UCLASS()
-class PROJECT_ZOMBIE_API UC_PoisonAttack : public UC_EnemySkillBase
+class PROJECT_ZOMBIE_API UC_ToxicAttack : public UC_EnemySkillBase
 {
 	GENERATED_BODY()
 	
@@ -20,5 +20,5 @@ public:
 	virtual void Fire(class AC_BasicEnemy* _Owner, class UC_EnemySkillData* _Data) override;
 
 public:
-	UC_PoisonAttack();
+	UC_ToxicAttack();
 };

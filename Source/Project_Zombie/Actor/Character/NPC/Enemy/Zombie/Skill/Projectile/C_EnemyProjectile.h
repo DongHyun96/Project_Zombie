@@ -10,17 +10,56 @@ UCLASS()
 class PROJECT_ZOMBIE_API AC_EnemyProjectile : public AActor
 {
 	GENERATED_BODY()
-	
-public:	
-	// Sets default values for this actor's properties
-	AC_EnemyProjectile();
 
 protected:
-	// Called when the game starts or when spawned
+	UPROPERTY(VisibleAnywhere, Category = "Components")
+	class USphereComponent*				m_Sphere; // PMC 의 물리 시뮬레이션을 위해서 추가
+
+	UPROPERTY(VisibleAnywhere, Category = "Components")
+	class UProjectileMovementComponent* m_PMC; // 투사체 움직임 제어 컴포넌트
+
+	UPROPERTY(VisibleAnywhere, Category = "Components")
+	class UNiagaraComponent*			m_NiagaraCom; // 나이아가라 재생 컴포넌트
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Niagara")
+	class UNiagaraSystem*				m_ProjectileEffect; // 투사체 시각효과 이펙트
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Niagara")
+	class UNiagaraSystem*				m_HitEffect; // 투사체가 히트했을 때 발생할 이펙트
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
+	float								m_LifeTime; // 투사체 수명
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill")
+	class AC_BasicEnemy*				m_SkillUser; // 투사체 생성자
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill")
+	class UC_EnemySkillData*			m_Skill; // 투사체를 생성시킨 스킬
+
+public:
+	void InitProjectile(AC_BasicEnemy* _SkillUser, UC_EnemySkillData* _Skill);
+
+protected:
 	virtual void BeginPlay() override;
 
 public:	
-	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	/// <summary>
+	/// 투사체가 충돌했을 때 호출되는 함수
+	/// </summary>
+	virtual void OnHit();
+
+	/// <summary>
+	/// HitEffect를 스폰하는 함수
+	/// </summary>
+	void SpawnHitEffect();
+
+	/// <summary>
+	/// HitSound를 재생하는 함수
+	/// </summary>
+	void PlayHitSound();
+
+public:
+	AC_EnemyProjectile();
 };
