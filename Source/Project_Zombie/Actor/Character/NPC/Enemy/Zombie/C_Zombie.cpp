@@ -7,15 +7,21 @@
 #include "../../../GlobalEnum.h"
 
 AC_Zombie::AC_Zombie()
+	: m_ZombieType(EZombieType::NormalZombie)
 {
-	// 팀 설정
-	SetGenericTeamId((uint8)ETeamType::Enemy);
+}
+
+AC_Zombie::AC_Zombie(EZombieType _ZombieType)
+	: m_ZombieType(_ZombieType)
+{
 }
 
 void AC_Zombie::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	// 팀 설정
+	SetGenericTeamId(static_cast<uint8>(ETeamType::Enemy));
 }
 
 void AC_Zombie::Tick(float DeltaTime)
@@ -23,5 +29,3 @@ void AC_Zombie::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 }
-
-

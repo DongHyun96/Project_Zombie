@@ -22,8 +22,12 @@
 #include "Actor/Components/C_InvenComponent.h"
 #include "Actor/Components/C_PingSystemComponent.h"
 #include "Actor/Components/C_BasicPlayerAimComponent.h"
+
 #include "GameFramework/PlayerState.h"
-#include "GameMode/C_UIManager.h"
+#include "Actor/Components/C_PlayerStatComponent.h"
+#include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
+#include "GameModeAndManager/C_UIManager.h"
+
 #include "UI/InvenUI/C_InventoryGridWidget.h"
 #include "UI/InvenUI/C_InventoryWidget.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
@@ -98,6 +102,8 @@ AC_BasicPlayer::AC_BasicPlayer()
 
 	// PlayerAim Component
 	m_PlayerAimComponent = CreateDefaultSubobject<UC_BasicPlayerAimComponent>(TEXT("PlayerAimComponent"));
+	
+	m_StatComponent = CreateDefaultSubobject<UC_PlayerStatComponent>(TEXT("StatComponent"));
 }
 
 
@@ -105,6 +111,10 @@ void AC_BasicPlayer::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// GameLevelManager에 해당 Player 등록
+	if (UC_GameLevelManager* LevelManager = GetWorld()->GetSubsystem<UC_GameLevelManager>())
+		LevelManager->AddPlayer(this);
+	
 	UpdateBoostBarHUD();
 
 	// InventoryWidget에 Player의 InvenComponent 초기화 및 델리게이트 진행
@@ -164,7 +174,7 @@ void AC_BasicPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 
 float AC_BasicPlayer::TakeDamage(float _Damage, FDamageEvent const& _DamageEvent, AController* _InstigatorController, AActor* _InstigatorActor)
 {
-	return 0.0f;
+	return Super::TakeDamage(_Damage, _DamageEvent, _InstigatorController, _InstigatorActor);
 }
 
 void AC_BasicPlayer::Landed(const FHitResult& Hit)

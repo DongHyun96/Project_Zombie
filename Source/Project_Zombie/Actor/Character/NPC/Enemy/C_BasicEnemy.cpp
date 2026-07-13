@@ -5,22 +5,33 @@
 
 #include "Components/SkillComponent/C_EnemySkillComponent.h"
 #include "Components/StatComponent/C_EnemyStatComponent.h"
+#include "Utility/C_Util.h"
 
 AC_BasicEnemy::AC_BasicEnemy()
 {
 	// 스탯 컴포넌트 추가
-	m_StatCom = CreateDefaultSubobject<UC_EnemyStatComponent>(TEXT("StatComponent"));
+	m_StatComponent = CreateDefaultSubobject<UC_EnemyStatComponent>(TEXT("StatComponent"));
 
 	// 스킬 컴포넌트 추가
 	m_SkillCom = CreateDefaultSubobject<UC_EnemySkillComponent>(TEXT("SkillComponent"));
 }
 
+float AC_BasicEnemy::TakeDamage
+(
+	float				_DamageAmount,
+	FDamageEvent const& _DamageEvent,
+	AController*		_EventInstigator,
+	AActor*				_DamageCauser
+)
+{
+	const float DamageAmount = Super::TakeDamage(_DamageAmount, _DamageEvent, _EventInstigator, _DamageCauser);
+	
+	UC_Util::Print("Zombie Damaged", FColor::Red, 10.f);
+	
+	return DamageAmount;
+}
+
 void AC_BasicEnemy::BeginPlay()
 {
 	Super::BeginPlay();
-
-	if (m_StatCom)
-	{
-		//GetCharacterMovement()->MaxWalkSpeed = m_StatCom->GetStat("MoveSpeed");
-	}
 }

@@ -12,18 +12,28 @@ class PROJECT_ZOMBIE_API AC_BasicCharacter : public ACharacter
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this character's properties
+	
 	AC_BasicCharacter();
 
 protected:
-	// Called when the game starts or when spawned
+	
 	virtual void BeginPlay() override;
 
 public:	
-	// Called every frame
+	
 	virtual void Tick(float DeltaTime) override;
 
-	// Called to bind functionality to input
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	virtual float TakeDamage
+	(
+		float				_DamageAmount,
+		FDamageEvent const& _DamageEvent,
+		AController*		_EventInstigator,
+		AActor*				_DamageCauser
+	) override;
+	
+protected:
 
+	// Player 및 Enemy 생성자에서 자기자신에게 맞는 StatComponent 생성 처리 중
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (DisplayName = "StatComponent"))
+	class UC_StatComponentBase* m_StatComponent{};
 };

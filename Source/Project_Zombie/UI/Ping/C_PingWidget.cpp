@@ -6,7 +6,7 @@
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
-#include "GameMode/C_UIManager.h"
+#include "GameModeAndManager/C_UIManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
 #include "UI/MainHUD/CompassBarWidget/C_CompassBarWidget.h"

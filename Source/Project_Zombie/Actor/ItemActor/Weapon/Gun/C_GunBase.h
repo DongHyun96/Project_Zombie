@@ -64,7 +64,11 @@ protected:
 	UStaticMesh*			m_ShellMesh;
 
 	
+protected:
 
+	// 현재 이 Gun을 사용중인 WeaponUser
+	AC_BasicPlayer* m_WeaponUser{};
+	
 private:
 
 	// 이거 희민님이 지정한 오른손 소켓 그냥 써도 되면 그냥 쓰기

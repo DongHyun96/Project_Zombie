@@ -8,11 +8,13 @@
 #include "DrawDebugHelpers.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "../WeaponComponent/GunComponent/C_GunDataTableComponent.h"
+#include "Actor/Character/NPC/Enemy/C_BasicEnemy.h"
 
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 
-#include "GameMode/C_UIManager.h"
+#include "GameModeAndManager/C_UIManager.h"
+#include "Kismet/GameplayStatics.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
 #include "Utility/C_Util.h"
 
@@ -286,10 +288,7 @@ void AC_GunBase::PlayFireEffects()
 		FHitResult HitResult;
 		FCollisionQueryParams QueryParams;
 		QueryParams.AddIgnoredActor(this); // 총 액터 충돌 무시
-		if (GetOwner())
-		{
-			QueryParams.AddIgnoredActor(GetOwner()); // 총을 들고있는 캐릭터 액터 충돌 무시
-		}
+		QueryParams.AddIgnoredActor(m_WeaponUser); // 총을 들고있는 캐릭터 액터 충돌 무시
 
 		bool bHasHit = GetWorld()->LineTraceSingleByChannel(
 			HitResult,
@@ -339,6 +338,19 @@ void AC_GunBase::PlayFireEffects()
 			);
 
 			// 여기서 맞은 대상이 누구인지 식별해서 데미지
+			
+			if (AC_BasicEnemy* Enemy = Cast<AC_BasicEnemy>(HitResult.GetActor()))
+			{
+				// Enemy->Damage
+				UGameplayStatics::ApplyDamage
+				(
+					Enemy,							// Damage를 입을 대상
+					30.f,							// Damage 량 (TODO : 이건 직접 정하시면 될 것 같습니다)
+					m_WeaponUser->GetController(),	// Damage 유발자 Controller
+					this,							// Damage를 가한 Actor (Player 자체보다는 총기류로 줌 -> 추후 킬로그 기능 구현 시, 해당 무기종류를 알아내는 식으로 아이콘 처리 예정(근데 안할수도?))
+					nullptr
+				);
+			}
 			AActor* HitActor = HitResult.GetActor();
 			if (HitActor)
 			{
@@ -352,14 +364,12 @@ bool AC_GunBase::OnStartFire(AC_BasicPlayer* _WeaponUser)
 {
 	// TODO : LMB 첫 눌렸을 시, 동작 처리
 	if (nullptr == _WeaponUser)
-	{
 		return false;
-	}
-	else
-	{
-		PullTrigger();
-		return true;
-	}
+
+	m_WeaponUser = _WeaponUser;
+	PullTrigger();
+	
+	return true;
 }
 
 bool AC_GunBase::OnFireOnGoing(AC_BasicPlayer* _WeaponUser)

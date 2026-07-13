@@ -6,10 +6,12 @@
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
-#include "GameMode/C_UIManager.h"
+
 
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystem.h"
+
+#include "GameModeAndManager/C_UIManager.h"
 
 #include "Interface/I_ExplodeStrategy.h"
 #include "UI/MainHUD/C_GameMainHUD.h"

@@ -1,7 +1,7 @@
 #include "UI/InvenUI/C_InventoryGridWidget.h"
 #include "Components/UniformGridPanel.h"
 #include "C_ItemSlotWidget.h"
-#include "GameMode/C_ItemManager.h"
+#include "GameModeAndManager/C_ItemManager.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/Components/C_InvenComponent.h"
 #include "Utility/C_Util.h"

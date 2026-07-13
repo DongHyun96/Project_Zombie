@@ -12,8 +12,6 @@ class PROJECT_ZOMBIE_API AC_BasicEnemy : public AC_BasicNPC
 	GENERATED_BODY()
 
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (DisplayName = "StatComponent"))
-	class UC_EnemyStatComponent*			m_StatCom;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (DisplayName = "SkillComponent"))
 	class UC_EnemySkillComponent*			m_SkillCom;
@@ -21,4 +19,15 @@ protected:
 public:
 	void BeginPlay() override;
 	AC_BasicEnemy();
+	
+public:
+
+	virtual float TakeDamage
+	(
+		float				_DamageAmount,
+		FDamageEvent const& _DamageEvent,
+		AController*		_EventInstigator,
+		AActor*				_DamageCauser
+	) override;
+	
 };

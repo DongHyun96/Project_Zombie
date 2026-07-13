@@ -19,6 +19,10 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Blackboard")
 	FBlackboardKeySelector m_Target;
 
+private:
+	
+	class UC_GameLevelManager* m_GameLevelManager{};
+	
 public:
 	virtual void TickNode(UBehaviorTreeComponent& _OwnCom, uint8* _NodeMemory, float _DT) override;
 

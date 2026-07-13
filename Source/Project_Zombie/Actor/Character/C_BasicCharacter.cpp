@@ -3,32 +3,38 @@
 
 #include "Actor/Character/C_BasicCharacter.h"
 
-// Sets default values
+#include "Actor/Components/StatComponent/C_StatComponentBase.h"
+
 AC_BasicCharacter::AC_BasicCharacter()
 {
- 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-
 }
 
-// Called when the game starts or when spawned
 void AC_BasicCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
 }
 
-// Called every frame
 void AC_BasicCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
 }
 
-// Called to bind functionality to input
-void AC_BasicCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+float AC_BasicCharacter::TakeDamage
+(
+	float				_DamageAmount,
+	FDamageEvent const& _DamageEvent,
+	AController*		_EventInstigator,
+	AActor*				_DamageCauser
+)
 {
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
+	// Damage 총량 계산
+	const float DamageAmount = Super::TakeDamage(_DamageAmount, _DamageEvent, _EventInstigator, _DamageCauser);
+	
+	// Invalid DamageAmount early return
+	if (DamageAmount <= 0.f) return 0.f;
 
+	m_StatComponent->DecreaseCurHP(DamageAmount);
+	
+	return DamageAmount;
 }
-

@@ -6,7 +6,7 @@
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/Components/C_InvenComponent.h"
 #include "Components/SphereComponent.h"
-#include "GameMode/C_UIManager.h"
+#include "GameModeAndManager/C_UIManager.h"
 #include "UI/InvenUI/C_InventoryGridWidget.h"
 #include "UI/InvenUI/C_InventoryWidget.h"
 #include "Utility/C_Util.h"
