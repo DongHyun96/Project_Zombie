@@ -5,8 +5,12 @@
 #include "CoreMinimal.h"
 #include "Actor/ItemActor/Weapon/C_WeaponBase.h"
 #include "Engine/EngineTypes.h"
+#include "Engine/HitResult.h"
 #include "CollisionQueryParams.h"
 #include "C_ThrowableWeaponBase.generated.h"
+
+class AC_FireDamageArea;
+class AC_BasicPlayer;
 
 UENUM(BlueprintType)
 enum class EThrowableType : uint8
@@ -98,6 +102,10 @@ public:  // Getter & Setter
 
 	ECollisionChannel GetExplosionTraceChannel() const { return m_ExplosionTraceChannel; }
 
+	TSubclassOf<AC_FireDamageArea> GetFireDamageAreaClass() const { return m_FireDamageAreaClass; }
+
+	const FHitResult& GetHitResult() const { return m_HitResult; }
+
 protected: // 폭발
 
 	/// <summary>
@@ -142,19 +150,19 @@ private: // 투척 관련 처리
 	/// <summary>
 	///  충돌 이벤트 함수
 	/// </summary>
-	/// <param name="HitComponent"></param>
-	/// <param name="OtherActor"></param>
-	/// <param name="OtherComp"></param>
-	/// <param name="NormalImpulse"></param>
-	/// <param name="Hit"></param>
+	/// <param name="HitComponent">충돌한 컴포넌트</param>
+	/// <param name="OtherActor">충돌한 액터</param>
+	/// <param name="OtherComp">충돌한 액터의 컴포넌트</param>
+	/// <param name="NormalImpulse">충돌 시 발생한 힘의 방향과 크기</param>
+	/// <param name="Hit">충돌 정보</param>
 	UFUNCTION()
 	void OnThrowableHit
 	(
-		UPrimitiveComponent* HitComponent,	// 충돌한 컴포넌트
-		AActor* OtherActor,					// 충돌한 액터
-		UPrimitiveComponent* OtherComp,		// 충돌한 액터의 컴포넌트
-		FVector NormalImpulse,				// 충돌 시 발생한 힘의 방향과 크기
-		const FHitResult& Hit				// 충돌 정보
+		UPrimitiveComponent* HitComponent,	
+		AActor* OtherActor,					
+		UPrimitiveComponent* OtherComp,		
+		FVector NormalImpulse,				
+		const FHitResult& Hit				
 	);
 
 
@@ -267,6 +275,11 @@ public: // Throwable Weapon의 투척 특성 관련
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|Launch")
 	TSubclassOf<class UObject> m_ExplodeStrategyClass;
 
+	// 장판 데미지 영역 클래스
+	// 일단 화염병 전용으로 AC_FireDamageArea를 사용하지만, 나중에 다른 장판 데미지 영역이 생기면 수정 예정	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|Fire Damage Area")
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|Damage Area")
+	TSubclassOf<AC_FireDamageArea> m_FireDamageAreaClass;
+
 	// 폭발 반경
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|Explosion")
 	float m_ExplosionRadius;
@@ -315,6 +328,10 @@ protected:
 	// 폭발 실제 Object
 	UPROPERTY()
 	UObject* m_ExplodeStrategyObject = nullptr;
+
+	// 충돌 시 충돌 정보 저장
+	// 벽에 충돌했을때 장판이 생성되는 위치를 결정하기 위해 사용
+	FHitResult m_HitResult;
 
 
 private:

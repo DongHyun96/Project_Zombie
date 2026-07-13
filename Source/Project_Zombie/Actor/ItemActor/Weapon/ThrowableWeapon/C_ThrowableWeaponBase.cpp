@@ -76,7 +76,6 @@ AC_ThrowableWeaponBase::AC_ThrowableWeaponBase()
 	m_ThrowSpeed = 1500.f;
 
 	m_ExplosionEffectScale = 1.0f;
-	d
 	// 투척류 상태 초기화
 	ResetThrowableState();
 
@@ -336,7 +335,7 @@ bool AC_ThrowableWeaponBase::OnStartCookInput()
 
 void AC_ThrowableWeaponBase::Explode()
 {
-	// 폭발 처리는 II_ExplodeStrategy를 상속받은 클래스에서 처리할 예정
+	// 폭발 처리는 II_ExplodeStrategy를 상속받은 클래스에서 처리
 	if (m_ThrowableState == EThrowableState::Exploded)
 		return;
 
@@ -375,6 +374,7 @@ void AC_ThrowableWeaponBase::Explode()
 	SetActorEnableCollision(false);
 
 	// 해당 객체가 Interface를 구현했는지 확인
+	// 폭발 전략 객체가 없거나, Interface를 구현하지 않은 경우, Actor 제거
 	if (!m_ExplodeStrategyObject->GetClass()->ImplementsInterface(UI_ExplodeStrategy::StaticClass()))
 	{
 		UC_Util::Print("[AC_ThrowableWeaponBase::Explode] Not Implements Interface");
@@ -438,6 +438,9 @@ void AC_ThrowableWeaponBase::ResetThrowableState()
 	m_bWantsCook = false;
 
 	m_WeaponUser = nullptr;
+
+	// 이전 충돌 정보 초기화
+	m_HitResult = FHitResult();
 }
 
 
@@ -597,6 +600,13 @@ void AC_ThrowableWeaponBase::OnThrowableHit(UPrimitiveComponent* HitComponent, A
 	// 충돌 시 폭발 하도록 설정되어 있지 않으면 무시
 	if (!m_bExplodeOnImpact)
 		return;
+
+	// 충돌이 발생했는가
+	if (Hit.bBlockingHit)
+	{
+		// 폭발 전에 실제 충돌 정보 저장
+		m_HitResult = Hit;
+	}
 
 	Explode();
 }
