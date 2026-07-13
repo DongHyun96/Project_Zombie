@@ -22,6 +22,7 @@
 #include "Actor/Components/C_InvenComponent.h"
 #include "Actor/Components/C_PingSystemComponent.h"
 #include "Actor/Components/C_BasicPlayerAimComponent.h"
+#include "GameFramework/PlayerState.h"
 #include "GameMode/C_UIManager.h"
 #include "UI/InvenUI/C_InventoryGridWidget.h"
 #include "UI/InvenUI/C_InventoryWidget.h"
@@ -98,6 +99,7 @@ AC_BasicPlayer::AC_BasicPlayer()
 	// PlayerAim Component
 	m_PlayerAimComponent = CreateDefaultSubobject<UC_BasicPlayerAimComponent>(TEXT("PlayerAimComponent"));
 }
+
 
 void AC_BasicPlayer::BeginPlay()
 {
@@ -335,6 +337,8 @@ void AC_BasicPlayer::ApplyWalkSpeed()
 	ApplyMovementSpeed();
 }
 
+
+
 void AC_BasicPlayer::UpdateBoostBarHUD() const
 {
 	if (APlayerController* PC = GetController<APlayerController>())
@@ -378,16 +382,38 @@ bool AC_BasicPlayer::Server_RequestMoveItem_Validate(UC_InvenComponent* SrcComp,
 void AC_BasicPlayer::Server_RequestMoveItem_Implementation(UC_InvenComponent* SrcComp, int32 SrcIdx,
 	UC_InvenComponent* DstComp, int32 DstIdx)
 {
+	APlayerController* pPC = Cast<APlayerController>( GetController());
+	
+	if (!pPC) return;
+	
 	if (SrcComp == DstComp)
 	{
 		// 동일 인벤토리 내부 스왑인 경우
-		SrcComp->SwapInvenEntry(SrcIdx, DstIdx);
+		SrcComp->SwapInvenEntry(SrcIdx, DstIdx, pPC->GetPlayerState<APlayerState>()->GetPlayerId());
 	}
 	else
 	{
 		// 플레이어 가방 <-> 창고 컴포넌트 간 이동인 경우
-		SrcComp->TransferItemTo(SrcIdx, DstComp, DstIdx);
+		SrcComp->TransferItemTo(SrcIdx, DstComp, DstIdx, pPC->GetPlayerState<APlayerState>()->GetPlayerId());
 	}
+}
+
+void AC_BasicPlayer::Server_RequestDragItemSlot_Implementation(int32 SlotIndex, UC_InvenComponent* InteractedInven)
+{
+	APlayerController* pPC = Cast<APlayerController>( GetController());
+	
+	if (!pPC) return;
+	
+	InteractedInven->StartDragItemSlot(SlotIndex, pPC->GetPlayerState<APlayerState>()->GetPlayerId()); 
+}
+
+void AC_BasicPlayer::Server_CancelDragItemSlot_Implementation(int32 SlotIndex, UC_InvenComponent* InteractedInven)
+{
+	APlayerController* pPC = Cast<APlayerController>( GetController());
+	
+	if (!pPC) return;
+	
+	InteractedInven->CancelDragItemSlot(SlotIndex, pPC->GetPlayerState<APlayerState>()->GetPlayerId());
 }
 
 void AC_BasicPlayer::SetSpringArmSocketOffset(FVector _SocketOffset)

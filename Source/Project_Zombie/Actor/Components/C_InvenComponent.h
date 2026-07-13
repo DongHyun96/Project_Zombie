@@ -34,17 +34,22 @@ public:
 	
 public:
 	// 아이템 위치 스위칭(자신의 InventoryContainer 내에서 스위칭)
-    bool SwapInvenEntry(int32 SlotIdx1, int32 SlotIdx2);
+    bool SwapInvenEntry(int32 SlotIdx1, int32 SlotIdx2, int32 InPlayerId);
+
+	// 다른 인벤(창고)와 아이템을 교환 / 이동할 때 사용하는 함수.
+	bool TransferItemTo(int32 MySlotIdx, UC_InvenComponent* TargetComp, int32 TargetSlotIdx, int32 InPlayerId);
 
 	// 특정 슬롯의 아이템 초기화
 	void InitInvenItemAt(int32 idx);
-
-	// 다른 인벤(창고)와 아이템을 교환 / 이동할 때 사용하는 함수.
-	bool TransferItemTo(int32 MySlotIdx, UC_InvenComponent* TargetComp, int32 TargetSlotIdx);
-
+	
 	UFUNCTION(BlueprintCallable)
 	bool AddItem(FInventoryEntry ItemEntry);
-
+	
+	// 드래그 시작
+	void StartDragItemSlot(int32 SlotIndex, int32 InPlayerId);
+	
+	void CancelDragItemSlot(int32 SlotIndex, int32 InPlayerId);
+	
 	// 인벤토리 강제 동기화
 	UFUNCTION(BlueprintCallable)
 	void ForceRepInven();
@@ -53,17 +58,18 @@ protected:
 	virtual void BeginPlay() override;
 	//virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-    // 이 함수는 현재 사용하지 않을 예정
+	void SetItemLock(int32 SlotIdx, int32 InPlayerID = INDEX_NONE)
+	{
+		InventoryContainer.Items[SlotIdx].LockedByPlayerID = INDEX_NONE;
+	}
+    
     /// <summary>
     /// 언리얼 엔진의 네트워크 시스템이 액터나 컴포넌트가 처음 생성될 때 그리고 네트워크 상에 등록될 때 
     /// 엔진 내부에서 자동으로 호출해주는 함수.
     /// </summary>
     virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	// 드래그 시작
-	UFUNCTION(Server, Reliable)
-	void Server_PickUpItem(int32 SlotIndex);
-	
+
 	UFUNCTION(BlueprintCallable)
 	void OnRep_InventoryContainer();
 	
@@ -80,10 +86,12 @@ protected:
 	UPROPERTY(ReplicatedUsing = OnRep_InventoryContainer,EditAnywhere, BlueprintReadWrite, Category = "Inventory")
 	FInventoryContainer InventoryContainer;
 
-	UPROPERTY(Replicated)
-	FCusorItem CursorSlot;
+	//UPROPERTY(Replicated)
+	//FCusorItem CursorSlot;
 	
-	// 고유 ID
+	// TODO : 현재 미사용 중, 현재 포인터를 패킷으로 보내고 있는데(엔진에서 GUID로 변환해줌.)
+	//		  이걸 사용하면 int32를 패킷으로 보내서 서버에서 해당 id의 객체를 찾아 접근 할 수 있음
+	// 고유 ID 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	int32 ContainerID;
 public:

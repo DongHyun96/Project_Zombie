@@ -76,8 +76,13 @@ void AC_Storage::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* Oth
 		UC_Util::Print("Can't find UIManager!");
 		return;
 	}
+	UC_InventoryWidget* InventoryWidget = UIManager->GetInventoryWidget();
 	
-	UIManager->GetInventoryWidget()->GetStorageGridWidget()->SetInvenComponent(InvenComp);
+	InventoryWidget->GetStorageGridWidget()->SetInvenComponent(InvenComp);
+	
+	if (InventoryWidget->GetVisibility() == ESlateVisibility::Visible)
+		InventoryWidget->GetStorageGridWidget()->SetVisibility(ESlateVisibility::Visible);
+	
 	//UIManager->GetInventoryWidget()->GetStorageGridWidget()->RefreshAllSlots(InvenComp->GetInventoryItems());
 	UC_Util::Print("Storage Overlap!");
 	

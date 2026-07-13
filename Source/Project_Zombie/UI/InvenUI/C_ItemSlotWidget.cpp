@@ -14,19 +14,22 @@
 #include "C_InventoryWidget.h"
 #include "C_InventoryGridWidget.h"
 #include "Components/Border.h"
+#include "GameFramework/PlayerState.h"
 #include "Utility/C_Util.h"
 
 void UC_ItemSlotWidget::UpdateSlot(const FInventoryEntry& ItemData, const FItemData* CoreData)
 {
     if (ItemData.ItemRowName == NAME_None)
     {
-        ItemSlot->SetBrushFromTexture(nullptr);
+        ItemIcon->SetBrushFromTexture(nullptr);
+        ItemIconSetVisibility(ESlateVisibility::Collapsed);
+        ItemIconSetOpacity(1.0);
     }
     else
     {
         if (CoreData->IconTexture.IsValid())
         {
-            ItemSlot->SetBrushFromTexture(CoreData->IconTexture.Get());
+            ItemIcon->SetBrushFromTexture(CoreData->IconTexture.Get());
             SetVisibility(ESlateVisibility::Visible);
         }
         else
@@ -35,10 +38,16 @@ void UC_ItemSlotWidget::UpdateSlot(const FInventoryEntry& ItemData, const FItemD
             UTexture2D* LoadedTexture = CoreData->IconTexture.LoadSynchronous();
             if (LoadedTexture)
             {
-                ItemSlot->SetBrushFromTexture(LoadedTexture);
+                ItemIcon->SetBrushFromTexture(LoadedTexture);
                 SetVisibility(ESlateVisibility::Visible);
             }
         }
+        ItemCountText->SetText(FText::AsNumber(ItemData.Count));
+        
+        // 드래그 중이면 오퍼시티를 .5로 변경 
+        if (ItemData.LockedByPlayerID != INDEX_NONE) ItemIconSetOpacity(.5);
+        else ItemIconSetOpacity(1.0);
+        ItemIconSetVisibility(ESlateVisibility::Visible);
     }
 }
 
@@ -57,14 +66,18 @@ FReply UC_ItemSlotWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, c
 void UC_ItemSlotWidget::NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& OutOperation)
 {
     if (!AssociatedInvenComp) return;
+
+    AC_BasicPlayer* Owner = Cast<AC_BasicPlayer>(GetOwningPlayerPawn());
+    
+    if (!Owner) return;
+    
+    Owner->Server_RequestDragItemSlot(curSlotIdx, AssociatedInvenComp); // 창고에 있는 아이템의 PlayerID를 건드려야함.
     
     const TArray<FInventoryEntry>& ItemArr = AssociatedInvenComp->GetInventoryItems();
     
     if (!ItemArr.IsValidIndex(curSlotIdx)) return;
     
     FInventoryEntry entry = ItemArr[curSlotIdx];
-    
-    
 
     if (entry.ItemRowName == NAME_None) return;
     
@@ -76,7 +89,6 @@ void UC_ItemSlotWidget::NativeOnDragDetected(const FGeometry& InGeometry, const 
     DragOperation->SetItemEntry(entry);
     DragOperation->SetSlotIndex(curSlotIdx);
     DragOperation->SetSourceComponent(AssociatedInvenComp);
-
     
     OutOperation = DragOperation;
 }
@@ -97,6 +109,9 @@ bool UC_ItemSlotWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDro
     
     int32 FromSlot = DragOperation->GetSlotIndex();
     int32 ToSlot = curSlotIdx;
+
+    // 드래그시 반감된 오파시티 복구(제자리에 드롭할 때 .5가 유지되서 넣은 코드)
+    ItemIconSetOpacity(1.f);
     
     Cast<AC_BasicPlayer>(GetOwningPlayerPawn())->Server_RequestMoveItem(FromInvenComp, FromSlot, ToInvenComp, ToSlot);
     // TODO : FFastArraySerializer 전환 하면 여기 바꾸기
@@ -105,6 +120,24 @@ bool UC_ItemSlotWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDro
     return true;
 }
 
+void UC_ItemSlotWidget::NativeOnDragCancelled(const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation)
+{
+    Super::NativeOnDragCancelled(InDragDropEvent, InOperation);
+    UC_DragDropOperation* DragOp = Cast<UC_DragDropOperation>(InOperation);
+    
+    AC_BasicPlayer* Owner = Cast<AC_BasicPlayer>(GetOwningPlayerPawn());
+    
+    // 드래그시 변경된 오파시티 초기화
+    ItemIconSetOpacity(1.f);
+    
+    if(DragOp && Owner)
+    {
+        // 서버에 잠금 해제 요청
+        Owner->Server_CancelDragItemSlot_Implementation(DragOp->GetSlotIndex(), AssociatedInvenComp);
+    }
+}
+
+
 void UC_ItemSlotWidget::InitDragVisual(UC_DragDropOperation* InDragDropOp)
 {
     UBorder* Border = NewObject<UBorder>();
@@ -112,11 +145,23 @@ void UC_ItemSlotWidget::InitDragVisual(UC_DragDropOperation* InDragDropOp)
     Border->SetBrushColor(BorderColor);
     UImage* DragVisual = NewObject<UImage>(this);
     
-    DragVisual->SetBrush(ItemSlot->Brush);
+    DragVisual->SetBrush(ItemIcon->Brush);
     DragVisual->Brush.ImageSize = FVector2D(64.f, 64.f);
     Border->SetContent(DragVisual);
     
     InDragDropOp->DefaultDragVisual = Border;
     
     InDragDropOp->Pivot = EDragPivot::CenterCenter;
+}
+
+void UC_ItemSlotWidget::ItemIconSetOpacity(float InOpacity)
+{
+    ItemIcon->SetOpacity(InOpacity);
+    ItemCountText->SetOpacity(InOpacity);
+}
+
+void UC_ItemSlotWidget::ItemIconSetVisibility(ESlateVisibility InVisibility)
+{
+    ItemIcon->SetVisibility(InVisibility);
+    ItemCountText->SetVisibility(InVisibility);
 }

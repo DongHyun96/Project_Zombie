@@ -325,6 +325,13 @@ public:
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_RequestMoveItem(UC_InvenComponent* SrcComp, int32 SrcIdx, UC_InvenComponent* DstComp, int32 DstIdx);
 
+	// 드래그 시작
+	UFUNCTION(Server, Reliable)
+	void Server_RequestDragItemSlot(int32 SlotIndex, UC_InvenComponent* InteractedInven);
+	
+	UFUNCTION(Server, Reliable)
+	void Server_CancelDragItemSlot(int32 SlotIndex, UC_InvenComponent* InteractedInven);
+	
 protected:
 	virtual void BeginPlay() override;
 

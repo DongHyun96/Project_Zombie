@@ -77,8 +77,8 @@ public:
     bool bIsStack;
 
     // ── [실시간 공통 데이터] ──
-    //UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
-    //bool bPicked = false;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
+    int32 LockedByPlayerID = INDEX_NONE; // INDEX_NONE == -1
     
     // ── [실시간 인스턴스 변수 - 무기/장비용] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory | Weapon")
@@ -107,28 +107,28 @@ public:
     }
 };
 
-USTRUCT(BlueprintType)
-struct FCusorItem
-{
-    GENERATED_BODY()
-    
-    UPROPERTY()
-    FInventoryEntry Item{};      // 현재 들고 있는 아이템
-    
-    // 어디서 가져왔는가?
-    int32 SourceContainerID = -1;   // 상자의 ID 혹은 플레이어 인벤토리의 ID
-    int32 SourceSlotIndex   = -1;     // 몇 번째 슬롯이었나?
-    
-    bool bIsValid = false;             // 현재 커서에 아이템이 들려있는가?
-    
-    void Clear()
-    {
-        Item.Clear();
-        SourceContainerID = -1;
-        SourceSlotIndex   = -1;
-        bIsValid = false;
-    }
-};
+//USTRUCT(BlueprintType)
+//struct FCusorItem
+//{
+//    GENERATED_BODY()
+//    
+//    UPROPERTY()
+//    FInventoryEntry Item{};      // 현재 들고 있는 아이템
+//    
+//    // 어디서 가져왔는가?
+//    int32 SourceContainerID = -1;   // 상자의 ID 혹은 플레이어 인벤토리의 ID
+//    int32 SourceSlotIndex   = -1;     // 몇 번째 슬롯이었나?
+//    
+//    bool bIsValid = false;             // 현재 커서에 아이템이 들려있는가?
+//    
+//    void Clear()
+//    {
+//        Item.Clear();
+//        SourceContainerID = -1;
+//        SourceSlotIndex   = -1;
+//        bIsValid = false;
+//    }
+//};
 
 
 
