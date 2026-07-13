@@ -4,13 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "Actor/Character/NPC/Enemy/Zombie/C_Zombie.h"
-#include "C_PoisonZombie.generated.h"
+#include "C_ToxicZombie.generated.h"
 
 UCLASS()
-class PROJECT_ZOMBIE_API AC_PoisonZombie : public AC_Zombie
+class PROJECT_ZOMBIE_API AC_ToxicZombie : public AC_Zombie
 {
 	GENERATED_BODY()
 	
 public:
-	AC_PoisonZombie();
+	AC_ToxicZombie();
 };

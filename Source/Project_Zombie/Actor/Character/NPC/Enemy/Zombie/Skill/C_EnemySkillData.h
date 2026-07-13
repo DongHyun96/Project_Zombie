@@ -62,6 +62,23 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillAnim")
 	UAnimMontage* Montage; // 스킬 모션(동작)
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillSound")
+	USoundBase* FireSound; // 발사 사운드 
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillSound")
+	USoundBase* HitSound; // 투사체 충돌 사운드
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "lProjectile")
+	TSubclassOf<class AC_EnemyProjectile> ProjectileClass; // 생성시킬 투사체
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
+	float ProjectileSpeed; // 투사체 속도
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
+	float ProjectileLifetime; // 투사체 수명
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pool")
+	float PoolLifetime; // 장판 수명
 
 public:
 	virtual FPrimaryAssetId GetPrimaryAssetId() const override
