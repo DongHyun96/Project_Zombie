@@ -38,6 +38,11 @@ public:
 	virtual bool NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
 	
 	virtual void NativeOnDragCancelled(const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
+	
+	void ItemIconSetOpacity(float InOpacity);
+	
+	void ItemIconSetVisibility(ESlateVisibility InVisibility);
+	
 protected:
 	// 드래그시 보이는 이미지 생성 및 이미지 위치설정
 	void InitDragVisual(UC_DragDropOperation* InDragDropOp);
@@ -46,6 +51,9 @@ protected:
 	// 아이템 아이콘
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget))
 	class UImage* ItemIcon;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget))
+	class UTextBlock* ItemCountText;
 
 	// ItemSlot 자신의 Inventory에서 어떤 Index인지 기억.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)

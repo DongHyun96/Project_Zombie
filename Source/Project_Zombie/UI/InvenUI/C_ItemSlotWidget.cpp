@@ -22,7 +22,8 @@ void UC_ItemSlotWidget::UpdateSlot(const FInventoryEntry& ItemData, const FItemD
     if (ItemData.ItemRowName == NAME_None)
     {
         ItemIcon->SetBrushFromTexture(nullptr);
-        ItemIcon->SetOpacity(1.0);
+        ItemIconSetVisibility(ESlateVisibility::Collapsed);
+        ItemIconSetOpacity(1.0);
     }
     else
     {
@@ -41,9 +42,12 @@ void UC_ItemSlotWidget::UpdateSlot(const FInventoryEntry& ItemData, const FItemD
                 SetVisibility(ESlateVisibility::Visible);
             }
         }
+        ItemCountText->SetText(FText::AsNumber(ItemData.Count));
+        
         // 드래그 중이면 오퍼시티를 .5로 변경 
-        if (ItemData.LockedByPlayerID != INDEX_NONE) ItemIcon->SetOpacity(.5);
-        else ItemIcon->SetOpacity(1.0);
+        if (ItemData.LockedByPlayerID != INDEX_NONE) ItemIconSetOpacity(.5);
+        else ItemIconSetOpacity(1.0);
+        ItemIconSetVisibility(ESlateVisibility::Visible);
     }
 }
 
@@ -105,6 +109,9 @@ bool UC_ItemSlotWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDro
     
     int32 FromSlot = DragOperation->GetSlotIndex();
     int32 ToSlot = curSlotIdx;
+
+    // 드래그시 반감된 오파시티 복구(제자리에 드롭할 때 .5가 유지되서 넣은 코드)
+    ItemIconSetOpacity(1.f);
     
     Cast<AC_BasicPlayer>(GetOwningPlayerPawn())->Server_RequestMoveItem(FromInvenComp, FromSlot, ToInvenComp, ToSlot);
     // TODO : FFastArraySerializer 전환 하면 여기 바꾸기
@@ -120,12 +127,16 @@ void UC_ItemSlotWidget::NativeOnDragCancelled(const FDragDropEvent& InDragDropEv
     
     AC_BasicPlayer* Owner = Cast<AC_BasicPlayer>(GetOwningPlayerPawn());
     
+    // 드래그시 변경된 오파시티 초기화
+    ItemIconSetOpacity(1.f);
+    
     if(DragOp && Owner)
     {
         // 서버에 잠금 해제 요청
         Owner->Server_CancelDragItemSlot_Implementation(DragOp->GetSlotIndex(), AssociatedInvenComp);
     }
 }
+
 
 void UC_ItemSlotWidget::InitDragVisual(UC_DragDropOperation* InDragDropOp)
 {
@@ -141,4 +152,16 @@ void UC_ItemSlotWidget::InitDragVisual(UC_DragDropOperation* InDragDropOp)
     InDragDropOp->DefaultDragVisual = Border;
     
     InDragDropOp->Pivot = EDragPivot::CenterCenter;
+}
+
+void UC_ItemSlotWidget::ItemIconSetOpacity(float InOpacity)
+{
+    ItemIcon->SetOpacity(InOpacity);
+    ItemCountText->SetOpacity(InOpacity);
+}
+
+void UC_ItemSlotWidget::ItemIconSetVisibility(ESlateVisibility InVisibility)
+{
+    ItemIcon->SetVisibility(InVisibility);
+    ItemCountText->SetVisibility(InVisibility);
 }
