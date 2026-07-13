@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "C_ZombieManager.h"
@@ -18,10 +18,10 @@ UC_ZombieManager::UC_ZombieManager()
 	if (NormalFinder.Succeeded())
 		m_ZombieClasses.Add(EZombieType::NormalZombie, NormalFinder.Class);
 
-	static ConstructorHelpers::FClassFinder<AC_Zombie> PoisonFinder(TEXT("/Game/Harang/BP/Zombie/BP_PoisonZombie"));
+	static ConstructorHelpers::FClassFinder<AC_Zombie> PoisonFinder(TEXT("/Game/Harang/BP/Zombie/BP_ToxicZombie"));
 
 	if (PoisonFinder.Succeeded())
-		m_ZombieClasses.Add(EZombieType::PoisonZombie, PoisonFinder.Class);
+		m_ZombieClasses.Add(EZombieType::ToxicZombie, PoisonFinder.Class);
 }
 
 void UC_ZombieManager::OnWorldBeginPlay()

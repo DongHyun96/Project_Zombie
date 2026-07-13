@@ -10,7 +10,7 @@ UENUM(BlueprintType)
 enum class EZombieType : uint8
 {
 	NormalZombie,
-	PoisonZombie,
+	ToxicZombie,
 	NurseZombie
 };
 

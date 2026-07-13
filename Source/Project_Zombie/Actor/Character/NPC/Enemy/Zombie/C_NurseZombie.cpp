@@ -1,11 +1,11 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "C_NurseZombie.h"
 
 
 AC_NurseZombie::AC_NurseZombie()
-	: Super(EZombieType::PoisonZombie)
+	: Super(EZombieType::NurseZombie)
 {
 	PrimaryActorTick.bCanEverTick = true;
 }

@@ -3,7 +3,7 @@
 
 #include "C_ToxicZombie.h"
 
-AC_PoisonZombie::AC_PoisonZombie()
-	: Super(EZombieType::PoisonZombie)
+AC_ToxicZombie::AC_ToxicZombie()
+	: Super(EZombieType::ToxicZombie)
 {
 }
