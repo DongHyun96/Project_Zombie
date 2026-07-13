@@ -6,11 +6,23 @@
 #include "../C_BasicEnemy.h"
 #include "C_Zombie.generated.h"
 
+UENUM(BlueprintType)
+enum class EZombieType : uint8
+{
+	NormalZombie,
+	PoisonZombie,
+	NurseZombie
+};
+
 UCLASS()
 class PROJECT_ZOMBIE_API AC_Zombie : public AC_BasicEnemy
 {
 	GENERATED_BODY()
 
+protected:
+	
+	const EZombieType m_ZombieType{};
+	
 protected:
 	virtual void BeginPlay() override;
 
@@ -20,5 +32,13 @@ public:
 public:	
 	virtual void Tick(float DeltaTime) override;
 
+	/// <summary>
+	/// 기본 CDO 생성 처리를 위해 기본생성자는 항상 있어야 함
+	/// </summary>
 	AC_Zombie();
+
+	/// <summary>
+	/// 자식 Zombie 클래스에서 자신의 ZombieType을 초기화하기 위한 생성자
+	/// </summary>
+	AC_Zombie(EZombieType _ZombieType);
 };

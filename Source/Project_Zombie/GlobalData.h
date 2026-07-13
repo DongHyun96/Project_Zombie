@@ -202,3 +202,57 @@ struct FMeleeData : public FWeaponData
 // ******************************
 // 무기 데이터 테이블 구조체 선언부
 // ******************************
+
+
+// ******************************
+// Stat Data
+// ******************************
+
+/// <summary>
+/// 공통 스탯 정보 (DataTable 용)
+/// </summary>
+USTRUCT(BlueprintType)
+struct FCharacterStatData : public FTableRowBase
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stat")
+    float InitialMaxHP{};
+};
+
+
+/// <summary>
+/// Player 전용 스탯 정보
+/// </summary>
+USTRUCT(BlueprintType)
+struct FPlayerStatData : public FCharacterStatData
+{
+    GENERATED_BODY()
+	
+    // TODO : Player 쪽 사용할 Stat Data 추가해줄 것, 동시에 PlayerStatComponent에서 해당 값 참조해서 CurStatData들 초기화 처리해줄 것
+};
+
+/// <summary>
+/// Monster 전용
+/// </summary>
+USTRUCT(BlueprintType)
+struct FEnemyStatData : public FCharacterStatData
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stat")
+    float	MoveSpeed;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stat")
+    float	DetectRange;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stat")
+    float	LoseDetectRange;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stat")
+    float	Att;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stat")
+    float	Def;
+	
+};

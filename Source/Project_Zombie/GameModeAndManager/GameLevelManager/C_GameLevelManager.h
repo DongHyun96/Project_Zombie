@@ -34,12 +34,18 @@ public:
 	void AddPlayer(class AC_BasicPlayer* _Player) { m_Players.Add(_Player); }
 	const TArray<AC_BasicPlayer*>& GetPlayers() const { return m_Players; }
 	
+	class UC_ZombieManager* GetZombieManager() const { return m_ZombieManager; } 
+	
 private:
 
 	// 이 레벨을 플레이 중인 모든 플레이어 객체
 	TArray<AC_BasicPlayer*> m_Players{};
 	
-	
-	
+private:
+
+	UPROPERTY()
+	TSubclassOf<UC_ZombieManager> m_ZombieManagerClass{};
+	UPROPERTY()
+	UC_ZombieManager* m_ZombieManager{};
 	
 };

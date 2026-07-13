@@ -22,6 +22,7 @@
 #include "Actor/Components/C_InvenComponent.h"
 #include "Actor/Components/C_PingSystemComponent.h"
 #include "Actor/Components/C_BasicPlayerAimComponent.h"
+#include "Actor/Components/C_PlayerStatComponent.h"
 #include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 #include "GameModeAndManager/C_UIManager.h"
 #include "UI/InvenUI/C_InventoryGridWidget.h"
@@ -98,6 +99,8 @@ AC_BasicPlayer::AC_BasicPlayer()
 
 	// PlayerAim Component
 	m_PlayerAimComponent = CreateDefaultSubobject<UC_BasicPlayerAimComponent>(TEXT("PlayerAimComponent"));
+	
+	m_StatComponent = CreateDefaultSubobject<UC_PlayerStatComponent>(TEXT("StatComponent"));
 }
 
 void AC_BasicPlayer::BeginPlay()
@@ -167,7 +170,7 @@ void AC_BasicPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 
 float AC_BasicPlayer::TakeDamage(float _Damage, FDamageEvent const& _DamageEvent, AController* _InstigatorController, AActor* _InstigatorActor)
 {
-	return 0.0f;
+	return Super::TakeDamage(_Damage, _DamageEvent, _InstigatorController, _InstigatorActor);
 }
 
 void AC_BasicPlayer::Landed(const FHitResult& Hit)

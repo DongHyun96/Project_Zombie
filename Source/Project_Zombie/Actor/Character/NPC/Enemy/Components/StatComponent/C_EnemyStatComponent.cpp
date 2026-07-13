@@ -3,6 +3,7 @@
 
 #include "C_EnemyStatComponent.h"
 #include "C_EnemyStatData.h"
+#include "GlobalData.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Utility/C_Util.h"
@@ -29,56 +30,27 @@ void UC_EnemyStatComponent::BeginPlay()
 	else UC_Util::Print("From UC_EnemyStatComponent::BeginPlay : Owner Actor casting to ACharacter failed!, Please attach this Comp to Zombie class", FColor::Red, 10.f);
 }
 
-
-void UC_EnemyStatComponent::InitStatFromStruct(UScriptStruct* _InStruct, const void* _StrcPtr)
+UScriptStruct* UC_EnemyStatComponent::GetStatDataStruct() const
 {
-	if (nullptr == _InStruct || nullptr == _StrcPtr)
-		return;
-
-	for (TFieldIterator<FProperty> Iter(_InStruct); Iter; ++Iter)
-	{
-		FProperty* Property = *Iter;
-
-		// 멤버변수 이름
-		FName StatName = Property->GetFName();
-
-		FFloatProperty* FloatPro = CastField<FFloatProperty>(Property);
-
-		if (FloatPro)
-		{
-			float Value = FloatPro->GetPropertyValue_InContainer(_StrcPtr);
-
-			AddStat(StatName, Value);
-		}
-	}
+	return FEnemyStatData::StaticStruct();
 }
 
-void UC_EnemyStatComponent::PostEditChangeProperty(FPropertyChangedEvent& _Event)
+/*void UC_EnemyStatComponent::InitStat()
 {
-	Super::PostEditChangeProperty(_Event);
+	// 테이블과 행 이름이 설정되어 있어야 한다
+	if (!m_Table || m_RowName.IsNone()) return;
 
-	InitStat();
-}
-
-
-void UC_EnemyStatComponent::OnRegister()
-{
-	Super::OnRegister();
-
-	InitStat();
-}
-
-
-void UC_EnemyStatComponent::InitStat()
-{
-	if (nullptr == m_Table || m_RowName.IsNone())
-		return;
-
+	// 모든 스탯을 다 지운다
 	m_Stats.Empty();
+	
+	// 테이블에 기록된 데이터에 접근한다.
+	FEnemyStatData* pStat = m_Table->FindRow<FEnemyStatData>(m_RowName, TEXT("EnemyStat"));
 
-	FC_EnemyStatData* pStat = m_Table->FindRow<FC_EnemyStatData>(m_RowName, TEXT("ZombieStat"));
+	// 데이터를 구성하고 있는 멤버들의 멤버변수명 자체를 키값으로 해서 수치를 기록한다.
+	InitStatFromStruct(FEnemyStatData::StaticStruct(), pStat);
 
-	InitStatFromStruct(FC_EnemyStatData::StaticStruct(), pStat);
+	// TODO : Enemy만의 추가적인 런타임 스탯 추가 (아직 따로 없음)
 
-	Modify();
-}
+	// 부모 함수 호출 (공용 스탯 추가)
+	Super::InitStat();
+}*/

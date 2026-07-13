@@ -4,6 +4,7 @@
 #include "Engine/DataTable.h"
 #include "C_EnemyStatData.generated.h"
 
+// TODO : 이 Struct 삭제
 /// 좀비 스탯(데이터테이블)
 USTRUCT(BlueprintType)
 struct FC_EnemyStatData : public FTableRowBase
