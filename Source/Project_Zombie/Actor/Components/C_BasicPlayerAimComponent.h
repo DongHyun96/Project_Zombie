@@ -37,14 +37,14 @@ protected:
 	// 메인 카메라 오프셋 저장용
 	FVector BaseCameraOffset;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Aim|ShoulderCam")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Aim|ShoulderCam")
 	float m_AimFOV = 60.f; // 조준 시 변경될 FOV (기본은 90)
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Aim|ShoulderCam")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Aim|ShoulderCam")
 	float m_AimSpeed = 10.f; // 조준 속도
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Aim|ShoulderCam")
-	FVector	m_AimOffset = FVector(0.f, 40.f, 20.f); // 조준 시 카메라 위치 조정용
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Aim|ShoulderCam")
+	FVector	m_AimOffset = FVector(0.f, 70.f, 90.f); // 조준 시 카메라 위치 조정용
 
 private:
 	float m_RuntimeTargetFOV;
@@ -63,6 +63,9 @@ public:
 
 	// 매 프레임 카메라 시점을 에임으로 구동할 함수
 	void UpdateCameraInterpolation(float DeltaTime);
+
+public:
+	bool IsAiming() { return bIsAiming; }
 
 public:
 	UC_BasicPlayerAimComponent();
