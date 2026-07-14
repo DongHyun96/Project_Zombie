@@ -56,8 +56,7 @@ AC_ItemPickUp* UC_ItemManager::SpawnItem(FName InRowName, const FVector& SpawnLo
         // 3. 생성된 아이템 액터에 데이터 테이블 정보를 주입!
         // (예: 아이템 에셋의 StaticMesh를 바꾸거나, 수량을 설정하는 함수 호출)
         NewItem->ItemData.ItemRowName = InRowName;
-        NewItem->ItemData.Count = Data->Count;
-        NewItem->ItemData.bIsStack = Data->bIsStack;
+        NewItem->ItemData.CurCount = Data->CurCount;
         NewItem->SetMeshRef(Data->DropMesh);
         NewItem->SetPickupMeshAsync(NewItem->GetMeshRef());
         

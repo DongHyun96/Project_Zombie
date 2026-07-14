@@ -133,10 +133,27 @@ void AC_ItemPickUp::Server_RequestPickup_Implementation(AC_BasicPlayer* Player)
     
     UC_InvenComponent* PlayerInvenComp = Player->GetInvenComponent();
     
-    if (PlayerInvenComp && PlayerInvenComp->AddItem(ItemData))
+    // 아이템을 인벤토리에 넣고, 남은 수량을 돌려받음
+    int32 LeftoverCount = PlayerInvenComp->AddItem(ItemData);
+
+    if (LeftoverCount <= 0)
     {
-        bPickup = true; // 서버에서 상태 변경(모든 클라이언트에 복제됨)
-        Destroy();      // 서버에서 파괴(모든 클라이언트의 액터가 삭제됨)
+        // 남은 게 없음 = 전부 다 인벤토리에 들어감
+        bPickup = true; 
+        Destroy();      
+    }
+    else if (LeftoverCount < ItemData.CurCount)
+    {
+        // 일부만 먹고 나머지가 남음 (인벤토리 공간 부족)
+        // 액터를 파괴하지 않고 땅에 남기되, 수량만 깎음
+        ItemData.CurCount = LeftoverCount;
+        
+        // TODO: (선택) 클라이언트들이 아이템의 수량이 줄어든 것을 볼 수 있도록 리플리케이트 마킹
+    }
+    else
+    {
+        // 단 하나도 먹지 못함 (인벤토리 완전 꽉 참)
+        // 액터 그대로 유지
     }
 }
 

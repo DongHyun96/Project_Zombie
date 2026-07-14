@@ -386,7 +386,16 @@ ETeamAttitude::Type AC_BasicPlayer::GetTeamAttitudeTowards(const AActor& _Other)
 bool AC_BasicPlayer::Server_RequestMoveItem_Validate(UC_InvenComponent* SrcComp, int32 SrcIdx,
 	UC_InvenComponent* DstComp, int32 DstIdx)
 {
-	return (SrcComp != nullptr && DstComp != nullptr);
+	// null 체크 (가장 먼저 수행)
+	if (!SrcComp || !DstComp) return false;
+
+	// 동일 슬롯 체크 (제자리 드롭 방지)
+	if (SrcComp == DstComp && SrcIdx == DstIdx) return false;
+
+	// 해당 슬롯의 유효성 검사
+	if (!SrcComp->GetInventoryItems().IsValidIndex(SrcIdx) || !DstComp->GetInventoryItems().IsValidIndex(DstIdx)) return false;
+
+	return true;
 }
 
 void AC_BasicPlayer::Server_RequestMoveItem_Implementation(UC_InvenComponent* SrcComp, int32 SrcIdx,
@@ -394,18 +403,12 @@ void AC_BasicPlayer::Server_RequestMoveItem_Implementation(UC_InvenComponent* Sr
 {
 	APlayerController* pPC = Cast<APlayerController>( GetController());
 	
-	if (!pPC) return;
+	if (!pPC || !pPC->PlayerState) return;
+
+	// 현재 요청을 보낸 플레이어의 고유 ID 추출
+	int32 PlayerId = pPC->PlayerState->GetPlayerId();
 	
-	if (SrcComp == DstComp)
-	{
-		// 동일 인벤토리 내부 스왑인 경우
-		SrcComp->SwapInvenEntry(SrcIdx, DstIdx, pPC->GetPlayerState<APlayerState>()->GetPlayerId());
-	}
-	else
-	{
-		// 플레이어 가방 <-> 창고 컴포넌트 간 이동인 경우
-		SrcComp->TransferItemTo(SrcIdx, DstComp, DstIdx, pPC->GetPlayerState<APlayerState>()->GetPlayerId());
-	}
+	SrcComp->ProcessItemMove(SrcComp, SrcIdx, DstComp, DstIdx, PlayerId);
 }
 
 void AC_BasicPlayer::Server_RequestDragItemSlot_Implementation(int32 SlotIndex, UC_InvenComponent* InteractedInven)

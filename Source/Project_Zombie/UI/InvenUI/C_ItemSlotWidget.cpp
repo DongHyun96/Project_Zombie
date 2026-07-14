@@ -42,7 +42,7 @@ void UC_ItemSlotWidget::UpdateSlot(const FInventoryEntry& ItemData, const FItemD
                 SetVisibility(ESlateVisibility::Visible);
             }
         }
-        ItemCountText->SetText(FText::AsNumber(ItemData.Count));
+        ItemCountText->SetText(FText::AsNumber(ItemData.CurCount));
         
         // 드래그 중이면 오퍼시티를 .5로 변경 
         if (ItemData.LockedByPlayerID != INDEX_NONE) ItemIconSetOpacity(.5);

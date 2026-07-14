@@ -25,11 +25,15 @@ struct FItemData : public FTableRowBase
 
     // ── [공통 정보] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Info")
-    int32 Count = 1;
+    int32 CurCount = 1;
 
     // ── [공통 정보] ── 인벤토리에서 겹쳐서 보관 할 수 있는 아이템인지.(true면 겹치기 가능)
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
-    bool bIsStack;
+    //UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
+    //bool bIsStack;
+    
+    // ── [공통 정보] ── -1은 현재 아이템이 제대로 정의되어 있지 않은 상태라는 뜻
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Info")
+    int32 MaxCount = -1; 
 
     // ── [비주얼 리소스 - 강참조 포인터] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Visual")
@@ -70,11 +74,11 @@ public:
 
     // ── [실시간 공통 데이터] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
-    int32 Count = 0;
+    int32 CurCount = 0;
 
     // ── [실시간 공통 데이터] ──
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
-    bool bIsStack;
+    //UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
+    //bool bIsStack;
 
     // ── [실시간 공통 데이터] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
@@ -94,17 +98,17 @@ public:
     //float Durability = 100.0f;
 public:
     // 빈 슬롯인지 확인하는 함수.
-    bool IsEmpty() const {return ItemRowName.IsNone() || Count == 0;}
+    bool IsEmpty() const {return ItemRowName.IsNone() || CurCount == 0;}
     
     // 비우는 함수
     void Clear()
     {
         ItemRowName = NAME_None;
-        Count = 0;
-        bIsStack = false;
+        CurCount = 0;
         UpgradeLevel = 0;
         CurAmmo = 0;
     }
+    
 };
 
 //USTRUCT(BlueprintType)

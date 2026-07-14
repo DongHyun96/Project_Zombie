@@ -33,17 +33,15 @@ public:
 	int32 GetContainerID() { return ContainerID; }
 	
 public:
-	// 아이템 위치 스위칭(자신의 InventoryContainer 내에서 스위칭)
-    bool SwapInvenEntry(int32 SlotIdx1, int32 SlotIdx2, int32 InPlayerId);
+	// 아이템이 드래그 드롭 되었을 때 처리해주는 함수.
+	void ProcessItemMove(UC_InvenComponent* SrcComp, int32 SrcIdx, UC_InvenComponent* DstComp, int32 DstIdx, int32 InPlayerID);
 
-	// 다른 인벤(창고)와 아이템을 교환 / 이동할 때 사용하는 함수.
-	bool TransferItemTo(int32 MySlotIdx, UC_InvenComponent* TargetComp, int32 TargetSlotIdx, int32 InPlayerId);
 
 	// 특정 슬롯의 아이템 초기화
 	void InitInvenItemAt(int32 idx);
 	
 	UFUNCTION(BlueprintCallable)
-	bool AddItem(FInventoryEntry ItemEntry);
+	int32 AddItem(FInventoryEntry ItemEntry);
 	
 	// 드래그 시작
 	void StartDragItemSlot(int32 SlotIndex, int32 InPlayerId);
@@ -68,8 +66,13 @@ protected:
     /// 엔진 내부에서 자동으로 호출해주는 함수.
     /// </summary>
     virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-
-
+	
+	// 아이템 위치 스위칭
+	bool SwapInvenEntry(int32 MySlotIdx, UC_InvenComponent* TargetComp, int32 TargetSlotIdx, int32 InPlayerID);
+	
+	// 아이템 병합
+	bool TryMergeItem(UC_InvenComponent* SrcComp, int32 SrcIdx, UC_InvenComponent* DstComp, int32 DstIdx, int32 InPlayerID, int32 MaxCount);
+	
 	UFUNCTION(BlueprintCallable)
 	void OnRep_InventoryContainer();
 	

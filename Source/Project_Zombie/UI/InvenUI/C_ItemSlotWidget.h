@@ -38,9 +38,11 @@ public:
 	virtual bool NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
 	
 	virtual void NativeOnDragCancelled(const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
-	
+
+	// ItemIcon과 TextBlock의 Opacity조절하는 함수
 	void ItemIconSetOpacity(float InOpacity);
 	
+	// ItemIcon과 TextBlock의 Visibility를 바꾸는 함수
 	void ItemIconSetVisibility(ESlateVisibility InVisibility);
 	
 protected:
