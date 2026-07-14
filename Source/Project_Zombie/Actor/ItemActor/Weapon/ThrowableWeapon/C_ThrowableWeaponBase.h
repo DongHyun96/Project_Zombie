@@ -333,7 +333,6 @@ protected:
 	// 벽에 충돌했을때 장판이 생성되는 위치를 결정하기 위해 사용
 	FHitResult m_HitResult;
 
-
 private:
 
 	// 투척류의 Fuse Timer (핀 제거 후, 폭발까지 걸리는 시간)

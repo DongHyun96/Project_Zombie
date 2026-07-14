@@ -13,6 +13,10 @@ bool UC_MolotovExplode::UseStrategy_Implementation(AC_ThrowableWeaponBase* _Thro
 	if (!_ThrowableWeapon)
 		return false;
 
+	UWorld* World = _ThrowableWeapon->GetWorld();
+	if (!World)
+		return false;
+
 	// 화염 장판 클래스 가져오기
 	const TSubclassOf<AC_FireDamageArea> FireDamageAreaClass = _ThrowableWeapon->GetFireDamageAreaClass();
 
@@ -21,6 +25,9 @@ bool UC_MolotovExplode::UseStrategy_Implementation(AC_ThrowableWeaponBase* _Thro
 		UC_Util::Print("[C_MolotovExplode] FireDamageAreaClass is not assigned");
 		return false;
 	}
+
+	// 투척한 플레이어 가져오기
+	AC_BasicPlayer* ThrowableUser = _ThrowableWeapon->GetThrowableUser();
 
 	// 폭발이 발생한 위치
 	FVector ExplosionLocation = _ThrowableWeapon->GetActorLocation();
@@ -46,7 +53,7 @@ bool UC_MolotovExplode::UseStrategy_Implementation(AC_ThrowableWeaponBase* _Thro
 
 	// Trace를 통해 화염 장판을 생성할 위치를 결정
 	const FVector GroundTraceStart = ExplosionLocation + FVector(0.f, 0.f, 50.f);
-	const FVector GroundTraceEnd = ExplosionLocation - FVector(0.f, 0.f, 200.f);
+	const FVector GroundTraceEnd = ExplosionLocation - FVector(0.f, 0.f, 300.f);
 
 	FCollisionQueryParams GroundQueryParams(
 		SCENE_QUERY_STAT(MolotovGroundTrace), // 디버그용 이름
@@ -54,9 +61,10 @@ bool UC_MolotovExplode::UseStrategy_Implementation(AC_ThrowableWeaponBase* _Thro
 		_ThrowableWeapon // Trace 검사에서 자기 자신을 무시
 	);
 
+
 	FHitResult GroundHit;
 
-	const bool bHitGround = GetWorld()->LineTraceSingleByChannel(
+	const bool bHitGround = World->LineTraceSingleByChannel(
 		GroundHit,
 		GroundTraceStart,
 		GroundTraceEnd,
@@ -70,11 +78,24 @@ bool UC_MolotovExplode::UseStrategy_Implementation(AC_ThrowableWeaponBase* _Thro
 		return true;
 	}
 
-	AC_FireDamageArea* FireDamageArea = GetWorld()->SpawnActor<AC_FireDamageArea>(
+	// 항상 스폰하도록 설정 (충돌 무시)
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	// BeginPlay가 호출되기 전에 ThrowableUser 를 전달하기위해 SpawnActorDeferred 사용
+	AC_FireDamageArea* FireDamageArea = World->SpawnActor<AC_FireDamageArea>(
 		FireDamageAreaClass,
-		GroundHit.ImpactPoint, // 바닥 충돌 지점에 장판 생성
-		FRotator::ZeroRotator  // 회전 없음
+		GroundHit.ImpactPoint,	// 바닥 충돌 지점에 장판 생성
+		FRotator::ZeroRotator,	// 회전 없음
+		SpawnParams				// 스폰 파라미터 설정
 	);
+
+
+	if (!FireDamageArea)
+	{
+		UC_Util::Print("[C_MolotovExplode] Failed to spawn FireDamageArea");
+		return false;
+	}
 
 	return true;
 }
