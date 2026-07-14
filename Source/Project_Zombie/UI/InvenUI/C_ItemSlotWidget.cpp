@@ -111,7 +111,8 @@ bool UC_ItemSlotWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDro
     int32 ToSlot = curSlotIdx;
 
     // 드래그시 반감된 오파시티 복구(제자리에 드롭할 때 .5가 유지되서 넣은 코드)
-    ItemIconSetOpacity(1.f);
+    if (FromInvenComp->GetInventoryItems()[DragOperation->GetSlotIndex()].LockedByPlayerID == INDEX_NONE) 
+        ItemIconSetOpacity(1.f);
     
     Cast<AC_BasicPlayer>(GetOwningPlayerPawn())->Server_RequestMoveItem(FromInvenComp, FromSlot, ToInvenComp, ToSlot);
     // TODO : FFastArraySerializer 전환 하면 여기 바꾸기

@@ -169,8 +169,6 @@ void UC_InvenComponent::ForceRepInven()
 	InventoryContainer.MarkArrayDirty();
 }
 
-
-
 void UC_InvenComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
