@@ -14,6 +14,7 @@
 
 class UC_InvenComponent;
 class UC_ItemSlotWidget;
+class UC_InventoryWidget;
 
 UCLASS()
 class PROJECT_ZOMBIE_API UC_InventoryGridWidget : public UUserWidget
@@ -30,7 +31,8 @@ public:
 	void RefreshSlotAt(int32 SlotIndex, const FInventoryEntry& ItemData);
 	
 	// 최초 1회 초기화, 아이템 슬롯 생성 및 배열에 넣어줌.
-	virtual bool Initialize() override;
+	virtual void NativeOnInitialized() override;
+	//virtual bool Initialize() override;
 public:
 	const TArray<UC_ItemSlotWidget*>& GetSlotArr() const { return SlotWidgets; }
 
@@ -38,6 +40,10 @@ public:
 	void SetInvenComponent(UC_InvenComponent* InventoryComponent);
 	
 	UC_InvenComponent* GetInvenComponent() const {return InvenComp;}
+	
+	void SetParentWidget(UC_InventoryWidget* InInvenWidget) {ParentWidget = InInvenWidget;}
+	
+	UC_InventoryWidget* GetParentWidget() const {return ParentWidget;}
 protected:
 	// C_ItemSlot을 배치할 GridPanel
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
@@ -59,5 +65,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<UC_ItemSlotWidget*> SlotWidgets;
 	
+	UPROPERTY()
 	UC_InvenComponent* InvenComp{};
+	
+	UPROPERTY()
+	UC_InventoryWidget* ParentWidget{};
 };

@@ -104,6 +104,8 @@ AC_BasicPlayer::AC_BasicPlayer()
 	m_PlayerAimComponent = CreateDefaultSubobject<UC_BasicPlayerAimComponent>(TEXT("PlayerAimComponent"));
 	
 	m_StatComponent = CreateDefaultSubobject<UC_PlayerStatComponent>(TEXT("StatComponent"));
+	
+	
 }
 
 
@@ -175,6 +177,24 @@ void AC_BasicPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 float AC_BasicPlayer::TakeDamage(float _Damage, FDamageEvent const& _DamageEvent, AController* _InstigatorController, AActor* _InstigatorActor)
 {
 	return Super::TakeDamage(_Damage, _DamageEvent, _InstigatorController, _InstigatorActor);
+}
+
+bool AC_BasicPlayer::SetCurDraggedItem(struct FInventoryEntry InEntry, UC_InvenComponent* SrcInvenComp, int32 SrcSlotIdx)
+{
+	// 매개변수중 하나라도 유효하지 않다면 false가 리턴됨. curDraggedItem 초기화.
+	if (curDraggedItem.SetCursorItem(InEntry, SrcInvenComp, SrcSlotIdx)) return true;
+	
+	// TODO : 만약 false가 리턴되어도 curDraggedItem이 초기화되면 안되는 상황이 존재한다면?
+	curDraggedItem.Clear();
+	
+	return false;
+}
+
+void AC_BasicPlayer::ClearCurDraggedItem()
+{
+	Server_CancelDragItemSlot(curDraggedItem.SourceSlotIndex, curDraggedItem.SourceInvenComp);
+	
+	curDraggedItem.Clear();
 }
 
 void AC_BasicPlayer::Landed(const FHitResult& Hit)

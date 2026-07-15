@@ -79,7 +79,12 @@ void UC_ItemSlotWidget::NativeOnDragDetected(const FGeometry& InGeometry, const 
     
     FInventoryEntry entry = ItemArr[curSlotIdx];
 
-    if (entry.ItemRowName == NAME_None) return;
+    AC_BasicPlayer* pPlayer = Cast<AC_BasicPlayer>(GetOwningPlayerPawn());
+    
+    // Player의 curDraggedItem 세팅
+    if (!pPlayer->SetCurDraggedItem(entry, AssociatedInvenComp, curSlotIdx)) return;
+    
+    //if (entry.ItemRowName == NAME_None) return;
     
     UC_DragDropOperation* DragOperation = NewObject<UC_DragDropOperation>();
     
@@ -87,8 +92,8 @@ void UC_ItemSlotWidget::NativeOnDragDetected(const FGeometry& InGeometry, const 
     InitDragVisual(DragOperation);
     
     DragOperation->SetItemEntry(entry);
-    DragOperation->SetSlotIndex(curSlotIdx);
     DragOperation->SetSourceComponent(AssociatedInvenComp);
+    DragOperation->SetSlotIndex(curSlotIdx);
     
     OutOperation = DragOperation;
 }
@@ -110,11 +115,41 @@ bool UC_ItemSlotWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDro
     int32 FromSlot = DragOperation->GetSlotIndex();
     int32 ToSlot = curSlotIdx;
 
+    AC_BasicPlayer* pPlayer = Cast<AC_BasicPlayer>(GetOwningPlayerPawn());
+    
+    if (!pPlayer) return false;
+    
     // 드래그시 반감된 오파시티 복구(제자리에 드롭할 때 .5가 유지되서 넣은 코드)
     if (FromInvenComp->GetInventoryItems()[DragOperation->GetSlotIndex()].LockedByPlayerID == INDEX_NONE) 
         ItemIconSetOpacity(1.f);
     
-    Cast<AC_BasicPlayer>(GetOwningPlayerPawn())->Server_RequestMoveItem(FromInvenComp, FromSlot, ToInvenComp, ToSlot);
+    
+    
+    if (APlayerController* PC = GetOwningPlayer())
+    {
+        if (AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD()))
+        {
+            if (UC_InventoryWidget* InveWidget = UIManager->GetInventoryWidget())
+                InveWidget->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+        }
+    }
+    
+    // 드롭된 슬롯이 잠겨 있다면 드롭 실패. TODO : 실패 처리가 이렇게 추가되면 위에 드래그시 반감된 오파시티 복구 코드는 삭제해도 되나?
+    if (AssociatedInvenComp->GetInventoryItems()[ToSlot].LockedByPlayerID != INDEX_NONE)
+    {
+        // 플레이어의 CurDraggedItem 초기화
+        pPlayer->ClearCurDraggedItem();
+        return true;
+    }
+    
+    if (InDragDropEvent.IsControlDown())
+    {
+        ParentGrid->GetParentWidget()->ShowDivideWidget();
+        return true;
+    }
+    
+    pPlayer->Server_RequestMoveItem(FromInvenComp, FromSlot, ToInvenComp, ToSlot);
+    
     // TODO : FFastArraySerializer 전환 하면 여기 바꾸기
     //ToInvenComp->Server_RequestMoveItem(FromInvenComp, FromSlot, ToInvenComp, ToSlot);
     

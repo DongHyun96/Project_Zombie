@@ -6,6 +6,7 @@
 #include "C_InventoryGridWidget.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/Components/C_InvenComponent.h"
+#include "DivideWIdget/C_DivideItemWidget.h"
 #include "DragDropOperation/C_DragDropOperation.h"
 #include "GameModeAndManager/C_ItemManager.h"
 #include "Utility/C_Util.h"
@@ -18,12 +19,15 @@ void UC_InventoryWidget::NativeConstruct()
 	
 	UC_InvenComponent* PlayerInvenComponent = Player->GetInvenComponent();
 
-
-
+	PlayerGridWidget ->SetParentWidget(this);
+	StorageGridWidget->SetParentWidget(this);
+	
 	PlayerGridWidget->SetInvenComponent(PlayerInvenComponent);
 	
 	// TODO : 오용되는 부분이 생길 수 있음.
 	StorageGridWidget->SetInvenComponent(nullptr);
+	
+	
 }
 
 bool UC_InventoryWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent,
@@ -65,6 +69,21 @@ bool UC_InventoryWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDr
 	PlayerGridWidget->RefreshSlotAt(DroppedItemIdx, invenComp->GetInventoryItems()[DroppedItemIdx]);
 	
 	return Super::NativeOnDrop(InGeometry, InDragDropEvent, InOperation);
+}
+
+void UC_InventoryWidget::ShowDivideWidget()
+{
+	AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(GetOwningPlayerPawn());
+	
+	if (!Player) return;
+	
+	FCursorItem cursorItem = Player->GetCurDraggedItem();
+	
+	if (!cursorItem.bIsValid) return;
+	
+	DivideItemWidget->SetCursorItem(cursorItem);
+	
+	DivideItemWidget->UpdateWidget();
 }
 
 void UC_InventoryWidget::SetVisibility(ESlateVisibility InVisibility)

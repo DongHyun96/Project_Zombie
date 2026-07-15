@@ -111,28 +111,47 @@ public:
     
 };
 
-//USTRUCT(BlueprintType)
-//struct FCusorItem
-//{
-//    GENERATED_BODY()
-//    
-//    UPROPERTY()
-//    FInventoryEntry Item{};      // 현재 들고 있는 아이템
-//    
-//    // 어디서 가져왔는가?
-//    int32 SourceContainerID = -1;   // 상자의 ID 혹은 플레이어 인벤토리의 ID
-//    int32 SourceSlotIndex   = -1;     // 몇 번째 슬롯이었나?
-//    
-//    bool bIsValid = false;             // 현재 커서에 아이템이 들려있는가?
-//    
-//    void Clear()
-//    {
-//        Item.Clear();
-//        SourceContainerID = -1;
-//        SourceSlotIndex   = -1;
-//        bIsValid = false;
-//    }
-//};
+USTRUCT(BlueprintType)
+struct FCursorItem
+{
+    GENERATED_BODY()
+    
+    UPROPERTY()
+    FInventoryEntry Item{};           // 현재 들고 있는 아이템
+    
+    // TODO : 멀티 환경에서 InvenComponent를 포인터변수로 전송하는게 아니라 ID(int32)로 전송하는 방식으로 바꾸면 리팩토링 필요, 현재는 포인터 변수를 전송.
+    //int32 SourceContainerID = -1;   // 상자의 ID 혹은 플레이어 인벤토리의 ID
+    
+    UPROPERTY()
+    class UC_InvenComponent* SourceInvenComp = nullptr;
+    int32 SourceSlotIndex   = -1;     // 몇 번째 슬롯이었나?
+    
+    bool bIsValid = false;            // 현재 커서에 아이템이 들려있는가?
+    
+    void Clear()
+    {
+        Item.Clear();
+        SourceInvenComp = nullptr;
+        SourceSlotIndex = -1;
+        bIsValid = false;
+    }
+    
+    // CursorItem을 세팅하는 함수.
+    bool SetCursorItem(FInventoryEntry InEntry, UC_InvenComponent* InSourceInvenComp, int32 InSourceSlotIndex)
+    {
+        if (InEntry.ItemRowName == NAME_None || InSourceInvenComp == nullptr || InSourceSlotIndex == -1) return false;
+        
+        Item = InEntry;
+        
+        SourceInvenComp = InSourceInvenComp;
+        
+        SourceSlotIndex = InSourceSlotIndex;
+        
+        bIsValid = true;
+        
+        return true;
+    }
+};
 
 
 

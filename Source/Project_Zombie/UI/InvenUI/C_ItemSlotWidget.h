@@ -66,4 +66,6 @@ protected:
 	// 이 슬롯이 참조하는 실제 데이터 컴포넌트
 	UPROPERTY()
 	class UC_InvenComponent* AssociatedInvenComp = nullptr;
+	
+
 };

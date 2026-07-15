@@ -17,6 +17,7 @@ public:
 	
 	virtual bool NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
 	
+	void ShowDivideWidget();
 public:
 	class UC_InventoryGridWidget* GetPlayerGridWidget() { return PlayerGridWidget; }
 	
@@ -32,4 +33,8 @@ protected:
 	// Storage(창고)의 아이템 슬롯을 가지고 있을 그리드 위젯
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
 	class UC_InventoryGridWidget* StorageGridWidget = nullptr;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
+	class UC_DivideItemWidget* DivideItemWidget = nullptr;
+
 };
