@@ -220,7 +220,6 @@ struct FCharacterStatData : public FTableRowBase
     float InitialMaxHP{};
 };
 
-
 /// <summary>
 /// Player 전용 스탯 정보
 /// </summary>

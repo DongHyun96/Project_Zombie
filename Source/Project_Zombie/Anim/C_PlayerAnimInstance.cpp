@@ -82,6 +82,7 @@ void UC_PlayerAnimInstance::NativeUpdateAnimation(float _DT)
 	// 피치 값 할당
 	m_Pitch = DeltaRotation.Pitch;
 	// 턴 인 플레이스의 야값 할당
-	m_Yaw = m_Character->GetControllerFSM()->GetDeltaYaw();
+	// m_Yaw = m_Character->GetControllerFSM()->GetDeltaYaw();
+	m_Yaw = DeltaRotation.Yaw;
 	
 }

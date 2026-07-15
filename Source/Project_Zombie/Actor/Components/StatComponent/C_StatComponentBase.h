@@ -7,6 +7,8 @@
 #include "C_StatComponentBase.generated.h"
 
 
+DECLARE_MULTICAST_DELEGATE(FOnHealthReachedZero);
+
 /*USTRUCT(BlueprintType)
 struct FStatInfo
 {
@@ -87,6 +89,8 @@ public: /* 공용 Stat 처리 함수 */
 	bool IncreaseCurHP(float _IncreaseAmount);
 	bool DecreaseCurHP(float _DecreaseAmount);
 	
+	bool IsCurHPFull() const { return m_Stats[TEXT("CurHP")] >= m_Stats[TEXT("CurMaxHP")]; }
+	
 private:
 	
 	/// <summary>
@@ -124,6 +128,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat")
 	TMap<FName, float> m_Stats{};
 
-private:
+public:
+
+	// CurHP 가 모두 소진되었을 때 호출받을 Delegate
+	FOnHealthReachedZero OnCurHPReachedZeroDelegate{};
 	
 };

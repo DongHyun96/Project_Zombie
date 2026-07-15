@@ -137,11 +137,12 @@ bool UC_StatComponentBase::SetStat(const FName& _StatName, float _Value)
 	if (!pTargetStatValue) return false;
 	
 	*pTargetStatValue = _Value;
-	return true;
+
+	// CurHP Set인 경우, CurHP 0을 찍었으면 Delegate 호출 처리
+	if (_StatName == TEXT("CurHP") && *pTargetStatValue == 0.f)
+		OnCurHPReachedZeroDelegate.Broadcast();
 	
-	/*// 체력 Stat 업데이트의 경우 Delegate 호출 -> 
-	if (_StatName == TEXT("CurHP"))
-		m_OnTakeDamage.Broadcast(this);*/
+	return true;
 }
 
 bool UC_StatComponentBase::IncreaseStat(const FName& _StatName, float _IncreaseAmount)
@@ -163,13 +164,18 @@ bool UC_StatComponentBase::DecreaseStat(const FName& _StatName, float _DecreaseA
 	if (!pTargetStatValue) return false;
 
 	*pTargetStatValue = FMath::Max(0.f, *pTargetStatValue - _DecreaseAmount); // 음수값 방지
+
+	// CurHP Set인 경우, CurHP 0을 찍었으면 Delegate 호출 처리
+	if (_StatName == TEXT("CurHP") && *pTargetStatValue <= 0.f)
+		OnCurHPReachedZeroDelegate.Broadcast();
+	
 	return true;
 }
 
 bool UC_StatComponentBase::SetCurHP(float _HP)
 {
 	if (_HP > GetStat("CurMaxHP")) return false; // 음수 체크는 SetStat에서 처리됨
-	return SetStat(TEXT("CurHP"), _HP);
+	return SetStat(TEXT("CurHP"), _HP); // SetStat에 OnHealthReachedZeroDelegate 호출처리도 포함되어 있음
 }
 
 bool UC_StatComponentBase::IncreaseCurHP(float _IncreaseAmount)
@@ -188,6 +194,9 @@ bool UC_StatComponentBase::DecreaseCurHP(float _DecreaseAmount)
 
 	float* pCurHP = m_Stats.Find(TEXT("CurHP"));
 	*pCurHP       = FMath::Max(0.f, *pCurHP - _DecreaseAmount);
+
+	// CurHP 0을 찍었으면 Delegate 호출 처리
+	if (*pCurHP == 0.f) OnCurHPReachedZeroDelegate.Broadcast();
 	
 	return true;
 }

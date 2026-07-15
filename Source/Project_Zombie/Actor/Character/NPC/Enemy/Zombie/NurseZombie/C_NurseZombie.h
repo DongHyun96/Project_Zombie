@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "C_Zombie.h"
+#include "Actor/Character/NPC/Enemy/Zombie/C_Zombie.h"
 #include "C_NurseZombie.generated.h"
 
 UCLASS()
@@ -22,4 +22,10 @@ protected:
 public:
 	
 	virtual void Tick(float DeltaTime) override;
+
+protected:
+
+	UPROPERTY(EditAnywhere)
+	TArray<AC_BasicEnemy*> m_HealTargets{};
+	
 };

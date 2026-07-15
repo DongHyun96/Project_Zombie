@@ -50,7 +50,7 @@ bool UC_TurnInPlaceComponent::StartTurnInPlaceMotion(float _YawRotDelta)
 	// 이미 해당 Animation 을 재생중인 상황 (Addit group으로 체크함)
 	if (m_OwnerPlayer->GetMesh()->GetAnimInstance()->Montage_IsPlaying(TurnInPlaceMontagesToPlay[1])) return false;
 
-	// Default full body + Addit Lower body TurnInPlace 재생 처리
+	// Default full body + Addit Lower body TurnInPlace 재생 처리 -> TODO : HandState Gun (다리만 재생처리할 것)
 	for (UAnimMontage* Montage : TurnInPlaceMontagesToPlay)
 		m_OwnerPlayer->PlayAnimMontage(Montage);
 	
