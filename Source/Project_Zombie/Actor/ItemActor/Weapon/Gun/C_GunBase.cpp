@@ -10,6 +10,7 @@
 #include "../WeaponComponent/GunComponent/C_GunDataTableComponent.h"
 #include "Actor/Character/NPC/Enemy/C_BasicEnemy.h"
 
+#include "Components/SphereComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 
@@ -25,8 +26,11 @@ AC_GunBase::AC_GunBase()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
+	m_Collision = CreateDefaultSubobject<USphereComponent>(TEXT("Collision"));
+	RootComponent = m_Collision;
+
 	m_WeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
-	RootComponent = m_WeaponMesh;
+	m_WeaponMesh->SetupAttachment(RootComponent);
 
 	m_DataCom = CreateDefaultSubobject<UC_GunDataTableComponent>(TEXT("DataComponent"));
 }
@@ -165,7 +169,7 @@ void AC_GunBase::ProcessLineTraceDamage(float DamageVal)
 	{
 		FVector StartLocation = m_WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
 		FVector ForwardDirection = m_WeaponMesh->GetSocketRotation(TEXT("MuzzleFlash")).Vector();
-		FVector MaxEndLocation = StartLocation + (ForwardDirection * 500.0f);
+		FVector MaxEndLocation = StartLocation + (ForwardDirection * 5000.0f);
 
 		FHitResult HitResult;
 		FCollisionQueryParams QueryParams;

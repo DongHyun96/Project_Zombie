@@ -35,57 +35,101 @@ void UC_BasicPlayerAimComponent::BeginPlay()
 
 }
 
-void UC_BasicPlayerAimComponent::OnAimPressed()
+void UC_BasicPlayerAimComponent::OnAimPressed(EAimState TargetState)
 {
 	bIsAiming = true;
 	bIsTransitioningCamera = true;
+	m_CurAimState = TargetState;
 }
 
 void UC_BasicPlayerAimComponent::OnAimReleased()
 {
 	bIsAiming = false;
 	bIsTransitioningCamera = true;
+	m_CurAimState = EAimState::None;
 }
 
 void UC_BasicPlayerAimComponent::UpdateCameraInterpolation(float DeltaTime)
 {
+	if (!m_CurPlayer) return;
+
+	APlayerController* PC = Cast<APlayerController>(m_CurPlayer->GetController());
+	if (!PC) return;
 
 	AC_GunBase* GunBase = Cast<AC_GunBase>(m_CurPlayer->GetEquippedComponent()->GetCurWeapon());
 
-	// 무기 데이터 체크
 	if (!GunBase)
 	{
+		if (m_CurAimState != EAimState::None)
+		{
+			PC->SetViewTargetWithBlend(m_CurPlayer, 0.15f);
+			m_CurAimState = EAimState::None;
+		}
 		bIsTransitioningCamera = false;
 		return;
 	}
 
-	if (bIsAiming)
-	{
-		m_RuntimeTargetFOV = m_AimFOV;        // BP에서 적은 60.f
-		m_RuntimeTargetOffset = m_AimOffset;  // BP에서 적은 오프셋
-	}
-	else
-	{
-		m_RuntimeTargetFOV = BaseFOV;         // BeginPlay 때 백업한 FOV (90)
-		m_RuntimeTargetOffset = BaseCameraOffset; // 백업한 순정 오프셋
-	}
-
-	// 0 방지 예외 처리
 	if (m_AimSpeed <= 0.f) m_AimSpeed = 10.f;
+	float BlendInTime = 1.f / m_AimSpeed;
 
-	//  선형 보간
-	m_CurPlayer->GetCamera()->FieldOfView = FMath::FInterpTo(m_CurPlayer->GetCamera()->FieldOfView, m_RuntimeTargetFOV, DeltaTime, m_AimSpeed);
-	m_CurPlayer->GetSpringArm()->SocketOffset = FMath::VInterpTo(m_CurPlayer->GetSpringArm()->SocketOffset, m_RuntimeTargetOffset, DeltaTime, m_AimSpeed);
-
-	// 도달했는지 체크
-	bool bFOVFinished = FMath::IsNearlyEqual(m_CurPlayer->GetCamera()->FieldOfView, m_RuntimeTargetFOV, 0.1f);
-	bool bOffsetFinished = m_CurPlayer->GetSpringArm()->SocketOffset.Equals(m_RuntimeTargetOffset, 0.5f);
-
-	if (bFOVFinished && bOffsetFinished)
+	// [1] 상태가 변한 첫 프레임에만 목적지 설정 및 시점 전환
+	if (bIsTransitioningCamera)
 	{
-		// 최종 고정 및 틱 종료
-		m_CurPlayer->SetCameraFOV(m_RuntimeTargetFOV);
-		m_CurPlayer->SetSpringArmSocketOffset(m_RuntimeTargetOffset);
-		bIsTransitioningCamera = false;
+		if (bIsAiming)
+		{
+			if (m_CurAimState == EAimState::ADS)
+			{
+				PC->SetViewTargetWithBlend(GunBase, BlendInTime, EViewTargetBlendFunction::VTBlend_Cubic);
+				bIsTransitioningCamera = false;
+				return;
+			}
+			else if (m_CurAimState == EAimState::Shoulder)
+			{
+				// [견착] 플레이어 본인 시점인지 확인 후 목적지 설정 (스위치는 끄지 않음!)
+				if (PC->GetViewTarget() != m_CurPlayer)
+				{
+					PC->SetViewTargetWithBlend(m_CurPlayer, BlendInTime, EViewTargetBlendFunction::VTBlend_Cubic);
+				}
+				m_RuntimeTargetFOV = m_AimFOV;
+				m_RuntimeTargetOffset = m_AimOffset;
+			}
+		}
+		else
+		{
+			// [조준 해제] 원래 캐릭터 시점으로 복귀 명령 및 순정 수치 목적지 설정
+			if (PC->GetViewTarget() != m_CurPlayer)
+			{
+				PC->SetViewTargetWithBlend(m_CurPlayer, BlendInTime, EViewTargetBlendFunction::VTBlend_Cubic);
+			}
+			m_RuntimeTargetFOV = BaseFOV;
+			m_RuntimeTargetOffset = BaseCameraOffset;
+		}
+	}
+
+	// ADS 상태로 조준 중일 때는 메인 카메라 보간 연산을 아예 수행하지 않음
+	if (m_CurAimState == EAimState::ADS && bIsAiming)
+	{
+		return;
+	}
+
+	// [2] 원래 잘 작동하던 부드러운 카메라 보간 및 도달 체크 (처음 올려주신 순정 로직)
+	UCameraComponent* PlayerCam = m_CurPlayer->GetCamera();
+	USpringArmComponent* SpringArm = m_CurPlayer->GetSpringArm();
+
+	if (PlayerCam && SpringArm)
+	{
+		PlayerCam->FieldOfView = FMath::FInterpTo(PlayerCam->FieldOfView, m_RuntimeTargetFOV, DeltaTime, m_AimSpeed);
+		SpringArm->SocketOffset = FMath::VInterpTo(SpringArm->SocketOffset, m_RuntimeTargetOffset, DeltaTime, m_AimSpeed);
+
+		bool bFOVFinished = FMath::IsNearlyEqual(PlayerCam->FieldOfView, m_RuntimeTargetFOV, 0.1f);
+		bool bOffsetFinished = SpringArm->SocketOffset.Equals(m_RuntimeTargetOffset, 0.5f);
+
+		// 목적지에 도달했을 때만 안전하게 트랜지션 스위치를 끕니다.
+		if (bFOVFinished && bOffsetFinished)
+		{
+			m_CurPlayer->SetCameraFOV(m_RuntimeTargetFOV);
+			m_CurPlayer->SetSpringArmSocketOffset(m_RuntimeTargetOffset);
+			bIsTransitioningCamera = false;
+		}
 	}
 }

@@ -110,14 +110,14 @@ void UC_ControllerFSMComponent::HandleFSMTransition()
 void UC_ControllerFSMComponent::HandleFSMStates()
 {
 
-	// 현재 플레이어가 조준(견착) 중이라면, 어떤 상태든 관계없이 컨트롤러 회전 동기화
-	if (m_OwnerPlayer->GetAimComponent() && m_OwnerPlayer->GetAimComponent()->IsAiming())
-	{
-		m_OwnerPlayer->bUseControllerRotationYaw = true;  // 캐릭터가 카메라 방향을 정면으로 바라봄
-		m_PlayerMovement->bUseControllerDesiredRotation = false;
-		m_PlayerMovement->bOrientRotationToMovement = false; // 이동 방향으로 캐릭터가 돌지 않음
-		return; // 조준 중일 때는 아래 일반 상태 설정을 무시하고 리턴
-	}
+	//// 현재 플레이어가 조준(견착) 중이라면, 어떤 상태든 관계없이 컨트롤러 회전 동기화
+	//if (m_OwnerPlayer->GetAimComponent() && m_OwnerPlayer->GetAimComponent()->IsAiming())
+	//{
+	//	m_OwnerPlayer->bUseControllerRotationYaw = true;  // 캐릭터가 카메라 방향을 정면으로 바라봄
+	//	m_PlayerMovement->bUseControllerDesiredRotation = false;
+	//	m_PlayerMovement->bOrientRotationToMovement = false; // 이동 방향으로 캐릭터가 돌지 않음
+	//	return; // 조준 중일 때는 아래 일반 상태 설정을 무시하고 리턴
+	//}
 
 	switch (m_PlayerControllerRotState)
 	{

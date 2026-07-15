@@ -27,6 +27,9 @@ class PROJECT_ZOMBIE_API AC_GunBase : public AC_WeaponBase
 	GENERATED_BODY()
 
 protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Component")
+	class USphereComponent* m_Collision;
+
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Mesh", meta = (AllowPrivateAccess = "true"))
 	class USkeletalMeshComponent* m_WeaponMesh;
 

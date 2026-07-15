@@ -12,7 +12,7 @@ enum class EAimState : uint8
 {
 	None,       // 일반 지향 사격 시점
 	Shoulder,   // 견착 시점(우클릭 홀드)
-	ADS         // 정조준 시점 (우클릭 딸깍 - 아이언 사이트 / 배율 스코프)
+	ADS         // 정조준 시점 (우클릭 한번 - 아이언 사이트 / 배율 스코프)
 };
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -49,6 +49,7 @@ protected:
 private:
 	float m_RuntimeTargetFOV;
 	FVector m_RuntimeTargetOffset;
+	EAimState m_CurAimState = EAimState::None;
 
 protected:
 	virtual void BeginPlay() override;
@@ -58,7 +59,7 @@ public:
 
 public:
 	// 조준 입력 시 호출될 함수
-	void OnAimPressed();
+	void OnAimPressed(EAimState TargetState);
 	void OnAimReleased();
 
 	// 매 프레임 카메라 시점을 에임으로 구동할 함수
