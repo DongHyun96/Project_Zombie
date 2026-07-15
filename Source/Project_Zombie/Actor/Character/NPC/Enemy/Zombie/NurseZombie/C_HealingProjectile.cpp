@@ -48,6 +48,8 @@ void AC_HealingProjectile::BeginPlay()
 
 	m_MainCollider->OnComponentHit.AddDynamic(this, &AC_HealingProjectile::OnMainColliderHit);
 	m_MainCollider->OnComponentBeginOverlap.AddDynamic(this, &AC_HealingProjectile::OnMainColliderBeginOverlap);
+
+	m_ProjectileMovement->HomingAccelerationMagnitude = m_Speed * m_HomingAccFactor;
 	
 	Deactivate();
 }

@@ -88,6 +88,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	float m_Speed{};
 	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	float m_HomingAccFactor = 10.f; // HomingAccMagnitude 수치 조정 시, Speed 배수 값	
+	
 protected:
 	
 	UPROPERTY(EditDefaultsOnly, DisplayName = "MainCollider")
