@@ -99,6 +99,7 @@ bool AC_HealingProjectile::Fire
 	
 	
 	m_MainCollider->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	UC_Util::Print("Fire succeeded", FColor::Red, 10.f);
 	return true;
 }
 
@@ -130,7 +131,7 @@ void AC_HealingProjectile::Deactivate()
 	m_NiagaraComponent->Deactivate();
 }
 
-void AC_HealingProjectile::OnHealTargetDead()
+void AC_HealingProjectile::OnHealTargetDead(AC_BasicCharacter* _DeadCharacter)
 {
 	// 해당하는 HealTarget이 이미 사망한 경우, 그리고 이 HealingProjectile이 아직 살아있는 경우 다시 Pool로 돌아가는 처리
 	if (m_bActive)

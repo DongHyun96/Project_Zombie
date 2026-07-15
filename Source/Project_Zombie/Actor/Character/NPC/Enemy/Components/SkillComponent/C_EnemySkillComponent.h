@@ -54,6 +54,11 @@ class PROJECT_ZOMBIE_API UC_EnemySkillComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
+private:
+	
+	UPROPERTY()
+	class AC_BasicCharacter* m_OwnerCharacter{}; // 이 SkillComponent의 주인 캐릭터 (일단 캐릭터 종류만 Skill 프레임워크를 사용할 수 있다고 판단)
+	
 protected:
 	// 스킬 슬롯
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Skill", meta = (TitleProperty = "SlotType"))
@@ -92,7 +97,18 @@ public:
 	/// <returns></returns>
 	bool IsUsingSkill() const { return bUsingSkill; }
 	void UseSkill(ESkillSlot _Slot);
-	void EndSkill();
+
+	/// <summary>
+	/// AnimNotify_EndSkill을 통해 EndSkill 처리가 되는 함수 
+	/// </summary>
+	void OnAN_EndSkill();
+
+	/// <summary>
+	/// AnimNotify를 통한 EndSkill 처리를 하는 것이 아닌, 수동적으로 EndSkill 호출을 통해 Skill 끝맺음을 처리해아하는 경우
+	/// ex) -> 계속해서 Loop로 힐 주는 Skill 같은 경우, 해당 함수를 통해 EndSkill 처리를 해주어야 한다
+	/// </summary>
+	void EndSkillManually();
+	
 	void Fire();
 
 	float GetSkillRange(ESkillSlot _Slot) const;

@@ -7,7 +7,9 @@
 #include "C_StatComponentBase.generated.h"
 
 
-DECLARE_MULTICAST_DELEGATE(FOnHealthReachedZero);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnCurHPReachedZero, class AC_BasicCharacter*);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnCurHPReachedFull, AC_BasicCharacter*);
+
 
 /*USTRUCT(BlueprintType)
 struct FStatInfo
@@ -62,7 +64,7 @@ protected:
 public:
 
 	void AddStat(const FName& _StatName, float _Amount);
-	float GetStat(const FName& _StatName);
+	float GetStat(const FName& _StatName) const;
 
 public: /* 범용적으로 사용 가능한 Stat 처리 관련 함수 */
 
@@ -85,6 +87,7 @@ public: /* 공용 Stat 처리 함수 */
 	
 	bool SetCurHP(float _HP);
 	float GetCurHP() const { return m_Stats[TEXT("CurHP")]; }
+	float GetCurHPRatio() const;
 	
 	bool IncreaseCurHP(float _IncreaseAmount);
 	bool DecreaseCurHP(float _DecreaseAmount);
@@ -113,6 +116,11 @@ private:
 	/// 자식 StatComponent쪽에서 더 추가할 Stat 내용이 있다면 해당 함수 override하여 추가할 것
 	/// </summary>
 	virtual void InitAdditionalStat();
+
+private:
+	
+	UPROPERTY()
+	class AC_BasicCharacter* m_OwnerCharacter{}; // 이 StatComponent를 소유한 OwnerCharacter 
 	
 protected:
 	
@@ -131,6 +139,8 @@ protected:
 public:
 
 	// CurHP 가 모두 소진되었을 때 호출받을 Delegate
-	FOnHealthReachedZero OnCurHPReachedZeroDelegate{};
+	FOnCurHPReachedZero OnCurHPReachedZeroDelegate{};
 	
+	// CurHP가 100% 회복되었을 때 호출받을 Delegate ( ex) Healer 좀비에서 해당 Delegate 사용 -> 더 이상 힐을 줄 필요가 없다고 판단될 때 쓰임)
+	FOnCurHPReachedFull OnCurHPReachedFullDelegate{};
 };

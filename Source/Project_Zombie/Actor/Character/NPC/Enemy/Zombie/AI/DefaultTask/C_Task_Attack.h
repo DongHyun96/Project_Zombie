@@ -16,8 +16,12 @@ protected:
 	FBlackboardKeySelector	m_Target;
 
 public:
+	
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& _OwnCom, uint8* _NodeMemory) override;
-	virtual void TickTask(UBehaviorTreeComponent& _OwnCom, uint8* _NodeMemory, float _DeltaSeconds);
+	
+protected:
+	
+	virtual void TickTask(UBehaviorTreeComponent& _OwnCom, uint8* _NodeMemory, float _DeltaSeconds) override;
 
 public:
 	UC_Task_Attack();

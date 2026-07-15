@@ -46,7 +46,7 @@ void UC_ZombieAnimInstance::AnimNotify_SkillEnd()
 
 	if (m_Zombie)
 	{
-		m_Zombie->GetSkillComponent()->EndSkill();
+		m_Zombie->GetSkillComponent()->OnAN_EndSkill();
 	}
 }
 

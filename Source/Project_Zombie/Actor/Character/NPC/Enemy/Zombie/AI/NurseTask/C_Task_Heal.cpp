@@ -1,0 +1,67 @@
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "C_Task_Heal.h"
+
+#include "AIController.h"
+#include "Actor/Character/NPC/Enemy/Components/SkillComponent/C_EnemySkillComponent.h"
+#include "Actor/Character/NPC/Enemy/Zombie/Controller/C_ZombieController.h"
+#include "Actor/Character/NPC/Enemy/Zombie/NurseZombie/C_NurseZombie.h"
+#include "GameModeAndManager/C_ZombieManager.h"
+#include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
+
+UC_Task_Heal::UC_Task_Heal()
+{
+	bCreateNodeInstance = false;
+	m_SkillSlot = ESkillSlot::Skill_2; // Nurse의 경우 SkillComponent의 Slot 2번이 힐 스킬로 설정되어 있음
+	
+	bNotifyTick = true;
+}
+
+EBTNodeResult::Type UC_Task_Heal::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
+{
+	// TickTask에서 시간 재는 Timer 노드 메모리 초기화
+	*reinterpret_cast<float*>(NodeMemory) = 0.f;
+	
+	// 부모의 ExecuteTask(Skill Execute 처리) 처리
+	return Super::ExecuteTask(OwnerComp, NodeMemory);
+}
+
+void UC_Task_Heal::TickTask(UBehaviorTreeComponent& _OwnCom, uint8* _NodeMemory, float _DeltaSeconds)
+{
+	Super::TickTask(_OwnCom, _NodeMemory, _DeltaSeconds);
+	
+	static const float HEAL_PROJECTILE_SPAWN_INTERVAL = 1.5f;
+
+	AC_NurseZombie* Nurse = Cast<AC_NurseZombie>(_OwnCom.GetAIOwner()->GetPawn());
+	if (!Nurse)
+	{
+		OnSkillEnd(Nurse, &_OwnCom);
+		return;
+	}
+
+	// 더 이상 힐을 줄 Target이 존재하지 않음
+	if (Nurse->GetHealTargets().IsEmpty())
+	{
+		OnSkillEnd(Nurse, &_OwnCom);
+		return;
+	}
+	
+	float* ProjectileSpawnIntervalTimer  = reinterpret_cast<float*>(_NodeMemory);
+	*ProjectileSpawnIntervalTimer       += _DeltaSeconds;
+
+	// Projectile 스폰 시간 다 됨 -> Target들에게 힐 Projectile 보내기
+	if (*ProjectileSpawnIntervalTimer > HEAL_PROJECTILE_SPAWN_INTERVAL)
+	{
+		*ProjectileSpawnIntervalTimer -= HEAL_PROJECTILE_SPAWN_INTERVAL;
+		
+		for (AC_BasicEnemy* HealTarget : Nurse->GetHealTargets())
+		{
+			// 발사 Direction 설정
+			const FVector ToTargetDir    = (HealTarget->GetActorLocation() - Nurse->GetActorLocation()).GetSafeNormal();
+			const FVector LaunchDirection = (FVector::UnitZ() + ToTargetDir).GetSafeNormal();
+			
+			ZOMBIE_MANAGER->SpawnHealingProjectile(Nurse->GetActorLocation() + FVector::UnitZ() * 100.f, LaunchDirection, Nurse, HealTarget, 30.f);
+		}
+	}
+}

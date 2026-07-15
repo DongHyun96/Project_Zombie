@@ -40,7 +40,7 @@ private:
 	void Deactivate();
 
 	UFUNCTION()
-	void OnHealTargetDead();
+	void OnHealTargetDead(class AC_BasicCharacter* _DeadCharacter);
 	
 public:
 	

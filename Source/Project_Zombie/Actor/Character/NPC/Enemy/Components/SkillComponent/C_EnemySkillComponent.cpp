@@ -32,6 +32,14 @@ void UC_EnemySkillComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// 주인 캐릭터 초기화
+	m_OwnerCharacter = Cast<AC_BasicCharacter>(GetOwner());
+	if (!m_OwnerCharacter)
+	{
+		// 캐릭터 Base인 객체만 일단 Skill 프레임워크를 사용할 수 있다고 가정
+		UC_Util::Print("From UC_EnemySkillComponent::BeginPlay : Pleash attach SkillComponent to Character based class!", FColor::Red, 10.f);
+	}
+	
 	InitializeSkills();
 }
 
@@ -91,9 +99,9 @@ void UC_EnemySkillComponent::UseSkill(ESkillSlot _Slot)
 	Info.SkillInstance->Activate(Owner, Info.LoadedSkillData);
 }
 
-void UC_EnemySkillComponent::EndSkill()
+void UC_EnemySkillComponent::OnAN_EndSkill()
 {
-	UE_LOG(LogTemp, Warning, TEXT("EndSkill"));
+	UE_LOG(LogTemp, Warning, TEXT("OnAN_EndSkill"));
 
 	bUsingSkill = false;
 
@@ -101,6 +109,21 @@ void UC_EnemySkillComponent::EndSkill()
 
 	m_CurSkillData = nullptr;
 
+}
+
+void UC_EnemySkillComponent::EndSkillManually()
+{
+	UE_LOG(LogTemp, Warning, TEXT("EndSkillManually"));
+	
+	bUsingSkill = false;
+	m_SkillEndDelegate.Broadcast(Cast<AC_BasicEnemy>(GetOwner()));
+	
+	// AnimNotify를 통해(AnimMontage 종료시점을 통해) 호출된 것이 아니기 때문에 Montage 모션을 직접 Stop 시켜주어야 한다.
+	// 현재 Skill이 Valid하고, 해당 Skill의 모션이 끝나지 않았다면 끊어줌
+	if (m_CurSkillData && m_OwnerCharacter->GetMesh()->GetAnimInstance()->Montage_IsPlaying(m_CurSkillData->Montage))
+		m_OwnerCharacter->StopAnimMontage(m_CurSkillData->Montage);
+	
+	m_CurSkillData = nullptr;
 }
 
 void UC_EnemySkillComponent::Fire()
@@ -113,7 +136,6 @@ void UC_EnemySkillComponent::Fire()
 		if (Info.LoadedSkillData == m_CurSkillData)
 		{
 			Info.SkillInstance->Fire(Cast<AC_BasicEnemy>(GetOwner()), Info.LoadedSkillData);
-			
 			return;
 		}
 	}

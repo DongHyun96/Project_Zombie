@@ -29,7 +29,8 @@ UC_ZombieManager::UC_ZombieManager()
 void UC_ZombieManager::OnWorldBeginPlay()
 {
 	// TODO : 실질적인 Object pooling 해두기
-	
+
+	// HealingProjectile Pooling 처리
 	if (m_HealingProjectileClass)
 	{
 		for (int i = 0; i < 10; ++i)

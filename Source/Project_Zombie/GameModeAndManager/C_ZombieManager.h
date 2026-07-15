@@ -47,8 +47,13 @@ public: /* Spawn 관련 함수들 */
 	/// <param name="_HealingProjectile"> : 대상 </param>
 	/// <returns> : 제대로 Pool로 돌아가지 못했다면 return false </returns>
 	bool ReturnHealingProjectileToPool(class AC_HealingProjectile* _HealingProjectile);
+
+	// TODO : 이 함수 테스트 때문에 넣어둠 지워버릴 것
+	void AddNurseZombieToActivePool(AC_NurseZombie* _NurseZombie) { m_ActiveNurseZombies.Add(_NurseZombie); }
 	
-protected:
+	const TSet<AC_NurseZombie*>& GetActiveNurseZombies() const { return m_ActiveNurseZombies; }
+	
+protected: /* 좀비 스폰 기반 클래스 정보 및 PoolCount 정보 -> TODO : ZombieManager 블루프린트에 해당값 초기화시킬 것 */
 
 	// 스폰시킬 좀비 클래스들
 	UPROPERTY(EditDefaultsOnly, Category = "Zombie")
@@ -57,8 +62,20 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Zombie")
 	TMap<EZombieType, uint32> m_PoolCounts{};
 
-protected: /* Healer 좀비 Healing Projectile 관련 */
+private:
 
+	// 스폰 대기중인 Active하지 않은 Zombie Pool -> Active한 좀비 Type들을 파악해야 하는 경우, 
+	// Active한 좀비들은 따로 Container 만들어두기
+	TMap<EZombieType, TArray<AC_Zombie*>> m_ZombiePool{}; 
+	
+protected: /* Healer 좀비 관련 */
+
+	// 현재 스폰되어 레벨에 살아서 돌아다니는 Nurse 좀비들
+	UPROPERTY(VisibleAnywhere)
+	TSet<AC_NurseZombie*> m_ActiveNurseZombies{};
+	
+	/* Healer 좀비가 사용할 Healing Projectile pooling 관련 */
+	
 	UPROPERTY(EditDefaultsOnly, Category = "Zombie", DisplayName = "HealingProjectileClass")
 	TSubclassOf<AC_HealingProjectile> m_HealingProjectileClass{};
 
