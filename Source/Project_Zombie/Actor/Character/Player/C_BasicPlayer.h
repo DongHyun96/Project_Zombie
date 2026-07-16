@@ -343,8 +343,15 @@ public:
 	UFUNCTION(Server, Reliable)
 	void Server_CancelDragItemSlot(int32 SlotIndex, UC_InvenComponent* InteractedInven);
 	
+	// TODO : Test 함수.
+	//UFUNCTION(Server, Reliable)
+	//void Server_StartDragItem(UC_InvenComponent* InvenComp, int32 SlotIndex);
+	
 protected:
 	virtual void BeginPlay() override;
+	
+	//
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 public:
 	USpringArmComponent* GetSpringArm() { return m_SpringArm; }

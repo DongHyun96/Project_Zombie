@@ -25,6 +25,7 @@
 
 #include "GameFramework/PlayerState.h"
 #include "Actor/Components/C_PlayerStatComponent.h"
+#include "Controller/C_BasicPlayerController.h"
 #include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 #include "GameModeAndManager/C_UIManager.h"
 
@@ -108,7 +109,6 @@ AC_BasicPlayer::AC_BasicPlayer()
 	
 }
 
-
 void AC_BasicPlayer::BeginPlay()
 {
 	Super::BeginPlay();
@@ -133,6 +133,14 @@ void AC_BasicPlayer::BeginPlay()
 	
 	// 입력 시스템 초기화
 	//InitInput();
+}
+
+void AC_BasicPlayer::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	Super::EndPlay(EndPlayReason);
+	
+	// 팅기거나 접속을 종료하면 드래그하고 있던 아이템 잠금 해제.
+	Server_CancelDragItemSlot(curDraggedItem.SourceSlotIndex, curDraggedItem.SourceInvenComp);
 }
 
 void AC_BasicPlayer::Tick(float DeltaTime)
@@ -192,6 +200,7 @@ bool AC_BasicPlayer::SetCurDraggedItem(struct FInventoryEntry InEntry, UC_InvenC
 
 void AC_BasicPlayer::ClearCurDraggedItem()
 {
+	// 해당 슬롯의 아이템의 잠금 상태를 해제 요청.
 	Server_CancelDragItemSlot(curDraggedItem.SourceSlotIndex, curDraggedItem.SourceInvenComp);
 	
 	curDraggedItem.Clear();
@@ -433,10 +442,12 @@ void AC_BasicPlayer::Server_RequestMoveItem_Implementation(UC_InvenComponent* Sr
 
 void AC_BasicPlayer::Server_RequestDragItemSlot_Implementation(int32 SlotIndex, UC_InvenComponent* InteractedInven)
 {
-	APlayerController* pPC = Cast<APlayerController>( GetController());
+	AC_BasicPlayerController* pPC = Cast<AC_BasicPlayerController>( GetController());
 	
 	if (!pPC) return;
 	
+	pPC->Server_ActiveDraggedInven = InteractedInven;
+	pPC->Server_ActiveDraggedSlotIndex = SlotIndex;
 	InteractedInven->StartDragItemSlot(SlotIndex, pPC->GetPlayerState<APlayerState>()->GetPlayerId()); 
 }
 
