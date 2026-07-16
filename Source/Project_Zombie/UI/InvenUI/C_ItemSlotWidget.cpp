@@ -71,6 +71,7 @@ void UC_ItemSlotWidget::NativeOnDragDetected(const FGeometry& InGeometry, const 
     
     if (!Owner) return;
     
+    // 서버에 아이템 드래그 요청
     Owner->Server_RequestDragItemSlot(curSlotIdx, AssociatedInvenComp); // 창고에 있는 아이템의 PlayerID를 건드려야함.
     
     const TArray<FInventoryEntry>& ItemArr = AssociatedInvenComp->GetInventoryItems();
