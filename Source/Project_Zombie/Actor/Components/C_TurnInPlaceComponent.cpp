@@ -54,6 +54,7 @@ bool UC_TurnInPlaceComponent::StartTurnInPlaceMotion(float _YawRotDelta)
 	// Default full body + Addit Lower body TurnInPlace 재생 처리
 	if (m_OwnerPlayer->GetAimComponent()->IsAiming())
 	{
+		UC_Util::Print("asdfjhdasfkjhsda", FColor::Red, 10.f);
 		m_OwnerPlayer->PlayAnimMontage(TurnInPlaceMontagesToPlay[1]);
 	}
 	else
