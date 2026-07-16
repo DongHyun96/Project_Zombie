@@ -12,6 +12,10 @@
 class AC_FireDamageArea;
 class AC_BasicPlayer;
 
+class USplineComponent;
+class USplineMeshComponent;
+class UStaticMeshComponent;
+
 UENUM(BlueprintType)
 enum class EThrowableType : uint8
 {
@@ -189,6 +193,21 @@ private: // 타이머 관련
 	/// </summary>
 	void OnFuseTimerFinished();
 
+
+private: // 예상 경로 표시 관련
+
+	/// <summary>
+	/// 현재 조준 방향을 기준으로 예상 경로 계산하고 표시
+	/// </summary>
+	void UpdatePredictedPath();
+
+
+	/// <summary>
+	/// 표시된 예상 경로와 충돌 위치 표시 제거
+	/// </summary>
+	void ClearPredictedPath();
+
+
 	/* Socket Name 관련 */
 protected: 
 
@@ -332,6 +351,37 @@ protected:
 	// 충돌 시 충돌 정보 저장
 	// 벽에 충돌했을때 장판이 생성되는 위치를 결정하기 위해 사용
 	FHitResult m_HitResult;
+
+protected: // 예상 투척 경로
+
+	// 예상 경로의 위치들을 저장
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Throwable|Predicted Path")
+	USplineComponent* m_PathSpline;
+
+	// 예상 경로가 끝나는 위치를 표시
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Throwable|Predicted Path")
+	UStaticMeshComponent* m_PredictedEndPoint;
+
+	// 예상 경로를 표시할 Mesh
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Throwable|Predicted Path")
+	UStaticMesh* m_PredictedPathMesh;
+
+	// 예상 경로를 몇 초 동안 계산할지 결정
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Throwable|Predicted Path")
+	float m_PredictedPatchMaxTime;
+
+	// 예상 경로를 1 초 동안 몇번 계산할지 결정
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Throwable|Predicted Path")
+	float m_PredictedPatchSimFrequency;
+
+	// 예상 경로를 계산할 때 사용할 Trace Channel
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Throwable|Predicted Path")
+	TEnumAsByte<ECollisionChannel> m_PredictedPatchTraceChannel;
+
+
+	// 예상 경로를 표시할 Mesh들을 배열에 저장
+	UPROPERTY(Transient)
+	TArray<USplineMeshComponent*> m_PredictedPathMeshes;
 
 private:
 
