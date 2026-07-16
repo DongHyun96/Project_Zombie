@@ -30,10 +30,14 @@ public:
 		AController*		_EventInstigator,
 		AActor*				_DamageCauser
 	) override;
+
+public:
+	
+	class UC_StatComponentBase* GetStatComponent() const { return m_StatComponent; }
 	
 protected:
 
 	// Player 및 Enemy 생성자에서 자기자신에게 맞는 StatComponent 생성 처리 중
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (DisplayName = "StatComponent"))
-	class UC_StatComponentBase* m_StatComponent{};
+	UC_StatComponentBase* m_StatComponent{};
 };

@@ -4,6 +4,7 @@
 #include "C_StatComponentBase.h"
 
 #include "GlobalData.h"
+#include "Actor/Character/C_BasicCharacter.h"
 #include "Utility/C_Util.h"
 
 
@@ -42,6 +43,11 @@ void UC_StatComponentBase::PostEditChangeProperty(FPropertyChangedEvent& _Event)
 void UC_StatComponentBase::BeginPlay()
 {
 	Super::BeginPlay();
+
+	m_OwnerCharacter = Cast<AC_BasicCharacter>(GetOwner());
+	if (!m_OwnerCharacter)
+		UC_Util::Print("From UC_StatComponentBase::BeginPlay : Please attach StatComponent to Character based class!", FColor::Red, 10.f);
+	
 	InitStat();
 }
 
@@ -121,9 +127,9 @@ void UC_StatComponentBase::AddStat(const FName& _StatName, float _Amount)
 	m_Stats.Add(_StatName, _Amount);
 }
 
-float UC_StatComponentBase::GetStat(const FName& _StatName)
+float UC_StatComponentBase::GetStat(const FName& _StatName) const
 {
-	if (float* pStatValue = m_Stats.Find(_StatName))
+	if (const float* pStatValue = m_Stats.Find(_StatName))
 		return *pStatValue;
 	
 	return 0.f;
@@ -137,11 +143,15 @@ bool UC_StatComponentBase::SetStat(const FName& _StatName, float _Value)
 	if (!pTargetStatValue) return false;
 	
 	*pTargetStatValue = _Value;
-	return true;
-	
-	/*// 체력 Stat 업데이트의 경우 Delegate 호출 -> 
+
+	// CurHP Set인 경우, Delegate 호출 처리
 	if (_StatName == TEXT("CurHP"))
-		m_OnTakeDamage.Broadcast(this);*/
+	{
+		if (*pTargetStatValue == 0.f)						OnCurHPReachedZeroDelegate.Broadcast(m_OwnerCharacter);
+		else if (*pTargetStatValue >= GetStat("CurMaxHP"))	OnCurHPReachedFullDelegate.Broadcast(m_OwnerCharacter);
+	}
+	
+	return true;
 }
 
 bool UC_StatComponentBase::IncreaseStat(const FName& _StatName, float _IncreaseAmount)
@@ -152,6 +162,11 @@ bool UC_StatComponentBase::IncreaseStat(const FName& _StatName, float _IncreaseA
 	if (!pTargetStatValue) return false;
 	
 	*pTargetStatValue += _IncreaseAmount;
+
+	// CurHP Set인 경우, CurHP Full을 찍었으면 Delegate 호출 처리 
+	if (_StatName == TEXT("CurHP") && *pTargetStatValue >= GetStat("CurMaxHP"))
+		OnCurHPReachedFullDelegate.Broadcast(m_OwnerCharacter);
+	
 	return true;
 }
 
@@ -163,21 +178,47 @@ bool UC_StatComponentBase::DecreaseStat(const FName& _StatName, float _DecreaseA
 	if (!pTargetStatValue) return false;
 
 	*pTargetStatValue = FMath::Max(0.f, *pTargetStatValue - _DecreaseAmount); // 음수값 방지
+
+	// CurHP Set인 경우, CurHP 0을 찍었으면 Delegate 호출 처리
+	if (_StatName == TEXT("CurHP") && *pTargetStatValue <= 0.f)
+		OnCurHPReachedZeroDelegate.Broadcast(m_OwnerCharacter);
+	
 	return true;
 }
 
 bool UC_StatComponentBase::SetCurHP(float _HP)
 {
 	if (_HP > GetStat("CurMaxHP")) return false; // 음수 체크는 SetStat에서 처리됨
-	return SetStat(TEXT("CurHP"), _HP);
+	return SetStat(TEXT("CurHP"), _HP); // SetStat에 HP Delegate 들 호출부 포함되어 있음
+}
+
+float UC_StatComponentBase::GetCurHPRatio() const
+{
+	const float CurMaxHPAmount = GetStat(TEXT("CurMaxHP"));
+	if (CurMaxHPAmount <= 0.f) // 0 나누기 방지
+	{
+		UC_Util::Print("From UC_StatComponentBase::GetCurHPRatio : Invalid CurMaxHP value", FColor::Red, 10.f);
+		return 0.f;
+	}
+	
+	return GetCurHP() / CurMaxHPAmount;
 }
 
 bool UC_StatComponentBase::IncreaseCurHP(float _IncreaseAmount)
 {
 	if (_IncreaseAmount < 0.f) return false;
+	
+	const float CurMaxHP = GetStat(TEXT("CurMaxHP"));
 
 	float* pCurHP = m_Stats.Find(TEXT("CurHP"));
-	*pCurHP       = FMath::Min(*pCurHP + _IncreaseAmount, GetStat("CurMaxHP"));
+	if (*pCurHP >= CurMaxHP) return false; // 이미 풀피인 상황이면 Increase 처리 x
+
+	*pCurHP = FMath::Min(*pCurHP + _IncreaseAmount, CurMaxHP);
+
+	OnIncreaseCurHPDelegate.Broadcast(m_OwnerCharacter);
+	
+	if (*pCurHP >= GetStat("CurMaxHP")) 
+		OnCurHPReachedFullDelegate.Broadcast(m_OwnerCharacter);
 	
 	return true;
 }
@@ -187,7 +228,11 @@ bool UC_StatComponentBase::DecreaseCurHP(float _DecreaseAmount)
 	if (_DecreaseAmount < 0.f) return false;
 
 	float* pCurHP = m_Stats.Find(TEXT("CurHP"));
-	*pCurHP       = FMath::Max(0.f, *pCurHP - _DecreaseAmount);
+	*pCurHP       = FMath::Max(1.f, *pCurHP - _DecreaseAmount); // TODO : For Testing Max값 0.f로 돌려놓기
+
+	
+	// CurHP 0을 찍었으면 Delegate 호출 처리
+	if (*pCurHP == 0.f) OnCurHPReachedZeroDelegate.Broadcast(m_OwnerCharacter);
 	
 	return true;
 }

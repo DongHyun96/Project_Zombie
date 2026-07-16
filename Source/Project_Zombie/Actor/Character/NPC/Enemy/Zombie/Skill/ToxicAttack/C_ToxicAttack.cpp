@@ -12,11 +12,12 @@ UC_ToxicAttack::UC_ToxicAttack()
 {
 }
 
-void UC_ToxicAttack::Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data)
+bool UC_ToxicAttack::Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data)
 {
 	//UE_LOG(LogTemp, Warning, TEXT("PoisonAttack Activate"));
 
 	_Owner->PlayAnimMontage(_Data->Montage);
+	return true;
 }
 
 void UC_ToxicAttack::Fire(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data)

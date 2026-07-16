@@ -72,6 +72,6 @@ protected:
 	float m_DeltaYaw{};
 
 public:
-	float GetDeltaYaw() { return m_DeltaYaw; }
+	float GetDeltaYaw() const { return m_DeltaYaw; }
 
 };
