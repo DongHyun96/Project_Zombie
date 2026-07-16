@@ -7,6 +7,7 @@
 #include "Actor/Character/NPC/Enemy/Components/SkillComponent/C_EnemySkillComponent.h"
 #include "Actor/Character/NPC/Enemy/Zombie/Controller/C_ZombieController.h"
 #include "Actor/Character/NPC/Enemy/Zombie/NurseZombie/C_NurseZombie.h"
+#include "Chaos/ChaosVDTraceRelayTransport.h"
 #include "GameModeAndManager/C_ZombieManager.h"
 #include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 
@@ -20,11 +21,18 @@ UC_Task_Heal::UC_Task_Heal()
 
 EBTNodeResult::Type UC_Task_Heal::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
+	// Activate Skill 실패
+	if (Super::ExecuteTask(OwnerComp, NodeMemory) == EBTNodeResult::Failed)
+		return EBTNodeResult::Failed;
+
+	// Activate Skill 성공
 	// TickTask에서 시간 재는 Timer 노드 메모리 초기화
 	*reinterpret_cast<float*>(NodeMemory) = 0.f;
 	
-	// 부모의 ExecuteTask(Skill Execute 처리) 처리
-	return Super::ExecuteTask(OwnerComp, NodeMemory);
+	AC_NurseZombie* NurseZombie = Cast<AC_NurseZombie>(OwnerComp.GetAIOwner()->GetPawn());
+	NurseZombie->ToggleHealingAura(true);
+		
+	return EBTNodeResult::InProgress;
 }
 
 void UC_Task_Heal::TickTask(UBehaviorTreeComponent& _OwnCom, uint8* _NodeMemory, float _DeltaSeconds)
@@ -34,16 +42,17 @@ void UC_Task_Heal::TickTask(UBehaviorTreeComponent& _OwnCom, uint8* _NodeMemory,
 	static const float HEAL_PROJECTILE_SPAWN_INTERVAL = 1.5f;
 
 	AC_NurseZombie* Nurse = Cast<AC_NurseZombie>(_OwnCom.GetAIOwner()->GetPawn());
-	if (!Nurse)
+	
+	if (!Nurse) // 여기 애초에 들어오면 안됨
 	{
-		OnSkillEnd(Nurse, &_OwnCom);
+		FinishLatentTask(_OwnCom, EBTNodeResult::Failed);
 		return;
 	}
 
 	// 더 이상 힐을 줄 Target이 존재하지 않음
 	if (Nurse->GetHealTargets().IsEmpty())
 	{
-		OnSkillEnd(Nurse, &_OwnCom);
+		Nurse->GetSkillComponent()->EndSkillManually();
 		return;
 	}
 	

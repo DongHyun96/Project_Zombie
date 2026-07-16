@@ -25,7 +25,7 @@ protected:
 public:
 	void BeginPlay() override;
 	AC_BasicEnemy();
-	
+
 public:
 
 	virtual float TakeDamage
@@ -36,6 +36,10 @@ public:
 		AActor*				_DamageCauser
 	) override;
 
+public:
+	
+	UC_EnemySkillComponent* GetSkillComponent() const { return m_SkillCom; }
+	
 private:
 	
 	void OnHPIncreased(AC_BasicCharacter* _HPIncreasedCharacter);

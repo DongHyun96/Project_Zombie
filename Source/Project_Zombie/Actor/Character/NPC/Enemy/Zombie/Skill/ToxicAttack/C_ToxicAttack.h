@@ -15,7 +15,7 @@ public:
 	/// <summary>
 	/// 스킬 구현함수
 	/// </summary>
-	virtual void Activate(class AC_BasicEnemy* _Owner, class UC_EnemySkillData* _Data) override;
+	virtual bool Activate(class AC_BasicEnemy* _Owner, class UC_EnemySkillData* _Data) override;
 
 	virtual void Fire(class AC_BasicEnemy* _Owner, class UC_EnemySkillData* _Data) override;
 

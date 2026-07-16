@@ -9,15 +9,22 @@
 #include "GameModeAndManager/C_ZombieManager.h"
 #include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 
-void UC_NurseHealing::Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data)
+bool UC_NurseHealing::Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data)
 {
-	if (!_Data->Montage) return;
+	if (!_Data->Montage) return false;
 
+	AC_NurseZombie* Nurse = Cast<AC_NurseZombie>(_Owner); 
+
+	// 힐을 줄 대상이 없음
+	if (Nurse->GetHealTargets().IsEmpty()) return false;
+	
 	const int32 NumSections       = _Data->Montage->CompositeSections.Num();
 	const int32 PickedIdx         = FMath::RandRange(0, NumSections - 1);
 	const FName PickedSectionName = _Data->Montage->GetSectionName(PickedIdx);
 
 	_Owner->PlayAnimMontage(_Data->Montage, 1.f, PickedSectionName);
+	
+	return true;
 }
 
 // TODO : 예외적으로 여기서는 Notify 호출로 인한 처리로 들어오지 않음 -> AnimMontage Section의 길이가 모두 달라서 Loop 시에 Heal 구슬 생성 Timeing이 뒤죽박죽 되어버림

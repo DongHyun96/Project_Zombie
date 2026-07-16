@@ -76,7 +76,7 @@ void AC_BasicEnemy::OnHPIncreased(AC_BasicCharacter* _HPIncreasedCharacter)
 {
 	// 이미 HealedEffect 재생중인 경우
 	if (m_HealedEffectNGComponent->IsActive()) return;
-	m_HealedEffectNGComponent->Activate(true);
+		m_HealedEffectNGComponent->Activate(true);
 }
 
 void AC_BasicEnemy::OnDead(AC_BasicCharacter* _DeadCharacter)

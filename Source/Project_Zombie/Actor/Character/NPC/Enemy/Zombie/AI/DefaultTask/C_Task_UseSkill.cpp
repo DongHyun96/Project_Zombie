@@ -42,13 +42,13 @@ EBTNodeResult::Type UC_Task_UseSkill::ExecuteTask(UBehaviorTreeComponent& _OwnCo
 	if (nullptr == pSkillCom)
 		return EBTNodeResult::Failed;
 
+	// 스킬 사용 시도
+	if (!pSkillCom->UseSkill(m_SkillSlot))
+		return EBTNodeResult::Failed; // 실패 시, 이 Task Failed 처리
+	
+	// 스킬 사용 성공 (Activate 성공)
 	pSkillCom->m_SkillEndDelegate.AddUObject(this, &UC_Task_UseSkill::OnSkillEnd, &_OwnCom);
-
 	UE_LOG(LogTemp, Warning, TEXT("Delegate Add"));
-
-
-	pSkillCom->UseSkill(m_SkillSlot);
-
 
 	return EBTNodeResult::InProgress;
 }

@@ -96,7 +96,9 @@ public:
 	/// </summary>
 	/// <returns></returns>
 	bool IsUsingSkill() const { return bUsingSkill; }
-	void UseSkill(ESkillSlot _Slot);
+
+	/// <returns> : 스킬이 정상적으로 동작했다면 return true </returns>
+	bool UseSkill(ESkillSlot _Slot);
 
 	/// <summary>
 	/// AnimNotify_EndSkill을 통해 EndSkill 처리가 되는 함수 
@@ -104,8 +106,8 @@ public:
 	void OnAN_EndSkill();
 
 	/// <summary>
-	/// AnimNotify를 통한 EndSkill 처리를 하는 것이 아닌, 수동적으로 EndSkill 호출을 통해 Skill 끝맺음을 처리해아하는 경우
-	/// ex) -> 계속해서 Loop로 힐 주는 Skill 같은 경우, 해당 함수를 통해 EndSkill 처리를 해주어야 한다
+	/// <para> AnimNotify를 통한 EndSkill 처리를 하는 것이 아닌, 수동적으로 EndSkill 호출을 통해 Skill 끝맺음을 처리해아하는 경우 </para>
+	/// <para> ex) -> 계속해서 Loop로 힐 주는 Skill 같은 경우, 해당 함수를 통해 EndSkill 처리를 해주어야 한다 </para>
 	/// </summary>
 	void EndSkillManually();
 	

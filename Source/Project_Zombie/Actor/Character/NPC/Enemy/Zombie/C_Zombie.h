@@ -26,9 +26,6 @@ protected:
 protected:
 	virtual void BeginPlay() override;
 
-public:
-	UC_EnemySkillComponent* GetSkillComponent() const { return m_SkillCom; }
-
 public:	
 	virtual void Tick(float DeltaTime) override;
 

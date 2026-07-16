@@ -69,18 +69,15 @@ void UC_EnemySkillComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 
 }
 
-void UC_EnemySkillComponent::UseSkill(ESkillSlot _Slot)
+bool UC_EnemySkillComponent::UseSkill(ESkillSlot _Slot)
 {
-	if (bUsingSkill)
-		return;
+	// 이미 다른 스킬을 사용중일 때
+	if (bUsingSkill) return false;
 	
 	UE_LOG(LogTemp, Warning, TEXT("UseSkill"));
 
 	AC_BasicEnemy* Owner = Cast<AC_BasicEnemy>(GetOwner());
-	
-	if (!Owner)
-		return;
-
+	if (!Owner) return false;
 
 	const uint8 TargetSlotIdx  = static_cast<uint8>(_Slot);
 	const FSkillSlotInfo& Info = m_SkillSlots[TargetSlotIdx];
@@ -88,21 +85,22 @@ void UC_EnemySkillComponent::UseSkill(ESkillSlot _Slot)
 	if (!Info.LoadedSkillData)
 	{
 		UC_Util::Print("From UC_EnemySkillComponent::UseSkill : TargetSlot skill not loaded!", FColor::Red, 10.f);
-		return;
+		return false;
 	}
-	
-	m_CurSkillData = Info.LoadedSkillData;
 
-	// 스킬 사용중으로 설정
-	bUsingSkill = true;
+	// 현재 해당 스킬을 사용할 수 없는 상황
+	if (!Info.SkillInstance->Activate(Owner, Info.LoadedSkillData))
+		return false;
 
-	Info.SkillInstance->Activate(Owner, Info.LoadedSkillData);
+	// 스킬 사용 성공
+
+	m_CurSkillData = Info.LoadedSkillData;	// 현재 사용중인 Skill 세팅
+	bUsingSkill    = true;					// 스킬 사용중으로 설정
+	return true;
 }
 
 void UC_EnemySkillComponent::OnAN_EndSkill()
 {
-	UE_LOG(LogTemp, Warning, TEXT("OnAN_EndSkill"));
-
 	bUsingSkill = false;
 
 	m_SkillEndDelegate.Broadcast(Cast<AC_BasicEnemy>(GetOwner()));
@@ -113,17 +111,13 @@ void UC_EnemySkillComponent::OnAN_EndSkill()
 
 void UC_EnemySkillComponent::EndSkillManually()
 {
-	UE_LOG(LogTemp, Warning, TEXT("EndSkillManually"));
-	
-	bUsingSkill = false;
-	m_SkillEndDelegate.Broadcast(Cast<AC_BasicEnemy>(GetOwner()));
-	
 	// AnimNotify를 통해(AnimMontage 종료시점을 통해) 호출된 것이 아니기 때문에 Montage 모션을 직접 Stop 시켜주어야 한다.
 	// 현재 Skill이 Valid하고, 해당 Skill의 모션이 끝나지 않았다면 끊어줌
 	if (m_CurSkillData && m_OwnerCharacter->GetMesh()->GetAnimInstance()->Montage_IsPlaying(m_CurSkillData->Montage))
 		m_OwnerCharacter->StopAnimMontage(m_CurSkillData->Montage);
-	
-	m_CurSkillData = nullptr;
+
+	// 나머지 처리는 기존의 OnEndSkill 처리와 같음
+	OnAN_EndSkill();
 }
 
 void UC_EnemySkillComponent::Fire()

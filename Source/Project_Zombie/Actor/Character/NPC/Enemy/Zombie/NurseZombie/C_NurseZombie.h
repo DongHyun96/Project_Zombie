@@ -47,6 +47,15 @@ public:
 	/// <param name="_HealTarget"></param>
 	void RemoveHealTarget(AC_BasicEnemy* _HealTarget);
 
+public:
+	
+	void SetActionState(ENurseZombieActionState _ActionState) { m_ActionState = _ActionState; }
+
+	/// <summary>
+	/// 주변부 Healing Aura 활성화/비활성화
+	/// </summary>
+	void ToggleHealingAura(bool _Activate);
+	
 private:
 	
 	/// <summary>
@@ -56,7 +65,9 @@ private:
 	void OnHealTargetDeadOrReachedFullHP(AC_BasicCharacter* _StatComOwner);
 
 protected:
-	
+
+	// 주의 : Healing ActionState라고 해서 무조건 HealSkill을 발동중이 아닐 수 있다
+	// BehaviorTree에서의 MainStream을 나누기 위한 enum값일 뿐이다
 	UPROPERTY(VisibleAnywhere)
 	ENurseZombieActionState m_ActionState{};
 	
@@ -65,6 +76,9 @@ protected:
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	class UNiagaraComponent* m_HealingAuraEffectNG{};
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	class USphereComponent* m_HealingAuraCollider{};	
 
 private:
 
