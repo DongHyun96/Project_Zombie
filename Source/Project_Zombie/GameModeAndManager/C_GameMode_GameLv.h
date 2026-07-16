@@ -13,4 +13,7 @@ UCLASS()
 class PROJECT_ZOMBIE_API AC_GameMode_GameLv : public AGameModeBase
 {
 	GENERATED_BODY()
+	
+public:
+	virtual void Logout(AController* Exiting) override;
 };

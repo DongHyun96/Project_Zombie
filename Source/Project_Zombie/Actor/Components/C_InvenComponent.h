@@ -51,6 +51,12 @@ public:
 	// 인벤토리 강제 동기화
 	UFUNCTION(BlueprintCallable)
 	void ForceRepInven();
+
+	// TODO : 팅김시 드래그 락 해결 테스트 함수
+	void ReleaseAllLocksByPlayer(int32 InPlayerID);
+	
+	// TODO : 팅김시 드래그 락 해결 테스트 함수
+	void ForceReleaseSlotLock(int32 SlotIndex);
 	
 protected:
 	virtual void BeginPlay() override;

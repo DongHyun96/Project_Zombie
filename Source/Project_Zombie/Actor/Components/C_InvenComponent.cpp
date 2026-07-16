@@ -169,6 +169,55 @@ void UC_InvenComponent::ForceRepInven()
 	InventoryContainer.MarkArrayDirty();
 }
 
+void UC_InvenComponent::ReleaseAllLocksByPlayer(int32 InPlayerID)
+{
+	if (InPlayerID == INDEX_NONE) 
+	{
+		UE_LOG(LogTemp, Error, TEXT("ReleaseAllLocksByPlayer: Failed! InPlayerID is INDEX_NONE(-1)"));
+		return;
+	}
+
+	const int32 NumItems = InventoryContainer.Items.Num();
+	for (int32 i = 0; i < NumItems; ++i)
+	{
+		FInventoryEntry& Entry = InventoryContainer.Items[i];
+
+		// 락이 걸려있는 슬롯이 있다면 전부 로그 출력
+		if (Entry.LockedByPlayerID != INDEX_NONE)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Inven [%s] Slot [%d] is currently locked by PlayerID [%d]. (Target Leaver ID: [%d])"), 
+				*GetName(), 
+				Entry.SlotIndex, 
+				Entry.LockedByPlayerID, 
+				InPlayerID);
+		}
+
+		// 일치하면 잠금 해제
+		if (Entry.LockedByPlayerID == InPlayerID)
+		{
+			CancelDragItemSlot(Entry.SlotIndex, InPlayerID);
+            
+			UE_LOG(LogTemp, Log, TEXT("Inven [%s] Slot [%d] Lock Released Successfully for Player [%d]!"), 
+				*GetName(), 
+				Entry.SlotIndex, 
+				InPlayerID);
+		}
+	}
+}
+
+void UC_InvenComponent::ForceReleaseSlotLock(int32 SlotIndex)
+{
+	if (!InventoryContainer.Items.IsValidIndex(SlotIndex)) return;
+
+	InventoryContainer.Items[SlotIndex].LockedByPlayerID = INDEX_NONE;
+	InventoryContainer.MarkItemDirty(InventoryContainer.Items[SlotIndex]);
+
+	if (GetOwner()->HasAuthority())
+	{
+		OnInventorySlotChanged.Broadcast(SlotIndex, InventoryContainer.Items[SlotIndex]);
+	}
+}
+
 void UC_InvenComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -290,6 +339,7 @@ void UC_InvenComponent::StartDragItemSlot(int32 SlotIndex, int32 InPlayerId)
 
 void UC_InvenComponent::CancelDragItemSlot(int32 SlotIndex, int32 InPlayerId)
 {
+	UC_Util::Print("Cacel");
 	if (!InventoryContainer.Items.IsValidIndex(SlotIndex))
 		return;
 
