@@ -19,7 +19,7 @@ public:
 	const FItemData* GetItemData(FName InRowName) const;
 
 	UFUNCTION(BlueprintCallable)
-	class AC_ItemPickUp* SpawnItem(FName InRowName, const FVector& SpawnLocation, const FVector& LaunchVelocity = FVector::ZeroVector);
+	class AC_ItemPickUp* SpawnItem(FName InRowName, const FVector& SpawnLocation, int32 InCount, const FVector& LaunchVelocity = FVector::ZeroVector);
 private:
 
 	UPROPERTY()
