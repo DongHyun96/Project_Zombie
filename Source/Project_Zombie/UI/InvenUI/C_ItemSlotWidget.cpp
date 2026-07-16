@@ -14,6 +14,7 @@
 #include "C_InventoryWidget.h"
 #include "C_InventoryGridWidget.h"
 #include "Components/Border.h"
+#include "DivideWIdget/C_DivideItemWidget.h"
 #include "GameFramework/PlayerState.h"
 #include "Utility/C_Util.h"
 
@@ -42,7 +43,7 @@ void UC_ItemSlotWidget::UpdateSlot(const FInventoryEntry& ItemData, const FItemD
                 SetVisibility(ESlateVisibility::Visible);
             }
         }
-        ItemCountText->SetText(FText::AsNumber(ItemData.Count));
+        ItemCountText->SetText(FText::AsNumber(ItemData.CurCount));
         
         // 드래그 중이면 오퍼시티를 .5로 변경 
         if (ItemData.LockedByPlayerID != INDEX_NONE) ItemIconSetOpacity(.5);
@@ -71,6 +72,7 @@ void UC_ItemSlotWidget::NativeOnDragDetected(const FGeometry& InGeometry, const 
     
     if (!Owner) return;
     
+    // 서버에 아이템 드래그 요청
     Owner->Server_RequestDragItemSlot(curSlotIdx, AssociatedInvenComp); // 창고에 있는 아이템의 PlayerID를 건드려야함.
     
     const TArray<FInventoryEntry>& ItemArr = AssociatedInvenComp->GetInventoryItems();
@@ -79,7 +81,12 @@ void UC_ItemSlotWidget::NativeOnDragDetected(const FGeometry& InGeometry, const 
     
     FInventoryEntry entry = ItemArr[curSlotIdx];
 
-    if (entry.ItemRowName == NAME_None) return;
+    AC_BasicPlayer* pPlayer = Cast<AC_BasicPlayer>(GetOwningPlayerPawn());
+    
+    // Player의 curDraggedItem 세팅
+    if (!pPlayer->SetCurDraggedItem(entry, AssociatedInvenComp, curSlotIdx)) return;
+    
+    //if (entry.ItemRowName == NAME_None) return;
     
     UC_DragDropOperation* DragOperation = NewObject<UC_DragDropOperation>();
     
@@ -87,8 +94,8 @@ void UC_ItemSlotWidget::NativeOnDragDetected(const FGeometry& InGeometry, const 
     InitDragVisual(DragOperation);
     
     DragOperation->SetItemEntry(entry);
-    DragOperation->SetSlotIndex(curSlotIdx);
     DragOperation->SetSourceComponent(AssociatedInvenComp);
+    DragOperation->SetSlotIndex(curSlotIdx);
     
     OutOperation = DragOperation;
 }
@@ -110,10 +117,42 @@ bool UC_ItemSlotWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDro
     int32 FromSlot = DragOperation->GetSlotIndex();
     int32 ToSlot = curSlotIdx;
 
-    // 드래그시 반감된 오파시티 복구(제자리에 드롭할 때 .5가 유지되서 넣은 코드)
-    ItemIconSetOpacity(1.f);
+    AC_BasicPlayer* pPlayer = Cast<AC_BasicPlayer>(GetOwningPlayerPawn());
     
-    Cast<AC_BasicPlayer>(GetOwningPlayerPawn())->Server_RequestMoveItem(FromInvenComp, FromSlot, ToInvenComp, ToSlot);
+    if (!pPlayer) return false;
+    
+    // 드래그시 반감된 오파시티 복구(제자리에 드롭할 때 .5가 유지되서 넣은 코드)
+    if (FromInvenComp->GetInventoryItems()[DragOperation->GetSlotIndex()].LockedByPlayerID == INDEX_NONE) 
+        ItemIconSetOpacity(1.f);
+    
+    
+    
+    if (APlayerController* PC = GetOwningPlayer())
+    {
+        if (AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD()))
+        {
+            if (UC_InventoryWidget* InveWidget = UIManager->GetInventoryWidget())
+                InveWidget->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+        }
+    }
+    
+    // 드롭된 슬롯이 잠겨 있다면 드롭 실패. TODO : 실패 처리가 이렇게 추가되면 위에 드래그시 반감된 오파시티 복구 코드는 삭제해도 되나?
+    if (AssociatedInvenComp->GetInventoryItems()[ToSlot].LockedByPlayerID != INDEX_NONE)
+    {
+        // 플레이어의 CurDraggedItem 초기화
+        pPlayer->ClearCurDraggedItem();
+        return true;
+    }
+    
+    if (InDragDropEvent.IsControlDown() && FromInvenComp->GetItemAt(FromSlot).CurCount > 1)
+    {
+        ParentGrid->GetParentWidget()->GetDivideItemWidget()->SetTargetWidget(this);
+        ParentGrid->GetParentWidget()->ShowDivideEntryWidget();
+        return true;
+    }
+    
+    pPlayer->Server_RequestMoveItem(FromInvenComp, FromSlot, ToInvenComp, ToSlot);
+    
     // TODO : FFastArraySerializer 전환 하면 여기 바꾸기
     //ToInvenComp->Server_RequestMoveItem(FromInvenComp, FromSlot, ToInvenComp, ToSlot);
     

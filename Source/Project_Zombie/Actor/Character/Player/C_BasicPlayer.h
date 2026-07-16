@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Actor/Character/C_BasicCharacter.h"
 #include "GenericTeamAgentInterface.h"
+#include "GlobalData.h" // TODO : FCursorItem curDraggedItem 때문에 넣었는데 문제 생기면 구조 바꿔야함.
 #include "C_BasicPlayer.generated.h"
 
 // 캐릭터 상태
@@ -43,6 +44,7 @@ enum class EPlayerViewMode : uint8
 	TPS,	// 3인칭
 	FPS,	// 1인칭
 };
+
 
 
 class UInputMappingContext;
@@ -234,8 +236,10 @@ protected:
 	// 인벤토리 열려있나
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory")
 	bool m_IsInventoryOpen;
-
-
+	
+	// 현재 드래그된 아이템의 정보 구조체
+	UPROPERTY()
+	FCursorItem curDraggedItem{};
 public:
 	
 	EPlayerState GetPlayerState() const { return m_PlayerState; }
@@ -257,6 +261,13 @@ public:
 
 	UC_BasicPlayerAimComponent* GetAimComponent() const { return m_PlayerAimComponent; }
 
+	FCursorItem GetCurDraggedItem() {return curDraggedItem;}
+	
+	// 드래그중인 아이템 관련 정보 저장
+	bool SetCurDraggedItem(struct FInventoryEntry InEntry, UC_InvenComponent* SrcInvenComp, int32 SrcSlotIdx);
+public:
+	// curDraggedItem 초기화 및 서버에 Drag로 인한 잠금 해제 요청
+	void ClearCurDraggedItem();
 public:
 	bool IsDead() const { return m_IsDead; }
 	void SetIsDead(bool _IsDead) { m_IsDead = _IsDead; }
@@ -274,7 +285,6 @@ public:
 
 	bool IsSprinting() const { return m_PlayerMoveSpeedState == EPlayerMoveSpeedState::Sprint; }
 	bool IsCrouching() const { return m_PlayerMoveSpeedState == EPlayerMoveSpeedState::Crouch; }
-
 
 public:
 	/// <summary>
@@ -321,6 +331,7 @@ public:
 	void ApplyWalkSpeed();
 
 public:
+	// TODO : 퍼블릭으로 열어둬도 괜찮은가?
 	// UI 드롭 시 서버에 안전하게 요청을 도달시켜 줄 확성기 RPC
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_RequestMoveItem(UC_InvenComponent* SrcComp, int32 SrcIdx, UC_InvenComponent* DstComp, int32 DstIdx);
@@ -332,8 +343,15 @@ public:
 	UFUNCTION(Server, Reliable)
 	void Server_CancelDragItemSlot(int32 SlotIndex, UC_InvenComponent* InteractedInven);
 	
+	// TODO : Test 함수.
+	//UFUNCTION(Server, Reliable)
+	//void Server_StartDragItem(UC_InvenComponent* InvenComp, int32 SlotIndex);
+	
 protected:
 	virtual void BeginPlay() override;
+	
+	//
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 public:
 	USpringArmComponent* GetSpringArm() { return m_SpringArm; }

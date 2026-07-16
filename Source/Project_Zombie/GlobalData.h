@@ -25,11 +25,15 @@ struct FItemData : public FTableRowBase
 
     // ── [공통 정보] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Info")
-    int32 Count = 1;
+    int32 CurCount = 1;
 
     // ── [공통 정보] ── 인벤토리에서 겹쳐서 보관 할 수 있는 아이템인지.(true면 겹치기 가능)
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
-    bool bIsStack;
+    //UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
+    //bool bIsStack;
+    
+    // ── [공통 정보] ── -1은 현재 아이템이 제대로 정의되어 있지 않은 상태라는 뜻
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Info")
+    int32 MaxCount = -1; 
 
     // ── [비주얼 리소스 - 강참조 포인터] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Visual")
@@ -70,11 +74,11 @@ public:
 
     // ── [실시간 공통 데이터] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
-    int32 Count = 0;
+    int32 CurCount = 0;
 
     // ── [실시간 공통 데이터] ──
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
-    bool bIsStack;
+    //UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
+    //bool bIsStack;
 
     // ── [실시간 공통 데이터] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
@@ -94,41 +98,63 @@ public:
     //float Durability = 100.0f;
 public:
     // 빈 슬롯인지 확인하는 함수.
-    bool IsEmpty() const {return ItemRowName.IsNone() || Count == 0;}
+    bool IsEmpty() const {return ItemRowName.IsNone() || CurCount == 0;}
     
     // 비우는 함수
     void Clear()
     {
         ItemRowName = NAME_None;
-        Count = 0;
-        bIsStack = false;
+        CurCount = 0;
         UpgradeLevel = 0;
         CurAmmo = 0;
     }
+    
 };
 
-//USTRUCT(BlueprintType)
-//struct FCusorItem
-//{
-//    GENERATED_BODY()
-//    
-//    UPROPERTY()
-//    FInventoryEntry Item{};      // 현재 들고 있는 아이템
-//    
-//    // 어디서 가져왔는가?
-//    int32 SourceContainerID = -1;   // 상자의 ID 혹은 플레이어 인벤토리의 ID
-//    int32 SourceSlotIndex   = -1;     // 몇 번째 슬롯이었나?
-//    
-//    bool bIsValid = false;             // 현재 커서에 아이템이 들려있는가?
-//    
-//    void Clear()
-//    {
-//        Item.Clear();
-//        SourceContainerID = -1;
-//        SourceSlotIndex   = -1;
-//        bIsValid = false;
-//    }
-//};
+USTRUCT(BlueprintType)
+struct FCursorItem
+{
+    GENERATED_BODY()
+    
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    FInventoryEntry Item{};           // 현재 들고 있는 아이템
+    
+    // TODO : 멀티 환경에서 InvenComponent를 포인터변수로 전송하는게 아니라 ID(int32)로 전송하는 방식으로 바꾸면 리팩토링 필요, 현재는 포인터 변수를 전송.
+    //int32 SourceContainerID = -1;   // 상자의 ID 혹은 플레이어 인벤토리의 ID
+    
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    class UC_InvenComponent* SourceInvenComp = nullptr;
+    
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    int32 SourceSlotIndex   = -1;     // 몇 번째 슬롯이었나?
+    
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    bool bIsValid = false;            // 현재 커서에 아이템이 들려있는가?
+    
+    void Clear()
+    {
+        Item.Clear();
+        SourceInvenComp = nullptr;
+        SourceSlotIndex = -1;
+        bIsValid = false;
+    }
+    
+    // CursorItem을 세팅하는 함수.
+    bool SetCursorItem(FInventoryEntry InEntry, UC_InvenComponent* InSourceInvenComp, int32 InSourceSlotIndex)
+    {
+        if (InEntry.ItemRowName == NAME_None || InSourceInvenComp == nullptr || InSourceSlotIndex == -1) return false;
+        
+        Item = InEntry;
+        
+        SourceInvenComp = InSourceInvenComp;
+        
+        SourceSlotIndex = InSourceSlotIndex;
+        
+        bIsValid = true;
+        
+        return true;
+    }
+};
 
 
 

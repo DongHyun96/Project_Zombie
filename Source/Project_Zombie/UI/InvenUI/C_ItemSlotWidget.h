@@ -38,9 +38,11 @@ public:
 	virtual bool NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
 	
 	virtual void NativeOnDragCancelled(const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
-	
+
+	// ItemIcon과 TextBlock의 Opacity조절하는 함수
 	void ItemIconSetOpacity(float InOpacity);
 	
+	// ItemIcon과 TextBlock의 Visibility를 바꾸는 함수
 	void ItemIconSetVisibility(ESlateVisibility InVisibility);
 	
 protected:
@@ -64,4 +66,6 @@ protected:
 	// 이 슬롯이 참조하는 실제 데이터 컴포넌트
 	UPROPERTY()
 	class UC_InvenComponent* AssociatedInvenComp = nullptr;
+	
+
 };

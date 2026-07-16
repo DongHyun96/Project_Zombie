@@ -48,7 +48,35 @@ void UC_InventoryGridWidget::RefreshSlotAt(int32 SlotIndex, const FInventoryEntr
     }
 }
 
-bool UC_InventoryGridWidget::Initialize()
+void UC_InventoryGridWidget::NativeOnInitialized()
+{
+    Super::NativeOnInitialized();
+    // 에디터에서 컴포넌트나 클래스가 제대로 세팅되었는지 최소한의 방어선만 확인
+    if (!ItemGridPanel || !SlotWidgetClass) return;
+
+    // [조건문 없음] 평생 딱 한 번만 실행되므로 그냥 냅다 만듭니다.
+    ItemGridPanel->ClearChildren();
+    SlotWidgets.Reset();
+
+    for (int32 i = 0; i < MaxSlots; ++i)
+    {
+        UC_ItemSlotWidget* NewSlot = CreateWidget<UC_ItemSlotWidget>(this, SlotWidgetClass);
+        //if (!NewSlot) continue;
+
+        NewSlot->SetSlotIndex(i); 
+        NewSlot->SetGridWidget(this);
+
+        int32 CurRow = i / Column;
+        int32 CurColumn = i % Column;
+        
+        ItemGridPanel->AddChildToUniformGrid(NewSlot, CurRow, CurColumn);
+        SlotWidgets.Add(NewSlot);
+    }
+
+    return;
+}
+
+/*bool UC_InventoryGridWidget::Initialize()
 {
     if (!Super::Initialize()) return false;
 
@@ -75,7 +103,7 @@ bool UC_InventoryGridWidget::Initialize()
     }
 
     return true;
-}
+}*/
 
 void UC_InventoryGridWidget::SetInvenComponent(class UC_InvenComponent* InventoryComponent)
 {

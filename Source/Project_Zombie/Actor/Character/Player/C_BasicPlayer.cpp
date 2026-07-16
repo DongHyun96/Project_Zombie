@@ -25,6 +25,7 @@
 
 #include "GameFramework/PlayerState.h"
 #include "Actor/Components/C_PlayerStatComponent.h"
+#include "Controller/C_BasicPlayerController.h"
 #include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 #include "GameModeAndManager/C_UIManager.h"
 
@@ -104,8 +105,9 @@ AC_BasicPlayer::AC_BasicPlayer()
 	m_PlayerAimComponent = CreateDefaultSubobject<UC_BasicPlayerAimComponent>(TEXT("PlayerAimComponent"));
 	
 	m_StatComponent = CreateDefaultSubobject<UC_PlayerStatComponent>(TEXT("StatComponent"));
+	
+	
 }
-
 
 void AC_BasicPlayer::BeginPlay()
 {
@@ -131,6 +133,14 @@ void AC_BasicPlayer::BeginPlay()
 	
 	// 입력 시스템 초기화
 	//InitInput();
+}
+
+void AC_BasicPlayer::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	Super::EndPlay(EndPlayReason);
+	
+	// 팅기거나 접속을 종료하면 드래그하고 있던 아이템 잠금 해제.
+	Server_CancelDragItemSlot(curDraggedItem.SourceSlotIndex, curDraggedItem.SourceInvenComp);
 }
 
 void AC_BasicPlayer::Tick(float DeltaTime)
@@ -175,6 +185,25 @@ void AC_BasicPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 float AC_BasicPlayer::TakeDamage(float _Damage, FDamageEvent const& _DamageEvent, AController* _InstigatorController, AActor* _InstigatorActor)
 {
 	return Super::TakeDamage(_Damage, _DamageEvent, _InstigatorController, _InstigatorActor);
+}
+
+bool AC_BasicPlayer::SetCurDraggedItem(struct FInventoryEntry InEntry, UC_InvenComponent* SrcInvenComp, int32 SrcSlotIdx)
+{
+	// 매개변수중 하나라도 유효하지 않다면 false가 리턴됨. curDraggedItem 초기화.
+	if (curDraggedItem.SetCursorItem(InEntry, SrcInvenComp, SrcSlotIdx)) return true;
+	
+	// TODO : 만약 false가 리턴되어도 curDraggedItem이 초기화되면 안되는 상황이 존재한다면?
+	curDraggedItem.Clear();
+	
+	return false;
+}
+
+void AC_BasicPlayer::ClearCurDraggedItem()
+{
+	// 해당 슬롯의 아이템의 잠금 상태를 해제 요청.
+	Server_CancelDragItemSlot(curDraggedItem.SourceSlotIndex, curDraggedItem.SourceInvenComp);
+	
+	curDraggedItem.Clear();
 }
 
 void AC_BasicPlayer::Landed(const FHitResult& Hit)
@@ -386,7 +415,16 @@ ETeamAttitude::Type AC_BasicPlayer::GetTeamAttitudeTowards(const AActor& _Other)
 bool AC_BasicPlayer::Server_RequestMoveItem_Validate(UC_InvenComponent* SrcComp, int32 SrcIdx,
 	UC_InvenComponent* DstComp, int32 DstIdx)
 {
-	return (SrcComp != nullptr && DstComp != nullptr);
+	// null 체크 (가장 먼저 수행)
+	if (!SrcComp || !DstComp) return false;
+
+	// 동일 슬롯 체크 (제자리 드롭 방지)
+	if (SrcComp == DstComp && SrcIdx == DstIdx) return false;
+
+	// 해당 슬롯의 유효성 검사
+	if (!SrcComp->GetInventoryItems().IsValidIndex(SrcIdx) || !DstComp->GetInventoryItems().IsValidIndex(DstIdx)) return false;
+
+	return true;
 }
 
 void AC_BasicPlayer::Server_RequestMoveItem_Implementation(UC_InvenComponent* SrcComp, int32 SrcIdx,
@@ -394,26 +432,22 @@ void AC_BasicPlayer::Server_RequestMoveItem_Implementation(UC_InvenComponent* Sr
 {
 	APlayerController* pPC = Cast<APlayerController>( GetController());
 	
-	if (!pPC) return;
+	if (!pPC || !pPC->PlayerState) return;
+
+	// 현재 요청을 보낸 플레이어의 고유 ID 추출
+	int32 PlayerId = pPC->PlayerState->GetPlayerId();
 	
-	if (SrcComp == DstComp)
-	{
-		// 동일 인벤토리 내부 스왑인 경우
-		SrcComp->SwapInvenEntry(SrcIdx, DstIdx, pPC->GetPlayerState<APlayerState>()->GetPlayerId());
-	}
-	else
-	{
-		// 플레이어 가방 <-> 창고 컴포넌트 간 이동인 경우
-		SrcComp->TransferItemTo(SrcIdx, DstComp, DstIdx, pPC->GetPlayerState<APlayerState>()->GetPlayerId());
-	}
+	SrcComp->ProcessItemMove(SrcComp, SrcIdx, DstComp, DstIdx, PlayerId);
 }
 
 void AC_BasicPlayer::Server_RequestDragItemSlot_Implementation(int32 SlotIndex, UC_InvenComponent* InteractedInven)
 {
-	APlayerController* pPC = Cast<APlayerController>( GetController());
+	AC_BasicPlayerController* pPC = Cast<AC_BasicPlayerController>( GetController());
 	
 	if (!pPC) return;
 	
+	pPC->Server_ActiveDraggedInven = InteractedInven;
+	pPC->Server_ActiveDraggedSlotIndex = SlotIndex;
 	InteractedInven->StartDragItemSlot(SlotIndex, pPC->GetPlayerState<APlayerState>()->GetPlayerId()); 
 }
 
