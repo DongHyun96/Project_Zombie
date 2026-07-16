@@ -37,6 +37,11 @@ bool UC_Deco_IsInRange::CalculateRawConditionValue(UBehaviorTreeComponent& _OwnC
 	// TODO : 에디터 BehaviorTree 에서 해당 SkillSlot으로 초기화해줄 것 (기본은 1번 Slot으로 되어있음)
 	float AttackRange = SkillCom->GetSkillRange(m_SkillSlot);
 
+	UE_LOG(LogTemp, Warning,
+		TEXT("Dist = %.1f  Range = %.1f"),
+		Dist,
+		AttackRange);
+
 	return Dist <= AttackRange;
 }
 

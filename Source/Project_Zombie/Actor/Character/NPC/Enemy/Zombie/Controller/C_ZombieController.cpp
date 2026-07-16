@@ -71,7 +71,7 @@ void AC_ZombieController::OnPossess(APawn* _Pawn)
 {
 	Super::OnPossess(_Pawn);
 
-	UE_LOG(LogTemp, Warning, TEXT("OnPossess Success"));
+	//UE_LOG(LogTemp, Warning, TEXT("OnPossess Success"));
 
 	// 빙의한 대상과 같은 팀으로 설정
 	const IGenericTeamAgentInterface* pPawnTeam = Cast<IGenericTeamAgentInterface>(_Pawn);
@@ -112,7 +112,7 @@ void AC_ZombieController::OnPossess(APawn* _Pawn)
 
 void AC_ZombieController::OnTargetDetected(AActor* _Target, FAIStimulus _Stimulus)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Perception Triggered"));
+	//UE_LOG(LogTemp, Warning, TEXT("Perception Triggered"));
 
 	/*if (!_Target)
 		return;

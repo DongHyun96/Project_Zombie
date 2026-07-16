@@ -60,6 +60,19 @@ public:
 	/// </summary>
 	void PlayHitSound();
 
+
+	/// <summary>
+	/// 바닥과 충돌할때 호출될 함수
+	/// </summary>
+	UFUNCTION()
+	void OnProjectileHit(
+		UPrimitiveComponent* HitComponent,
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComp,
+		FVector NormalImpulse,
+		const FHitResult& Hit);
+
+
 public:
 	AC_EnemyProjectile();
 };
