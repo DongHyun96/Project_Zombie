@@ -123,6 +123,7 @@ void UC_BasicPlayerInputComponent::InitializePlayerInput(UInputComponent* Player
 	if (const UInputAction* IA = FindIAByName(TEXT("IA_PlayerAim")))
 	{
 		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::KeepAimActionStart);
+		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Ongoing, this, &UC_BasicPlayerInputComponent::KeepAimActionOngoing);
 		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Completed, this, &UC_BasicPlayerInputComponent::KeepAimActionEnd);
 	}
 }
@@ -239,14 +240,61 @@ void UC_BasicPlayerInputComponent::ReloadAction()
 
 void UC_BasicPlayerInputComponent::KeepAimActionStart()
 {
-	if (Player)
-		Player->GetAimComponent()->OnAimPressed();
+	if (!Player) return;
+
+	AimPressStartTime = Player->GetWorld()->GetTimeSeconds();
+	bIsHoldFired = false;
+
+	Player->GetWorldTimerManager().SetTimer(
+		AimHoldTimerHandle,
+		this,
+		&UC_BasicPlayerInputComponent::KeepAimActionOngoing,
+		0.01f,
+		true
+	);
+}
+
+void UC_BasicPlayerInputComponent::KeepAimActionOngoing()
+{
+	if (!Player) return;
+
+	float PressDuration = Player->GetWorld()->GetTimeSeconds() - AimPressStartTime;
+
+	if (PressDuration >= HoldThreshold && !bIsHoldFired)
+	{
+		bIsShoulderToggled = false;
+
+		Player->GetAimComponent()->OnAimPressed(EAimState::Shoulder);
+		bIsHoldFired = true;
+
+		Player->GetWorldTimerManager().ClearTimer(AimHoldTimerHandle);
+	}
 }
 
 void UC_BasicPlayerInputComponent::KeepAimActionEnd()
 {
-	if (Player)
+	if (!Player) return;
+
+	Player->GetWorldTimerManager().ClearTimer(AimHoldTimerHandle);
+
+	if (bIsHoldFired)
+	{
 		Player->GetAimComponent()->OnAimReleased();
+		bIsHoldFired = false;
+	}
+	else
+	{
+		if (bIsShoulderToggled)
+		{
+			Player->GetAimComponent()->OnAimReleased();
+			bIsShoulderToggled = false;
+		}
+		else
+		{
+			Player->GetAimComponent()->OnAimPressed(EAimState::ADS);
+			bIsShoulderToggled = true;
+		}
+	}
 }
 
 void UC_BasicPlayerInputComponent::ToggleInventoryWidget()

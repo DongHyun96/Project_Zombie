@@ -58,6 +58,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AimOffset")
 	float	m_Yaw;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AimOffset")
+	float m_Alpha = 1.0f;
+
 	// 애니그래프(AnimGraph)에서 참조할 왼손 IK Transform 변수
 	UPROPERTY(BlueprintReadOnly, Category = "IK")
 	FVector m_LeftHandIKTransform;

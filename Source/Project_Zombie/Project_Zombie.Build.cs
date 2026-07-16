@@ -24,7 +24,7 @@ public class Project_Zombie : ModuleRules
 			"DeveloperSettings",
 			"NetCore",
 			"Niagara"
-		});
+        });
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });
 

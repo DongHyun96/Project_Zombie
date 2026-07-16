@@ -1,10 +1,11 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "C_TurnInPlaceComponent.h"
 
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "C_BasicPlayerAimComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Utility/C_Util.h"
 
@@ -51,8 +52,15 @@ bool UC_TurnInPlaceComponent::StartTurnInPlaceMotion(float _YawRotDelta)
 	if (m_OwnerPlayer->GetMesh()->GetAnimInstance()->Montage_IsPlaying(TurnInPlaceMontagesToPlay[1])) return false;
 
 	// Default full body + Addit Lower body TurnInPlace 재생 처리
-	for (UAnimMontage* Montage : TurnInPlaceMontagesToPlay)
-		m_OwnerPlayer->PlayAnimMontage(Montage);
+	if (m_OwnerPlayer->GetAimComponent()->IsAiming())
+	{
+		m_OwnerPlayer->PlayAnimMontage(TurnInPlaceMontagesToPlay[1]);
+	}
+	else
+	{
+		for (UAnimMontage* Montage : TurnInPlaceMontagesToPlay)
+			m_OwnerPlayer->PlayAnimMontage(Montage);
+	}
 	
 	return true;
 }

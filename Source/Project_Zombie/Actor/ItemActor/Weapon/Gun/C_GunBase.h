@@ -26,20 +26,17 @@ class PROJECT_ZOMBIE_API AC_GunBase : public AC_WeaponBase
 {
 	GENERATED_BODY()
 
-private:
-	// private으로 내리고 DefaultsOnly를 주면 블루프린트 디테일 패널에서 내부 속성 편집이 거의 막힙니다.
-	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Mesh", meta = (AllowPrivateAccess = "true"))
-	USkeletalMeshComponent* m_WeaponMesh;
-
 protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Component")
+	class USphereComponent* m_Collision;
+
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Mesh", meta = (AllowPrivateAccess = "true"))
+	class USkeletalMeshComponent* m_WeaponMesh;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon|Components", meta = (DisplayName = "DataComponent"))
 	class UC_GunDataTableComponent* m_DataCom;
 
 protected:
-	// 현재 사격 버튼을 누르고 있는 상태인지 확인
-	bool					m_bIsFiring = false;
-
 	float					m_BaseDamage;
 
 	//현재 남아있는 총알 수
@@ -51,23 +48,16 @@ protected:
 
 	float					m_ShellEjectImpulse;
 
-	// 연사 타이머를 관리하기 위한 핸들
-	FTimerHandle			m_FireTimerHandle;
+	class UAnimSequence*	m_FireAnimation;
 
-	UPROPERTY()
-	UAnimSequence*			m_FireAnimation;
+	class UAnimSequence*	m_ReloadAnimation;
 
-	UPROPERTY()
-	UAnimSequence*			m_ReloadAnimation;
-
-	UPROPERTY()
-	UStaticMesh*			m_ShellMesh;
+	class UStaticMesh*		m_ShellMesh;
 
 	
 protected:
-
 	// 현재 이 Gun을 사용중인 WeaponUser
-	AC_BasicPlayer* m_WeaponUser{};
+	class AC_BasicPlayer* m_WeaponUser{};
 	
 private:
 
@@ -76,9 +66,8 @@ private:
 	static const FName s_HandSocketName;
 
 protected:
-	
 #if WITH_EDITOR
-	// 에디터에서 프로퍼티(속성)가 변경될 때마다 호출되는 엔진 함수입니다.
+	// 에디터에서 프로퍼티(속성)가 변경될 때마다 호출되는 엔진 함수.
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
 
@@ -95,37 +84,24 @@ public:
 	void Gun_init();
 
 	/// <summary>
-	/// 마우스 왼쪽 버튼 클릭 (사격 시작)
+	/// 탄약 체크 및 UI 업데이트 (사격 가능하면 true 반환)
 	/// </summary>
-	UFUNCTION(BlueprintCallable)
-	void PullTrigger();
+	bool ConsumeAmmo();   
 
 	/// <summary>
-	/// 마우스 왼쪽 버튼 클릭 뗌 (사격 중지)
-	/// <summary>
-	UFUNCTION(BlueprintCallable)
-	void ReleaseTrigger();
+	/// 공통 탄피 배출 로직
+	/// </summary>
+	void SpawnShellEject();
 
 	/// <summary>
-	/// R 키 입력 (재장전 요청)
-	/// <summary>
-	UFUNCTION(BlueprintCallable)
-	void Gun_Reload();
-
-	UFUNCTION(BlueprintCallable)
-	void CompleteReload();
-
-	/// <summary>
-	/// 방아쇠를 당겼을 때 애니메이션 재생 함수
-	/// <summary>
-	void PlayFireEffects();
+	/// 공통 라인트레이스 데미지 처리
+	/// </summary>
+	void ProcessLineTraceDamage(float DamageVal);
 
 public:
-	USkeletalMeshComponent* GetWeaponMesh() { return m_WeaponMesh; }
-
+	class USkeletalMeshComponent* GetWeaponMesh() { return m_WeaponMesh; }
 
 public:
-	
 	/// <summary>
 	/// 발사 시작 동작 처리 (기본 키 : LMB Started (발사 키 클릭 이벤트 발생 시))
 	/// </summary>
@@ -158,6 +134,9 @@ public:
 	
 	virtual bool AttachToHand(USceneComponent* _ParentMesh) override;
     virtual bool AttachToHolster(USceneComponent* _ParentMesh) override;
+	virtual void PullTrigger() {}
+	virtual void ReleaseTrigger() {}
+
 
 protected:
 	virtual void BeginPlay() override;

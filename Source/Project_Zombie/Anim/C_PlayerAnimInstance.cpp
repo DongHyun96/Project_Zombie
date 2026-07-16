@@ -48,6 +48,8 @@ void UC_PlayerAnimInstance::NativeUpdateAnimation(float _DT)
 	if (m_GroundSpeed > 10.f)
 		m_Direction = CalculateDirection(Velocity, m_Character->GetActorRotation());
 
+	m_Alpha = (m_GroundSpeed > 160.f) ? 0.0f : 1.0f;
+
 	// 낙하, 수직 속도 갱신
 	m_IsFall = m_MovementComponent->IsFalling();
 	m_VerticalSpeed = m_MovementComponent->Velocity.Z;

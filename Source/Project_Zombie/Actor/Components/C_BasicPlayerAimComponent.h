@@ -12,7 +12,7 @@ enum class EAimState : uint8
 {
 	None,       // 일반 지향 사격 시점
 	Shoulder,   // 견착 시점(우클릭 홀드)
-	ADS         // 정조준 시점 (우클릭 딸깍 - 아이언 사이트 / 배율 스코프)
+	ADS         // 정조준 시점 (우클릭 한번 - 아이언 사이트 / 배율 스코프)
 };
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -37,18 +37,19 @@ protected:
 	// 메인 카메라 오프셋 저장용
 	FVector BaseCameraOffset;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Aim|ShoulderCam")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Aim|ShoulderCam")
 	float m_AimFOV = 60.f; // 조준 시 변경될 FOV (기본은 90)
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Aim|ShoulderCam")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Aim|ShoulderCam")
 	float m_AimSpeed = 10.f; // 조준 속도
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Aim|ShoulderCam")
-	FVector	m_AimOffset = FVector(0.f, 40.f, 20.f); // 조준 시 카메라 위치 조정용
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Aim|ShoulderCam")
+	FVector	m_AimOffset = FVector(0.f, 70.f, 90.f); // 조준 시 카메라 위치 조정용
 
 private:
 	float m_RuntimeTargetFOV;
 	FVector m_RuntimeTargetOffset;
+	EAimState m_CurAimState = EAimState::None;
 
 protected:
 	virtual void BeginPlay() override;
@@ -58,11 +59,14 @@ public:
 
 public:
 	// 조준 입력 시 호출될 함수
-	void OnAimPressed();
+	void OnAimPressed(EAimState TargetState);
 	void OnAimReleased();
 
 	// 매 프레임 카메라 시점을 에임으로 구동할 함수
 	void UpdateCameraInterpolation(float DeltaTime);
+
+public:
+	bool IsAiming() { return bIsAiming; }
 
 public:
 	UC_BasicPlayerAimComponent();
