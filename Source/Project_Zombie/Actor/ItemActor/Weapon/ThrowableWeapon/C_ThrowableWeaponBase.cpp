@@ -7,6 +7,10 @@
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 
+#include "Components/SplineComponent.h"
+#include "Components/SplineMeshComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
 
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystem.h"
@@ -34,6 +38,9 @@ AC_ThrowableWeaponBase::AC_ThrowableWeaponBase()
 	// 충돌 이벤트 연결
 	m_MainCollider->OnComponentHit.AddDynamic(this, &AC_ThrowableWeaponBase::OnThrowableHit);
 
+	// ===========================
+	// Projectile Movement Component 초기화
+	// ===========================
 
 	// Projectile Movement Component의 움직일 대상을 MainCollider로 설정
 	m_ProjectileMovement->SetUpdatedComponent(m_MainCollider);
@@ -65,6 +72,35 @@ AC_ThrowableWeaponBase::AC_ThrowableWeaponBase()
 	// Sub-Stepping 강제 활성화 (투척류는 날아가는 궤적이 직선이 아니므로, Sub-Stepping 활성화 필요)
 	m_ProjectileMovement->bForceSubStepping = true; 
 
+
+
+	// TODO : PathSpline으로 예측 경로 그리기 처리 시, SplineComponent 및 PredictedEndPoint StaticMesh 또한 CreateDefaultSubobject로 생성해줄 것
+	// TODO : Explosion Sphere (폭발 반경 Sphere) 는 만들어주어야 함
+	// ===========================
+	// 예상 경로 초기화
+	// ===========================
+
+	m_PathSpline = CreateDefaultSubobject<USplineComponent>("PathSpline");
+	m_PathSpline->SetupAttachment(m_MainCollider);
+
+	// 조준 방향이 변경될 때마다 Spline이 따라 움직일 수 있도록 Mobility를 Movable로 설정
+	m_PathSpline->SetMobility(EComponentMobility::Movable);
+
+	m_PredictedEndPoint = CreateDefaultSubobject<UStaticMeshComponent>("PredictedEndPoint");
+	m_PredictedEndPoint->SetupAttachment(m_MainCollider);
+
+	// 예측 경로는 충돌 비활성화
+	m_PredictedEndPoint->SetCollisionEnabled(ECollisionEnabled::NoCollision); 
+
+	// 예측 경로는 Overlap 이벤트 비활성화
+	m_PredictedEndPoint->SetGenerateOverlapEvents(false);
+	// 예측 경로는 처음에는 안보이게
+	m_PredictedEndPoint->SetVisibility(false);
+	// 예측 경로는 그림자 안보이게
+	m_PredictedEndPoint->SetCastShadow(false);
+
+
+
 	// 몽타주 Section 이름 초기화
 	m_RemovePinSectionName = TEXT("RemovePin");
 	m_ReadySectionName = TEXT("Ready");
@@ -78,11 +114,10 @@ AC_ThrowableWeaponBase::AC_ThrowableWeaponBase()
 	m_ThrowSpeed = 1500.f;
 
 	m_ExplosionEffectScale = 1.0f;
+
 	// 투척류 상태 초기화
 	ResetThrowableState();
-
-	// TODO : PathSpline으로 예측 경로 그리기 처리 시, SplineComponent 및 PredictedEndPoint StaticMesh 또한 CreateDefaultSubobject로 생성해줄 것
-	// TODO : Explosion Sphere (폭발 반경 Sphere) 는 만들어주어야 함
+	
 }
 
 // Called when the game starts or when spawned
@@ -119,7 +154,9 @@ bool AC_ThrowableWeaponBase::AttachToHand(USceneComponent* _ParentMesh)
 	SetActorHiddenInGame(false);
 
 	m_ProjectileMovement->Deactivate();
-	// ClearSpline(); // PathSpline 예측 경로 기능이 있다 하면, Clear 한번 여기서 처리를 해주어야 함
+
+	// 예측 경로 제거
+	ClearPredictedPath(); 
 
 	// Self init (이 변수들 처리 추후, 던지기 기다리기 처리 시 필요함)
 	// bIsCharging       = false;
@@ -231,6 +268,9 @@ bool AC_ThrowableWeaponBase::OnFireEnd(AC_BasicPlayer* _WeaponUser)
 
 	m_bIsCharging = false;
 
+	// 투척류 예측 경로 제거
+	ClearPredictedPath();
+
 	return true;
 }
 
@@ -259,10 +299,16 @@ void AC_ThrowableWeaponBase::OnThrowReadyLoop()
 	// 차징 중이면, ReadyLoop 상태로 넘어가고 투척 동작으로 넘어가지 않음
 	if (m_bIsCharging)
 	{
-		// TODO : 차징 중이면 예상 경로를 그려주기
 		m_ThrowableState = EThrowableState::ReadyLoop;
+
+		// 투척류 예측 경로 그리기
+		UpdatePredictedPath();
+
 		return;
 	}
+
+	// 차징이 끝났으면, 예측 경로 제거
+	ClearPredictedPath();
 
 	// 차징이 끝났으면, 투척 동작으로 넘어감
 	m_ThrowableState = EThrowableState::Throwing;
@@ -277,6 +323,9 @@ void AC_ThrowableWeaponBase::OnThrowThrowable()
 
 	if (!m_MainCollider || !m_ProjectileMovement)
 		return;
+
+	// 투척류 예측 경로 제거
+	ClearPredictedPath();
 
 	// 투척 방향과 투척 시작 위치 계산
 	const FVector ThrowDirection = GetThrowDirection();
@@ -340,6 +389,9 @@ void AC_ThrowableWeaponBase::Explode()
 	// 폭발 처리는 II_ExplodeStrategy를 상속받은 클래스에서 처리
 	if (m_ThrowableState == EThrowableState::Exploded)
 		return;
+
+	// 손에 들고 있는 상태에서 폭발할 수 있으므로 여기서도 예측 경로 제거
+	ClearPredictedPath();
 
 	const EThrowableState PrevState = m_ThrowableState;
 
@@ -410,6 +462,10 @@ void AC_ThrowableWeaponBase::Explode()
 
 void AC_ThrowableWeaponBase::CancleThrowAction()
 {
+	//// 지금은 사용 안하지만 나중에 투척 캔슬시에 사용
+
+	ClearPredictedPath();
+
 	if (!m_WeaponUser)
 		return;
 
@@ -448,6 +504,7 @@ void AC_ThrowableWeaponBase::ResetThrowableState()
 
 // ----------------- 투척 관련 처리 -----------------
 
+// 플레이어가 바라보는 방향을 기준으로 투척 방향 반환
 FVector AC_ThrowableWeaponBase::GetThrowDirection() const
 {
 	if (!m_WeaponUser)
@@ -666,4 +723,169 @@ void AC_ThrowableWeaponBase::OnFuseTimerFinished()
 	UC_Util::Print("Finish Fuse Timer");
 
 	Explode();
+}
+
+void AC_ThrowableWeaponBase::UpdatePredictedPath()
+{
+	// 이전 호출 시점에 그려진 예측 경로를 제거
+	ClearPredictedPath();
+
+	if (!m_WeaponUser || !m_PathSpline)
+		return;
+
+	UWorld* World = GetWorld();
+	if (!World)
+		return;
+
+	// 투척 방향과 투척 시작 위치 가져오기
+	const FVector ThrowDirection = GetThrowDirection();
+	const FVector LaunchLocation = GetLaunchLocation(ThrowDirection);
+
+	// 투척 속도 가져오기
+	const float ThorwSpeed = m_ThrowSpeed > 0.f ? m_ThrowSpeed : 1500.f;
+	const FVector LaunchVelocity = ThrowDirection.GetSafeNormal() * ThorwSpeed;
+
+
+	//----------------- 투척류 예측 경로 계산 옵션 설정 -----------------
+	
+	FPredictProjectilePathParams PathParams;
+
+	PathParams.StartLocation = LaunchLocation;
+	PathParams.LaunchVelocity = LaunchVelocity;
+	PathParams.bTraceWithCollision = true;
+	if (UCapsuleComponent* Capsule = Cast<UCapsuleComponent>(m_MainCollider))
+	{
+		PathParams.ProjectileRadius = Capsule->GetScaledCapsuleRadius();
+	}
+	PathParams.MaxSimTime = m_PredictedPatchMaxTime;
+	PathParams.bTraceWithChannel = true;
+	PathParams.TraceChannel = m_PredictedPatchTraceChannel;
+	PathParams.SimFrequency = m_PredictedPatchSimFrequency;
+	PathParams.OverrideGravityZ = m_ProjectileMovement->GetGravityZ();
+	PathParams.bTraceComplex = false; 
+	PathParams.DrawDebugType = EDrawDebugTrace::None;
+	PathParams.ActorsToIgnore.Add(this);
+	PathParams.ActorsToIgnore.AddUnique(m_WeaponUser);
+
+	// ----------------- 투척류 예측 경로 계산 -----------------
+
+	FPredictProjectilePathResult PathResult;
+
+	
+	// 위치/속도/중력 기준으로 투척류의 예상 경로를 계산하고, 충돌 여부를 반환
+	const bool bHit = UGameplayStatics::PredictProjectilePath(World, PathParams, PathResult);
+
+	// PathResult.PathData에 계산된 경로가 2개 미만이면 예측 경로를 그릴 수 없으므로 return
+	if (PathResult.PathData.Num() < 2)
+		return;
+
+	// ----------------- 예상 위치 SplinePoint 로 추가 -----------------
+	
+	for (const FPredictProjectilePathPointData& PointData : PathResult.PathData)
+	{
+		// PredictProjectilePath 결과는 월드좌표로 반환되기때문에
+		// 카메라·캐릭터 위치에 따라 경로가 크게 어긋날 수 있으므로 World로 추가해야 한대요
+		m_PathSpline->AddSplinePoint(PointData.Location, ESplineCoordinateSpace::World, true);
+	}
+
+	// 경로 점을 곡선 타입으로 설정
+	for (int32 Index = 0; Index < m_PathSpline->GetNumberOfSplinePoints(); ++Index)
+	{
+		m_PathSpline->SetSplinePointType(Index, ESplinePointType::Curve, false);
+	}
+
+	// Spline 갱신
+	m_PathSpline->UpdateSpline(); 
+
+	// ----------------- 예측 충돌 지점 표시 -----------------
+
+	if (bHit && m_PredictedEndPoint)
+	{
+		// 실제 충돌한 위치
+		const FVector ImpactPoint = PathResult.HitResult.ImpactPoint;
+
+		// 충돌한 Normal 벡터
+		const FVector ImpactNormal = PathResult.HitResult.ImpactNormal;
+
+		// 충돌 지점에서 약간 떨어진 위치에 PredictedEndPoint를 배치하고 보여줌
+		m_PredictedEndPoint->SetWorldLocation(ImpactPoint + ImpactNormal * 1.f);
+		m_PredictedEndPoint->SetVisibility(true);
+	}
+
+	// StaticMesh 지정안되어 있으면 선 생성 X
+	if (!m_PredictedPathMesh)
+		return;
+
+	// ----------------- SplinePoint 사이마다 Spline Mesh 생성 -----------------
+
+	// SplinePoint 개수 가져오기
+	const int32 SplinePointCount = m_PathSpline->GetNumberOfSplinePoints();
+
+	for (int32 Index = 0; Index < SplinePointCount - 1; ++Index)
+	{
+		FVector StartLocation{};	// 시작점 위치
+		FVector StartTangent{};		// 시작점 곡선이 뻗는 방향
+
+		FVector SecondLocation{};	// 끝점 위치
+		FVector SecondTangent{};	// 끝점 곡선이 뻗는 방향
+
+		// 현재 구간의 시작점 위치와 곡선 방향 가져오기 
+		m_PathSpline->GetLocationAndTangentAtSplinePoint
+		(
+			Index,
+			StartLocation,
+			StartTangent,
+			ESplineCoordinateSpace::Local // PathSpline 의 자식으로 연결할것이므로 Local
+		);
+
+		// 현재 구간의 끝점 위치와 곡선 방향 가져오기
+		m_PathSpline->GetLocationAndTangentAtSplinePoint
+		(
+			Index + 1,
+			SecondLocation,
+			SecondTangent,
+			ESplineCoordinateSpace::Local // PathSpline 의 자식으로 연결할것이므로 Local
+		);
+
+		// 두 SplinePoint 사이에 SplineMeshComponent 동적 생성
+		USplineMeshComponent* PathMeshComponent = NewObject<USplineMeshComponent>(this);
+		PathMeshComponent->SetStaticMesh(m_PredictedPathMesh);	// 메시 설정
+		PathMeshComponent->SetStartAndEnd(StartLocation, StartTangent, SecondLocation, SecondTangent); // 시작점과 끝점 설정
+		PathMeshComponent->SetMobility(EComponentMobility::Movable); // 조준 방향에 따라 변경되므로 Movable로 설정
+		PathMeshComponent->RegisterComponentWithWorld(GetWorld()); // 월드에 등록
+		PathMeshComponent->AttachToComponent(m_PathSpline, FAttachmentTransformRules::KeepRelativeTransform); // PathSpline에 자식으로 연결
+
+		// 배열에 저장
+		m_PredictedPathMeshes.Add(PathMeshComponent);
+	}
+}
+
+void AC_ThrowableWeaponBase::ClearPredictedPath()
+{
+	// 충돌 위치 표시 제거
+	if (m_PredictedEndPoint)
+	{
+		m_PredictedEndPoint->SetVisibility(false);
+	}
+
+	// 모든 SplinePoint 제거
+	for (USplineMeshComponent* PathMeshComponent : m_PredictedPathMeshes)
+	{
+		if (!IsValid(PathMeshComponent))
+			continue;
+
+		PathMeshComponent->DestroyComponent();
+	}
+
+	// 배열 초기화
+	m_PredictedPathMeshes.Empty();
+
+	// 기존 Spline 제거
+	if (m_PathSpline)
+	{
+		// SplinePoint 제거할때마다 갱신하지 않도록 false로 설정
+		m_PathSpline->ClearSplinePoints(false);
+		// 점 제거 끝난 후 Spline 한번만 갱신
+		m_PathSpline->UpdateSpline();
+	}
 }
