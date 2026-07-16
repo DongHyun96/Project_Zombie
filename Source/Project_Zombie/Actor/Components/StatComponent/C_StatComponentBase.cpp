@@ -207,10 +207,16 @@ float UC_StatComponentBase::GetCurHPRatio() const
 bool UC_StatComponentBase::IncreaseCurHP(float _IncreaseAmount)
 {
 	if (_IncreaseAmount < 0.f) return false;
+	
+	const float CurMaxHP = GetStat(TEXT("CurMaxHP"));
 
 	float* pCurHP = m_Stats.Find(TEXT("CurHP"));
-	*pCurHP       = FMath::Min(*pCurHP + _IncreaseAmount, GetStat("CurMaxHP"));
+	if (*pCurHP >= CurMaxHP) return false; // 이미 풀피인 상황이면 Increase 처리 x
 
+	*pCurHP = FMath::Min(*pCurHP + _IncreaseAmount, CurMaxHP);
+
+	OnIncreaseCurHPDelegate.Broadcast(m_OwnerCharacter);
+	
 	if (*pCurHP >= GetStat("CurMaxHP")) 
 		OnCurHPReachedFullDelegate.Broadcast(m_OwnerCharacter);
 	

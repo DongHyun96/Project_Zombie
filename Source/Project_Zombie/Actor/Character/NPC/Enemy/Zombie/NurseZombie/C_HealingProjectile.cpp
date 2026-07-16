@@ -97,7 +97,7 @@ bool AC_HealingProjectile::Fire
 	m_ProjectileMovement->SetUpdatedComponent(GetRootComponent());
 	
 	SetActorHiddenInGame(false);
-	m_NiagaraComponent->Activate();
+	m_NiagaraComponent->Activate(true);
 	
 	
 	m_MainCollider->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
@@ -112,7 +112,7 @@ void AC_HealingProjectile::Deactivate()
 
 	if (m_HealTarget)
 	{
-		// HealTarget이 존재했었다면, StaatComponent OnCurHPReachedZero Delegate 구독 해제
+		// HealTarget이 존재했었다면, StatComponent OnCurHPReachedZero Delegate 구독 해제
 		m_HealTarget->GetStatComponent()->OnCurHPReachedZeroDelegate.RemoveAll(this);
 		m_HealTarget = nullptr;
 	}

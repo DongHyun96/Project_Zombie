@@ -9,7 +9,7 @@
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnCurHPReachedZero, class AC_BasicCharacter*);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnCurHPReachedFull, AC_BasicCharacter*);
-
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnIncreaseCurHP, AC_BasicCharacter*);
 
 /*USTRUCT(BlueprintType)
 struct FStatInfo
@@ -143,4 +143,7 @@ public:
 	
 	// CurHP가 100% 회복되었을 때 호출받을 Delegate ( ex) Healer 좀비에서 해당 Delegate 사용 -> 더 이상 힐을 줄 필요가 없다고 판단될 때 쓰임)
 	FOnCurHPReachedFull OnCurHPReachedFullDelegate{};
+	
+	// IncreaseCurHP 정상 처리되었을 시, 호출
+	FOnIncreaseCurHP OnIncreaseCurHPDelegate{};
 };

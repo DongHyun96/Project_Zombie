@@ -15,6 +15,12 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (DisplayName = "SkillComponent"))
 	class UC_EnemySkillComponent*			m_SkillCom;
+
+protected:
+	
+	// 힐을 받았을 때 활성화시킬 NiagaraEffectComponent
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Niagara")
+	class UNiagaraComponent* m_HealedEffectNGComponent{};
 	
 public:
 	void BeginPlay() override;
@@ -29,5 +35,15 @@ public:
 		AController*		_EventInstigator,
 		AActor*				_DamageCauser
 	) override;
+
+private:
 	
+	void OnHPIncreased(AC_BasicCharacter* _HPIncreasedCharacter);
+	
+	/// <summary>
+	/// 사망 시 호출받는 Delegate -> HealedEffect 활성화 중이었다면 해당 Effect 끄기 (및 기타 처리 여기서 할 것)
+	/// </summary>
+	/// <param name="_DeadCharacter"> : 죽은 캐릭터 (자기자신) </param>
+	void OnDead(AC_BasicCharacter* _DeadCharacter);
+
 };

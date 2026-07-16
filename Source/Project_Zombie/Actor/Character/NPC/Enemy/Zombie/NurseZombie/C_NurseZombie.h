@@ -63,7 +63,8 @@ protected:
 	UPROPERTY(VisibleAnywhere)
 	TArray<AC_BasicEnemy*> m_HealTargets{};
 	
-	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	class UNiagaraComponent* m_HealingAuraEffectNG{};
 
 private:
 

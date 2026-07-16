@@ -3,6 +3,7 @@
 
 #include "C_NurseZombie.h"
 
+#include "NiagaraComponent.h"
 #include "Actor/Components/StatComponent/C_StatComponentBase.h"
 #include "GameModeAndManager/C_ZombieManager.h"
 #include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
@@ -15,6 +16,9 @@ AC_NurseZombie::AC_NurseZombie()
 	: Super(EZombieType::NurseZombie)
 {
 	PrimaryActorTick.bCanEverTick = false;
+	
+	m_HealingAuraEffectNG = CreateDefaultSubobject<UNiagaraComponent>(TEXT("HealingAuraNGComponent"));
+	m_HealingAuraEffectNG->SetupAttachment(GetRootComponent());
 }
 
 void AC_NurseZombie::BeginPlay()
