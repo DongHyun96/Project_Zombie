@@ -10,7 +10,7 @@
 
 UC_Task_UseSkill::UC_Task_UseSkill()
 {
-	bCreateNodeInstance = true;
+	bCreateNodeInstance = false;
 
 	// 매 프레임마다 TickTask 를 호출받을지 설정
 	//bNotifyTick = true;
@@ -44,9 +44,6 @@ EBTNodeResult::Type UC_Task_UseSkill::ExecuteTask(UBehaviorTreeComponent& _OwnCo
 
 	pSkillCom->m_SkillEndDelegate.AddUObject(this, &UC_Task_UseSkill::OnSkillEnd, &_OwnCom);
 
-	UE_LOG(LogTemp, Warning, TEXT("Delegate Add"));
-
-
 	pSkillCom->UseSkill(m_SkillSlot);
 
 
@@ -59,8 +56,6 @@ void UC_Task_UseSkill::TickTask(UBehaviorTreeComponent& _OwnCom, uint8* _NodeMem
 
 void UC_Task_UseSkill::OnSkillEnd(AC_BasicEnemy* _SkillUser, UBehaviorTreeComponent* _BTCom)
 {
-	UE_LOG(LogTemp, Warning, TEXT("OnSkillEnd"));
-
 	if (_SkillUser && _BTCom)
 	{
 		UC_EnemySkillComponent* pSkillCom = _SkillUser->GetComponentByClass<UC_EnemySkillComponent>();

@@ -7,11 +7,16 @@
 #include "Components/SphereComponent.h"
 
 #include "Actor/Character/NPC/Enemy/Zombie/Skill/C_EnemySkillData.h"
+#include "Actor/Character/NPC/Enemy/C_BasicEnemy.h"
 
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 
 #include "Kismet/GameplayStatics.h"
+
+#include "Utility/C_Util.h"
+
+
 
 AC_EnemyProjectile::AC_EnemyProjectile()
 {
@@ -23,12 +28,25 @@ AC_EnemyProjectile::AC_EnemyProjectile()
 	m_Sphere->InitSphereRadius(10.f);
 	// SetCollisionProfileName(TEXT("Projectile"));
 
+
+	//-------------------------테스트용-------------------------//
+	//m_Sphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	//m_Sphere->SetCollisionObjectType(ECC_WorldDynamic);
+	//
+	//m_Sphere->SetCollisionResponseToAllChannels(ECR_Ignore);
+	//m_Sphere->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Overlap);
+
+	m_Sphere->OnComponentHit.AddDynamic(this, &AC_EnemyProjectile::OnProjectileHit);
+	//-------------------------테스트용-------------------------//
+
 	// 2. PMC(Projectile Movement Component)
 	m_PMC = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("PMC"));
 	m_PMC->InitialSpeed = 2000.f;
 	m_PMC->MaxSpeed = 2000.f;
 	m_PMC->bShouldBounce = false;
 	m_PMC->Bounciness = 0.f;
+
+	m_PMC->UpdatedComponent = m_Sphere;
 
 	// 3. NiagaraComponent
 	m_NiagaraCom = CreateDefaultSubobject<UNiagaraComponent>(TEXT("Niagara"));
@@ -42,6 +60,8 @@ void AC_EnemyProjectile::InitProjectile(AC_BasicEnemy* _SkillUser, UC_EnemySkill
 	m_SkillUser = _SkillUser;
 	m_Skill = _Skill;
 
+	m_Sphere->IgnoreActorWhenMoving(_SkillUser, true);
+
 	if (_Skill)
 	{
 		m_LifeTime = _Skill->ProjectileLifetime;
@@ -49,6 +69,8 @@ void AC_EnemyProjectile::InitProjectile(AC_BasicEnemy* _SkillUser, UC_EnemySkill
 		m_PMC->InitialSpeed = _Skill->ProjectileSpeed;
 		m_PMC->MaxSpeed = _Skill->ProjectileSpeed;
 	}
+
+	m_PMC->Velocity = GetActorForwardVector() * _Skill->ProjectileSpeed;
 
 	SetLifeSpan(m_LifeTime);
 }
@@ -93,4 +115,14 @@ void AC_EnemyProjectile::PlayHitSound()
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), m_Skill->HitSound, GetActorLocation());
 	}
+}
+
+void AC_EnemyProjectile::OnProjectileHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+{
+	if (!OtherActor || OtherActor == this || OtherActor == m_SkillUser)
+		return;
+
+	UE_LOG(LogTemp, Warning, TEXT("Projectile Hit"));
+
+	OnHit();
 }
