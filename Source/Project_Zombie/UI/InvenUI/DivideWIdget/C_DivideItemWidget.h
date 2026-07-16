@@ -12,6 +12,7 @@ class USlider;
 class UImage;
 class UTextBlock;
 class UEditableText;
+class UButton;
 struct FInventoryEntry;
 
 UCLASS()
@@ -25,16 +26,26 @@ public:
 public:
 	void SetCursorItem(const FCursorItem& InCursorItem) { CursorItem = InCursorItem; }
 	
+	void SetTargetWidget(UUserWidget* InWidget) { TargetWidget = InWidget; }
+	
 	// 몇개로 나눌지 입력이 들어왔을 때 최대 최소 사이에서 DividedCount가 정의 되도록함.
 	UFUNCTION(BlueprintCallable)
 	void CalculateDivideCount(int32 InCurCount);
-	
-	void UpdateSlider();
+
+	// TODO : 슬롯 위젯과 인벤토리 위젯에 드롭했을 때 다른 버튼을 사용해야 하는데 지금 보다 더 좋은 방법있으면 적용하기.
+	// ItemSlot에 드롭 했을 때 entry의 정보를 분할 할 때 사용할 버튼을 보여줌.
+	void ShowDivideEntry();
+
+	// TODO : 슬롯 위젯과 인벤토리 위젯에 드롭했을 때 다른 버튼을 사용해야 하는데 지금 보다 더 좋은 방법있으면 적용하기.
+	// InventoryWIdget에 드롭 했을 때, 몇개의 아이템(C_ItemPickUp)을 생성해서 내보내는 버튼을 보여줌.
+	void ShowDivideItem();
 	
 	void UpdateDroppedCount();
 protected:
 	virtual void NativeOnInitialized() override;
-	// 
+	 
+	void UpdateSlider();
+	
 	//UFUNCTION()
 	//void HandleOnClickedExitButton();
 	
@@ -70,6 +81,18 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget))
 	USlider* CountSlider{};
 	
+	// ItemSlotWidget에 드롭 했을 때 사용할 버튼.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget))
+	UButton* DivideEntryButton{};
+	
+	// InventoryWidget에 드롭 했을 때 사용할 버튼.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget))
+	UButton* CreateItemButton{};
+
+	// 드롭된 위젯
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UUserWidget* TargetWidget{};
+	
 	// 현재 드래그된 아이템
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FCursorItem CursorItem{};
@@ -77,4 +100,6 @@ protected:
 	// 몇개로 나눌지 알려주는 값.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 DividedCount = 0;
+	
+	
 };

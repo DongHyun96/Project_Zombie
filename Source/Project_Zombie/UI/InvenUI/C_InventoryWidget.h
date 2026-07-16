@@ -6,6 +6,8 @@
 #include "Blueprint/UserWidget.h"
 #include "C_InventoryWidget.generated.h"
 
+class UC_DivideItemWidget;
+class UC_DragDropOperation;
 
 UCLASS()
 class PROJECT_ZOMBIE_API UC_InventoryWidget : public UUserWidget
@@ -17,14 +19,21 @@ public:
 	
 	virtual bool NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
 	
-	void ShowDivideWidget();
+	void ShowDivideEntryWidget();
+	
+	void ShowDivideItemWidget();
 public:
 	class UC_InventoryGridWidget* GetPlayerGridWidget() { return PlayerGridWidget; }
 	
 	UC_InventoryGridWidget* GetStorageGridWidget() { return StorageGridWidget; }
 	
+	UC_DivideItemWidget* GetDivideItemWidget() { return DivideItemWidget; }
+	
 	virtual void SetVisibility(ESlateVisibility InVisibility) override;
 
+protected:
+	void SpawnItem(UC_DragDropOperation* InDragDropOperation, int32 InCount);
+	
 protected:
 	// Player의 아이템 슬롯을 가지고 있을 그리드 위젯
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))

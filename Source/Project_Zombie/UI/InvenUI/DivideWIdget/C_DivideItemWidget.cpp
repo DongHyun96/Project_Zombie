@@ -3,6 +3,7 @@
 
 #include "UI/InvenUI/DivideWIdget/C_DivideItemWidget.h"
 
+#include "Components/Button.h"
 #include "Components/EditableText.h"
 #include "Components/Image.h"
 #include "Components/Slider.h"
@@ -63,10 +64,25 @@ void UC_DivideItemWidget::CalculateDivideCount(int32 InCurCount)
 	}
 }
 
+void UC_DivideItemWidget::ShowDivideEntry()
+{
+	UpdateWidget();
+	
+	CreateItemButton->SetVisibility(ESlateVisibility::Collapsed);
+}
+
+void UC_DivideItemWidget::ShowDivideItem()
+{
+	UpdateWidget();
+	
+	DivideEntryButton->SetVisibility(ESlateVisibility::Collapsed);
+}
+
 void UC_DivideItemWidget::UpdateSlider()
 {
 	CountSlider->SetValue(static_cast<float>(DividedCount));
 }
+
 
 void UC_DivideItemWidget::UpdateDroppedCount()
 {
