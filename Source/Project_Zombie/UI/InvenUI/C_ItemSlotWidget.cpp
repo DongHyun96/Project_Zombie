@@ -14,6 +14,7 @@
 #include "C_InventoryWidget.h"
 #include "C_InventoryGridWidget.h"
 #include "Components/Border.h"
+#include "DivideWIdget/C_DivideItemWidget.h"
 #include "GameFramework/PlayerState.h"
 #include "Utility/C_Util.h"
 
@@ -143,9 +144,10 @@ bool UC_ItemSlotWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDro
         return true;
     }
     
-    if (InDragDropEvent.IsControlDown())
+    if (InDragDropEvent.IsControlDown() && FromInvenComp->GetItemAt(FromSlot).CurCount > 1)
     {
-        ParentGrid->GetParentWidget()->ShowDivideWidget();
+        ParentGrid->GetParentWidget()->GetDivideItemWidget()->SetTargetWidget(this);
+        ParentGrid->GetParentWidget()->ShowDivideEntryWidget();
         return true;
     }
     
