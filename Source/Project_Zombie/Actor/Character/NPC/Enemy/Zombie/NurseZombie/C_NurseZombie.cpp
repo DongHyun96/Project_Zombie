@@ -40,11 +40,11 @@ bool AC_NurseZombie::TryRegisterAsHealTarget(AC_BasicEnemy* _NewHealTarget)
 
 	// Dist Squared 값 Max (20m 이내의 적만 등록 가능하다)
 	static const float MAX_DIST_LIMIT_SQR = 2000.f * 2000.f;
-	if (FVector::DistSquared(GetActorLocation(), _NewHealTarget->GetActorLocation()) > MAX_DIST_LIMIT_SQR)
+	/*if (FVector::DistSquared(GetActorLocation(), _NewHealTarget->GetActorLocation()) > MAX_DIST_LIMIT_SQR) // TODO : 이 주석 풀기 (For testing)
 	{
 		UC_Util::Print("MaxDist Reached", FColor::Red, 10.f);
 		return false;
-	}
+	}*/
 	
 	// 힐 타겟 등록 및 HealTarget의 체력이 모두 찼거나, 이미 사망한 경우에 대해 m_HealTargets에서 제거해버리는 Delegate 구독
 	_NewHealTarget->GetStatComponent()->OnCurHPReachedZeroDelegate.AddUObject(this, &AC_NurseZombie::OnHealTargetDeadOrReachedFullHP);

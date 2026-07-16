@@ -60,10 +60,10 @@ protected:
 	UPROPERTY(VisibleAnywhere)
 	ENurseZombieActionState m_ActionState{};
 	
-protected:
-
 	UPROPERTY(VisibleAnywhere)
 	TArray<AC_BasicEnemy*> m_HealTargets{};
+	
+	
 
 private:
 

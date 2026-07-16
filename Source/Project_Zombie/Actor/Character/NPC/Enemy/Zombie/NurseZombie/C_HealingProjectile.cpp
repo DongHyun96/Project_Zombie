@@ -129,8 +129,7 @@ void AC_HealingProjectile::Deactivate()
 	// m_ProjectileMovement->Deactivate();
 	
 	// TrailEffect 비활성화
-	// m_NiagaraComponent->DeactivateImmediate();
-	m_NiagaraComponent->Deactivate();
+	m_NiagaraComponent->DeactivateImmediate();
 }
 
 void AC_HealingProjectile::OnHealTargetDead(AC_BasicCharacter* _DeadCharacter)
