@@ -82,10 +82,15 @@ void UC_InvenComponent::ProcessItemMove(UC_InvenComponent* SrcComp, int32 SrcIdx
 	SrcComp->SwapInvenEntry(SrcIdx, DstComp, DstIdx, InPlayerID);
 }
 
-
-void UC_InvenComponent::InitInvenItemAt(int32 idx)
+void UC_InvenComponent::SetEntryCurCount(int32 Idx, int32 InCount)
 {
-	InventoryContainer.Items[idx].Clear();
+	InventoryContainer.Items[Idx].CurCount = InCount;
+}
+
+
+void UC_InvenComponent::InitInvenItemAt(int32 Idx)
+{
+	InventoryContainer.Items[Idx].Clear();
 }
 
 int32 UC_InvenComponent::AddItem(FInventoryEntry ItemEntry)

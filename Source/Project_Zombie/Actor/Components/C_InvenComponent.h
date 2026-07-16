@@ -36,9 +36,10 @@ public:
 	// 아이템이 드래그 드롭 되었을 때 처리해주는 함수.
 	void ProcessItemMove(UC_InvenComponent* SrcComp, int32 SrcIdx, UC_InvenComponent* DstComp, int32 DstIdx, int32 InPlayerID);
 
-
+	void SetEntryCurCount(int32 Idx, int32 InCount);
+	
 	// 특정 슬롯의 아이템 초기화
-	void InitInvenItemAt(int32 idx);
+	void InitInvenItemAt(int32 Idx);
 	
 	UFUNCTION(BlueprintCallable)
 	int32 AddItem(FInventoryEntry ItemEntry);
