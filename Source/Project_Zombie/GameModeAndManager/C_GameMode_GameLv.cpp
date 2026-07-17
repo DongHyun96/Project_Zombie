@@ -21,8 +21,8 @@ void AC_GameMode_GameLv::Logout(AController* Exiting)
 			int32 LeaverPlayerID = PS->GetPlayerId();
             
 			// 디버그 로그: 정말 이 단계까지 진입하는지 확인
-			UE_LOG(LogTemp, Warning, TEXT("Logout Detected! Leaver Player ID: %d"), LeaverPlayerID);
-			UKismetSystemLibrary::PrintString(this, FString::Printf(TEXT("Logout Detected! PlayerID: %d"), LeaverPlayerID), true, true, FLinearColor::Red, 10.f);
+			//UE_LOG(LogTemp, Warning, TEXT("Logout Detected! Leaver Player ID: %d"), LeaverPlayerID);
+			//UKismetSystemLibrary::PrintString(this, FString::Printf(TEXT("Logout Detected! PlayerID: %d"), LeaverPlayerID), true, true, FLinearColor::Red, 10.f);
 
 			UWorld* CurrentWorld = GetWorld();
 

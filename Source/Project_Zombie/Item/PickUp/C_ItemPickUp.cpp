@@ -50,7 +50,7 @@ AC_ItemPickUp::AC_ItemPickUp()
     
     // 플레이어만 감지하도록 셋팅
     PickupSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-    PickupSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+    //PickupSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
     // 변수 초기화
     bPickup = false;
     
@@ -65,6 +65,19 @@ void AC_ItemPickUp::BeginPlay()
     if (PickupSphere)
     {
         PickupSphere->OnComponentBeginOverlap.AddDynamic(this, &AC_ItemPickUp::OnOverlapBegin);
+    }
+    
+    if (HasAuthority())
+    {
+        float DelayTime = 2.f; // 2초 후에 주울 수 있도록 설정 (원하는 초 단위로 변경 가능)
+        
+        GetWorldTimerManager().SetTimer(
+            PickupDelayTimerHandle, 
+            this, 
+            &AC_ItemPickUp::EnablePickupOverlap, 
+            DelayTime, 
+            false
+        );
     }
 }
 
@@ -112,6 +125,19 @@ void AC_ItemPickUp::SetPickupMeshAsync(TSoftObjectPtr<UStaticMesh> InSoftMesh)
         InSoftMesh.ToSoftObjectPath(),
         FStreamableDelegate::CreateUFunction(this, FName("OnMeshLoadCompleted"), InSoftMesh)
     );
+}
+
+void AC_ItemPickUp::EnablePickupOverlap()
+{
+    if (PickupSphere)
+    {
+        // 이제 플레이어(Pawn)를 감지하도록 오버랩 설정 변경
+        PickupSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+        
+        // (선택 사항) 만약 스폰 시점에 이미 플레이어가 범위 안에 겹쳐있었다면 
+        // 자동으로 감지하지 못할 수 있으므로, 강제로 주변 오버랩을 갱신해 줍니다.
+        PickupSphere->UpdateOverlaps();
+    }
 }
 
 void AC_ItemPickUp::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

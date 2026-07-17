@@ -323,6 +323,72 @@ bool UC_InvenComponent::TryMergeItem(UC_InvenComponent* SrcComp, int32 SrcIdx, U
 	return true;
 }
 
+bool UC_InvenComponent::ProcessItemSplitMove(UC_InvenComponent* SrcComp, int32 SrcIdx, UC_InvenComponent* DstComp,
+	int32 DstIdx, int32 SplitCount, int32 InPlayerID)
+{
+	if (!GetOwner()->HasAuthority() || !SrcComp || !DstComp) return false;
+
+    FInventoryEntry& SrcEntry = SrcComp->InventoryContainer.Items[SrcIdx];
+    FInventoryEntry& DstEntry = DstComp->InventoryContainer.Items[DstIdx];
+
+    // 1. 잠금 검증 및 기본 유효성 검사
+    if (SrcEntry.LockedByPlayerID != InPlayerID) return false;
+    if (DstEntry.ItemRowName != NAME_None && DstEntry.LockedByPlayerID != INDEX_NONE) return false;
+    if (SrcEntry.ItemRowName == NAME_None || SrcEntry.CurCount < SplitCount) return false;
+
+    // 2. 목적지 슬롯 상태에 따른 분기
+    if (DstEntry.ItemRowName == NAME_None)
+    {
+        // [A] 목적지가 빈 슬롯인 경우 -> 그대로 다 채워 넣기
+        DstEntry.ItemRowName = SrcEntry.ItemRowName;
+        DstEntry.CurCount = SplitCount;
+        DstEntry.UpgradeLevel = SrcEntry.UpgradeLevel;
+        DstEntry.CurAmmo = SrcEntry.CurAmmo;
+        
+        SrcEntry.CurCount -= SplitCount;
+    }
+    else if (DstEntry.ItemRowName == SrcEntry.ItemRowName)
+    {
+        // [B] 목적지에 동일한 아이템이 존재하고 병합이 가능한 경우
+        UC_ItemManager* ItemManager = GetWorld()->GetGameInstance()->GetSubsystem<UC_ItemManager>();
+        if (!ItemManager) return false;
+
+        int32 MaxCount = ItemManager->GetItemData(SrcEntry.ItemRowName)->MaxCount;
+        
+        // 목적지가 이미 풀스택이면 처리 불가 (애초에 진입 금지)
+        if (DstEntry.CurCount >= MaxCount) return false;
+
+        // 넣을 수 있는 만큼만(여유 공간만큼) 계산
+        int32 AcceptableCount = FMath::Min(SplitCount, MaxCount - DstEntry.CurCount);
+
+        DstEntry.CurCount += AcceptableCount;
+        SrcEntry.CurCount -= AcceptableCount;
+    }
+    else
+    {
+        // [C] 다른 아이템이 있는 경우 -> 분할 불가 (스왑 불가능하므로 무효 처리)
+        return false;
+    }
+
+    // 3. 원본 슬롯이 완전히 비었으면 청소
+    if (SrcEntry.CurCount <= 0)
+    {
+        SrcEntry.Clear();
+    }
+
+    // 4. 잠금 해제 및 변경 동기화
+    SrcEntry.LockedByPlayerID = INDEX_NONE;
+    DstEntry.LockedByPlayerID = INDEX_NONE;
+
+    SrcComp->InventoryContainer.MarkItemDirty(SrcEntry);
+    DstComp->InventoryContainer.MarkItemDirty(DstEntry);
+
+    SrcComp->OnInventorySlotChanged.Broadcast(SrcIdx, SrcEntry);
+    DstComp->OnInventorySlotChanged.Broadcast(DstIdx, DstEntry);
+
+    return true;
+}
+
 
 void UC_InvenComponent::StartDragItemSlot(int32 SlotIndex, int32 InPlayerId)
 {

@@ -41,6 +41,8 @@ public:
 	
 	TSoftObjectPtr<UStaticMesh> GetMeshRef() { return MeshRef; }
 	
+	void EnablePickupOverlap();
+	
 	// 서버 함수
 public:
 	UFUNCTION(Server, Reliable)
@@ -78,4 +80,6 @@ protected:
 	
 	// 비동기 로드를 관리할 핸들러 포인터 유지
 	TSharedPtr<struct FStreamableHandle> AssetLoadHandle;
+	
+	FTimerHandle PickupDelayTimerHandle;
 };

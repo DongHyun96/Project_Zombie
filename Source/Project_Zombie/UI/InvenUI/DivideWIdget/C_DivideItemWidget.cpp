@@ -43,6 +43,14 @@ void UC_DivideItemWidget::UpdateWidget()
 	SetVisibility(ESlateVisibility::Visible);
 }
 
+void UC_DivideItemWidget::OnDivideConfirm(int32 RequestedDivideCount)
+{
+}
+
+void UC_DivideItemWidget::OnDivideConfirmFroDrop(int32 RequestedDivideCount)
+{
+}
+
 void UC_DivideItemWidget::CalculateDivideCount(int32 InCurCount)
 {
 	if (InCurCount <= 0)
@@ -104,7 +112,7 @@ void UC_DivideItemWidget::NativeOnInitialized()
 void UC_DivideItemWidget::HandleOnValueChangedCountSlider(float InValue)
 {
 	DividedCount = FMath::TruncToInt32(InValue);
-	
+	return;
 	UpdateSlider();
 	
 	UpdateDroppedCount();

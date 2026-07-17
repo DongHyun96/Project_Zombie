@@ -80,6 +80,8 @@ protected:
 	// 아이템 병합
 	bool TryMergeItem(UC_InvenComponent* SrcComp, int32 SrcIdx, UC_InvenComponent* DstComp, int32 DstIdx, int32 InPlayerID, int32 MaxCount);
 	
+	bool ProcessItemSplitMove(UC_InvenComponent* SrcComp, int32 SrcIdx, UC_InvenComponent* DstComp, int32 DstIdx, int32 SplitCount, int32 InPlayerID);
+	
 	UFUNCTION(BlueprintCallable)
 	void OnRep_InventoryContainer();
 	

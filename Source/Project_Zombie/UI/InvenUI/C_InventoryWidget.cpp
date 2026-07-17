@@ -37,7 +37,11 @@ bool UC_InventoryWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDr
 	
 	if (!DragDropOperation) return true;
 	
-	UC_InvenComponent* invenComp = Cast<AC_BasicPlayer>(GetOwningPlayerPawn())->GetInvenComponent();
+	AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(GetOwningPlayerPawn());
+	
+	if (!Player) return true;
+	
+	UC_InvenComponent* invenComp = Player->GetInvenComponent();
 
 	int32 DroppedItemIdx = DragDropOperation->GetSlotIndex();
 	
@@ -50,7 +54,8 @@ bool UC_InventoryWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDr
 		return true;
 	}
 	
-
+	// TODO : 서버에게 DropItemByPlayer를 요청하는 방식으로 가야함.
+	//Player->Server_RequestDropItemByPlayer();
 	
 	SpawnItem(DragDropOperation, curSlotItem.CurCount);
 	
@@ -114,23 +119,6 @@ void UC_InventoryWidget::SpawnItem(UC_DragDropOperation* InDragDropOperation, in
 
 	UC_ItemManager* ItemMgr = GetGameInstance()->GetSubsystem<UC_ItemManager>();
 	
-	// 1. 스폰 위치: 캐릭터 위치보다 약간 위(배나 가슴 높이)에서 스폰해야 자연스럽습니다.
-	FVector SpawnLocation = GetOwningPlayerPawn()->GetActorLocation() + FVector(0.f, 0.f, 30.f);
-    
-	// 2. 던질 방향 벡터 계산 (마인크래프트 스타일)
-	FVector ForwardVec = GetOwningPlayerPawn()->GetActorForwardVector();
-	FVector UpVec	   = GetOwningPlayerPawn()->GetActorUpVector();
-    
-	SpawnLocation += ForwardVec * 100;
-	// 앞방향으로 300만큼, 윗방향으로 150만큼 힘을 조합 (이 수치는 테스트해보며 조절하세요!)
-	FVector LaunchVelocity = (ForwardVec * 300.f) + (UpVec * 150.f);
-    
-	// 약간의 랜덤성을 부여하면 매번 똑같이 떨어지지 않고 더 자연스러워집니다.
-	LaunchVelocity.X += FMath::FRandRange(-50.f, 50.f);
-	LaunchVelocity.Y += FMath::FRandRange(-50.f, 50.f);
-
-
-	
 	if (curSlotItem.CurCount == InCount)
 	{
 		invenComp->InitInvenItemAt(DroppedItemIdx);
@@ -142,7 +130,7 @@ void UC_InventoryWidget::SpawnItem(UC_DragDropOperation* InDragDropOperation, in
 	else return;
 
 	// 3. 변경된 SpawnItem 호출 (계산한 힘을 넘겨줌)
-	ItemMgr->SpawnItem(curSlotItem.ItemRowName, SpawnLocation, InCount, LaunchVelocity);
+	ItemMgr->DropItemByPlayer(curSlotItem.ItemRowName,  InCount, GetOwningPlayerPawn());
 	
 	PlayerGridWidget->RefreshSlotAt(DroppedItemIdx, invenComp->GetInventoryItems()[DroppedItemIdx]);
 }

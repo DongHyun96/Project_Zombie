@@ -146,15 +146,13 @@ bool UC_ItemSlotWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDro
     
     if (InDragDropEvent.IsControlDown() && FromInvenComp->GetItemAt(FromSlot).CurCount > 1)
     {
-        ParentGrid->GetParentWidget()->GetDivideItemWidget()->SetTargetWidget(this);
-        ParentGrid->GetParentWidget()->ShowDivideEntryWidget();
+        // TODO : 이 때 Drop된 아이템 슬롯도 잠가줘야 한다.
+        ParentGrid->GetParentInventoryWidget()->GetDivideItemWidget()->SetTargetWidget(this);
+        ParentGrid->GetParentInventoryWidget()->ShowDivideEntryWidget();
         return true;
     }
     
     pPlayer->Server_RequestMoveItem(FromInvenComp, FromSlot, ToInvenComp, ToSlot);
-    
-    // TODO : FFastArraySerializer 전환 하면 여기 바꾸기
-    //ToInvenComp->Server_RequestMoveItem(FromInvenComp, FromSlot, ToInvenComp, ToSlot);
     
     return true;
 }

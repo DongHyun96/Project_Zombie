@@ -343,6 +343,21 @@ public:
 	UFUNCTION(Server, Reliable)
 	void Server_CancelDragItemSlot(int32 SlotIndex, UC_InvenComponent* InteractedInven);
 	
+	// [경우 A] 슬롯에 떨어뜨렸을 때 (슬롯 간 분할 이동)
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_RequestDivideMoveItem(
+		UC_InvenComponent* SrcComp, int32 SrcIdx, 
+		UC_InvenComponent* DstComp, int32 DstIdx, 
+		int32 SplitCount
+	);
+
+	// [경우 B] 인벤토리 빈 곳에 떨어뜨렸을 때 (필드에 버리기/스폰)
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_RequestDivideDropItem(
+		UC_InvenComponent* SrcComp, int32 SrcIdx, 
+		int32 SplitCount
+	);
+	
 	// TODO : Test 함수.
 	//UFUNCTION(Server, Reliable)
 	//void Server_StartDragItem(UC_InvenComponent* InvenComp, int32 SlotIndex);

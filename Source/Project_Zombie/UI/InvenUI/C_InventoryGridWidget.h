@@ -43,7 +43,7 @@ public:
 	
 	void SetParentWidget(UC_InventoryWidget* InInvenWidget) {ParentWidget = InInvenWidget;}
 	
-	UC_InventoryWidget* GetParentWidget() const {return ParentWidget;}
+	UC_InventoryWidget* GetParentInventoryWidget() const {return ParentWidget;}
 protected:
 	// C_ItemSlot을 배치할 GridPanel
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))

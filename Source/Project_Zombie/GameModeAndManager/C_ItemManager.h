@@ -5,6 +5,7 @@
 #include "GlobalData.h"
 #include "C_ItemManager.generated.h"
 
+class AC_ItemPickUp;
 
 UCLASS(Blueprintable)
 class PROJECT_ZOMBIE_API UC_ItemManager : public UGameInstanceSubsystem
@@ -19,7 +20,10 @@ public:
 	const FItemData* GetItemData(FName InRowName) const;
 
 	UFUNCTION(BlueprintCallable)
-	class AC_ItemPickUp* SpawnItem(FName InRowName, const FVector& SpawnLocation, int32 InCount, const FVector& LaunchVelocity = FVector::ZeroVector);
+	AC_ItemPickUp* SpawnItem(FName InRowName, int32 InCount, const FVector& SpawnLocation);
+	
+	UFUNCTION(BlueprintCallable)
+	bool DropItemByPlayer(FName InRowName, int32 InCount, AActor* InActor);
 private:
 
 	UPROPERTY()

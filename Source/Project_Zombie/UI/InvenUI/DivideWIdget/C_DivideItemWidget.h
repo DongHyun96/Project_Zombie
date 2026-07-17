@@ -23,6 +23,9 @@ class PROJECT_ZOMBIE_API UC_DivideItemWidget : public UUserWidget
 public:
 	void UpdateWidget();
 	
+	void OnDivideConfirm(int32 RequestedDivideCount);
+	
+	void OnDivideConfirmFroDrop(int32 RequestedDivideCount);
 public:
 	void SetCursorItem(const FCursorItem& InCursorItem) { CursorItem = InCursorItem; }
 	
