@@ -16,7 +16,7 @@ bool UC_NurseHealing::Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data)
 	AC_NurseZombie* Nurse = Cast<AC_NurseZombie>(_Owner); 
 
 	// 힐을 줄 대상이 없음
-	if (Nurse->GetHealTargets().IsEmpty()) return false;
+	if (Nurse->GetHealProjectileTargets().IsEmpty()) return false;
 	
 	const int32 NumSections       = _Data->Montage->CompositeSections.Num();
 	const int32 PickedIdx         = FMath::RandRange(0, NumSections - 1);
@@ -36,7 +36,7 @@ void UC_NurseHealing::Fire(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data)
 	AC_NurseZombie* Nurse = Cast<AC_NurseZombie>(_Owner);
 	if (!Nurse) return;
 	
-	const TArray<AC_BasicEnemy*> HealTargets = Nurse->GetHealTargets();
+	const TArray<AC_BasicEnemy*> HealTargets = Nurse->GetHealProjectileTargets();
 
 	for (AC_BasicEnemy* HealTarget : HealTargets)
 	{

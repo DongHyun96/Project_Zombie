@@ -37,19 +37,24 @@ void AC_NurseZombie::BeginPlay()
 	m_SkillCom->m_SkillEndDelegate.AddUObject(this, &AC_NurseZombie::OnHealSkillEnd);
 }
 
+void AC_NurseZombie::GetHealingAuraOverlappingEnemies(TArray<AActor*>& _OutOverlappingEnemies) const
+{
+	m_HealingAuraCollider->GetOverlappingActors(_OutOverlappingEnemies, AC_BasicEnemy::StaticClass());
+}
+
 bool AC_NurseZombie::TryRegisterAsHealTarget(AC_BasicEnemy* _NewHealTarget)
 {
 	// Nurse끼리 Heal 가능 but 자기자신 HealTarget 잡기 x
 	if (this == _NewHealTarget) return false;  
 	
-	if (m_HealTargets.Num() >= s_HealTargetCountLimit)
+	if (m_HealProjectileTargets.Num() >= s_HealTargetCountLimit)
 	{
 		UC_Util::Print("Max TargetCount reached ", FColor::Red, 10.f);
 		return false;
 	}
 	if (!_NewHealTarget || _NewHealTarget->GetStatComponent()->IsCurHPFull())	return false; // 새로 들어온 Target이 Valid하지 않거나, 이미 풀피인 상황
 	
-	if (m_HealTargets.Contains(_NewHealTarget))
+	if (m_HealProjectileTargets.Contains(_NewHealTarget))
 	{
 		UC_Util::Print("Already registered", FColor::Red, 10.f);	
 		return false; // 이미 힐 Target으로 지정되어 있는 상황
@@ -67,7 +72,7 @@ bool AC_NurseZombie::TryRegisterAsHealTarget(AC_BasicEnemy* _NewHealTarget)
 	_NewHealTarget->GetStatComponent()->OnCurHPReachedZeroDelegate.AddUObject(this, &AC_NurseZombie::OnHealTargetDeadOrReachedFullHP);
 	_NewHealTarget->GetStatComponent()->OnCurHPReachedFullDelegate.AddUObject(this, &AC_NurseZombie::OnHealTargetDeadOrReachedFullHP);
 
-	m_HealTargets.Add(_NewHealTarget);
+	m_HealProjectileTargets.Add(_NewHealTarget);
 
 	UC_Util::Print("Heal target received!", FColor::Red, 10.f);
 	
@@ -95,7 +100,7 @@ void AC_NurseZombie::OnHealTargetDeadOrReachedFullHP(AC_BasicCharacter* _HealTar
 	_HealTarget->GetStatComponent()->OnCurHPReachedZeroDelegate.RemoveAll(this);
 	_HealTarget->GetStatComponent()->OnCurHPReachedFullDelegate.RemoveAll(this);
 	
-	m_HealTargets.Remove(Cast<AC_BasicEnemy>(_HealTarget));
+	m_HealProjectileTargets.Remove(Cast<AC_BasicEnemy>(_HealTarget));
 }
 
 void AC_NurseZombie::OnHealSkillEnd(AC_BasicEnemy* _Enemy)
