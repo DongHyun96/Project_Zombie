@@ -13,4 +13,13 @@ UCLASS()
 class PROJECT_ZOMBIE_API UC_Serv_NurseSelectMainAction : public UBTService
 {
 	GENERATED_BODY()
+
+public:
+	
+	UC_Serv_NurseSelectMainAction();
+	
+public:
+	
+	virtual void TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
+	
 };

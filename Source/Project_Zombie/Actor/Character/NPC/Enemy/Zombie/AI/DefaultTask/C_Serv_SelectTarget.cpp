@@ -30,7 +30,7 @@ void UC_Serv_SelectTarget::TickNode(UBehaviorTreeComponent& _OwnCom, uint8* _Nod
 	if (!pZombie)
 		return;
 
-	/*// 인지범위를 벗어난 대상이 일정시간이 지나면 인지목록에서 제거
+	// 인지범위를 벗어난 대상이 일정시간이 지나면 인지목록에서 제거
 	pController->ClearSensedTarget(3.f);
 
 	float MaxAggro = -1.f;
@@ -65,11 +65,19 @@ void UC_Serv_SelectTarget::TickNode(UBehaviorTreeComponent& _OwnCom, uint8* _Nod
 				Pos = Info.Target->GetActorLocation();
 			}
 		}
-	}*/
+	}
+	
+	if (pBestTarget) // BestTarget가 나온 상황
+	{
+		// BestTarget을 Target으로 지정
+		UBlackboardComponent* pBBCom = _OwnCom.GetBlackboardComponent();
+		if (!pBBCom) return;
+	
+		pBBCom->SetValueAsObject(m_Target.SelectedKeyName, pBestTarget);
+	}
 
-	// 가장 가까운 플레이어를 찾는다
-	AActor* pBestTarget = nullptr;
-	float MinDist       = FLT_MAX;
+	// BestTarget이 나오지 않은 상황 -> 가장 가까운 플레이어를 찾는다 ( TODO : 추후 거점 Actor 까지 포함해서 따질 것)
+	float MinDist = FLT_MAX;
 
 	if (!m_GameLevelManager)
 	{
@@ -92,8 +100,7 @@ void UC_Serv_SelectTarget::TickNode(UBehaviorTreeComponent& _OwnCom, uint8* _Nod
 
 	// 가장 가까운 플레이어를 블랙보드에 타겟으로 설정
 	UBlackboardComponent* pBBCom = _OwnCom.GetBlackboardComponent();
-	if (!pBBCom)
-		return;
+	if (!pBBCom) return;
 	
 	pBBCom->SetValueAsObject(m_Target.SelectedKeyName, pBestTarget);
 

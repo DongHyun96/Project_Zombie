@@ -41,12 +41,6 @@ public:
 	/// <returns> : 등록 불가능한 상태라면 return false </returns>
 	bool TryRegisterAsHealTarget(AC_BasicEnemy* _NewHealTarget);
 
-	/// <summary>
-	/// Heal 타겟 제거
-	/// </summary>
-	/// <param name="_HealTarget"></param>
-	void RemoveHealTarget(AC_BasicEnemy* _HealTarget);
-
 public:
 	
 	void SetActionState(ENurseZombieActionState _ActionState) { m_ActionState = _ActionState; }
@@ -63,6 +57,12 @@ private:
 	/// </summary>
 	UFUNCTION()
 	void OnHealTargetDeadOrReachedFullHP(AC_BasicCharacter* _StatComOwner);
+
+	/// <summary>
+	/// Heal Skill이 끝나면 호출될 함수 
+	/// </summary>
+	UFUNCTION()
+	void OnHealSkillEnd(AC_BasicEnemy* _Enemy);
 
 protected:
 
