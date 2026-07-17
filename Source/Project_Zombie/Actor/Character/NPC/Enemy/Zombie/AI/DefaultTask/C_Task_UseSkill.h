@@ -24,6 +24,14 @@ public:
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& _OwnCom, uint8* _NodeMemory) override;
 	virtual void TickTask(UBehaviorTreeComponent& _OwnCom, uint8* _NodeMemory, float _DeltaSeconds);
 
+	// Task 종료 시, 호출됨 -> Skill 사용 중 aborted 처리된 경우 해당 Skill 사용을 Manual하게 EndSkill 처리해주어야 함
+	virtual void OnTaskFinished
+	(
+		UBehaviorTreeComponent& OwnerComp,
+		uint8*					NodeMemory,
+		EBTNodeResult::Type		TaskResult
+	) override;
+	
 private:
 	void OnSkillEnd(class AC_BasicEnemy* _SkillUser, UBehaviorTreeComponent* _BTCom);
 	

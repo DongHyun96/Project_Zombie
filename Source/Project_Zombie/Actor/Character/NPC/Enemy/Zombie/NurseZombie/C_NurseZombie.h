@@ -51,6 +51,7 @@ public:
 public:
 	
 	void SetActionState(ENurseZombieActionState _ActionState) { m_ActionState = _ActionState; }
+	ENurseZombieActionState GetActionState() const { return m_ActionState; }
 
 	/// <summary>
 	/// 주변부 Healing Aura 활성화/비활성화

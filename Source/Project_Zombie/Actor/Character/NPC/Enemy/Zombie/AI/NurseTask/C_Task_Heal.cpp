@@ -64,7 +64,6 @@ void UC_Task_Heal::TickTask(UBehaviorTreeComponent& _OwnCom, uint8* _NodeMemory,
 	TArray<AActor*> HealAuraOverlappingEnemies{};
 	Nurse->GetHealingAuraOverlappingEnemies(HealAuraOverlappingEnemies);
 
-	uint32 HealCnt{};
 	for (AActor* Actor : HealAuraOverlappingEnemies)
 	{
 		AC_BasicEnemy* Enemy = Cast<AC_BasicEnemy>(Actor);
@@ -73,9 +72,7 @@ void UC_Task_Heal::TickTask(UBehaviorTreeComponent& _OwnCom, uint8* _NodeMemory,
 		// Heal Aura에 들어온 Enemy에 대해 초당 힐 부여
 		const float CurrentHealAmount = _DeltaSeconds * Nurse->GetHealingAuraHPS();
 		Enemy->GetStatComponent()->IncreaseCurHP(CurrentHealAmount);
-		++HealCnt;
 	}
-	UC_Util::Print("Aura Heal Count " + FString::FromInt(HealCnt), FColor::Red, 10.f);
 	
 	/* Healing Projectile 처리 관련 */
 	float* ProjectileSpawnIntervalTimer  = reinterpret_cast<float*>(_NodeMemory);
