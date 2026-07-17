@@ -7,6 +7,9 @@
 #include "GlobalData.h"
 #include "C_ItemPickUp.generated.h"
 
+// 스폰되고 플레이어와 바로 오버랩되지 않고 DelayTime 이후에 오버랩 기능이 켜져서 오버랩(아이템 파밍)가능.
+#define DELAYTIME 2.f
+
 UCLASS()
 class PROJECT_ZOMBIE_API AC_ItemPickUp : public AActor
 {
@@ -52,9 +55,12 @@ public:
 	
 	UFUNCTION()
 	void OnRep_MeshRef();
+	
+	UFUNCTION()
+	void OnRep_ItemData();
 public:
 	// 아이템 정보
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(ReplicatedUsing = OnRep_ItemData, EditAnywhere, BlueprintReadWrite)
 	FInventoryEntry ItemData;
 
 	// 플레이어가 해당 아이템을 습득중인지 판별해줄 bool변수

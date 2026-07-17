@@ -23,10 +23,15 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetSlotIndex(int32 idx) { curSlotIdx = idx; }
 	
+	int32 GetSlotIndex() { return curSlotIdx; }
+	
 	void SetGridWidget(class UC_InventoryGridWidget* GridWidget) { ParentGrid = GridWidget; }
 	
 	// 이 슬롯이 소속된 인벤토리 컴포넌트 세팅 및 가져오기
 	void SetAssociatedComponent(class UC_InvenComponent* InComp) { AssociatedInvenComp = InComp; }
+	
+	UC_InvenComponent* GetAssociatedComponent() {return AssociatedInvenComp;}
+public:
 	
 	// 위젯을 클릭하는 마우스 버튼 감지 함수
 	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
@@ -34,7 +39,7 @@ public:
 	// 위젯에 대한 드래그 감지 함수
 	virtual void NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& OutOperation) override;
 	
-	// 위젯에게 드래그된 것이 드롭되었을 때 함수
+	// 위젯에게 드래그된 것이 드롭되었을 때 함수, 실패 했을 때 false가 아닌 true를 반환하는 이유는 false를 반환하면 뒤의 위젯의 OnDrop이 호출 됨.
 	virtual bool NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
 	
 	virtual void NativeOnDragCancelled(const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
@@ -52,10 +57,13 @@ protected:
 protected:
 	// 아이템 아이콘
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget))
-	class UImage* ItemIcon;
+	class UImage* ItemIcon{};
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget))
-	class UTextBlock* ItemCountText;
+	class UImage* BackGroundImage{};
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget))
+	class UTextBlock* ItemCountText{};
 
 	// ItemSlot 자신의 Inventory에서 어떤 Index인지 기억.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)

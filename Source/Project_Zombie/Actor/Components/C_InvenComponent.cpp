@@ -44,10 +44,6 @@ void UC_InvenComponent::BeginPlay()
 			InventoryContainer.Items[i].SlotIndex = i;
 		}
 		
-		//FInventoryEntry InventoryEntry{};
-		//InventoryEntry.ItemRowName = FName("Item_Zombium");
-		//InventoryEntry.Count = 1;
-		//AddItem(InventoryEntry);
 		InventoryContainer.MarkArrayDirty();
 	}
 }
@@ -90,7 +86,13 @@ void UC_InvenComponent::SetEntryCurCount(int32 Idx, int32 InCount)
 
 void UC_InvenComponent::InitInvenItemAt(int32 Idx)
 {
+	if (!GetOwner()->HasAuthority() || !InventoryContainer.Items.IsValidIndex(Idx)) return;
+
 	InventoryContainer.Items[Idx].Clear();
+	InventoryContainer.Items[Idx].SlotIndex = Idx; // 인덱스 유실 차단
+
+	InventoryContainer.MarkItemDirty(InventoryContainer.Items[Idx]);
+	OnInventorySlotChanged.Broadcast(Idx, InventoryContainer.Items[Idx]);
 }
 
 int32 UC_InvenComponent::AddItem(FInventoryEntry ItemEntry)
@@ -103,7 +105,11 @@ int32 UC_InvenComponent::AddItem(FInventoryEntry ItemEntry)
     
 	if (!ItemManager) return ItemEntry.CurCount;
 
-    int32 MaxCount = ItemManager->GetItemData(ItemEntry.ItemRowName)->MaxCount;
+	const FItemData* PickUpItemData = ItemManager->GetItemData(ItemEntry.ItemRowName); 
+	
+	if (!PickUpItemData) return ItemEntry.CurCount;
+	
+    int32 MaxCount = PickUpItemData->MaxCount;
     int32 RemainCount = ItemEntry.CurCount; // 넣어야 할 남은 수량
 
     // 1. 기존에 존재하는 동일한 아이템 슬롯 찾아서 채워 넣기 (스택 가능 아이템)
@@ -176,51 +182,28 @@ void UC_InvenComponent::ForceRepInven()
 
 void UC_InvenComponent::ReleaseAllLocksByPlayer(int32 InPlayerID)
 {
-	if (InPlayerID == INDEX_NONE) 
-	{
-		UE_LOG(LogTemp, Error, TEXT("ReleaseAllLocksByPlayer: Failed! InPlayerID is INDEX_NONE(-1)"));
-		return;
-	}
+	if (!GetOwner()->HasAuthority()) return;
+	if (InPlayerID == INDEX_NONE) return;
 
 	const int32 NumItems = InventoryContainer.Items.Num();
 	for (int32 i = 0; i < NumItems; ++i)
 	{
 		FInventoryEntry& Entry = InventoryContainer.Items[i];
 
-		// 락이 걸려있는 슬롯이 있다면 전부 로그 출력
-		if (Entry.LockedByPlayerID != INDEX_NONE)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Inven [%s] Slot [%d] is currently locked by PlayerID [%d]. (Target Leaver ID: [%d])"), 
-				*GetName(), 
-				Entry.SlotIndex, 
-				Entry.LockedByPlayerID, 
-				InPlayerID);
-		}
-
-		// 일치하면 잠금 해제
 		if (Entry.LockedByPlayerID == InPlayerID)
 		{
-			CancelDragItemSlot(Entry.SlotIndex, InPlayerID);
+			// 무거운 검증 단계 우회하고 직접 안전 세터로 해제 처리
+			SetSlotLockState(i, INDEX_NONE);
             
 			UE_LOG(LogTemp, Log, TEXT("Inven [%s] Slot [%d] Lock Released Successfully for Player [%d]!"), 
-				*GetName(), 
-				Entry.SlotIndex, 
-				InPlayerID);
+			   *GetName(), i, InPlayerID);
 		}
 	}
 }
 
 void UC_InvenComponent::ForceReleaseSlotLock(int32 SlotIndex)
 {
-	if (!InventoryContainer.Items.IsValidIndex(SlotIndex)) return;
-
-	InventoryContainer.Items[SlotIndex].LockedByPlayerID = INDEX_NONE;
-	InventoryContainer.MarkItemDirty(InventoryContainer.Items[SlotIndex]);
-
-	if (GetOwner()->HasAuthority())
-	{
-		OnInventorySlotChanged.Broadcast(SlotIndex, InventoryContainer.Items[SlotIndex]);
-	}
+	SetSlotLockState(SlotIndex, INDEX_NONE);
 }
 
 void UC_InvenComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -237,8 +220,7 @@ bool UC_InvenComponent::SwapInvenEntry(int32 MySlotIdx, UC_InvenComponent* Targe
 {
 	// 1. 유효성 및 권한 검사
 	if (!GetOwner()->HasAuthority() || !TargetComp) return false;
-	
-	//if (!InventoryContainer.Items.IsValidIndex(MySlotIdx) || !TargetComp->InventoryContainer.Items.IsValidIndex(TargetSlotIdx)) return false;
+	if (!InventoryContainer.Items.IsValidIndex(MySlotIdx) || !TargetComp->InventoryContainer.Items.IsValidIndex(TargetSlotIdx)) return false;
 
 	FInventoryEntry& MyEntry = InventoryContainer.Items[MySlotIdx];
 	FInventoryEntry& TargetEntry = TargetComp->InventoryContainer.Items[TargetSlotIdx];
@@ -247,50 +229,32 @@ bool UC_InvenComponent::SwapInvenEntry(int32 MySlotIdx, UC_InvenComponent* Targe
 	if (MyEntry.LockedByPlayerID != InPlayerID) return false;
 	if (TargetEntry.ItemRowName != NAME_None && TargetEntry.LockedByPlayerID != INDEX_NONE) return false;
 
-	// 3. 데이터 백업
-	FName TempRowName = MyEntry.ItemRowName;
-	int32 TempCount = MyEntry.CurCount;
-	int32 TempUpgrade = MyEntry.UpgradeLevel;
-	int32 TempAmmo = MyEntry.CurAmmo;
+	// 3. 구조체 전체 대입을 통한 안전한 데이터 스왑 (확장성 확보)
+	FInventoryEntry TempEntry = MyEntry;
+	MyEntry = TargetEntry;
+	TargetEntry = TempEntry;
 
-	// 4. 내 가방 <- 타겟 데이터 복사
-	MyEntry.ItemRowName = TargetEntry.ItemRowName;
-	MyEntry.CurCount = TargetEntry.CurCount;
-	MyEntry.UpgradeLevel = TargetEntry.UpgradeLevel;
-	MyEntry.CurAmmo = TargetEntry.CurAmmo;
+	// 4. 고유 식별 정보인 슬롯 인덱스는 원래대로 복구
+	MyEntry.SlotIndex = MySlotIdx;
+	TargetEntry.SlotIndex = TargetSlotIdx;
 
-	// 5. 타겟 <- 백업 데이터 복사
-	TargetEntry.ItemRowName = TempRowName;
-	TargetEntry.CurCount = TempCount;
-	TargetEntry.UpgradeLevel = TempUpgrade;
-	TargetEntry.CurAmmo = TempAmmo;
-
-	// 6. 잠금 해제
-	MyEntry.LockedByPlayerID = INDEX_NONE;
-	TargetEntry.LockedByPlayerID = INDEX_NONE;
-
-	// 7. 데이터 갱신 및 브로드캐스트 (TargetComp가 자기 자신이어도 완벽하게 작동함)
-	InventoryContainer.MarkItemDirty(MyEntry);
-	TargetComp->InventoryContainer.MarkItemDirty(TargetEntry);
-
-	OnInventorySlotChanged.Broadcast(MySlotIdx, MyEntry);
-	TargetComp->OnInventorySlotChanged.Broadcast(TargetSlotIdx, TargetEntry);
+	// 5. 잠금 해제 (이 내부에서 MarkItemDirty와 Broadcast가 수행됨)
+	SetSlotLockState(MySlotIdx, INDEX_NONE);
+	TargetComp->SetSlotLockState(TargetSlotIdx, INDEX_NONE);
 
 	return true;
 }
 
 bool UC_InvenComponent::TryMergeItem(UC_InvenComponent* SrcComp, int32 SrcIdx, UC_InvenComponent* DstComp, int32 DstIdx, int32 InPlayerID, int32 MaxCount)
 {
-	if (!GetOwner()->HasAuthority()) return false;
+	if (!GetOwner()->HasAuthority() || !SrcComp || !DstComp) return false;
 
 	FInventoryEntry& SrcEntry = SrcComp->InventoryContainer.Items[SrcIdx];
 	FInventoryEntry& DstEntry = DstComp->InventoryContainer.Items[DstIdx];
 
-	// 잠금 상태 검증: 드래그한 아이템은 내 소유여야 하고, 드롭된 곳은 다른 사람이 잡고 있지 않아야 함
+	// 잠금 상태 검증
 	if (SrcEntry.LockedByPlayerID != InPlayerID) return false;
 	if (DstEntry.ItemRowName != NAME_None && DstEntry.LockedByPlayerID != INDEX_NONE) return false;
-
-	// 목적지 슬롯이 이미 꽉 차 있다면 병합 불가능 (스왑으로 넘어가게 유도)
 	if (DstEntry.CurCount >= MaxCount) return false;
 
 	int32 TotalCount = SrcEntry.CurCount + DstEntry.CurCount;
@@ -299,7 +263,8 @@ bool UC_InvenComponent::TryMergeItem(UC_InvenComponent* SrcComp, int32 SrcIdx, U
 	{
 		// 완벽 병합: 다 들어감
 		DstEntry.CurCount = TotalCount;
-		SrcEntry.Clear(); // 원본 슬롯은 빈칸 처리
+		SrcEntry.Clear(); // 원본 슬롯은 빈칸 처리 (이 안에서 개수와 필드가 초기화되지만 SlotIndex는 유지되어야 함)
+		SrcEntry.SlotIndex = SrcIdx; // Clear 후 혹시 모를 인덱스 유실 방지
 	}
 	else
 	{
@@ -308,22 +273,20 @@ bool UC_InvenComponent::TryMergeItem(UC_InvenComponent* SrcComp, int32 SrcIdx, U
 		SrcEntry.CurCount = TotalCount - MaxCount;
 	}
 
-	// 잠금 해제
-	SrcEntry.LockedByPlayerID = INDEX_NONE;
-	DstEntry.LockedByPlayerID = INDEX_NONE;
-
-	// 변경 사항 알림 (FastArraySerializer 동기화)
+	// 데이터 변경이 일어났으므로 명시적으로 Dirty 마크 및 브로드캐스트 수행
 	SrcComp->InventoryContainer.MarkItemDirty(SrcEntry);
 	DstComp->InventoryContainer.MarkItemDirty(DstEntry);
-
-	// 서버 UI 동기화 (리슨 서버용)
+    
 	SrcComp->OnInventorySlotChanged.Broadcast(SrcIdx, SrcEntry);
 	DstComp->OnInventorySlotChanged.Broadcast(DstIdx, DstEntry);
 
+	// 잠금 해제 
+	SrcComp->SetSlotLockState(SrcIdx, INDEX_NONE);
+	DstComp->SetSlotLockState(DstIdx, INDEX_NONE);
 	return true;
 }
 
-bool UC_InvenComponent::ProcessItemSplitMove(UC_InvenComponent* SrcComp, int32 SrcIdx, UC_InvenComponent* DstComp,
+bool UC_InvenComponent::ProcessItemDivideMove(UC_InvenComponent* SrcComp, int32 SrcIdx, UC_InvenComponent* DstComp,
 	int32 DstIdx, int32 SplitCount, int32 InPlayerID)
 {
 	if (!GetOwner()->HasAuthority() || !SrcComp || !DstComp) return false;
@@ -333,19 +296,20 @@ bool UC_InvenComponent::ProcessItemSplitMove(UC_InvenComponent* SrcComp, int32 S
 
     // 1. 잠금 검증 및 기본 유효성 검사
     if (SrcEntry.LockedByPlayerID != InPlayerID) return false;
-    if (DstEntry.ItemRowName != NAME_None && DstEntry.LockedByPlayerID != INDEX_NONE) return false;
+    //if (DstEntry.ItemRowName != NAME_None && DstEntry.LockedByPlayerID != INDEX_NONE) return false;
     if (SrcEntry.ItemRowName == NAME_None || SrcEntry.CurCount < SplitCount) return false;
 
     // 2. 목적지 슬롯 상태에 따른 분기
     if (DstEntry.ItemRowName == NAME_None)
     {
         // [A] 목적지가 빈 슬롯인 경우 -> 그대로 다 채워 넣기
-        DstEntry.ItemRowName = SrcEntry.ItemRowName;
-        DstEntry.CurCount = SplitCount;
-        DstEntry.UpgradeLevel = SrcEntry.UpgradeLevel;
-        DstEntry.CurAmmo = SrcEntry.CurAmmo;
-        
-        SrcEntry.CurCount -= SplitCount;
+    	SrcEntry.CurCount -= SplitCount;
+    	
+    	DstEntry = SrcEntry; 
+    	DstEntry.CurCount = SplitCount;
+    	DstEntry.SlotIndex = DstIdx; // 슬롯 인덱스는 본인 것으로 복구
+    	DstEntry.LockedByPlayerID = INDEX_NONE; // 드롭 위치는 락 해제 상태로
+    
     }
     else if (DstEntry.ItemRowName == SrcEntry.ItemRowName)
     {
@@ -374,55 +338,96 @@ bool UC_InvenComponent::ProcessItemSplitMove(UC_InvenComponent* SrcComp, int32 S
     if (SrcEntry.CurCount <= 0)
     {
         SrcEntry.Clear();
+    	SrcEntry.SlotIndex = SrcIdx;
     }
 
     // 4. 잠금 해제 및 변경 동기화
-    SrcEntry.LockedByPlayerID = INDEX_NONE;
-    DstEntry.LockedByPlayerID = INDEX_NONE;
+	SrcComp->InventoryContainer.MarkItemDirty(SrcEntry);
+	DstComp->InventoryContainer.MarkItemDirty(DstEntry);
+	SrcComp->OnInventorySlotChanged.Broadcast(SrcIdx, SrcEntry);
+	DstComp->OnInventorySlotChanged.Broadcast(DstIdx, DstEntry);
 
-    SrcComp->InventoryContainer.MarkItemDirty(SrcEntry);
-    DstComp->InventoryContainer.MarkItemDirty(DstEntry);
-
-    SrcComp->OnInventorySlotChanged.Broadcast(SrcIdx, SrcEntry);
-    DstComp->OnInventorySlotChanged.Broadcast(DstIdx, DstEntry);
+	// 잠금 해제는 전용 Setter를 통해 안전하게 마무리합니다 (여기서 중복 패킷 방지 조건 처리됨).
+	SrcComp->SetSlotLockState(SrcIdx, INDEX_NONE);
+	DstComp->SetSlotLockState(DstIdx, INDEX_NONE);
 
     return true;
+}
+
+int32 UC_InvenComponent::ProcessItemDivideDrop(int32 SrcIdx, int32 SplitCount, int32 InPlayerID)
+{
+	if (!GetOwner()->HasAuthority() || SplitCount <= 0) return 0;
+	if (!InventoryContainer.Items.IsValidIndex(SrcIdx)) return 0;
+
+	FInventoryEntry& SrcEntry = InventoryContainer.Items[SrcIdx];
+
+	// 1. 유효성 및 잠금 상태 검증
+	if (SrcEntry.ItemRowName == NAME_None) return 0;
+	if (SrcEntry.LockedByPlayerID != InPlayerID) return 0;
+	if (SrcEntry.CurCount < SplitCount) return 0; // 요청한 개수가 가지고 있는 것보다 많으면 실패
+
+	// 2. 인벤토리 데이터 차감 처리
+	SrcEntry.CurCount -= SplitCount;
+
+	if (SrcEntry.CurCount <= 0)
+	{
+		SrcEntry.Clear(); // Clear 내부에서 LockedByPlayerID는 INDEX_NONE이 되지만 아래 SetSlotLockState 채널 통일을 위해 둠
+		SrcEntry.SlotIndex = SrcIdx; // 인덱스 보존
+	}
+
+	// 데이터 변화에 따른 동기화 우선 수행
+	InventoryContainer.MarkItemDirty(SrcEntry);
+	OnInventorySlotChanged.Broadcast(SrcIdx, SrcEntry);
+
+	// 잠금 해제는 이 하나의 경로로 완전히 위임
+	SetSlotLockState(SrcIdx, INDEX_NONE);
+
+	// 검증과 차감이 완벽히 끝났으므로, 드롭을 진행할 개수 반환
+	return SplitCount;
+}
+
+bool UC_InvenComponent::SetSlotLockState(int32 SlotIdx, int32 InPlayerID)
+{
+	// 1. 유효성 검사 (서버 권한 및 인덱스 범위)
+	if (!GetOwner()->HasAuthority()) return false;
+	if (!InventoryContainer.Items.IsValidIndex(SlotIdx)) return false;
+
+	FInventoryEntry& Entry = InventoryContainer.Items[SlotIdx];
+
+	// 값의 변화가 없다면 불필요한 네트워크 패킷 전송(Dirty 마크) 방지
+	//if (Entry.LockedByPlayerID == InPlayerID) return true;
+
+	// 2. 잠금 값 대입
+	Entry.LockedByPlayerID = InPlayerID;
+
+	// 3. FastArraySerializer 동기화 마크 및 로컬 UI 브로드캐스트
+	InventoryContainer.MarkItemDirty(Entry);
+	
+	OnInventorySlotChanged.Broadcast(SlotIdx, Entry);
+
+	return true;
 }
 
 
 void UC_InvenComponent::StartDragItemSlot(int32 SlotIndex, int32 InPlayerId)
 {
-	if (!InventoryContainer.Items.IsValidIndex(SlotIndex)) return;
+	if (!GetOwner()->HasAuthority() || !InventoryContainer.Items.IsValidIndex(SlotIndex)) return;
 	
 	if (InventoryContainer.Items[SlotIndex].ItemRowName == NAME_None) return;
 	
 	if (InventoryContainer.Items[SlotIndex].LockedByPlayerID != INDEX_NONE) return;
 	
-	
-	InventoryContainer.Items[SlotIndex].LockedByPlayerID = InPlayerId;
-	InventoryContainer.MarkItemDirty(InventoryContainer.Items[SlotIndex]);
-	
-	if (!GetOwner()->HasAuthority()) return;
-	
-	OnInventorySlotChanged.Broadcast(SlotIndex, InventoryContainer.Items[SlotIndex]);
+	SetSlotLockState(SlotIndex, InPlayerId);
 }
 
 
 void UC_InvenComponent::CancelDragItemSlot(int32 SlotIndex, int32 InPlayerId)
 {
-	UC_Util::Print("Cacel");
-	if (!InventoryContainer.Items.IsValidIndex(SlotIndex))
-		return;
+	if (!GetOwner()->HasAuthority() || !InventoryContainer.Items.IsValidIndex(SlotIndex)) return;
 
-	if (InventoryContainer.Items[SlotIndex].LockedByPlayerID != InPlayerId)
-		return;
+	if (InventoryContainer.Items[SlotIndex].LockedByPlayerID != InPlayerId) return;
     
-	InventoryContainer.Items[SlotIndex].LockedByPlayerID = INDEX_NONE;
-	InventoryContainer.MarkItemDirty(InventoryContainer.Items[SlotIndex]);
-	
-	if (!GetOwner()->HasAuthority()) return;
-	
-	OnInventorySlotChanged.Broadcast(SlotIndex, InventoryContainer.Items[SlotIndex]);
+	SetSlotLockState(SlotIndex, INDEX_NONE);
 }
 
 void UC_InvenComponent::OnRep_InventoryContainer()

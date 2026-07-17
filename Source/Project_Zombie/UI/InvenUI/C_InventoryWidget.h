@@ -30,10 +30,6 @@ public:
 	UC_DivideItemWidget* GetDivideItemWidget() { return DivideItemWidget; }
 	
 	virtual void SetVisibility(ESlateVisibility InVisibility) override;
-
-protected:
-	// TODO : Lagacy함수, 나중에 지우기.
-	void SpawnItem(UC_DragDropOperation* InDragDropOperation, int32 InCount);
 	
 protected:
 	// Player의 아이템 슬롯을 가지고 있을 그리드 위젯

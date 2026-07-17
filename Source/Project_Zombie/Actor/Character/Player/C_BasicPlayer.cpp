@@ -110,80 +110,6 @@ AC_BasicPlayer::AC_BasicPlayer()
 	
 }
 
-bool AC_BasicPlayer::Server_RequestDivideMoveItem_Validate(UC_InvenComponent* SrcComp, int32 SrcIdx,
-	UC_InvenComponent* DstComp, int32 DstIdx, int32 SplitCount)
-{
-	return true;
-}
-
-void AC_BasicPlayer::Server_RequestDivideMoveItem_Implementation(UC_InvenComponent* SrcComp, int32 SrcIdx,
-	UC_InvenComponent* DstComp, int32 DstIdx, int32 SplitCount)
-{
-	APlayerController* pPC = Cast<APlayerController>(GetController());
-	if (!pPC || !pPC->PlayerState || SplitCount <= 0) return;
-
-	int32 PlayerId = pPC->PlayerState->GetPlayerId();
-    
-	// 컴포넌트에 분할 이동 처리 요청
-	SrcComp->ProcessItemSplitMove(SrcComp, SrcIdx, DstComp, DstIdx, SplitCount, PlayerId);
-}
-
-bool AC_BasicPlayer::Server_RequestDivideDropItem_Validate(UC_InvenComponent* SrcComp, int32 SrcIdx, int32 SplitCount)
-{
-	return true;
-}
-
-void AC_BasicPlayer::Server_RequestDivideDropItem_Implementation(UC_InvenComponent* SrcComp, int32 SrcIdx,
-	int32 SplitCount)
-{
-	if (!HasAuthority() || !SrcComp || SplitCount <= 0) return;
-
-	const FInventoryEntry& SrcEntry = SrcComp->GetItemAt(SrcIdx);
-
-	// 검증: 잠금 확인 및 소지 수량 체크
-	APlayerController* pPC = Cast<APlayerController>(GetController());
-	if (!pPC || !pPC->PlayerState || SplitCount <= 0) return;
-
-	int32 PlayerId = pPC->PlayerState->GetPlayerId();
-	
-	if (SrcEntry.LockedByPlayerID != PlayerId) return;
-	if (SrcEntry.ItemRowName == NAME_None || SrcEntry.CurCount < SplitCount) return;
-
-	// 1. 월드에 스폰할 위치 계산 (플레이어 앞 약 1~1.5m 지점 바닥)
-	FVector SpawnLocation = GetActorLocation() + (GetActorForwardVector() * 120.0f);
-	FRotator SpawnRotation = FRotator::ZeroRotator;
-
-	// 2. 아이템 액터 스폰 (예: AFieldItemBase 클래스가 있다고 가정)
-	UC_ItemManager* ItemManager = GetWorld()->GetGameInstance()->GetSubsystem<UC_ItemManager>();
-	if (ItemManager)
-	{
-		ItemManager->SpawnItem(SrcEntry.ItemRowName, )
-		// 아이템 매니저나 서브시스템을 통해 액터 스폰 규칙을 가져옵니다.
-		// 스폰된 액터에 아이템의 RowName 및 분할된 개수(SplitCount), 스펙을 전달합니다.
-		AC_ItemPickUp* SpawnedItem = GetWorld()->SpawnActor<AC_ItemPickUp>(
-			FieldItemClass, SpawnLocation, SpawnRotation
-		);
-        
-		if (SpawnedItem)
-		{
-			SpawnedItem->InitializeItem(SrcEntry.ItemRowName, SplitCount, SrcEntry.UpgradeLevel, SrcEntry.CurAmmo);
-		}
-	}
-
-	// 3. 인벤토리 데이터 차감 처리
-	SrcEntry.CurCount -= SplitCount;
-	if (SrcEntry.CurCount <= 0)
-	{
-		SrcEntry.Clear();
-	}
-
-	// 4. 잠금 해제 및 동기화
-	SrcEntry.LockedByPlayerID = INDEX_NONE;
-	SrcComp->InventoryContainer.MarkItemDirty(SrcEntry);
-	SrcComp->OnInventorySlotChanged.Broadcast(SrcIdx, SrcEntry);
-}
-
-
 
 void AC_BasicPlayer::BeginPlay()
 {
@@ -534,6 +460,102 @@ void AC_BasicPlayer::Server_CancelDragItemSlot_Implementation(int32 SlotIndex, U
 	if (!pPC) return;
 	
 	InteractedInven->CancelDragItemSlot(SlotIndex, pPC->GetPlayerState<APlayerState>()->GetPlayerId());
+}
+
+bool AC_BasicPlayer::Server_RequestDivideMoveItem_Validate(UC_InvenComponent* SrcComp, int32 SrcIdx,
+	UC_InvenComponent* DstComp, int32 DstIdx, int32 SplitCount)
+{
+	return true;
+}
+
+void AC_BasicPlayer::Server_RequestDivideMoveItem_Implementation(UC_InvenComponent* SrcComp, int32 SrcIdx,
+	UC_InvenComponent* DstComp, int32 DstIdx, int32 SplitCount)
+{
+	APlayerController* pPC = Cast<APlayerController>(GetController());
+	if (!pPC || !pPC->PlayerState || SplitCount <= 0) return;
+
+	int32 PlayerId = pPC->PlayerState->GetPlayerId();
+    
+	// 컴포넌트에 분할 이동 처리 요청
+	SrcComp->ProcessItemDivideMove(SrcComp, SrcIdx, DstComp, DstIdx, SplitCount, PlayerId);
+}
+
+bool AC_BasicPlayer::Server_RequestDivideDropItem_Validate(UC_InvenComponent* SrcComp, int32 SrcIdx, int32 SplitCount)
+{
+	return true;
+}
+
+void AC_BasicPlayer::Server_RequestDivideDropItem_Implementation(UC_InvenComponent* SrcComp, int32 SrcIdx,
+	int32 SplitCount)
+{
+	if (!SrcComp || SplitCount <= 0) return;
+
+	APlayerController* pPC = Cast<APlayerController>(GetController());
+	if (!pPC || !pPC->PlayerState) return;
+
+	int32 PlayerId = pPC->PlayerState->GetPlayerId();
+
+	FInventoryEntry TempEntry = SrcComp->GetItemAt(SrcIdx);
+	
+	FName TempName = TempEntry.ItemRowName;
+	
+	if (TempName == NAME_None) return;
+	
+	// 1. 인벤토리 컴포넌트에게 데이터를 처리하고 실제로 드롭할 개수를 받아옵니다.
+	// (검증 실패 시 알아서 0을 반환하며 인벤토리 데이터는 건드리지 않습니다)
+	int32 ActualDropCount = SrcComp->ProcessItemDivideDrop(SrcIdx, SplitCount, PlayerId);
+    
+	if (ActualDropCount <= 0) return;
+
+	// 2. 안전하게 깎인 게 확인되었으므로, 서버 월드에 실제 아이템 액터 스폰
+	UC_ItemManager* ItemManager = GetWorld()->GetGameInstance()->GetSubsystem<UC_ItemManager>();
+	
+	if (ItemManager) ItemManager->DropItemByPlayer(TempName, ActualDropCount, this);
+}
+
+bool AC_BasicPlayer::Server_RequestLockSlot_Validate(UC_InvenComponent* TargetComp, int32 SlotIdx)
+{
+	return true;
+}
+
+
+void AC_BasicPlayer::Server_RequestLockSlot_Implementation(UC_InvenComponent* TargetComp, int32 SlotIdx)
+{
+	if (!TargetComp) return;
+    
+	APlayerController* pPC = Cast<APlayerController>(GetController());
+	if (!pPC || !pPC->PlayerState) return;
+
+	int32 PlayerId = pPC->PlayerState->GetPlayerId();
+    
+	// 이미 다른 사람이 잠그고 있는 상태가 아니라면 잠금 승인
+	const FInventoryEntry& Entry = TargetComp->GetItemAt(SlotIdx);
+	if (Entry.LockedByPlayerID == INDEX_NONE)
+	{
+		TargetComp->SetSlotLockState(SlotIdx, PlayerId);
+	}
+}
+
+bool AC_BasicPlayer::Server_RequestUnlockSlot_Validate(UC_InvenComponent* TargetComp, int32 SlotIdx)
+{
+	return true;
+}
+
+void AC_BasicPlayer::Server_RequestUnlockSlot_Implementation(UC_InvenComponent* TargetComp, int32 SlotIdx)
+{
+	if (!TargetComp) return;
+    
+	APlayerController* pPC = Cast<APlayerController>(GetController());
+	if (!pPC || !pPC->PlayerState) return;
+
+	int32 PlayerId = pPC->PlayerState->GetPlayerId();
+
+	// 내가 잠근 슬롯인 경우에만 해제 허용 (보안 검증)
+	const FInventoryEntry& Entry = TargetComp->GetItemAt(SlotIdx);
+	if (Entry.LockedByPlayerID == PlayerId)
+	{
+		TargetComp->SetSlotLockState(SlotIdx, INDEX_NONE);
+	}
 }
 
 void AC_BasicPlayer::SetSpringArmSocketOffset(FVector _SocketOffset)

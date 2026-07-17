@@ -59,14 +59,19 @@ public:
 	// TODO : 팅김시 드래그 락 해결 테스트 함수
 	void ForceReleaseSlotLock(int32 SlotIndex);
 	
+	// TODO : 이렇게 서버에서 Player - Inven의 함수 호출 하는 경우에는 델리게이트를 사용하는게 좋나? 
+	bool ProcessItemDivideMove(UC_InvenComponent* SrcComp, int32 SrcIdx, UC_InvenComponent* DstComp, int32 DstIdx, int32 SplitCount, int32 InPlayerID);
+	
+	// 외부(Player)에서 안전하게 호출할 인벤토리 내 아이템 분할 차감 함수
+	// 성공 시 실제로 필드에 드롭해야 할 수량(SplitCount)을 반환하고, 실패 시 0을 반환합니다.
+	int32 ProcessItemDivideDrop(int32 SrcIdx, int32 SplitCount, int32 InPlayerID);
+	
+	// 슬롯에 명시적으로 잠금을 걸거나 해제하는 함수 (서버 권한 필요)
+	UFUNCTION(BlueprintCallable)
+	bool SetSlotLockState(int32 SlotIdx, int32 InPlayerID);
+	
 protected:
 	virtual void BeginPlay() override;
-	//virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-
-	void SetItemLock(int32 SlotIdx, int32 InPlayerID = INDEX_NONE)
-	{
-		InventoryContainer.Items[SlotIdx].LockedByPlayerID = INDEX_NONE;
-	}
     
     /// <summary>
     /// 언리얼 엔진의 네트워크 시스템이 액터나 컴포넌트가 처음 생성될 때 그리고 네트워크 상에 등록될 때 
@@ -80,14 +85,9 @@ protected:
 	// 아이템 병합
 	bool TryMergeItem(UC_InvenComponent* SrcComp, int32 SrcIdx, UC_InvenComponent* DstComp, int32 DstIdx, int32 InPlayerID, int32 MaxCount);
 	
-	bool ProcessItemSplitMove(UC_InvenComponent* SrcComp, int32 SrcIdx, UC_InvenComponent* DstComp, int32 DstIdx, int32 SplitCount, int32 InPlayerID);
-	
 	UFUNCTION(BlueprintCallable)
 	void OnRep_InventoryContainer();
-	
-	// 커서 슬롯 변경 시 호출할 함수
-	//UFUNCTION()
-	//void OnRep_CursorSlot();
+
 protected:
     // C_IneventoryGridWidget에서 grid slot의 갯수와 일치 시킬 변수
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
@@ -97,9 +97,6 @@ protected:
 	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
 	UPROPERTY(ReplicatedUsing = OnRep_InventoryContainer,EditAnywhere, BlueprintReadWrite, Category = "Inventory")
 	FInventoryContainer InventoryContainer;
-
-	//UPROPERTY(Replicated)
-	//FCusorItem CursorSlot;
 	
 	// TODO : 현재 미사용 중, 현재 포인터를 패킷으로 보내고 있는데(엔진에서 GUID로 변환해줌.)
 	//		  이걸 사용하면 int32를 패킷으로 보내서 서버에서 해당 id의 객체를 찾아 접근 할 수 있음

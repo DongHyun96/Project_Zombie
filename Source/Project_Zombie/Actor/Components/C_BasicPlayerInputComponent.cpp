@@ -13,6 +13,7 @@
 #include "Actor/ItemActor/Weapon/C_WeaponBase.h"
 #include "GameModeAndManager/C_UIManager.h"
 #include "UI/InvenUI/C_InventoryWidget.h"
+#include "UI/InvenUI/DivideWIdget/C_DivideItemWidget.h"
 
 #include "Utility/C_Util.h"
 
@@ -317,6 +318,8 @@ void UC_BasicPlayerInputComponent::ToggleInventoryWidget()
 	// 5. 현재 위젯의 가시성 상태에 따라 토글 처리
 	if (InventoryWidget->GetVisibility() == ESlateVisibility::Visible)
 	{
+		if (InventoryWidget->GetDivideItemWidget()->GetVisibility() == ESlateVisibility::Visible) return;
+		
 		// 열려있으면 닫기
 		InventoryWidget->SetVisibility(ESlateVisibility::Collapsed);
 

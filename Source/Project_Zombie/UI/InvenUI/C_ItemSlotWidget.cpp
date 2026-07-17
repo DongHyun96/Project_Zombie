@@ -20,11 +20,12 @@
 
 void UC_ItemSlotWidget::UpdateSlot(const FInventoryEntry& ItemData, const FItemData* CoreData)
 {
-    if (ItemData.ItemRowName == NAME_None)
+    if (ItemData.ItemRowName == NAME_None )
     {
+        
         ItemIcon->SetBrushFromTexture(nullptr);
+        
         ItemIconSetVisibility(ESlateVisibility::Collapsed);
-        ItemIconSetOpacity(1.0);
     }
     else
     {
@@ -46,10 +47,14 @@ void UC_ItemSlotWidget::UpdateSlot(const FInventoryEntry& ItemData, const FItemD
         ItemCountText->SetText(FText::AsNumber(ItemData.CurCount));
         
         // 드래그 중이면 오퍼시티를 .5로 변경 
-        if (ItemData.LockedByPlayerID != INDEX_NONE) ItemIconSetOpacity(.5);
-        else ItemIconSetOpacity(1.0);
+        //if (ItemData.LockedByPlayerID != INDEX_NONE) ItemIconSetOpacity(.5);
+        //else ItemIconSetOpacity(1.0);
         ItemIconSetVisibility(ESlateVisibility::Visible);
     }
+    
+    if (ItemData.LockedByPlayerID != INDEX_NONE) ItemIconSetOpacity(.5);
+    else 
+        ItemIconSetOpacity(1.0);
 }
 
 FReply UC_ItemSlotWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
@@ -114,41 +119,86 @@ bool UC_ItemSlotWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDro
     
     if (!FromInvenComp || !ToInvenComp) return false;
     
+    
     int32 FromSlot = DragOperation->GetSlotIndex();
     int32 ToSlot = curSlotIdx;
 
+
+        
     AC_BasicPlayer* pPlayer = Cast<AC_BasicPlayer>(GetOwningPlayerPawn());
     
     if (!pPlayer) return false;
-    
+
     // 드래그시 반감된 오파시티 복구(제자리에 드롭할 때 .5가 유지되서 넣은 코드)
-    if (FromInvenComp->GetInventoryItems()[DragOperation->GetSlotIndex()].LockedByPlayerID == INDEX_NONE) 
-        ItemIconSetOpacity(1.f);
+    //if (FromInvenComp->GetInventoryItems()[DragOperation->GetSlotIndex()].LockedByPlayerID == INDEX_NONE) 
+    //    ItemIconSetOpacity(1.f);
     
-    
-    
-    if (APlayerController* PC = GetOwningPlayer())
+    // 나 자신에게 드롭하거나 드롭된 슬롯이 잠겨 있다면 return
+    if (FromInvenComp == ToInvenComp && FromSlot == ToSlot || AssociatedInvenComp->GetInventoryItems()[ToSlot].LockedByPlayerID != INDEX_NONE)
     {
-        if (AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD()))
-        {
-            if (UC_InventoryWidget* InveWidget = UIManager->GetInventoryWidget())
-                InveWidget->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-        }
-    }
-    
-    // 드롭된 슬롯이 잠겨 있다면 드롭 실패. TODO : 실패 처리가 이렇게 추가되면 위에 드래그시 반감된 오파시티 복구 코드는 삭제해도 되나?
-    if (AssociatedInvenComp->GetInventoryItems()[ToSlot].LockedByPlayerID != INDEX_NONE)
-    {
-        // 플레이어의 CurDraggedItem 초기화
-        pPlayer->ClearCurDraggedItem();
+        pPlayer->Server_RequestUnlockSlot(FromInvenComp, FromSlot);
         return true;
     }
     
     if (InDragDropEvent.IsControlDown() && FromInvenComp->GetItemAt(FromSlot).CurCount > 1)
     {
-        // TODO : 이 때 Drop된 아이템 슬롯도 잠가줘야 한다.
-        ParentGrid->GetParentInventoryWidget()->GetDivideItemWidget()->SetTargetWidget(this);
-        ParentGrid->GetParentInventoryWidget()->ShowDivideEntryWidget();
+        FInventoryEntry FromEntry = FromInvenComp->GetItemAt(FromSlot);
+        FInventoryEntry ToEntry = ToInvenComp->GetItemAt(ToSlot);
+        
+        UC_ItemManager* ItemManager = GetWorld()->GetGameInstance()->GetSubsystem<UC_ItemManager>();
+        if (!ItemManager) return true;
+        
+        // [중요] 드롭할 대상 슬롯이 비어있다면 원본 아이템의 정보를, 채워져 있다면 타겟 아이템의 정보를 기준으로 삼습니다.
+        FName TargetRowName = (ToEntry.ItemRowName == NAME_None) ? FromEntry.ItemRowName : ToEntry.ItemRowName;
+        const FItemData* curItemData = ItemManager->GetItemData(TargetRowName);
+        
+        // [필수] 여기서 널 체크를 해서 안전하게 반환 처리를 해줍니다.
+        if (!curItemData) 
+        {
+            pPlayer->Server_RequestUnlockSlot(FromInvenComp, FromSlot);
+            return true;
+        }
+        
+        // 이제 curItemData가 nullptr가 아님이 확실하므로 안전하게 호출 가능합니다!
+        int32 MaxCount = curItemData->MaxCount;
+        
+        // 현재 나의 아이템 슬롯과 드롭된 아이템이 다른 종류거나, 슬롯 수량이 이미 꽉 찼다면 분할창을 열지 않고 종료
+        if ((ToEntry.ItemRowName != NAME_None && FromEntry.ItemRowName != ToEntry.ItemRowName)
+            || ToEntry.CurCount >= MaxCount)
+        {
+            pPlayer->Server_RequestUnlockSlot(FromInvenComp, FromSlot);
+            return true;
+        }
+        
+        pPlayer->Server_RequestLockSlot(ToInvenComp, ToSlot);
+
+        // 안전하게 검사 후 실행 TODO : NativeOnDrop 코드 정리 한번 하기.
+        if (ParentGrid)
+        {
+            UC_InventoryWidget* ParentInvenWidget = ParentGrid->GetParentInventoryWidget();
+            if (ParentInvenWidget)
+            {
+                UC_DivideItemWidget* DivideWidget = ParentInvenWidget->GetDivideItemWidget();
+                if (DivideWidget)
+                {
+                    DivideWidget->SetTargetWidget(this);
+                    ParentInvenWidget->ShowDivideEntryWidget();
+                }
+                else
+                {
+                    UE_LOG(LogTemp, Warning, TEXT("DivideWidget is Null!"));
+                }
+            }
+            else
+            {
+                UE_LOG(LogTemp, Warning, TEXT("ParentInvenWidget is Null!"));
+            }
+        }
+        else
+        {
+            UE_LOG(LogTemp, Warning, TEXT("ParentGrid is Null!"));
+        }
+        
         return true;
     }
     
@@ -170,7 +220,7 @@ void UC_ItemSlotWidget::NativeOnDragCancelled(const FDragDropEvent& InDragDropEv
     if(DragOp && Owner)
     {
         // 서버에 잠금 해제 요청
-        Owner->Server_CancelDragItemSlot_Implementation(DragOp->GetSlotIndex(), AssociatedInvenComp);
+        Owner->Server_CancelDragItemSlot(DragOp->GetSlotIndex(), DragOp->GetSourceComponent());
     }
 }
 
@@ -193,12 +243,14 @@ void UC_ItemSlotWidget::InitDragVisual(UC_DragDropOperation* InDragDropOp)
 
 void UC_ItemSlotWidget::ItemIconSetOpacity(float InOpacity)
 {
+    BackGroundImage->SetOpacity(InOpacity);
     ItemIcon->SetOpacity(InOpacity);
     ItemCountText->SetOpacity(InOpacity);
 }
 
 void UC_ItemSlotWidget::ItemIconSetVisibility(ESlateVisibility InVisibility)
 {
+    //BackGroundImage->SetOpacity(InVisibility);
     ItemIcon->SetVisibility(InVisibility);
     ItemCountText->SetVisibility(InVisibility);
 }

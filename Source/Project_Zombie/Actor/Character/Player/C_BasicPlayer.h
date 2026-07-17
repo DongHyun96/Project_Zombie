@@ -238,6 +238,7 @@ protected:
 	bool m_IsInventoryOpen;
 	
 	// 현재 드래그된 아이템의 정보 구조체
+	// TODO : C_DivideItemWidget에 CursorItem을 여기로 대체해야 하나?
 	UPROPERTY()
 	FCursorItem curDraggedItem{};
 public:
@@ -330,6 +331,7 @@ public:
 	void ApplyCrouchSpeed();
 	void ApplyWalkSpeed();
 
+	// Server함수 
 public:
 	// TODO : 퍼블릭으로 열어둬도 괜찮은가?
 	// UI 드롭 시 서버에 안전하게 요청을 도달시켜 줄 확성기 RPC
@@ -358,9 +360,13 @@ public:
 		int32 SplitCount
 	);
 	
-	// TODO : Test 함수.
-	//UFUNCTION(Server, Reliable)
-	//void Server_StartDragItem(UC_InvenComponent* InvenComp, int32 SlotIndex);
+	// 슬롯 잠금 요청 RPC
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_RequestLockSlot(UC_InvenComponent* TargetComp, int32 SlotIdx);
+
+	// 슬롯 잠금 해제 요청 RPC
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_RequestUnlockSlot(UC_InvenComponent* TargetComp, int32 SlotIdx);
 	
 protected:
 	virtual void BeginPlay() override;

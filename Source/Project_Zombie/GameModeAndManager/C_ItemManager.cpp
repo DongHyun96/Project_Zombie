@@ -3,6 +3,8 @@
 
 #include "GameModeAndManager/C_ItemManager.h"
 #include "../Item/PickUp/C_ItemPickUp.h"
+#include "Utility/C_Util.h"
+
 void UC_ItemManager::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
@@ -66,6 +68,11 @@ AC_ItemPickUp* UC_ItemManager::SpawnItem(FName InRowName, int32 InCount, const F
 
 bool UC_ItemManager::DropItemByPlayer(FName InRowName, int32 InCount, AActor* InActor)
 {
+    if (!InActor)
+    {
+        return false;
+    }
+    
     FVector SpawnLocation = InActor->GetActorLocation() + FVector(0.f, 0.f, 30.f);
     
     // 2. 던질 방향 벡터 계산 (마인크래프트 스타일)
@@ -84,6 +91,8 @@ bool UC_ItemManager::DropItemByPlayer(FName InRowName, int32 InCount, AActor* In
         LaunchVelocity.X += FMath::FRandRange(-50.f, 50.f);
         LaunchVelocity.Y += FMath::FRandRange(-50.f, 50.f);
         
+        //UC_Util::Print(LaunchVelocity);
+        
         if (UPrimitiveComponent* RootPrim = Cast<UPrimitiveComponent>(NewItem->GetRootComponent()))
         {
             // 1. 물리를 켭니다. (에디터에서 미리 켜두어도 됩니다)
@@ -99,5 +108,5 @@ bool UC_ItemManager::DropItemByPlayer(FName InRowName, int32 InCount, AActor* In
         }
     }
     
-    return NewItem;
+    return NewItem != nullptr;
 }

@@ -19,6 +19,7 @@ protected:
 	
 public:
 	// 서버 전용: 이 플레이어가 현재 잠그고 있는 인벤토리와 슬롯 인덱스
+	// TODO : 여기서 CursorItem을 사용할까?
 	UPROPERTY()
 	class UC_InvenComponent* Server_ActiveDraggedInven = nullptr;
 

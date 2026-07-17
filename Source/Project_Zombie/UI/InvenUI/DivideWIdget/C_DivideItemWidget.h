@@ -21,11 +21,14 @@ class PROJECT_ZOMBIE_API UC_DivideItemWidget : public UUserWidget
 	GENERATED_BODY()
 	
 public:
+	UFUNCTION(BlueprintCallable)
 	void UpdateWidget();
 	
 	void OnDivideConfirm(int32 RequestedDivideCount);
 	
-	void OnDivideConfirmFroDrop(int32 RequestedDivideCount);
+	void OnDivideConfirmFroDrop(int32 RequestedDivideCount);	
+	
+	virtual FReply NativeOnPreviewKeyDown( const FGeometry& InGeometry, const FKeyEvent& InKeyEvent );
 public:
 	void SetCursorItem(const FCursorItem& InCursorItem) { CursorItem = InCursorItem; }
 	
@@ -60,6 +63,15 @@ protected:
 	UFUNCTION()
 	void HandleOnTextChangedDroppedCount(const FText& InText);
 	
+	UFUNCTION()
+	void HandleOnClickButtonDivideEntry();
+	
+	UFUNCTION()
+	void HandleOnClickButtonDivideItem();
+	
+	UFUNCTION()
+	void HandleOnClickButtonExitBtn();	
+	
 protected:
 	// 딜레이 처리를 위한 타이머 핸들
 	UFUNCTION()
@@ -90,7 +102,10 @@ protected:
 	
 	// InventoryWidget에 드롭 했을 때 사용할 버튼.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget))
-	UButton* CreateItemButton{};
+	UButton* DivideItemButton{};
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget))
+	UButton* ExitButton{};	
 
 	// 드롭된 위젯
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)

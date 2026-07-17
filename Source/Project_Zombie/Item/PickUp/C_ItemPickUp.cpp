@@ -69,13 +69,11 @@ void AC_ItemPickUp::BeginPlay()
     
     if (HasAuthority())
     {
-        float DelayTime = 2.f; // 2초 후에 주울 수 있도록 설정 (원하는 초 단위로 변경 가능)
-        
         GetWorldTimerManager().SetTimer(
             PickupDelayTimerHandle, 
             this, 
             &AC_ItemPickUp::EnablePickupOverlap, 
-            DelayTime, 
+            DELAYTIME, 
             false
         );
     }
@@ -85,8 +83,11 @@ void AC_ItemPickUp::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* 
 {
     // 물리 이벤트는 서버에서만 처리
     if (!HasAuthority()) return;
-
+    
+    if (bPickup) return;
+    
     AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(OtherActor);
+    
     if (!Player) return;
 
     // 서버 함수 호출
@@ -146,6 +147,7 @@ void AC_ItemPickUp::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
     
     DOREPLIFETIME(AC_ItemPickUp, bPickup);
     DOREPLIFETIME(AC_ItemPickUp, MeshRef);
+    DOREPLIFETIME(AC_ItemPickUp, ItemData);
 }
 
 void AC_ItemPickUp::OnRep_MeshRef()
@@ -153,33 +155,31 @@ void AC_ItemPickUp::OnRep_MeshRef()
     SetPickupMeshAsync(MeshRef);
 }
 
+void AC_ItemPickUp::OnRep_ItemData()
+{
+}
+
 void AC_ItemPickUp::Server_RequestPickup_Implementation(AC_BasicPlayer* Player)
 {
-    if (bPickup) return; // 이미 누가 먹었으면 무시
+    if (bPickup) return;
     
     UC_InvenComponent* PlayerInvenComp = Player->GetInvenComponent();
+    if (!PlayerInvenComp) return;
     
-    // 아이템을 인벤토리에 넣고, 남은 수량을 돌려받음
     int32 LeftoverCount = PlayerInvenComp->AddItem(ItemData);
 
     if (LeftoverCount <= 0)
     {
-        // 남은 게 없음 = 전부 다 인벤토리에 들어감
         bPickup = true; 
         Destroy();      
     }
     else if (LeftoverCount < ItemData.CurCount)
     {
-        // 일부만 먹고 나머지가 남음 (인벤토리 공간 부족)
-        // 액터를 파괴하지 않고 땅에 남기되, 수량만 깎음
+        // 수량이 줄어들었음을 기록 (Replicated 파이프라인을 타고 클라이언트로 전송됨)
         ItemData.CurCount = LeftoverCount;
         
-        // TODO: (선택) 클라이언트들이 아이템의 수량이 줄어든 것을 볼 수 있도록 리플리케이트 마킹
-    }
-    else
-    {
-        // 단 하나도 먹지 못함 (인벤토리 완전 꽉 참)
-        // 액터 그대로 유지
+        // 서버 측에서도 시각 변경 로직이 즉시 돌 수 있도록 직접 호출
+        OnRep_ItemData();
     }
 }
 

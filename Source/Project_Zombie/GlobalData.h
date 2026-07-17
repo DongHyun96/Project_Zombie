@@ -100,13 +100,14 @@ public:
     // 빈 슬롯인지 확인하는 함수.
     bool IsEmpty() const {return ItemRowName.IsNone() || CurCount == 0;}
     
-    // 비우는 함수
+    // 비우는 함수, 멀티 환경 서버에서 사용시 MarkItemDirty(Entry)를 통해 변경을 알릴 것! 
     void Clear()
     {
         ItemRowName = NAME_None;
         CurCount = 0;
         UpgradeLevel = 0;
         CurAmmo = 0;
+        LockedByPlayerID = INDEX_NONE; 
     }
     
 };
