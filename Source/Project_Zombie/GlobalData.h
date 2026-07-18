@@ -13,15 +13,15 @@ struct FItemData : public FTableRowBase
 
     // ── [공통 정보] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Info")
-    FText ItemName;
+    FText ItemName{};
 
     // ── [공통 정보] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Info")
-    FText ItemDescription;
+    FText ItemDescription{};
 
     // ── [공통 정보] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Info")
-    EItemType ItemType;
+    EItemType ItemType{};
 
     // ── [공통 정보] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Info")
@@ -35,11 +35,11 @@ struct FItemData : public FTableRowBase
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Info")
     int32 MaxCount = -1; 
 
-    // ── [비주얼 리소스 - 강참조 포인터] ──
+    // ── [비주얼 리소스 - 약참조 포인터] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Visual")
     TSoftObjectPtr<UTexture2D> IconTexture = nullptr;
 
-    // ── [비주얼 리소스 - 강참조 포인터] ──
+    // ── [비주얼 리소스 - 약참조 포인터] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Visual")
     TSoftObjectPtr<UStaticMesh> DropMesh = nullptr;
 
@@ -75,10 +75,6 @@ public:
     // ── [실시간 공통 데이터] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
     int32 CurCount = 0;
-
-    // ── [실시간 공통 데이터] ──
-    //UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
-    //bool bIsStack;
 
     // ── [실시간 공통 데이터] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
@@ -186,8 +182,6 @@ struct FWeaponData : public FTableRowBase
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual")
     TSoftObjectPtr<UStaticMesh> WeaponStaticMesh;
-
-
 };
 
 // 데이터 테이블로 관리할 총기 데이터
@@ -196,7 +190,7 @@ struct FGunData : public FWeaponData
 {
     GENERATED_BODY()
 
-    // ── [총시 관련 스탯 (Stats)] ──
+    // ── [총기 관련 스탯 (Stats)] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
     float MaxAmmo;     // 총기 최대 탄창 수
 
