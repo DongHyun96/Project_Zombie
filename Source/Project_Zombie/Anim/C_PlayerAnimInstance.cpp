@@ -82,9 +82,13 @@ void UC_PlayerAnimInstance::NativeUpdateAnimation(float _DT)
 	FRotator DeltaRotation = UKismetMathLibrary::NormalizedDeltaRotator(AimRotation, ActorRotation);
 
 	// 피치 값 할당
-	m_Pitch = DeltaRotation.Pitch;
+	// m_Pitch = DeltaRotation.Pitch;
+	m_Pitch = FMath::Clamp(DeltaRotation.Pitch, -90.f, 90.f);
+	
 	// 턴 인 플레이스의 야값 할당
 	// m_Yaw = m_Character->GetControllerFSM()->GetDeltaYaw();
-	m_Yaw = DeltaRotation.Yaw;
+	
+	// m_Yaw = DeltaRotation.Yaw;
+	m_Yaw = FMath::Clamp(DeltaRotation.Yaw, -90.f, 90.f);;
 	
 }
