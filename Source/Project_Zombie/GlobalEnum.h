@@ -9,7 +9,8 @@ enum class EItemType : uint8
     GADGET,
     THROWABLE,
     CONSUMABLE,
-
+    MATTER,
+    
 };
 
 UENUM(BlueprintType)
