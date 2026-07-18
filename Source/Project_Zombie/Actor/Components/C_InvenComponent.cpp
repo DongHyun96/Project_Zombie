@@ -253,9 +253,24 @@ bool UC_InvenComponent::TryMergeItem(UC_InvenComponent* SrcComp, int32 SrcIdx, U
 	FInventoryEntry& DstEntry = DstComp->InventoryContainer.Items[DstIdx];
 
 	// 잠금 상태 검증
-	if (SrcEntry.LockedByPlayerID != InPlayerID) return false;
-	if (DstEntry.ItemRowName != NAME_None && DstEntry.LockedByPlayerID != INDEX_NONE) return false;
-	if (DstEntry.CurCount >= MaxCount) return false;
+	if (SrcEntry.LockedByPlayerID != InPlayerID)
+	{
+		SrcComp->SetSlotLockState(SrcIdx, INDEX_NONE);
+		DstComp->SetSlotLockState(DstIdx, INDEX_NONE);
+		return false;
+	}
+	if (DstEntry.ItemRowName != NAME_None && DstEntry.LockedByPlayerID != INDEX_NONE)
+	{
+		SrcComp->SetSlotLockState(SrcIdx, INDEX_NONE);
+		DstComp->SetSlotLockState(DstIdx, INDEX_NONE);
+		return false;
+	}
+	if (DstEntry.CurCount >= MaxCount)
+	{
+		SrcComp->SetSlotLockState(SrcIdx, INDEX_NONE);
+		DstComp->SetSlotLockState(DstIdx, INDEX_NONE);
+		return false;
+	}
 
 	int32 TotalCount = SrcEntry.CurCount + DstEntry.CurCount;
 

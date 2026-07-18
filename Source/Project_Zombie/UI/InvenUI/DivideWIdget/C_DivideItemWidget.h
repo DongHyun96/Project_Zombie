@@ -27,8 +27,9 @@ public:
 	void OnDivideConfirm(int32 RequestedDivideCount);
 	
 	void OnDivideConfirmFroDrop(int32 RequestedDivideCount);	
-	
-	virtual FReply NativeOnPreviewKeyDown( const FGeometry& InGeometry, const FKeyEvent& InKeyEvent );
+
+	// 이거 쓰면 인벤토리 열었을 때 모든 키 입력을 갈취 당함.
+	//virtual FReply NativeOnPreviewKeyDown( const FGeometry& InGeometry, const FKeyEvent& InKeyEvent );
 public:
 	void SetCursorItem(const FCursorItem& InCursorItem) { CursorItem = InCursorItem; }
 	

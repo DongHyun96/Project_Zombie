@@ -57,11 +57,11 @@ public:
 	void OnRep_MeshRef();
 	
 	UFUNCTION()
-	void OnRep_ItemData();
+	void OnRep_ItemEntry();
 public:
 	// 아이템 정보
-	UPROPERTY(ReplicatedUsing = OnRep_ItemData, EditAnywhere, BlueprintReadWrite)
-	FInventoryEntry ItemData;
+	UPROPERTY(ReplicatedUsing = OnRep_ItemEntry, EditAnywhere, BlueprintReadWrite)
+	FInventoryEntry ItemEntry;
 
 	// 플레이어가 해당 아이템을 습득중인지 판별해줄 bool변수
 	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite)

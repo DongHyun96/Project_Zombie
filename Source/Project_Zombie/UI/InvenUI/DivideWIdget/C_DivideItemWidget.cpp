@@ -57,7 +57,7 @@ void UC_DivideItemWidget::OnDivideConfirmFroDrop(int32 RequestedDivideCount)
 {
 }
 
-FReply UC_DivideItemWidget::NativeOnPreviewKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+/*FReply UC_DivideItemWidget::NativeOnPreviewKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
 {
 	UC_Util::Print("Down!!");
 	FKey PressedKey = InKeyEvent.GetKey();
@@ -65,7 +65,7 @@ FReply UC_DivideItemWidget::NativeOnPreviewKeyDown(const FGeometry& InGeometry, 
 	if (PressedKey == EKeys::Escape)
 	{
 		HandleOnClickButtonExitBtn();
-		return FReply::Handled();
+		return FReply::Unhandled();
 	}
 	
 	if (PressedKey == EKeys::Enter)
@@ -73,18 +73,19 @@ FReply UC_DivideItemWidget::NativeOnPreviewKeyDown(const FGeometry& InGeometry, 
 		if (DivideEntryButton->GetVisibility() == ESlateVisibility::Visible)
 		{
 			HandleOnClickButtonDivideEntry();
-			return FReply::Handled();
+			return FReply::Unhandled();
 		}
 		
 		if (DivideItemButton->GetVisibility() == ESlateVisibility::Visible)
 		{
 			HandleOnClickButtonDivideItem();
-			return FReply::Handled();
+			return FReply::Unhandled();
 		}
 	}
 	
+	return FReply::Unhandled();
 	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
-}
+}*/
 
 void UC_DivideItemWidget::CalculateDivideCount(int32 InCurCount)
 {

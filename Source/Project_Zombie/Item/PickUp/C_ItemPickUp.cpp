@@ -26,6 +26,7 @@ AC_ItemPickUp::AC_ItemPickUp()
     PhysicsSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
     // 플레이어 캡슐과는 겹치게(Overlap) 해서 플레이어를 밀어내지 않게 설정하는 것이 좋습니다.
     PhysicsSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+    PhysicsSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
     
     PhysicsSphere->SetLinearDamping(1.5f);
     
@@ -147,7 +148,7 @@ void AC_ItemPickUp::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
     
     DOREPLIFETIME(AC_ItemPickUp, bPickup);
     DOREPLIFETIME(AC_ItemPickUp, MeshRef);
-    DOREPLIFETIME(AC_ItemPickUp, ItemData);
+    DOREPLIFETIME(AC_ItemPickUp, ItemEntry);
 }
 
 void AC_ItemPickUp::OnRep_MeshRef()
@@ -155,7 +156,7 @@ void AC_ItemPickUp::OnRep_MeshRef()
     SetPickupMeshAsync(MeshRef);
 }
 
-void AC_ItemPickUp::OnRep_ItemData()
+void AC_ItemPickUp::OnRep_ItemEntry()
 {
 }
 
@@ -166,20 +167,20 @@ void AC_ItemPickUp::Server_RequestPickup_Implementation(AC_BasicPlayer* Player)
     UC_InvenComponent* PlayerInvenComp = Player->GetInvenComponent();
     if (!PlayerInvenComp) return;
     
-    int32 LeftoverCount = PlayerInvenComp->AddItem(ItemData);
+    int32 LeftoverCount = PlayerInvenComp->AddItem(ItemEntry);
 
     if (LeftoverCount <= 0)
     {
         bPickup = true; 
         Destroy();      
     }
-    else if (LeftoverCount < ItemData.CurCount)
+    else if (LeftoverCount < ItemEntry.CurCount)
     {
         // 수량이 줄어들었음을 기록 (Replicated 파이프라인을 타고 클라이언트로 전송됨)
-        ItemData.CurCount = LeftoverCount;
+        ItemEntry.CurCount = LeftoverCount;
         
         // 서버 측에서도 시각 변경 로직이 즉시 돌 수 있도록 직접 호출
-        OnRep_ItemData();
+        OnRep_ItemEntry();
     }
 }
 

@@ -140,6 +140,9 @@ bool UC_ItemSlotWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDro
         return true;
     }
     
+
+    
+    // 
     if (InDragDropEvent.IsControlDown() && FromInvenComp->GetItemAt(FromSlot).CurCount > 1)
     {
         FInventoryEntry FromEntry = FromInvenComp->GetItemAt(FromSlot);
@@ -150,21 +153,21 @@ bool UC_ItemSlotWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDro
         
         // [중요] 드롭할 대상 슬롯이 비어있다면 원본 아이템의 정보를, 채워져 있다면 타겟 아이템의 정보를 기준으로 삼습니다.
         FName TargetRowName = (ToEntry.ItemRowName == NAME_None) ? FromEntry.ItemRowName : ToEntry.ItemRowName;
-        const FItemData* curItemData = ItemManager->GetItemData(TargetRowName);
+        const FItemData* ToItemData = ItemManager->GetItemData(TargetRowName);
         
         // [필수] 여기서 널 체크를 해서 안전하게 반환 처리를 해줍니다.
-        if (!curItemData) 
+        if (!ToItemData) 
         {
             pPlayer->Server_RequestUnlockSlot(FromInvenComp, FromSlot);
             return true;
         }
         
         // 이제 curItemData가 nullptr가 아님이 확실하므로 안전하게 호출 가능합니다!
-        int32 MaxCount = curItemData->MaxCount;
+        int32 ToItemMaxCount = ToItemData->MaxCount;
         
         // 현재 나의 아이템 슬롯과 드롭된 아이템이 다른 종류거나, 슬롯 수량이 이미 꽉 찼다면 분할창을 열지 않고 종료
         if ((ToEntry.ItemRowName != NAME_None && FromEntry.ItemRowName != ToEntry.ItemRowName)
-            || ToEntry.CurCount >= MaxCount)
+            || ToEntry.CurCount >= ToItemMaxCount)
         {
             pPlayer->Server_RequestUnlockSlot(FromInvenComp, FromSlot);
             return true;
@@ -201,6 +204,8 @@ bool UC_ItemSlotWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDro
         
         return true;
     }
+    
+    
     
     pPlayer->Server_RequestMoveItem(FromInvenComp, FromSlot, ToInvenComp, ToSlot);
     
