@@ -38,7 +38,6 @@ void AC_Storage::BeginPlay()
 	{
 		SphereComp->OnComponentBeginOverlap.AddDynamic(this, &AC_Storage::OnOverlapBegin);
 		SphereComp->OnComponentEndOverlap.AddDynamic(this, &AC_Storage::OnOverlapEnd);
-		
 	}
 	
 }

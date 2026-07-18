@@ -22,6 +22,8 @@ public:
 	void ShowDivideEntryWidget();
 	
 	void ShowDivideItemWidget();
+
+
 public:
 	class UC_InventoryGridWidget* GetPlayerGridWidget() { return PlayerGridWidget; }
 	
