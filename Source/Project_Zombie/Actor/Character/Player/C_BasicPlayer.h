@@ -18,7 +18,7 @@ enum class EPlayerState : uint8
 
 // 이동 속도 결정 상태
 UENUM(BlueprintType)
-enum class EPlayerMoveSpeedState : uint8
+enum class EPlayerPoseState : uint8
 {
 	Walk,
 	Sprint,
@@ -94,6 +94,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, Category = "Components", meta = (DisplayName = "PingSystemComponent"))
 	class UC_PingSystemComponent* m_PingSystemComponent{};
+
+	UPROPERTY(VisibleAnywhere, Category = "Components", meta = (DisplayName = "PoseColliderHandlerComponent"))
+	class UC_PoseColliderHandlerComponent* m_PoseColliderHandlerComponent{};
 	
 // [Status]
 protected:
@@ -101,7 +104,7 @@ protected:
 	EPlayerState		m_PlayerState;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Status")
-	EPlayerMoveSpeedState	m_PlayerMoveSpeedState;
+	EPlayerPoseState	m_PlayerMoveSpeedState;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Status")
 	EHandState			m_HandState;
@@ -208,15 +211,6 @@ protected:
 	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	//float m_MinBoostToSprint = 10.f;
 
-	// 웅크리기 전환 중인지 여부 (애니메이션 전환 중일 때 true)
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
-	bool m_IsCrouchTransitioning = false;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
-	float m_CrouchTransitionStopTime;
-
-	// 웅크리기 전환 타이머 핸들
-	FTimerHandle m_CrouchTransitionTimerHandle;
 
 private:
 	// Free look 상태 (Hold Alt 상태)
@@ -245,8 +239,8 @@ public:
 	EPlayerState GetPlayerState() const { return m_PlayerState; }
 	void SetPlayerState(EPlayerState _NewState) { m_PlayerState = _NewState; }
 	
-	EPlayerMoveSpeedState GetPlayerMoveState() const { return m_PlayerMoveSpeedState; }
-	void SetPlayerMoveState(EPlayerMoveSpeedState _MoveSpeedState) { m_PlayerMoveSpeedState = _MoveSpeedState; }
+	EPlayerPoseState GetPlayerMoveState() const { return m_PlayerMoveSpeedState; }
+	void SetPlayerMoveState(EPlayerPoseState _MoveSpeedState) { m_PlayerMoveSpeedState = _MoveSpeedState; }
 
 	EHandState GetHandState() const { return m_HandState; }
 	void SetHandState(EHandState _HandState) { m_HandState = _HandState; }
@@ -281,10 +275,10 @@ public:
 	bool IsSprintInput() const { return m_IsSprintInput; }
 	void SetIsSprintInput(bool _IsSprintInput) { m_IsSprintInput = _IsSprintInput; }
 
-	bool IsCrouchTransitioning() const { return m_IsCrouchTransitioning; }
+	bool IsCrouchTransitioning() const;
 
-	bool IsSprinting() const { return m_PlayerMoveSpeedState == EPlayerMoveSpeedState::Sprint; }
-	bool IsCrouching() const { return m_PlayerMoveSpeedState == EPlayerMoveSpeedState::Crouch; }
+	bool IsSprinting() const { return m_PlayerMoveSpeedState == EPlayerPoseState::Sprint; }
+	bool IsCrouching() const { return m_PlayerMoveSpeedState == EPlayerPoseState::Crouch; }
 
 public:
 	/// <summary>
@@ -326,9 +320,6 @@ public:
 	/// 속도 적용(달리기, 걷기, 웅크리기 등)
 	/// </summary>
 	void ApplyMovementSpeed();
-	
-	void ApplyCrouchSpeed();
-	void ApplyWalkSpeed();
 
 public:
 	// TODO : 퍼블릭으로 열어둬도 괜찮은가?
@@ -361,11 +352,14 @@ public:
 	void SetCameraFOV(float _FOV);
 
 private:
-	EPlayerMoveSpeedState DetermineMoveSpeedState() const;
-	float GetMoveSpeedByState(EPlayerMoveSpeedState _MoveSpeedState) const;
+	EPlayerPoseState DetermineMoveSpeedState() const;
+	float GetMoveSpeedByState(EPlayerPoseState _MoveSpeedState) const;
 
 	// 부스트 바 HUD를 갱신하는 함수
 	void UpdateBoostBarHUD() const;
+
+	// 웅크리기 상태 전환이 끝났을 때 실행되는 함수
+	void OnPoseTransitionFinished(bool _bIsCrouched);
 
 public:
 	virtual void Tick(float DeltaTime) override;

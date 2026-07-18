@@ -22,6 +22,7 @@
 #include "Actor/Components/C_InvenComponent.h"
 #include "Actor/Components/C_PingSystemComponent.h"
 #include "Actor/Components/C_BasicPlayerAimComponent.h"
+#include "Actor/Components/C_PoseColliderHandlerComponent.h"
 
 #include "GameFramework/PlayerState.h"
 #include "Actor/Components/C_PlayerStatComponent.h"
@@ -46,7 +47,7 @@ AC_BasicPlayer::AC_BasicPlayer()
 	m_Camera->SetupAttachment(m_SpringArm);
 
 	// 캐릭터 상태 초기화
-	m_PlayerMoveSpeedState = EPlayerMoveSpeedState::Walk;
+	m_PlayerMoveSpeedState = EPlayerPoseState::Walk;
 
 	// 점프높이 설정
 	GetCharacterMovement()->JumpZVelocity = 600.f;
@@ -57,8 +58,6 @@ AC_BasicPlayer::AC_BasicPlayer()
 	m_CrouchSpeed = 200.f;
 
 	m_BaseMaxSpeed = m_WalkSpeed;
-
-	m_IsCrouchTransitioning = false;
 
 	GetCharacterMovement()->MaxWalkSpeed = m_WalkSpeed;
 	GetCharacterMovement()->MaxWalkSpeedCrouched = m_CrouchSpeed;
@@ -73,9 +72,6 @@ AC_BasicPlayer::AC_BasicPlayer()
 	// 부스트 사용량 설정
 	m_SprintBoostUseCost = 20.f;
 	m_BoostRecoverCost = 15.f;
-
-	// 웅크리기 전환 시간 설정
-	m_CrouchTransitionStopTime = 0.2f;
 
 	// 점프 입력 초기화
 	m_IsJumpInput = false;
@@ -106,7 +102,8 @@ AC_BasicPlayer::AC_BasicPlayer()
 	
 	m_StatComponent = CreateDefaultSubobject<UC_PlayerStatComponent>(TEXT("StatComponent"));
 	
-	
+	// PoseColliderHandler Component
+	m_PoseColliderHandlerComponent = CreateDefaultSubobject<UC_PoseColliderHandlerComponent>(TEXT("PoseColliderHandlerComponent"));
 }
 
 void AC_BasicPlayer::BeginPlay()
@@ -131,6 +128,14 @@ void AC_BasicPlayer::BeginPlay()
 	UIManager->GetInventoryWidget()->GetPlayerGridWidget()->SetInvenComponent(m_InvenComponent);
 	// 까지
 	
+
+	// 웅크리기 완료 시 호출할 OnPoseTransitionFinished 바인딩
+	if (m_PoseColliderHandlerComponent)
+	{
+		m_PoseColliderHandlerComponent
+			->OnPoseTransitionFinished.AddUObject(this, &AC_BasicPlayer::OnPoseTransitionFinished);
+	}
+
 	// 입력 시스템 초기화
 	//InitInput();
 }
@@ -149,7 +154,7 @@ void AC_BasicPlayer::Tick(float DeltaTime)
 
 	/// 나중에 스탯 컴포넌트로 분리할 예정
 	// 달리기 중이면 부스트 소모
-	if (m_PlayerMoveSpeedState == EPlayerMoveSpeedState::Sprint)
+	if (m_PlayerMoveSpeedState == EPlayerPoseState::Sprint)
 	{
 		UseBoost(m_SprintBoostUseCost * DeltaTime);
 		
@@ -206,6 +211,11 @@ void AC_BasicPlayer::ClearCurDraggedItem()
 	curDraggedItem.Clear();
 }
 
+bool AC_BasicPlayer::IsCrouchTransitioning() const
+{
+	return m_PoseColliderHandlerComponent->IsTransitioning();
+}
+
 void AC_BasicPlayer::Landed(const FHitResult& Hit)
 {
 	Super::Landed(Hit);
@@ -258,14 +268,14 @@ void AC_BasicPlayer::StartSprint()
 		return;
 
 	// 웅크리기 중이거나 웅크리기 전환 중일 때는 달리기 불가
-	if (m_PlayerMoveSpeedState == EPlayerMoveSpeedState::Crouch || m_IsCrouchTransitioning)
+	if (m_PlayerMoveSpeedState == EPlayerPoseState::Crouch)
 		return;
 
 	// 부스트가 없으면 달리기 불가
 	if (m_CurBoost <= 0.f)
 		return;
 
-	m_PlayerMoveSpeedState = EPlayerMoveSpeedState::Sprint;
+	m_PlayerMoveSpeedState = EPlayerPoseState::Sprint;
 
 	ApplyMovementSpeed();
 }
@@ -274,54 +284,39 @@ void AC_BasicPlayer::StopSprint()
 {
 	m_IsSprintInput = false;
 
-	m_PlayerMoveSpeedState = EPlayerMoveSpeedState::Walk;
+	m_PlayerMoveSpeedState = EPlayerPoseState::Walk;
 
 	ApplyMovementSpeed();
 }
 
 void AC_BasicPlayer::ToggleCrouch()
 {
-	if (m_IsCrouchTransitioning)
-		return;
-
 	if (GetCharacterMovement()->IsFalling())
 		return;
 
-	m_IsCrouchTransitioning = true;
+	if (m_PoseColliderHandlerComponent->IsTransitioning())
+		return;
 
-	// 전환 시작 순간 잠깐 정지
+	const bool bWantsToCrouch = m_PlayerMoveSpeedState != EPlayerPoseState::Crouch;
+
+	const bool bStartTransition = m_PoseColliderHandlerComponent->SetCrouched(bWantsToCrouch);
+
+	if (!bStartTransition)
+		return;
+
+	// 자세 전환 중에 잠깐 멈춤
 	GetCharacterMovement()->MaxWalkSpeed = 0.f;
 
-	if (m_PlayerMoveSpeedState != EPlayerMoveSpeedState::Crouch)
+	if (bWantsToCrouch)
 	{
-		// 웅크리기 시작 시 달리기 입력 해제
+		// 웅크리기 시작 시 달리기 입력 초기화
 		m_IsSprintInput = false;
 
-		m_PlayerMoveSpeedState = EPlayerMoveSpeedState::Crouch;
-
-		Crouch();
-
-		GetWorldTimerManager().SetTimer(
-			m_CrouchTransitionTimerHandle,
-			this,
-			&AC_BasicPlayer::ApplyCrouchSpeed,
-			m_CrouchTransitionStopTime,
-			false
-		);
+		m_PlayerMoveSpeedState = EPlayerPoseState::Crouch;
 	}
 	else
 	{
-		m_PlayerMoveSpeedState = EPlayerMoveSpeedState::Walk;
-
-		UnCrouch();
-
-		GetWorldTimerManager().SetTimer(
-			m_CrouchTransitionTimerHandle,
-			this,
-			&AC_BasicPlayer::ApplyWalkSpeed,
-			m_CrouchTransitionStopTime,
-			false
-		);
+		m_PlayerMoveSpeedState = EPlayerPoseState::Walk;
 	}
 }
 
@@ -334,7 +329,7 @@ void AC_BasicPlayer::ApplyMovementSpeed()
 		return;
 
 	// 웅크리기 전환 중일 때는 잠깐 정지
-	if (m_IsCrouchTransitioning)
+	if (m_PoseColliderHandlerComponent->IsTransitioning())
 	{
 		GetCharacterMovement()->MaxWalkSpeed = 0.f;
 		return;
@@ -343,17 +338,17 @@ void AC_BasicPlayer::ApplyMovementSpeed()
 	// 상태에 따른 이동 속도 적용
 	switch (m_PlayerMoveSpeedState)
 	{
-	case EPlayerMoveSpeedState::Walk:
+	case EPlayerPoseState::Walk:
 		GetCharacterMovement()->MaxWalkSpeed = m_WalkSpeed;
 		break;
-	case EPlayerMoveSpeedState::Sprint:
+	case EPlayerPoseState::Sprint:
 		GetCharacterMovement()->MaxWalkSpeed = m_SprintSpeed;
 		break;
-	case EPlayerMoveSpeedState::Crouch:
+	case EPlayerPoseState::Crouch:
 		GetCharacterMovement()->MaxWalkSpeed = m_CrouchSpeed;
 		GetCharacterMovement()->MaxWalkSpeedCrouched = m_CrouchSpeed;
 		break;
-	case EPlayerMoveSpeedState::Aim:
+	case EPlayerPoseState::Aim:
 		//GetCharacterMovement()->MaxWalkSpeed = m_AimSpeed;
 		break;
 	default:
@@ -362,19 +357,6 @@ void AC_BasicPlayer::ApplyMovementSpeed()
 	}
 }
 
-void AC_BasicPlayer::ApplyCrouchSpeed()
-{
-	m_IsCrouchTransitioning = false;
-
-	ApplyMovementSpeed();
-}
-
-void AC_BasicPlayer::ApplyWalkSpeed()
-{
-	m_IsCrouchTransitioning = false;
-
-	ApplyMovementSpeed();
-}
 
 
 
@@ -388,6 +370,14 @@ void AC_BasicPlayer::UpdateBoostBarHUD() const
 				MainHUD->UpdateBoostBar(m_CurBoost, m_MaxBoost);
 		}
 	}
+}
+
+void AC_BasicPlayer::OnPoseTransitionFinished(bool _bIsCrouched)
+{
+	m_PlayerMoveSpeedState = _bIsCrouched ? EPlayerPoseState::Crouch : EPlayerPoseState::Walk;
+
+	// 웅크리기 전환 완료 후 이동 속도 갱신
+	ApplyMovementSpeed();
 }
 
 ETeamAttitude::Type AC_BasicPlayer::GetTeamAttitudeTowards(const AActor& _Other) const
@@ -470,6 +460,16 @@ void AC_BasicPlayer::SetCameraFOV(float _FOV)
 {
 	if(m_Camera)
 		m_Camera->FieldOfView = _FOV;
+}
+
+EPlayerPoseState AC_BasicPlayer::DetermineMoveSpeedState() const
+{
+	return EPlayerPoseState();
+}
+
+float AC_BasicPlayer::GetMoveSpeedByState(EPlayerPoseState _MoveSpeedState) const
+{
+	return 0.0f;
 }
 
 //void AC_BasicPlayer::InitInput()
