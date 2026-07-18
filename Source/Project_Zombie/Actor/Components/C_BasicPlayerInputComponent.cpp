@@ -127,6 +127,9 @@ void UC_BasicPlayerInputComponent::InitializePlayerInput(UInputComponent* Player
 		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Ongoing, this, &UC_BasicPlayerInputComponent::KeepAimActionOngoing);
 		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Completed, this, &UC_BasicPlayerInputComponent::KeepAimActionEnd);
 	}
+	
+		
+
 }
 
 const UInputAction* UC_BasicPlayerInputComponent::FindIAByName(const FString& _Name)
@@ -333,7 +336,9 @@ void UC_BasicPlayerInputComponent::ToggleInventoryWidget()
 		InventoryWidget->SetVisibility(ESlateVisibility::Visible);
 
 		FInputModeGameAndUI InputMode;
-		InputMode.SetWidgetToFocus(InventoryWidget->TakeWidget());
+		//InputMode.SetWidgetToFocus(InventoryWidget->TakeWidget());
+		InputMode.SetWidgetToFocus(nullptr);
+
 		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 		PC->SetInputMode(InputMode);
 		PC->SetShowMouseCursor(true);
