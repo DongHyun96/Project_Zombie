@@ -13,10 +13,21 @@ class PROJECT_ZOMBIE_API AC_ToxicProjectile : public AC_EnemyProjectile
 
 protected:
 	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<class AC_ToxicPool> m_ToxicPoolClass; // 투사체가 충돌했을 때 생성될 독성 풀 클래스
+	TSubclassOf<class AC_ToxicPool> m_ToxicPoolClass; // 투사체가 충돌했을 때 생성될 독장판 클래스
 	
+protected:
+	/// <summary>
+	/// 독장판 생성 함수
+	/// </summary>
+	void SpawnToxicPool(const FVector& _SpawnLocation, const FRotator& _SpawnRotation);
+
 public:
-	void OnHit() override;
+	void OnHit(AActor* _OtherActor, UPrimitiveComponent* _OtherCom, const FHitResult& _Hit) override;
+
+	/// <summary>
+	/// 바닥을 추적하는 함수
+	/// </summary>
+	bool FindPoolGround(const FVector& _ImpactLocation, const FVector& _ImpactNormal, FVector& _OutSpawnLocation, FRotator& _OutSpawnRotation) const;
 
 public:
 	AC_ToxicProjectile();
