@@ -48,10 +48,13 @@ public: /* Spawn 관련 함수들 */
 	/// <returns> : 제대로 Pool로 돌아가지 못했다면 return false </returns>
 	bool ReturnHealingProjectileToPool(class AC_HealingProjectile* _HealingProjectile);
 
-	// TODO : 이 함수 테스트 때문에 넣어둠 지워버릴 것
-	void AddNurseZombieToActivePool(AC_NurseZombie* _NurseZombie) { m_ActiveNurseZombies.Add(_NurseZombie); }
-	
 	const TSet<AC_NurseZombie*>& GetActiveNurseZombies() const { return m_ActiveNurseZombies; }
+	
+public: /* For testing TODO : 이 Block 밑 지울 함수들 모두 지워버릴 것 */
+
+	// TODO : 이 함수 테스트 때문에 넣어둠 지워버릴 것
+	void AddNurseZombieToActivePool(AC_NurseZombie* _NurseZombie) { m_ActiveNurseZombies.Add(_NurseZombie); } 
+	
 	
 protected: /* 좀비 스폰 기반 클래스 정보 및 PoolCount 정보 -> TODO : ZombieManager 블루프린트에 해당값 초기화시킬 것 */
 
