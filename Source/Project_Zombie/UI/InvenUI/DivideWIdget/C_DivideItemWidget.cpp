@@ -48,13 +48,45 @@ void UC_DivideItemWidget::UpdateWidget()
 	
 	SetVisibility(ESlateVisibility::Visible);
 }
-
-void UC_DivideItemWidget::OnDivideConfirm(int32 RequestedDivideCount)
+FReply UC_DivideItemWidget::NativeOnPreviewKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
 {
+	// 부모 클래스의 기본 기본 처리를 먼저 타지 않고, 키를 먼저 검사합니다.
+	FKey PressedKey = InKeyEvent.GetKey();
+
+	// 1. ESC 키 입력 처리
+	if (PressedKey == EKeys::Escape)
+	{
+		ExecuteCancelAction();
+		return FReply::Handled(); // 입력을 여기서 완전히 소비하여 종료합니다.
+	}
+
+	// 2. Enter 키 입력 처리
+	if (PressedKey == EKeys::Enter)
+	{
+		ExecuteConfirmAction();
+		return FReply::Handled(); // 입력을 여기서 완전히 소비하여 분할을 실행합니다.
+	}
+
+	// 3. 엔터와 ESC가 아닌 모든 입력(숫자, 지우기, 이동키 등)은 
+	// 원래 포커스를 소유한 EditableText나 시스템이 정상 처리하도록 무조건 흘려보냅니다.
+	return FReply::Unhandled();
+}
+void UC_DivideItemWidget::ExecuteConfirmAction()
+{
+	// 현재 켜져 있는(Visible) 버튼의 로직을 실행
+	if (DivideEntryButton && DivideEntryButton->GetVisibility() == ESlateVisibility::Visible)
+	{
+		HandleOnClickButtonDivideEntry();
+	}
+	else if (DivideItemButton && DivideItemButton->GetVisibility() == ESlateVisibility::Visible)
+	{
+		HandleOnClickButtonDivideItem();
+	}
 }
 
-void UC_DivideItemWidget::OnDivideConfirmFroDrop(int32 RequestedDivideCount)
+void UC_DivideItemWidget::ExecuteCancelAction()
 {
+	HandleOnClickButtonExitBtn();
 }
 
 /*FReply UC_DivideItemWidget::NativeOnPreviewKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)

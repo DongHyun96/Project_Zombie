@@ -24,12 +24,12 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void UpdateWidget();
 	
-	void OnDivideConfirm(int32 RequestedDivideCount);
+	//void OnDivideConfirm(int32 RequestedDivideCount);
+	//
+	//void OnDivideConfirmFroDrop(int32 RequestedDivideCount);	
 	
-	void OnDivideConfirmFroDrop(int32 RequestedDivideCount);	
-
-	// 이거 쓰면 인벤토리 열었을 때 모든 키 입력을 갈취 당함.
-	//virtual FReply NativeOnPreviewKeyDown( const FGeometry& InGeometry, const FKeyEvent& InKeyEvent );
+	// 잘 안됬었는데 이제는 잘되는 
+	virtual FReply NativeOnPreviewKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent );
 public:
 	void SetCursorItem(const FCursorItem& InCursorItem) { CursorItem = InCursorItem; }
 	
@@ -53,8 +53,11 @@ protected:
 	 
 	void UpdateSlider();
 	
-	//UFUNCTION()
-	//void HandleOnClickedExitButton();
+	// 드래그된 아이템을 나누는 버튼을 눌렀을 때 호출되는 래퍼함수.
+	void ExecuteConfirmAction();
+
+	// DivideItemWidget를 닫는 버튼을 눌렀을 때 호출되는 래퍼함수.
+	void ExecuteCancelAction();
 	
 	// 슬라이드바를 움직이면 호출되는 함수
 	UFUNCTION()
