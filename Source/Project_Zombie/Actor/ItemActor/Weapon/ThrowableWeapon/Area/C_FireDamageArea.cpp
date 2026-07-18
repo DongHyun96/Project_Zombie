@@ -89,7 +89,9 @@ bool AC_FireDamageArea::FindGroundAtLocation(const FVector& _StartLocation, FHit
 	if (!World)
 		return false;
 
-	const FVector StartTrace = _StartLocation + FVector(0.f, 0.f, m_GroundTraceDistance);
+	constexpr float GroundTraceUpHeight = 5.f;
+
+	const FVector StartTrace = _StartLocation + FVector(0.f, 0.f, GroundTraceUpHeight);
 	const FVector EndTrace = _StartLocation - FVector(0.f, 0.f, m_GroundTraceDistance);
 
 	FCollisionQueryParams QueryParams(
@@ -307,7 +309,7 @@ void AC_FireDamageArea::ApplyPointDamage()
 			FVector(
 				m_DamageRadius,
 				m_DamageRadius,
-				50.f			// Z축
+				m_DamageHalfHeight			// Z축
 			)
 		);
 
@@ -324,10 +326,14 @@ void AC_FireDamageArea::ApplyPointDamage()
 	// -------- 디버그용 --------------
 	DrawDebugCylinder(
 		World,
-		AreaLocation + FVector(0.f, 0.f, 2.f),	// Start
-		AreaLocation + FVector(0.f, 0.f, 5.f),	// End
-		m_DamageRadius,
-		32,
+		// 원기둥 아래쪽 중심
+		AreaLocation -
+		FVector(0.f, 0.f, m_DamageHalfHeight),
+		// 원기둥 위쪽 중심
+		AreaLocation +
+		FVector(0.f, 0.f, m_DamageHalfHeight),
+		m_DamageRadius,         // 원기둥 XY 반경
+		32,                     // 원 둘레 분할 수
 		FColor::Red,
 		false,
 		m_DamageInterval,
@@ -377,14 +383,11 @@ void AC_FireDamageArea::ApplyPointDamage()
 		 * Z축 높이는 현재 단계에서 검사하지 않는다.
 		 */
 		const FVector2D HorizontalOffset(
-			TargetLocation.X -
-			AreaLocation.X,
-
-			TargetLocation.Y -
-			AreaLocation.Y
+			TargetLocation.X - AreaLocation.X,
+			TargetLocation.Y - AreaLocation.Y
 		);
 
-
+		// 거리 제곱값 계산
 		const float HorizontalDistanceSquared =
 			HorizontalOffset.SizeSquared();
 
@@ -397,6 +400,20 @@ void AC_FireDamageArea::ApplyPointDamage()
 		 */
 		if (HorizontalDistanceSquared >
 			FMath::Square(m_DamageRadius))
+		{
+			continue;
+		}
+
+		/*
+		장판 중심과 대상 사이의 Z 축 거리 검사
+
+		Abs 를 사용하므로 장판 중심보다 위쪽/아래쪽 을 동일하게 검사
+		*/
+		const float VerticalDistance = FMath::Abs(
+			TargetLocation.Z - AreaLocation.Z
+		);
+
+		if (VerticalDistance > m_DamageHalfHeight)
 		{
 			continue;
 		}

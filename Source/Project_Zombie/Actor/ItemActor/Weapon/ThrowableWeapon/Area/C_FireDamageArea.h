@@ -113,6 +113,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Fire Area|Damage")
 	float m_DamageRadius;
 
+	// 데미지 영역 높이 (Z축)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Fire Area|Damage")
+	float m_DamageHalfHeight;
+
 	// 장판 지속 시간
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Fire Area|Damage")
 	float m_Duration;
