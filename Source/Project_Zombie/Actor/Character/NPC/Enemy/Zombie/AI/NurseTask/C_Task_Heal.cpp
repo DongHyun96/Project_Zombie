@@ -35,7 +35,7 @@ EBTNodeResult::Type UC_Task_Heal::ExecuteTask(UBehaviorTreeComponent& OwnerComp,
 	
 	AC_NurseZombie* NurseZombie = Cast<AC_NurseZombie>(OwnerComp.GetAIOwner()->GetPawn());
 	NurseZombie->ToggleHealingAura(true);
-		
+	
 	return EBTNodeResult::InProgress;
 }
 

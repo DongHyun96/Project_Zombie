@@ -33,8 +33,6 @@ void AC_NurseZombie::BeginPlay()
 	ZOMBIE_MANAGER->AddNurseZombieToActivePool(this); // TODO : 이 라인 지워버리기 (Level 배치한 테스트용 처리 / 실질적인 Spawn 처리는 ZombieManager에서 할 것) 
 	
 	ToggleHealingAura(false);
-	
-	m_SkillCom->m_SkillEndDelegate.AddUObject(this, &AC_NurseZombie::OnHealSkillEnd);
 }
 
 void AC_NurseZombie::GetHealingAuraOverlappingEnemies(TArray<AActor*>& _OutOverlappingEnemies) const

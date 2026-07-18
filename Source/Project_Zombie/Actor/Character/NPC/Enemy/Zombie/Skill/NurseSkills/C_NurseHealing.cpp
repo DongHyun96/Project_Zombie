@@ -4,6 +4,7 @@
 #include "C_NurseHealing.h"
 
 #include "Actor/Character/NPC/Enemy/C_BasicEnemy.h"
+#include "Actor/Character/NPC/Enemy/Components/SkillComponent/C_EnemySkillComponent.h"
 #include "Actor/Character/NPC/Enemy/Zombie/NurseZombie/C_NurseZombie.h"
 #include "Actor/Character/NPC/Enemy/Zombie/Skill/C_EnemySkillData.h"
 #include "GameModeAndManager/C_ZombieManager.h"
@@ -23,6 +24,9 @@ bool UC_NurseHealing::Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data)
 	const FName PickedSectionName = _Data->Montage->GetSectionName(PickedIdx);
 
 	_Owner->PlayAnimMontage(_Data->Montage, 1.f, PickedSectionName);
+	
+	// Skill End Delegate 여기서 구독
+	_Owner->GetSkillComponent()->m_SkillEndDelegate.AddUObject(Nurse, &AC_NurseZombie::OnHealSkillEnd);
 	
 	return true;
 }

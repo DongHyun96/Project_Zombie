@@ -23,6 +23,8 @@ class PROJECT_ZOMBIE_API AC_NurseZombie : public AC_Zombie
 {
 	GENERATED_BODY()
 
+	friend class UC_NurseHealing;
+	
 public:
 	
 	AC_NurseZombie();

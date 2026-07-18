@@ -32,6 +32,11 @@ protected:
 public:
 
 	class AC_WeaponBase* GetCurWeapon() const { return m_Weapons[m_CurWeaponTypeIdx]; }
+
+	/// <summary>
+	/// 해당 Slot에 장착된 Weapon 구하기 (만약 장착된 무기가 없다면 nullptr 
+	/// </summary>
+	AC_WeaponBase* GetSlotWeapon(EWeaponSlot _WeaponSlotType) const { return m_Weapons[static_cast<uint8>(_WeaponSlotType)]; }
 	
 	/// <summary>
 	/// 슬롯에 무기 장착하기 / 해제는 Weapon에 nullptr를 줄 것 -> 장착/해제는 이 함수를 통해서 무조건 할 것
@@ -54,6 +59,8 @@ public:
 	/// <returns> : 실패 시 return false </returns>
 	bool ToggleArmed();
 
+	
+	
 public:
 	
 	/// <summary>
