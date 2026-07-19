@@ -48,17 +48,17 @@ public:
 	/// <summary>
 	/// 투사체가 충돌했을 때 호출되는 함수
 	/// </summary>
-	virtual void OnHit();
+	virtual void OnHit(AActor* _OtherActor, UPrimitiveComponent* _OtherCom, const FHitResult& _Hit);
 
 	/// <summary>
 	/// HitEffect를 스폰하는 함수
 	/// </summary>
-	void SpawnHitEffect();
+	void SpawnHitEffect(const FVector& _Location);
 
 	/// <summary>
 	/// HitSound를 재생하는 함수
 	/// </summary>
-	void PlayHitSound();
+	void PlayHitSound(const FVector& _Location);
 
 
 	/// <summary>

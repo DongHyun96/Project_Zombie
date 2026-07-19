@@ -12,6 +12,10 @@
 
 UC_Deco_IsInRange::UC_Deco_IsInRange()
 {
+	NodeName = TEXT("Is In Range");
+
+	// 데코레이터의 TickNode가 호출되도록 설정
+	bNotifyTick = true;
 }
 
 bool UC_Deco_IsInRange::CalculateRawConditionValue(UBehaviorTreeComponent& _OwnCom, uint8* _NodeMem) const
@@ -37,11 +41,15 @@ bool UC_Deco_IsInRange::CalculateRawConditionValue(UBehaviorTreeComponent& _OwnC
 	// TODO : 에디터 BehaviorTree 에서 해당 SkillSlot으로 초기화해줄 것 (기본은 1번 Slot으로 되어있음)
 	float AttackRange = SkillCom->GetSkillRange(m_SkillSlot);
 
-	UE_LOG(LogTemp, Warning,
-		TEXT("Dist = %.1f  Range = %.1f"),
-		Dist,
-		AttackRange);
-
 	return Dist <= AttackRange;
+}
+
+void UC_Deco_IsInRange::TickNode(UBehaviorTreeComponent& _OwnCom, uint8* _NodeMemory, float _DeltaSeconds)
+{
+	Super::TickNode(_OwnCom, _NodeMemory, _DeltaSeconds);
+
+	UC_Util::Print("TickNode");
+
+	ConditionalFlowAbort(_OwnCom, EBTDecoratorAbortRequest::ConditionResultChanged);
 }
 

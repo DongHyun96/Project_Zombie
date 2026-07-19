@@ -73,13 +73,14 @@ bool UC_EnemySkillComponent::UseSkill(ESkillSlot _Slot)
 {
 	// 이미 다른 스킬을 사용중일 때
 	if (bUsingSkill) return false;
-	
-	UE_LOG(LogTemp, Warning, TEXT("UseSkill"));
 
 	AC_BasicEnemy* Owner = Cast<AC_BasicEnemy>(GetOwner());
 	if (!Owner) return false;
 
-	const uint8 TargetSlotIdx  = static_cast<uint8>(_Slot);
+	if (!m_SkillSlots.IsValidIndex(static_cast<int32>(_Slot)))
+		return false;
+
+	const int32 TargetSlotIdx  = static_cast<int32>(_Slot);
 	const FSkillSlotInfo& Info = m_SkillSlots[TargetSlotIdx];
 	
 	if (!Info.LoadedSkillData)
@@ -88,12 +89,16 @@ bool UC_EnemySkillComponent::UseSkill(ESkillSlot _Slot)
 		return false;
 	}
 
+	if (!CanUseSkill(_Slot))
+		return false;
+
 	// 현재 해당 스킬을 사용할 수 없는 상황
 	if (!Info.SkillInstance->Activate(Owner, Info.LoadedSkillData))
 		return false;
 
-	// 스킬 사용 성공
+	StartCooldown(_Slot);
 
+	// 스킬 사용 성공
 	m_CurSkillData = Info.LoadedSkillData;	// 현재 사용중인 Skill 세팅
 	bUsingSkill    = true;					// 스킬 사용중으로 설정
 	return true;
@@ -118,6 +123,75 @@ void UC_EnemySkillComponent::EndSkillManually()
 
 	// 나머지 처리는 기존의 OnEndSkill 처리와 같음
 	OnAN_EndSkill();
+}
+
+bool UC_EnemySkillComponent::CanUseSkill(ESkillSlot _Slot) const
+{
+	if (!m_SkillSlots.IsValidIndex(static_cast<int32>(_Slot)))
+		return false;
+
+	// 스킬 정보 가져오기
+	const FSkillSlotInfo& Info = m_SkillSlots[static_cast<int32>(_Slot)];
+
+	if (!Info.LoadedSkillData)
+		return false;
+
+	// 다음 스킬사용 시간 찾기
+	const float* NextUsableTime = m_mapSkillCoolTime.Find(Info.LoadedSkillData->GetPrimaryAssetId());
+
+	// 아직 한번도 사용하지 않은 스킬이라면
+	if (!NextUsableTime)
+		return true;
+
+	return GetWorld()->GetTimeSeconds() >= *NextUsableTime;
+}
+
+void UC_EnemySkillComponent::StartCooldown(ESkillSlot _Slot)
+{
+	if (!m_SkillSlots.IsValidIndex(static_cast<int32>(_Slot)))
+		return;
+
+	const FSkillSlotInfo& Info = m_SkillSlots[static_cast<int32>(_Slot)];
+
+	if (!Info.LoadedSkillData)
+		return;
+
+	// 현재 시간 + 스킬의 쿨타임 = 다음 스킬사용 가능시간 계산
+	const float NextUsableTime = GetWorld()->GetTimeSeconds() + Info.LoadedSkillData->CoolTime;
+
+	m_mapSkillCoolTime.FindOrAdd(Info.LoadedSkillData->GetPrimaryAssetId(), NextUsableTime);
+}
+
+float UC_EnemySkillComponent::GetRemainingCooldown(ESkillSlot _Slot) const
+{
+	const UWorld* World = GetWorld();
+
+	if(!IsValid(World))
+		return 0.f;
+
+	const int32 SlotIndex = static_cast<int32>(_Slot);
+
+	if (!m_SkillSlots.IsValidIndex(SlotIndex))
+		return 0.f;
+
+	const FSkillSlotInfo& Info = m_SkillSlots[SlotIndex];
+
+	if (!IsValid(Info.LoadedSkillData))
+		return 0.f;
+
+	const FPrimaryAssetId SkillId = Info.LoadedSkillData->GetPrimaryAssetId();
+
+	const float* NextUsableTime = m_mapSkillCoolTime.Find(SkillId);
+
+	// 한번도 사용하지 않은 경우
+	if (!NextUsableTime)
+		return 0.f;
+
+	const float CurrentTime = World->GetTimeSeconds();
+
+	// 쿨타임이 끝났으면 음수가 나올 수 있으므로 최소값 0으로 제한
+	return FMath::Max(0.f, *NextUsableTime - CurrentTime);
+
 }
 
 void UC_EnemySkillComponent::Fire()
