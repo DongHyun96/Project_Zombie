@@ -42,7 +42,7 @@ bool UC_MolotovExplode::UseStrategy_Implementation(AC_ThrowableWeaponBase* _Thro
 		if (!ImpactNormal.IsNearlyZero())
 		{
 			// 충돌 지점에서 약간 떨어진 위치로 조정
-			ExplosionLocation = ImpactHit.ImpactPoint + ImpactNormal * 10.f;
+			ExplosionLocation = ImpactHit.ImpactPoint + ImpactNormal * 5.f;
 		}
 		else
 		{
@@ -52,7 +52,7 @@ bool UC_MolotovExplode::UseStrategy_Implementation(AC_ThrowableWeaponBase* _Thro
 	}
 
 	// Trace를 통해 화염 장판을 생성할 위치를 결정
-	const FVector GroundTraceStart = ExplosionLocation + FVector(0.f, 0.f, 50.f);
+	const FVector GroundTraceStart = ExplosionLocation;
 	const FVector GroundTraceEnd = ExplosionLocation - FVector(0.f, 0.f, 300.f);
 
 	FCollisionQueryParams GroundQueryParams(
@@ -60,7 +60,6 @@ bool UC_MolotovExplode::UseStrategy_Implementation(AC_ThrowableWeaponBase* _Thro
 		false,	// 단순 콜리전 검사
 		_ThrowableWeapon // Trace 검사에서 자기 자신을 무시
 	);
-
 
 	FHitResult GroundHit;
 
@@ -71,6 +70,18 @@ bool UC_MolotovExplode::UseStrategy_Implementation(AC_ThrowableWeaponBase* _Thro
 		ECC_Visibility, // Trace 채널 설정
 		GroundQueryParams
 	);
+
+	DrawDebugLine(
+		World,
+		GroundTraceStart,
+		GroundTraceEnd,
+		FColor::Black,
+		false,
+		5.f,
+		0,
+		2.f
+	);
+
 
 	// 바닥 못찾으면 장판은 생성 안하고 폭발 효과만 발생시키고 끝냄
 	if (!bHitGround)
