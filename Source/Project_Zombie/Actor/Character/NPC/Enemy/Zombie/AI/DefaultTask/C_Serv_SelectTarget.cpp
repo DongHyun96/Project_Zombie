@@ -74,6 +74,7 @@ void UC_Serv_SelectTarget::TickNode(UBehaviorTreeComponent& _OwnCom, uint8* _Nod
 		if (!pBBCom) return;
 	
 		pBBCom->SetValueAsObject(m_Target.SelectedKeyName, pBestTarget);
+		return;
 	}
 
 	// BestTarget이 나오지 않은 상황 -> 가장 가까운 플레이어를 찾는다 ( TODO : 추후 거점 Actor 까지 포함해서 따질 것)
