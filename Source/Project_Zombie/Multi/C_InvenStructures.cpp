@@ -8,7 +8,6 @@
 
 void FInventoryContainer::PostReplicatedAdd(const TArrayView<int32> AddedIndices, int32 FinalDelta)
 {
-	
 	for (int32 Index : AddedIndices)
 	{
 		if (OwnerComponent && Items.IsValidIndex(Index))
@@ -20,8 +19,6 @@ void FInventoryContainer::PostReplicatedAdd(const TArrayView<int32> AddedIndices
 
 void FInventoryContainer::PostReplicatedChange(const TArrayView<int32> ChangedIndices, int32 FinalDelta)
 {
-	
-	
 	for (int32 Index : ChangedIndices)
 	{
 		if (OwnerComponent && Items.IsValidIndex(Index))
