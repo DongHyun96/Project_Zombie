@@ -16,7 +16,7 @@ bool UC_EnemySkillBase::Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data
 	if (!_Owner || !_Data || !_Data->Montage) return false;
 
 	// 정상 재생시작 처리되었다면 Montage Duration float값이 나옴(true) | 재생처리가 되지 않은 경우 0.f (false) )
-	return _Owner->PlayAnimMontage(_Data->Montage);
+	return static_cast<bool>(_Owner->PlayAnimMontage(_Data->Montage));
 }
 
 void UC_EnemySkillBase::Fire(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data)
