@@ -28,16 +28,7 @@ AC_EnemyProjectile::AC_EnemyProjectile()
 	m_Sphere->InitSphereRadius(10.f);
 	// SetCollisionProfileName(TEXT("Projectile"));
 
-
-	//-------------------------테스트용-------------------------//
-	//m_Sphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	//m_Sphere->SetCollisionObjectType(ECC_WorldDynamic);
-	//
-	//m_Sphere->SetCollisionResponseToAllChannels(ECR_Ignore);
-	//m_Sphere->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Overlap);
-
 	m_Sphere->OnComponentHit.AddDynamic(this, &AC_EnemyProjectile::OnProjectileHit);
-	//-------------------------테스트용-------------------------//
 
 	// 2. PMC(Projectile Movement Component)
 	m_PMC = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("PMC"));
@@ -57,19 +48,18 @@ AC_EnemyProjectile::AC_EnemyProjectile()
 
 void AC_EnemyProjectile::InitProjectile(AC_BasicEnemy* _SkillUser, UC_EnemySkillData* _Skill)
 {
+	check(_Skill);
+	check(_SkillUser);
+
 	m_SkillUser = _SkillUser;
 	m_Skill = _Skill;
 
-	m_Sphere->IgnoreActorWhenMoving(_SkillUser, true);
+	m_Sphere->IgnoreActorWhenMoving(m_SkillUser, true);
 
-	if (_Skill)
-	{
-		m_LifeTime = _Skill->ProjectileLifetime;
+	m_LifeTime = m_Skill->ProjectileLifetime;
 
-		m_PMC->InitialSpeed = _Skill->ProjectileSpeed;
-		m_PMC->MaxSpeed = _Skill->ProjectileSpeed;
-	}
-
+	m_PMC->InitialSpeed = _Skill->ProjectileSpeed;
+	m_PMC->MaxSpeed = _Skill->ProjectileSpeed;
 	m_PMC->Velocity = GetActorForwardVector() * _Skill->ProjectileSpeed;
 
 	SetLifeSpan(m_LifeTime);
@@ -92,29 +82,36 @@ void AC_EnemyProjectile::Tick(float DeltaTime)
 
 }
 
-void AC_EnemyProjectile::OnHit()
+void AC_EnemyProjectile::OnHit(AActor* _OtherActor, UPrimitiveComponent* _OtherCom, const FHitResult& _Hit)
 {
-	SpawnHitEffect();
-	PlayHitSound();
+	FVector HitLocation = GetActorLocation();
+
+	if (_Hit.bBlockingHit)
+	{
+		HitLocation = _Hit.ImpactPoint;
+	}
+
+	SpawnHitEffect(HitLocation);
+	PlayHitSound(HitLocation);
 
 	Destroy();
 }
 
 
-void AC_EnemyProjectile::SpawnHitEffect()
+void AC_EnemyProjectile::SpawnHitEffect(const FVector& _Location)
 {
-	if (m_HitEffect)
-	{
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), m_HitEffect, GetActorLocation(), GetActorRotation());
-	}
+	if (!m_HitEffect)
+		return;
+
+	UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), m_HitEffect, _Location, GetActorRotation());
 }
 
-void AC_EnemyProjectile::PlayHitSound()
+void AC_EnemyProjectile::PlayHitSound(const FVector& _Location)
 {
-	if (m_Skill && m_Skill->HitSound)
-	{
-		UGameplayStatics::PlaySoundAtLocation(GetWorld(), m_Skill->HitSound, GetActorLocation());
-	}
+	if (!m_Skill || !m_Skill->HitSound)
+		return;
+
+	UGameplayStatics::PlaySoundAtLocation(GetWorld(), m_Skill->HitSound, _Location);
 }
 
 void AC_EnemyProjectile::OnProjectileHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
@@ -122,7 +119,7 @@ void AC_EnemyProjectile::OnProjectileHit(UPrimitiveComponent* HitComponent, AAct
 	if (!OtherActor || OtherActor == this || OtherActor == m_SkillUser)
 		return;
 
-	UE_LOG(LogTemp, Warning, TEXT("Projectile Hit"));
+	UC_Util::Print("Projectile Hit");
 
-	OnHit();
+	OnHit(OtherActor, OtherComp, Hit);
 }
