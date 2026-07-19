@@ -24,6 +24,7 @@ protected:
 	
 public:
 	virtual bool CalculateRawConditionValue(UBehaviorTreeComponent& _OwnCom, uint8* _NodeMem) const override;
+	virtual void TickNode(UBehaviorTreeComponent& _OwnCom, uint8* _NodeMemory, float _DeltaSeconds) override;
 
 public:
 	UC_Deco_IsInRange();

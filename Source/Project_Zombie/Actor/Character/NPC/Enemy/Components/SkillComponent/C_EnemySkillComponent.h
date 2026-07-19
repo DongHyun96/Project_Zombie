@@ -74,7 +74,7 @@ protected:
 
 	// 쿨타임 기록 컨테이너
 	// 스킬의 고유 ( 경로 + 카테고리명 ) 을 키값으로 사용한다
-	// 스킬을 사용한 시점때의 월드 시간값을 저장
+	// 스킬을 다시 사용할 수 있는 월드시간(ex: 월드시간 10초 + 쿨타임 5초 = 15초)
 	TMap<FPrimaryAssetId, float>				m_mapSkillCoolTime;
 
 public:
@@ -94,7 +94,6 @@ public:
 	/// <summary>
 	/// 스킬이 사용중인지 체크하는 함수
 	/// </summary>
-	/// <returns></returns>
 	bool IsUsingSkill() const { return bUsingSkill; }
 
 	/// <returns> : 스킬이 정상적으로 동작했다면 return true </returns>
@@ -110,7 +109,25 @@ public:
 	/// <para> ex) -> 계속해서 Loop로 힐 주는 Skill 같은 경우, 해당 함수를 통해 EndSkill 처리를 해주어야 한다 </para>
 	/// </summary>
 	void EndSkillManually();
-	
+
+	/// <summary>
+	/// 스킬을 사용할 수 있는지 검사하는 함수
+	/// </summary>
+	/// <param name="_Slot"></param>
+	/// <returns> : 쿨타임중이면 false 반환
+	bool CanUseSkill(ESkillSlot _Slot) const;
+
+	/// <summary>
+	/// 스킬 사용 후 쿨타임을 시작하는 함수
+	/// </summary>
+	void StartCooldown(ESkillSlot _Slot);
+
+	/// <summary>
+	/// 스킬의 남은 쿨타임을 초 단위로 반환하는 함수
+	/// 디버깅 로그, 보스스킬UI, 쿨타임 표시, 쿨타임에 따라 다른 행동을 선택할 때 사용
+	/// </summary>
+	float GetRemainingCooldown(ESkillSlot _Slot) const;
+
 	void Fire();
 
 	float GetSkillRange(ESkillSlot _Slot) const;
