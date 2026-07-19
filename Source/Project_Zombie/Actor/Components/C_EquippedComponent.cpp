@@ -44,12 +44,7 @@ AC_WeaponBase* UC_EquippedComponent::SetSlotWeapon(EWeaponSlot TargetSlot, AC_We
 	AC_WeaponBase* PrevSlotWeapon = m_Weapons[TargetSlotIdx];
 
     // 들어온 슬롯의 이전 무기가 존재할 때, 이전 무기 해제 
-    // (이 부분 배그에서는 DetachFromActor 처리로 바닥에 해당 무기 내려놓게 처리를 해주었던 것 같음)
-	// 기존에 들고 있었던 무기를 어떤식으로 처리할지는 아직 미정 -> 일단 특별한 처리는 해주지 않음
-    if (PrevSlotWeapon)
-    {
-    	// ...
-    }
+    if (PrevSlotWeapon) m_Weapons[TargetSlotIdx]->DetachFromActor(FDetachmentTransformRules::KeepRelativeTransform);
 
     m_Weapons[TargetSlotIdx] = WeaponToEquip; // 새로 들어온 무기로 교체
     

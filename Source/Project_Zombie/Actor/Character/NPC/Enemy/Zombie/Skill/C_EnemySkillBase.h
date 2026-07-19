@@ -14,10 +14,10 @@ class PROJECT_ZOMBIE_API UC_EnemySkillBase : public UObject
 	
 public:
 	/// <summary>
-	/// 스킬 구현함수
+	/// 스킬 Activate 시작 처리 함수
 	/// </summary>
 	/// <returns> : 스킬을 실행할 수 없는 상황이라면 return false </returns>
-	virtual bool Activate(class AC_BasicEnemy* _Owner, class UC_EnemySkillData* _Data) { return false; }
+	virtual bool Activate(class AC_BasicEnemy* _Owner, class UC_EnemySkillData* _Data);
 
 	/// <summary>
 	/// 애니메이션 Notify에서 호출되는 함수, 스킬의 실제 효과를 발동시키는 함수

@@ -4,6 +4,7 @@
 #include "C_NurseHealing.h"
 
 #include "Actor/Character/NPC/Enemy/C_BasicEnemy.h"
+#include "Actor/Character/NPC/Enemy/Components/SkillComponent/C_EnemySkillComponent.h"
 #include "Actor/Character/NPC/Enemy/Zombie/NurseZombie/C_NurseZombie.h"
 #include "Actor/Character/NPC/Enemy/Zombie/Skill/C_EnemySkillData.h"
 #include "GameModeAndManager/C_ZombieManager.h"
@@ -16,13 +17,16 @@ bool UC_NurseHealing::Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data)
 	AC_NurseZombie* Nurse = Cast<AC_NurseZombie>(_Owner); 
 
 	// 힐을 줄 대상이 없음
-	if (Nurse->GetHealTargets().IsEmpty()) return false;
+	if (Nurse->GetHealProjectileTargets().IsEmpty()) return false;
 	
 	const int32 NumSections       = _Data->Montage->CompositeSections.Num();
 	const int32 PickedIdx         = FMath::RandRange(0, NumSections - 1);
 	const FName PickedSectionName = _Data->Montage->GetSectionName(PickedIdx);
 
 	_Owner->PlayAnimMontage(_Data->Montage, 1.f, PickedSectionName);
+	
+	// Skill End Delegate 여기서 구독
+	_Owner->GetSkillComponent()->m_SkillEndDelegate.AddUObject(Nurse, &AC_NurseZombie::OnHealSkillEnd);
 	
 	return true;
 }
@@ -36,7 +40,7 @@ void UC_NurseHealing::Fire(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data)
 	AC_NurseZombie* Nurse = Cast<AC_NurseZombie>(_Owner);
 	if (!Nurse) return;
 	
-	const TArray<AC_BasicEnemy*> HealTargets = Nurse->GetHealTargets();
+	const TArray<AC_BasicEnemy*> HealTargets = Nurse->GetHealProjectileTargets();
 
 	for (AC_BasicEnemy* HealTarget : HealTargets)
 	{

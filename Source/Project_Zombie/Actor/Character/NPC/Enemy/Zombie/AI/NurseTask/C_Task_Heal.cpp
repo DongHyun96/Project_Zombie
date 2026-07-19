@@ -3,13 +3,17 @@
 
 #include "C_Task_Heal.h"
 
+#include <string>
+
 #include "AIController.h"
 #include "Actor/Character/NPC/Enemy/Components/SkillComponent/C_EnemySkillComponent.h"
 #include "Actor/Character/NPC/Enemy/Zombie/Controller/C_ZombieController.h"
 #include "Actor/Character/NPC/Enemy/Zombie/NurseZombie/C_NurseZombie.h"
+#include "Actor/Components/StatComponent/C_StatComponentBase.h"
 #include "Chaos/ChaosVDTraceRelayTransport.h"
 #include "GameModeAndManager/C_ZombieManager.h"
 #include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
+#include "Utility/C_Util.h"
 
 UC_Task_Heal::UC_Task_Heal()
 {
@@ -31,7 +35,7 @@ EBTNodeResult::Type UC_Task_Heal::ExecuteTask(UBehaviorTreeComponent& OwnerComp,
 	
 	AC_NurseZombie* NurseZombie = Cast<AC_NurseZombie>(OwnerComp.GetAIOwner()->GetPawn());
 	NurseZombie->ToggleHealingAura(true);
-		
+	
 	return EBTNodeResult::InProgress;
 }
 
@@ -50,12 +54,27 @@ void UC_Task_Heal::TickTask(UBehaviorTreeComponent& _OwnCom, uint8* _NodeMemory,
 	}
 
 	// 더 이상 힐을 줄 Target이 존재하지 않음
-	if (Nurse->GetHealTargets().IsEmpty())
+	if (Nurse->GetHealProjectileTargets().IsEmpty())
 	{
 		Nurse->GetSkillComponent()->EndSkillManually();
 		return;
 	}
+
+	/* Heal Aura 처리 관련 */
+	TArray<AActor*> HealAuraOverlappingEnemies{};
+	Nurse->GetHealingAuraOverlappingEnemies(HealAuraOverlappingEnemies);
+
+	for (AActor* Actor : HealAuraOverlappingEnemies)
+	{
+		AC_BasicEnemy* Enemy = Cast<AC_BasicEnemy>(Actor);
+		if (!Enemy) continue;
+
+		// Heal Aura에 들어온 Enemy에 대해 초당 힐 부여
+		const float CurrentHealAmount = _DeltaSeconds * Nurse->GetHealingAuraHPS();
+		Enemy->GetStatComponent()->IncreaseCurHP(CurrentHealAmount);
+	}
 	
+	/* Healing Projectile 처리 관련 */
 	float* ProjectileSpawnIntervalTimer  = reinterpret_cast<float*>(_NodeMemory);
 	*ProjectileSpawnIntervalTimer       += _DeltaSeconds;
 
@@ -64,7 +83,7 @@ void UC_Task_Heal::TickTask(UBehaviorTreeComponent& _OwnCom, uint8* _NodeMemory,
 	{
 		*ProjectileSpawnIntervalTimer -= HEAL_PROJECTILE_SPAWN_INTERVAL;
 		
-		for (AC_BasicEnemy* HealTarget : Nurse->GetHealTargets())
+		for (AC_BasicEnemy* HealTarget : Nurse->GetHealProjectileTargets())
 		{
 			// 발사 Direction 설정
 			const FVector ToTargetDir    = (HealTarget->GetActorLocation() - Nurse->GetActorLocation()).GetSafeNormal();

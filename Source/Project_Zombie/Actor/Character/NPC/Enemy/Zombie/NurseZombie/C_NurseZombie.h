@@ -23,6 +23,8 @@ class PROJECT_ZOMBIE_API AC_NurseZombie : public AC_Zombie
 {
 	GENERATED_BODY()
 
+	friend class UC_NurseHealing;
+	
 public:
 	
 	AC_NurseZombie();
@@ -33,23 +35,25 @@ protected:
 
 public:
 	
-	const TArray<AC_BasicEnemy*>& GetHealTargets() const { return m_HealTargets; }
-
+	const TArray<AC_BasicEnemy*>& GetHealProjectileTargets() const { return m_HealProjectileTargets; }
+	
+	/// <param name="_OutOverlappingEnemies"> : Enemy 류 AActor* 객체 담아서 반환(GetOverlappingActor 함수 특성 때문에 AActor* 형식으로밖에 처리안됨) </param>
+	void GetHealingAuraOverlappingEnemies(TArray<AActor*>& _OutOverlappingEnemies) const;
+	
+	float GetHealingAuraHPS() const { return m_HealAuraHPS; }
+	
+public:
+	
 	/// <summary>
 	/// HealTarget으로 등록 시도 
 	/// </summary>
 	/// <returns> : 등록 불가능한 상태라면 return false </returns>
 	bool TryRegisterAsHealTarget(AC_BasicEnemy* _NewHealTarget);
 
-	/// <summary>
-	/// Heal 타겟 제거
-	/// </summary>
-	/// <param name="_HealTarget"></param>
-	void RemoveHealTarget(AC_BasicEnemy* _HealTarget);
-
 public:
 	
 	void SetActionState(ENurseZombieActionState _ActionState) { m_ActionState = _ActionState; }
+	ENurseZombieActionState GetActionState() const { return m_ActionState; }
 
 	/// <summary>
 	/// 주변부 Healing Aura 활성화/비활성화
@@ -64,15 +68,21 @@ private:
 	UFUNCTION()
 	void OnHealTargetDeadOrReachedFullHP(AC_BasicCharacter* _StatComOwner);
 
+	/// <summary>
+	/// Heal Skill이 끝나면 호출될 함수 
+	/// </summary>
+	UFUNCTION()
+	void OnHealSkillEnd(AC_BasicEnemy* _Enemy);
+
 protected:
 
 	// 주의 : Healing ActionState라고 해서 무조건 HealSkill을 발동중이 아닐 수 있다
 	// BehaviorTree에서의 MainStream을 나누기 위한 enum값일 뿐이다
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	ENurseZombieActionState m_ActionState{};
-	
-	UPROPERTY(VisibleAnywhere)
-	TArray<AC_BasicEnemy*> m_HealTargets{};
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TArray<AC_BasicEnemy*> m_HealProjectileTargets{};
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	class UNiagaraComponent* m_HealingAuraEffectNG{};
@@ -80,6 +90,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	class USphereComponent* m_HealingAuraCollider{};	
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	float m_HealAuraHPS{}; // Healing Aura의 Healing per sec 값
+	
 private:
 
 	// 3 마리까지 Heal Target을 잡을 수 있도록 한다

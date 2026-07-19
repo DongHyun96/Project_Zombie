@@ -73,11 +73,11 @@ public:
 	
 protected:
 
-	// 해당 무기의 무기 꺼내는 동작 Montage
+	// 해당 무기의 무기 꺼내는 동작 Montage (Player character montage)
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, meta = (DisplayName = "DrawMontage"))
 	UAnimMontage* m_DrawMontage{};
 	
-	// 해당 무기의 무기집에 집어넣는 동작 Montage
+	// 해당 무기의 무기집에 집어넣는 동작 Montage (Player character montage)
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, meta = (DisplayName = "SheathMontage"))
 	UAnimMontage* m_SheathMontage{};
 

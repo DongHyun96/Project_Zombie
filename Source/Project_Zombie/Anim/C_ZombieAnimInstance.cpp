@@ -5,6 +5,7 @@
 #include "../Actor/Character/NPC/Enemy/Zombie/C_Zombie.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Actor/Character/NPC/Enemy/Components/SkillComponent/C_EnemySkillComponent.h"
+#include "Utility/C_Util.h"
 
 void UC_ZombieAnimInstance::NativeInitializeAnimation()
 {
@@ -15,12 +16,8 @@ void UC_ZombieAnimInstance::NativeBeginPlay()
 {
 	Super::NativeBeginPlay();
 
-	m_Zombie = Cast<AC_Zombie>(TryGetPawnOwner());
-
-	if (nullptr != m_Zombie)
-	{
-		m_MovementComponent = m_Zombie->GetCharacterMovement();
-	}
+	m_Zombie            = Cast<AC_Zombie>(TryGetPawnOwner());
+	m_MovementComponent = m_Zombie->GetCharacterMovement();
 }
 
 void UC_ZombieAnimInstance::NativeUpdateAnimation(float _DT)
@@ -30,12 +27,12 @@ void UC_ZombieAnimInstance::NativeUpdateAnimation(float _DT)
 	if (nullptr == m_Zombie || nullptr == m_MovementComponent)
 		return;
 
-	FVector Valocity = m_Zombie->GetVelocity();
+	const FVector Velocity = m_Zombie->GetVelocity();
 
-	m_GroundSpeed = Valocity.Size2D();
+	m_GroundSpeed = Velocity.Size2D();
 
 	if (10.f < m_GroundSpeed)
-		m_Direction = CalculateDirection(Valocity, m_Zombie->GetActorRotation());
+		m_Direction = CalculateDirection(Velocity, m_Zombie->GetActorRotation());
 
 	m_VerticalSpeed = m_MovementComponent->Velocity.Z;
 }

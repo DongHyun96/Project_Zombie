@@ -93,6 +93,7 @@ public: /* 공용 Stat 처리 함수 */
 	bool DecreaseCurHP(float _DecreaseAmount);
 	
 	bool IsCurHPFull() const { return m_Stats[TEXT("CurHP")] >= m_Stats[TEXT("CurMaxHP")]; }
+	bool IsCurHPZero() const { return m_Stats[TEXT("CurHP")] <= 0.f; }
 	
 private:
 	

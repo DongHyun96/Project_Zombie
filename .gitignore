@@ -75,3 +75,7 @@ Thumbs.db
 ehthumbs.db
 desktop.ini
 .DS_Store
+
+# Visual Studio 프로젝트 업그레이드 로그
+UpgradeLog.htm
+UpgradeLog*.htm

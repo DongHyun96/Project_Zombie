@@ -5,6 +5,7 @@
 
 #include "AudioDevice.h"
 #include "NiagaraComponent.h"
+#include "Actor/Character/NPC/Enemy/Components/SkillComponent/C_EnemySkillComponent.h"
 #include "Actor/Components/StatComponent/C_StatComponentBase.h"
 #include "Components/SphereComponent.h"
 #include "GameModeAndManager/C_ZombieManager.h"
@@ -34,16 +35,24 @@ void AC_NurseZombie::BeginPlay()
 	ToggleHealingAura(false);
 }
 
+void AC_NurseZombie::GetHealingAuraOverlappingEnemies(TArray<AActor*>& _OutOverlappingEnemies) const
+{
+	m_HealingAuraCollider->GetOverlappingActors(_OutOverlappingEnemies, AC_BasicEnemy::StaticClass());
+}
+
 bool AC_NurseZombie::TryRegisterAsHealTarget(AC_BasicEnemy* _NewHealTarget)
 {
-	if (m_HealTargets.Num() >= s_HealTargetCountLimit)
+	// Nurse끼리 Heal 가능 but 자기자신 HealTarget 잡기 x
+	if (this == _NewHealTarget) return false;  
+	
+	if (m_HealProjectileTargets.Num() >= s_HealTargetCountLimit)
 	{
 		UC_Util::Print("Max TargetCount reached ", FColor::Red, 10.f);
 		return false;
 	}
 	if (!_NewHealTarget || _NewHealTarget->GetStatComponent()->IsCurHPFull())	return false; // 새로 들어온 Target이 Valid하지 않거나, 이미 풀피인 상황
 	
-	if (m_HealTargets.Contains(_NewHealTarget))
+	if (m_HealProjectileTargets.Contains(_NewHealTarget))
 	{
 		UC_Util::Print("Already registered", FColor::Red, 10.f);	
 		return false; // 이미 힐 Target으로 지정되어 있는 상황
@@ -61,21 +70,11 @@ bool AC_NurseZombie::TryRegisterAsHealTarget(AC_BasicEnemy* _NewHealTarget)
 	_NewHealTarget->GetStatComponent()->OnCurHPReachedZeroDelegate.AddUObject(this, &AC_NurseZombie::OnHealTargetDeadOrReachedFullHP);
 	_NewHealTarget->GetStatComponent()->OnCurHPReachedFullDelegate.AddUObject(this, &AC_NurseZombie::OnHealTargetDeadOrReachedFullHP);
 
-	m_HealTargets.Add(_NewHealTarget);
+	m_HealProjectileTargets.Add(_NewHealTarget);
 
 	UC_Util::Print("Heal target received!", FColor::Red, 10.f);
 	
 	return true;
-}
-
-void AC_NurseZombie::RemoveHealTarget(AC_BasicEnemy* _HealTarget)
-{
-	if (!_HealTarget) return;
-	
-	_HealTarget->GetStatComponent()->OnCurHPReachedZeroDelegate.RemoveAll(this);
-	_HealTarget->GetStatComponent()->OnCurHPReachedFullDelegate.RemoveAll(this);
-	
-	m_HealTargets.Remove(_HealTarget);
 }
 
 void AC_NurseZombie::ToggleHealingAura(bool _Activate)
@@ -94,5 +93,15 @@ void AC_NurseZombie::ToggleHealingAura(bool _Activate)
 
 void AC_NurseZombie::OnHealTargetDeadOrReachedFullHP(AC_BasicCharacter* _HealTarget)
 {
-	RemoveHealTarget(Cast<AC_BasicEnemy>(_HealTarget));
+	if (!_HealTarget) return;
+	
+	_HealTarget->GetStatComponent()->OnCurHPReachedZeroDelegate.RemoveAll(this);
+	_HealTarget->GetStatComponent()->OnCurHPReachedFullDelegate.RemoveAll(this);
+	
+	m_HealProjectileTargets.Remove(Cast<AC_BasicEnemy>(_HealTarget));
+}
+
+void AC_NurseZombie::OnHealSkillEnd(AC_BasicEnemy* _Enemy)
+{
+	ToggleHealingAura(false);
 }

@@ -72,19 +72,24 @@ void UC_PlayerAnimInstance::NativeUpdateAnimation(float _DT)
 	}
 
 	// 캐릭터의 기본 조준 회전값(Aim Rotation) 가져오기
-	FRotator AimRotation = m_Character->GetBaseAimRotation();
-
+	// FRotator AimRotation = m_Character->GetBaseAimRotation();
+	const FRotator AimRotation = m_Character->GetControlRotation();
+	
 	// 캐릭터 자체의 회전값 가져오기
-	FRotator ActorRotation = m_Character->GetActorRotation();
+	const FRotator ActorRotation = m_Character->GetActorRotation();
 
 	// 캐릭터 회전과 조준 회전의 차이 계산
 	// 조준 각도가 캐릭터 정면을 기준으로 얼마나 위/아래로 꺾였는지 계산
-	FRotator DeltaRotation = UKismetMathLibrary::NormalizedDeltaRotator(AimRotation, ActorRotation);
+	const FRotator DeltaRotation = UKismetMathLibrary::NormalizedDeltaRotator(AimRotation, ActorRotation);
 
 	// 피치 값 할당
-	m_Pitch = DeltaRotation.Pitch;
+	// m_Pitch = DeltaRotation.Pitch;
+	m_Pitch = FMath::Clamp(DeltaRotation.Pitch, -90.f, 90.f);
+	
 	// 턴 인 플레이스의 야값 할당
 	// m_Yaw = m_Character->GetControllerFSM()->GetDeltaYaw();
-	m_Yaw = DeltaRotation.Yaw;
+	
+	// m_Yaw = DeltaRotation.Yaw;
+	m_Yaw = FMath::Clamp(DeltaRotation.Yaw, -90.f, 90.f);;
 	
 }
