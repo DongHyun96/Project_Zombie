@@ -13,9 +13,10 @@ UCLASS()
 class PROJECT_ZOMBIE_API UC_CopGrabMainWeapon : public UC_EnemySkillBase
 {
 	GENERATED_BODY()
-
+	
 public:
 	
-	virtual bool Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data) override;
+	UC_CopGrabMainWeapon();
+
 	
 };
