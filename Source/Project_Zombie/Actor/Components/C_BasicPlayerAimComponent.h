@@ -57,6 +57,8 @@ protected:
 public:
 	bool IsTransitioningCamera() { return bIsTransitioningCamera; }
 
+	EAimState GetCurrentAimState() { return m_CurAimState; }
+
 public:
 	// 조준 입력 시 호출될 함수
 	void OnAimPressed(EAimState TargetState);
