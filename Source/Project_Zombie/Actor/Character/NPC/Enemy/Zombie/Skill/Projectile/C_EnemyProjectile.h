@@ -39,12 +39,9 @@ protected:
 	UPROPERTY()
 	FVector								m_TargetLocation; // 타겟의 위치
 
-	UPROPERTY()
-	FVector								m_FireDirection; // 투사체 방향
-
 	UPROPERTY(EditAnywhere, Category = "Projectile")
-	float								m_ArriveDistance; 
-
+	float								m_ArriveDistance = 30.f; 
+	
 public:
 	/// <summary>
 	/// 투사체 초기화 함수

@@ -20,6 +20,7 @@ AC_ToxicProjectile::AC_ToxicProjectile()
 
 void AC_ToxicProjectile::SpawnToxicPool(const FVector& _SpawnLocation, const FRotator& _SpawnRotation)
 {
+	// 장판은 서버에서만 생성
 	if (!HasAuthority())
 		return;
 
@@ -39,47 +40,48 @@ void AC_ToxicProjectile::SpawnToxicPool(const FVector& _SpawnLocation, const FRo
 
 }
 
-void AC_ToxicProjectile::OnHit(AActor* _OtherActor, UPrimitiveComponent* _OtherCom, const FHitResult& _Hit)
+void AC_ToxicProjectile::ReachTarget()
 {
-	FVector PoolSpawnLocation;
-	FRotator PoolSpawnRotation;
-
-	const bool bFoundGround = FindPoolGround(_Hit.ImpactPoint,_Hit.ImpactNormal, PoolSpawnLocation, PoolSpawnRotation);
-
-	if (bFoundGround)
-	{
-		UC_Util::Print("!! PoolGround Found !!");
-
-		SpawnToxicPool(PoolSpawnLocation, PoolSpawnRotation);
-	}
-	else
-	{
-		UC_Util::Print("PoolGround not Found");
-	}
-
-	Super::OnHit(_OtherActor, _OtherCom, _Hit);
+	SpawnPoolAtGround(m_TargetLocation, nullptr);
 }
 
-bool AC_ToxicProjectile::FindPoolGround(const FVector& _ImpactLocation, const FVector& _ImpactNormal, FVector& _OutSpawnLocation, FRotator& _OutSpawnRotation) const
+void AC_ToxicProjectile::OnHit(AActor* _OtherActor, UPrimitiveComponent* _OtherCom, const FHitResult& _Hit)
+{
+	SpawnPoolAtGround(_Hit.ImpactPoint, _OtherActor);
+}
+
+bool AC_ToxicProjectile::FindPoolGround(const FVector& _ImpactLocation, AActor* _Target, FVector& _OutSpawnLocation, FRotator& _OutSpawnRotation) const
 {
 	UWorld* World = GetWorld();
 
 	if (!World)
 		return false;
 
-	const float TraceStartOffset = 50.f;
-	const float TraceDistance = 500.f;
-	const float SurfaceIOffset = 20.f;
+	const float TraceStartOffset = 100.f;
+	const float TraceDistance = 1000.f;
 
-	const FVector TraceStart = _ImpactLocation + _ImpactNormal * SurfaceIOffset + FVector(0.f, 0.f, TraceStartOffset);
-	const FVector TraceEnd = TraceStart - FVector(0.f, 0.f, TraceDistance);
+	const FVector TraceStart = _ImpactLocation + FVector::UpVector * TraceStartOffset;
+	const FVector TraceEnd = _ImpactLocation - FVector::UpVector * TraceDistance;
 
 	FHitResult GroundHit;
 	
-	FCollisionQueryParams QueryParams;
-	QueryParams.AddIgnoredActor(this);
+	FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(ToxicPoolGroundTrace), false);
 
-	const bool bHitGround = World->LineTraceSingleByChannel(GroundHit, TraceStart, TraceEnd, ECC_Visibility, QueryParams);
+	QueryParams.AddIgnoredActor(this);
+	QueryParams.AddIgnoredActor(m_SkillUser);
+
+	// 플레이어를 라인트레이스 검사에서 제외
+	if (IsValid(_Target))
+	{
+		QueryParams.AddIgnoredActor(_Target);
+	}
+
+	// 바닥같은 WorldStatic만 검사
+	FCollisionObjectQueryParams ObjectParams;
+	ObjectParams.AddObjectTypesToQuery(ECC_WorldStatic);
+
+	// 라인트레이스 검사항목
+	const bool bHitGround = World->LineTraceSingleByObjectType(GroundHit, TraceStart, TraceEnd, ObjectParams, QueryParams);
 
 	// 디버그 라인 표시
 	DrawDebugLine(World, TraceStart, TraceEnd, bHitGround ? FColor::Green : FColor::Red, false, 3.f, 0, 2.f);
@@ -100,4 +102,30 @@ bool AC_ToxicProjectile::FindPoolGround(const FVector& _ImpactLocation, const FV
 	_OutSpawnRotation = FRotationMatrix::MakeFromZ(GroundHit.ImpactNormal).Rotator();
 
 	return true;
+}
+
+void AC_ToxicProjectile::SpawnPoolAtGround(const FVector& _ImpactLocation, AActor* _Target)
+{
+	if (m_bFinished)
+		return;
+
+	m_bFinished = true;
+
+	FVector PoolSpawnLocation;
+	FRotator PoolSpawnRotation;
+
+	const bool bFoundGround = FindPoolGround(_ImpactLocation, _Target, PoolSpawnLocation, PoolSpawnRotation);
+
+	if (bFoundGround)
+	{
+		UC_Util::Print("!! PoolGround Found !!");
+
+		SpawnToxicPool(PoolSpawnLocation, PoolSpawnRotation);
+	}
+	else
+	{
+		UC_Util::Print("PoolGround not Found");
+	}
+
+	Destroy();
 }

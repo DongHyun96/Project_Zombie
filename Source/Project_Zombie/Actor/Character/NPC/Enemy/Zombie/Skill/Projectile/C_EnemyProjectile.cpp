@@ -89,7 +89,27 @@ void AC_EnemyProjectile::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (!m_PMC || m_PMC->Velocity.IsNearlyZero())
+		return;
+
+	// 투사체 속도가 빠르면 타겟위치를 넘어가버릴 수 있기때문에
+	// 거리 검사와 타켓 통과 검사를 같이한다 
 	const FVector CurrentLocation = GetActorLocation();
+	const FVector ToTarget = m_TargetLocation - CurrentLocation;
+
+	const FVector MoveDirection = m_PMC->Velocity.GetSafeNormal();
+	
+	// 타겟 지점에 가까워짐
+	const bool bNearTarget = ToTarget.SizeSquared() <= FMath::Square(m_ArriveDistance);
+
+	// 타겟 지점을 지나쳤는지 검사
+	const bool bPassedTarget = FVector::DotProduct(ToTarget, MoveDirection) <= 0.f;
+
+	if (bNearTarget || bPassedTarget)
+	{
+		m_PMC->StopMovementImmediately();
+		ReachTarget();
+	}
 }
 
 void AC_EnemyProjectile::OnHit(AActor* _OtherActor, UPrimitiveComponent* _OtherCom, const FHitResult& _Hit)
@@ -134,4 +154,5 @@ void AC_EnemyProjectile::OnProjectileHit(UPrimitiveComponent* HitComponent, AAct
 
 void AC_EnemyProjectile::ReachTarget()
 {
+	Destroy();
 }
