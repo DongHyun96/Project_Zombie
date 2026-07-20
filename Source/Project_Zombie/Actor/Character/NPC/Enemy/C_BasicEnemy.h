@@ -16,16 +16,25 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (DisplayName = "SkillComponent"))
 	class UC_EnemySkillComponent*			m_SkillCom;
 
-protected:
+protected:  
 	
 	// 힐을 받았을 때 활성화시킬 NiagaraEffectComponent
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Niagara")
 	class UNiagaraComponent* m_HealedEffectNGComponent{};
+
+private: /* 자기 자신을 힐러에게 힐등록할 수 있는 갯수 제한 관련 */
+	
+	static const int8 s_MaxHealRequestRegisterCount; // 최대 힐 Register 등록 가능 횟수 (2회(또는 2마리)로 제한)
+	int8 m_HealRequestRegisterCount{}; // 힐 요청 Request 등록 count
 	
 public:
-	void BeginPlay() override;
+	
 	AC_BasicEnemy();
 
+protected:
+	
+	virtual void BeginPlay() override;
+	
 public:
 
 	virtual float TakeDamage
@@ -43,11 +52,17 @@ public:
 private:
 	
 	void OnHPIncreased(AC_BasicCharacter* _HPIncreasedCharacter);
+
+protected:
 	
 	/// <summary>
 	/// 사망 시 호출받는 Delegate -> HealedEffect 활성화 중이었다면 해당 Effect 끄기 (및 기타 처리 여기서 할 것)
 	/// </summary>
 	/// <param name="_DeadCharacter"> : 죽은 캐릭터 (자기자신) </param>
-	void OnDead(AC_BasicCharacter* _DeadCharacter);
+	virtual void OnDead(AC_BasicCharacter* _DeadCharacter);
+	
+public:
+	
+	void DecreaseHealRequestRegisterCount();
 
 };

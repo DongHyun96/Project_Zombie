@@ -20,7 +20,8 @@ protected:
 	FBlackboardKeySelector m_Target;
 
 private:
-	
+
+	UPROPERTY()
 	class UC_GameLevelManager* m_GameLevelManager{};
 	
 public:

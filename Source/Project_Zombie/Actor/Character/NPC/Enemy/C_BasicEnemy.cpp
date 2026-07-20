@@ -13,6 +13,8 @@
 #include "Utility/C_Util.h"
 #include "Zombie/NurseZombie/C_NurseZombie.h"
 
+const int8 AC_BasicEnemy::s_MaxHealRequestRegisterCount = 2;
+
 AC_BasicEnemy::AC_BasicEnemy()
 {
 	// 스탯 컴포넌트 추가
@@ -36,7 +38,7 @@ void AC_BasicEnemy::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// 죽었을 때 처리할 함수 Delegate 구독 처리
+	// 죽었을 때 처리할 함수 Delegate 구독 처리 (죽은 이후로도 다음에 Spawn 처리가 될 수 있기 때문에 구독 해지는 처리하지 않는다)
 	m_StatComponent->OnCurHPReachedZeroDelegate.AddUObject(this, &AC_BasicEnemy::OnDead);
 
 	// IncreaseCurHP 정상 처리 시(힐 받은 처리로 판단) -> 힐 받은 Effect 활성화 함수 Delegate 구독 처리
@@ -59,14 +61,25 @@ float AC_BasicEnemy::TakeDamage
 )
 {
 	const float DamageAmount = Super::TakeDamage(_DamageAmount, _DamageEvent, _EventInstigator, _DamageCauser);
+	if (DamageAmount <= 0.f) return 0.f; // Damage가 들어오지 않음
+	
 	UC_Util::Print("Zombie Damaged", FColor::Red, 10.f);
 
+	/* 힐 요청 처리 관련 */
+
+	// 이미 힐 요청 최대 등록 횟수를 기록
+	if (m_HealRequestRegisterCount >= s_MaxHealRequestRegisterCount) return DamageAmount;
+	
 	// 현재 생명력 Ratio 50% ~ 70% 랜덤 수치 이하면, 가능한 힐러 좀비에게 힐 요청 시도
 	// TODO : 이거 요청 빈도가 너무 높으면 여기서 병목 생길수도 있음 -> 추후 최적화할 때 고려할 것
 	if (m_StatComponent->GetCurHPRatio() < FMath::RandRange(0.5f, 0.7f))
 	{
 		for (AC_NurseZombie* ActiveNurse : ZOMBIE_MANAGER->GetActiveNurseZombies())
-			if (ActiveNurse->TryRegisterAsHealTarget(this)) break; // Nurse HealTarget에 정상 등록 처리됨 (Available한 Nurse가 없을 수도 있음)
+			if (ActiveNurse->TryRegisterAsHealTarget(this))
+			{
+				++m_HealRequestRegisterCount; // 등록 횟수 하나 올리기
+				break; // Nurse HealTarget에 정상 등록 처리됨 (Available한 Nurse가 없을 수도 있음)
+			}
 	}
 	
 	return DamageAmount;
@@ -83,4 +96,14 @@ void AC_BasicEnemy::OnDead(AC_BasicCharacter* _DeadCharacter)
 {
 	m_HealedEffectNGComponent->DeactivateImmediate();
 	// TODO : Dead에 필요한 처리가 더 필요하다면 여기서 이어서 처리해줄 것(ex 랙돌 처리 등)
+	// 아마 죽은 뒤에 죽은 모션이나 랙돌 처리를 보여준 후, 몇 초 뒤에 Pool로 돌아가게끔 처리를 해줄 듯
+}
+
+void AC_BasicEnemy::DecreaseHealRequestRegisterCount()
+{
+	if (--m_HealRequestRegisterCount < 0)
+	{
+		UC_Util::Print("From AC_BasicEnemy::DecreaseHealRequestRegisterCount : Wrong HealRequestRegisterCount decrease executed", FColor::Red, 10.f);
+		m_HealRequestRegisterCount = 0;
+	}
 }

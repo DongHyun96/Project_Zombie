@@ -40,6 +40,19 @@ void AC_NurseZombie::GetHealingAuraOverlappingEnemies(TArray<AActor*>& _OutOverl
 	m_HealingAuraCollider->GetOverlappingActors(_OutOverlappingEnemies, AC_BasicEnemy::StaticClass());
 }
 
+void AC_NurseZombie::RemoveHealProjectileTarget(AC_BasicEnemy* _Target)
+{
+	const uint8 RemovedCount = m_HealProjectileTargets.Remove(_Target);
+	if (RemovedCount == 0) return; // 제거된 대상이 없음
+
+	// 제대로 제거가 되었음
+	_Target->GetStatComponent()->OnCurHPReachedZeroDelegate.RemoveAll(this);
+	_Target->GetStatComponent()->OnCurHPReachedFullDelegate.RemoveAll(this);
+	
+	// 제거 대상의 HealRequestRegisterCnt 하나 줄이기
+	_Target->DecreaseHealRequestRegisterCount();
+}
+
 bool AC_NurseZombie::TryRegisterAsHealTarget(AC_BasicEnemy* _NewHealTarget)
 {
 	// Nurse끼리 Heal 가능 but 자기자신 HealTarget 잡기 x
@@ -94,14 +107,29 @@ void AC_NurseZombie::ToggleHealingAura(bool _Activate)
 void AC_NurseZombie::OnHealTargetDeadOrReachedFullHP(AC_BasicCharacter* _HealTarget)
 {
 	if (!_HealTarget) return;
+	if (_HealTarget->GetStatComponent()->IsCurHPFull()) UC_Util::Print("!!HealTarget Max HP Reached!!", FColor::MakeRandomColor(), 10.f);
+	else UC_Util::Print("!!HealTarget Dead!!", FColor::MakeRandomColor(), 10.f);
 	
-	_HealTarget->GetStatComponent()->OnCurHPReachedZeroDelegate.RemoveAll(this);
-	_HealTarget->GetStatComponent()->OnCurHPReachedFullDelegate.RemoveAll(this);
-	
-	m_HealProjectileTargets.Remove(Cast<AC_BasicEnemy>(_HealTarget));
+	RemoveHealProjectileTarget(Cast<AC_BasicEnemy>(_HealTarget));
 }
 
 void AC_NurseZombie::OnHealSkillEnd(AC_BasicEnemy* _Enemy)
 {
 	ToggleHealingAura(false);
+}
+
+void AC_NurseZombie::OnDead(AC_BasicCharacter* _DeadCharacter)
+{
+	Super::OnDead(_DeadCharacter);
+	
+	// 자기 자신에게 등록되었던 모든 힐 대상 제거
+	for (AC_BasicEnemy* HealTarget : m_HealProjectileTargets)
+	{
+		HealTarget->GetStatComponent()->OnCurHPReachedZeroDelegate.RemoveAll(this);
+		HealTarget->GetStatComponent()->OnCurHPReachedFullDelegate.RemoveAll(this);
+	
+		// 제거 대상의 HealRequestRegisterCnt 하나 줄이기
+		HealTarget->DecreaseHealRequestRegisterCount();
+	}
+	m_HealProjectileTargets.Empty();
 }
