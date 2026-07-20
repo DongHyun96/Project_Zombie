@@ -382,10 +382,6 @@ void AC_BasicPlayer::Die()
 	// 사망 시 다른 플레이어가 살려줄 수 있도록 
 }
 
-void AC_BasicPlayer::OnRep_PlayerPoseState()
-{
-}
-
 
 void AC_BasicPlayer::UpdateBoostBarHUD() const
 {
@@ -398,6 +394,7 @@ void AC_BasicPlayer::UpdateBoostBarHUD() const
 		}
 	}
 }
+
 
 void AC_BasicPlayer::OnPoseTransitionFinished(bool _bIsCrouched)
 {
@@ -429,6 +426,19 @@ ETeamAttitude::Type AC_BasicPlayer::GetTeamAttitudeTowards(const AActor& _Other)
 	return ETeamAttitude::Neutral;
 }
 
+void AC_BasicPlayer::OnRep_PlayerPoseState()
+{
+	if (!m_PoseColliderHandlerComponent)
+		return;
+
+	const bool bWantsToCrouch = m_PlayerPoseState == EPlayerPoseState::Crouch;
+
+	m_PoseColliderHandlerComponent->ApplyRemotePose(bWantsToCrouch);
+
+	ApplyMovementSpeed();
+}
+
+
 void AC_BasicPlayer::SetPoseStateOnServer(EPlayerPoseState _NewPoseState)
 {
 	if (!HasAuthority())
@@ -440,12 +450,14 @@ void AC_BasicPlayer::SetPoseStateOnServer(EPlayerPoseState _NewPoseState)
 	if (GetCharacterMovement()->IsFalling())
 		return;
 
-	const bool bWantsToCrouch = m_PlayerPoseState != EPlayerPoseState::Crouch;
+	const bool bWantsToCrouch = _NewPoseState == EPlayerPoseState::Crouch;
 
-	const bool bStartTransition = m_PoseColliderHandlerComponent->SetCrouched(bWantsToCrouch);
+	const bool bStart = m_PoseColliderHandlerComponent->SetCrouched(bWantsToCrouch);
 
-	if (!bStartTransition)
+	if (!bStart)
 		return;
+
+	m_PlayerPoseState = _NewPoseState;
 
 	// 자세 전환 중에 잠깐 멈춤
 	ApplyMovementSpeed();

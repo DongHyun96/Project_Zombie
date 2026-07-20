@@ -35,6 +35,18 @@ public:
 	bool SetCrouched(bool _bIsCrouched);
 
 	/// <summary>
+	/// 결정된 자세로 전환 시작
+	/// 서버와의 동기화를 위해 보정 후의 진짜 자세 전환은 여기서 처리...
+	/// </summary>
+	void StartCrouchTransition(bool _bIsCrouched);
+
+	/// <summary>
+	///	원격 플레이어용 함수. 서버에서 리플리케이트된 자세를 적용만 하고 Root 이동은 하지 않음
+	/// </summary>
+	/// <param name="_bIsCrouched"></param>
+	void ApplyRemotePose(bool _bIsCrouched);
+
+	/// <summary>
 	/// 현재 위치에서 일어설 수 있는지 확인
 	/// </summary>
 	bool CanStand() const;

@@ -329,6 +329,7 @@ private: // 캐릭터 그로기 처리
 	// Server함수
 protected:
 	
+	// 서버에서 자세 변경 처리 후 클라이언트에 리플리케이트
 	UFUNCTION()
 	void OnRep_PlayerPoseState();
 

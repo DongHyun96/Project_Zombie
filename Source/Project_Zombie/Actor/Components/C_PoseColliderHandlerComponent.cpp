@@ -149,13 +149,66 @@ bool UC_PoseColliderHandlerComponent::SetCrouched(bool _bIsCrouched)
 		return false;
 	}
 
+	StartCrouchTransition(_bIsCrouched);
+
+	return true;
+}
+
+void UC_PoseColliderHandlerComponent::StartCrouchTransition(bool _bIsCrouched)
+{
+	// 이미 같은 방향으로 전환 중
+	if (m_bIsTransitioning && m_bTargetCrouched == _bIsCrouched)
+	{
+		return;
+	}
+
+	// 이미 전환 중이라면 무시
+	if (m_bIsTransitioning && m_bIsCrouched == _bIsCrouched)
+	{
+		return;
+	}
+
 	m_bTargetCrouched = _bIsCrouched;
 	m_bIsTransitioning = true;
 
 	// 자세 전환 시작 (Tick 활성화)
 	SetComponentTickEnabled(true);
+}
 
-	return true;
+void UC_PoseColliderHandlerComponent::ApplyRemotePose(bool _bIsCrouched)
+{
+	const float TargetHalfHeight = _bIsCrouched ? m_CrouchHalfHeight : m_StandHalfHeight;
+
+	m_CapsuleComponent->SetCapsuleSize(m_StandRadius, TargetHalfHeight, false);
+
+	FVector TargetMeshLocation = m_StandMeshRelativeLocation;
+
+	if (_bIsCrouched)
+	{
+		TargetMeshLocation.Z += (m_StandHalfHeight - m_CrouchHalfHeight);
+	}
+
+	m_MeshComponent->SetRelativeLocation(
+		TargetMeshLocation,
+		false,
+		nullptr,
+		ETeleportType::TeleportPhysics
+	);
+
+	m_Player->CacheInitialMeshOffset
+	(
+		TargetMeshLocation,
+		m_MeshComponent->GetRelativeRotation()
+	);
+
+	// 컴포넌트 내부 상태도 현재 자세와 맞춤
+	m_bIsCrouched = _bIsCrouched;
+	m_bTargetCrouched = _bIsCrouched;
+	m_bIsTransitioning = false;
+
+	SetComponentTickEnabled(false);
+
+	m_CapsuleComponent->UpdateOverlaps();
 }
 
 bool UC_PoseColliderHandlerComponent::CanStand() const
@@ -213,14 +266,48 @@ void UC_PoseColliderHandlerComponent::ApplyCapsuleHalfHeight(float _NewHalfHeigh
 	// 현재 Capsule Half Height
 	const float CurrentHalfHeight = m_CapsuleComponent->GetUnscaledCapsuleHalfHeight();
 
-	// 이미 목표 높이와 동일하면 무시
-	if (FMath::IsNearlyEqual(CurrentHalfHeight, _NewHalfHeight))
+	// 이번 프레임의 높이 변화량
+	const float HeightDifference = _NewHalfHeight - CurrentHalfHeight;
+
+	// 변화량이 거의 0이면 이동할 필요 없음
+	if (FMath::IsNearlyZero(HeightDifference))
 	{
 		return;
 	}
 
-	// 이번 프레임의 높이 변화량
-	const float HeightDifference = _NewHalfHeight - CurrentHalfHeight;
+	
+	// Root 이동량
+	const FVector MoveDelta = FVector(0.f, 0.f, HeightDifference);
+
+	FHitResult Hit;
+
+	m_CharacterMovementComponent->SafeMoveUpdatedComponent
+	(
+		MoveDelta,
+		m_Player->GetActorQuat(),
+		false,
+		Hit
+	);
+
+	m_CapsuleComponent->SetCapsuleSize(
+		m_StandRadius,
+		_NewHalfHeight,
+		false
+	);
+
+	FVector NewMeshRelativeLocation = m_StandMeshRelativeLocation;
+
+	NewMeshRelativeLocation.Z += (m_StandHalfHeight - _NewHalfHeight);
+
+	m_MeshComponent->SetRelativeLocation
+	(
+		NewMeshRelativeLocation,
+		false,
+		nullptr,
+		ETeleportType::None
+	);
+
+	/*
 
 	// 실제 월드에서 이동해야하는 거리로 변환
 	const float WorldHalfHeightDifference = HeightDifference * m_CapsuleComponent->GetShapeScale();
@@ -282,6 +369,8 @@ void UC_PoseColliderHandlerComponent::ApplyCapsuleHalfHeight(float _NewHalfHeigh
 		ETeleportType::TeleportPhysics
 	);
 
+	*/
+
 	// 변경된 충돌 상태 갱신
 	m_CapsuleComponent->UpdateOverlaps();
 }
@@ -340,13 +429,36 @@ void UC_PoseColliderHandlerComponent::FinishTransition()
 	ApplyCapsuleHalfHeight(TargetHalfHeight);
 	
 	m_bIsCrouched = m_bTargetCrouched;
-
 	m_bIsTransitioning = false;
 
 	// Stand 상태로 돌아왔다면 Mesh 상대 위치 정확히 복원
-	if (!m_bIsCrouched && m_MeshComponent)
+	if (m_MeshComponent)
 	{
-		m_MeshComponent->SetRelativeLocation(m_StandMeshRelativeLocation);
+		FVector FinalMeshRelativeLocation = m_StandMeshRelativeLocation;
+
+		if (m_bIsCrouched)
+		{
+			FinalMeshRelativeLocation.Z += (m_StandHalfHeight - m_CrouchHalfHeight);
+		}
+
+		m_MeshComponent->SetRelativeLocation(
+			FinalMeshRelativeLocation,
+			false,
+			nullptr,
+			ETeleportType::TeleportPhysics // 물리 시뮬레이션을 텔레포트 방식으로 처리
+		);
+
+		// 서버에 있는 클라이언트 캐릭터들은 OnRep() 함수를 호출하지 않아서 여기서 보정
+		const bool bRemoteClinetOnListenServer = m_Player->HasAuthority() && !m_Player->IsLocallyControlled();
+		
+		if (bRemoteClinetOnListenServer)
+		{
+			m_Player->CacheInitialMeshOffset
+			(
+				FinalMeshRelativeLocation,
+				m_MeshComponent->GetRelativeRotation()
+			);
+		}
 	}
 
 	// 전환이 끝났으므로 Tick 비활성화
