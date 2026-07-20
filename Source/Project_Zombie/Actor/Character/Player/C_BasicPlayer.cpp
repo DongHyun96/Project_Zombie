@@ -99,7 +99,7 @@ AC_BasicPlayer::AC_BasicPlayer()
 	m_PingSystemComponent = CreateDefaultSubobject<UC_PingSystemComponent>(TEXT("PingSystemComponent"));
 
 	// PlayerAim Component
-	m_PlayerAimComponent = CreateDefaultSubobject<UC_BasicPlayerAimComponent>(TEXT("PlayerAimComponent"));
+	m_BasicPlayerAimComponent = CreateDefaultSubobject<UC_BasicPlayerAimComponent>(TEXT("PlayerAimComponent"));
 	
 	m_StatComponent = CreateDefaultSubobject<UC_PlayerStatComponent>(TEXT("StatComponent"));
 	
@@ -172,9 +172,9 @@ void AC_BasicPlayer::Tick(float DeltaTime)
 	}
 
 	// [Aim] 카메라 변환 중일 때만 함수 호출
-	if (m_PlayerAimComponent->IsTransitioningCamera())
+	if (m_BasicPlayerAimComponent->IsTransitioningCamera())
 	{
-		m_PlayerAimComponent->UpdateCameraInterpolation(DeltaTime);
+		m_BasicPlayerAimComponent->UpdateCameraInterpolation(DeltaTime);
 	}
 
 }

@@ -52,6 +52,10 @@ protected:
 
 	class UAnimSequence*	m_ReloadAnimation;
 
+	class UAnimMontage*		m_PlayerFireAnimation;
+		
+	class UAnimMontage*		m_PlayerReloadAnimation;
+
 	class UStaticMesh*		m_ShellMesh;
 
 	

@@ -61,10 +61,17 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AimOffset")
 	float m_Alpha = 1.0f;
 
-	// 애니그래프(AnimGraph)에서 참조할 왼손 IK Transform 변수
+	// 애님그래프(AnimGraph)에서 참조할 왼손 IK Transform 변수
 	UPROPERTY(BlueprintReadOnly, Category = "IK")
 	FVector m_LeftHandIKTransform;
 
+	// 애님그래프(AnimGraph)에서 참조할 오른손 IK Transform 변수
+	UPROPERTY(BlueprintReadOnly, Category = "IK")
+	FVector m_RightHandIKTransform;
+
+	// ADS시 오른손 애니메이션 알파
+	UPROPERTY(BlueprintReadOnly, Category = "IK")
+	float HandIKAlpha;
 public:
 	virtual void NativeInitializeAnimation() override;
 	virtual void NativeBeginPlay() override;

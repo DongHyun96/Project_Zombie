@@ -208,6 +208,13 @@ struct FGunData : public FWeaponData
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animations")
     TSoftObjectPtr<UAnimSequence> ReloadAnimation;
+
+    // ── [총기 플레이어 애니메이션 (Player Animations)] ──
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player_Animations")
+    TSoftObjectPtr<UAnimMontage> PlayerFireAnimation;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player_Animations")
+    TSoftObjectPtr<UAnimMontage> PlayerReloadAnimation;
 };
 
 USTRUCT(BlueprintType)

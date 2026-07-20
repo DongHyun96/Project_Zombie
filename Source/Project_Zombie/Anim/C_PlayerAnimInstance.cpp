@@ -6,6 +6,7 @@
 #include "../Actor/ItemActor/Weapon/Gun/C_GunBase.h"
 #include "../Actor/Character/Player/C_BasicPlayer.h"
 #include "../Actor/Components/C_EquippedComponent.h"
+#include "../Actor/Components/C_BasicPlayerAimComponent.h"
 #include "../Actor/Components/C_ControllerFSMComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
@@ -67,7 +68,14 @@ void UC_PlayerAnimInstance::NativeUpdateAnimation(float _DT)
 	{
 		if (USkeletalMeshComponent* WeaponMesh = CurrentGun->GetWeaponMesh())
 		{
-			m_LeftHandIKTransform = WeaponMesh->GetSocketTransform(TEXT("IK_Socket_LeftHand"), RTS_World).GetLocation();;
+			m_LeftHandIKTransform = WeaponMesh->GetSocketTransform(TEXT("IK_Socket_LeftHand"), RTS_World).GetLocation();
+
+			// 조준중일때만
+			if (m_Character->GetAimComponent()->IsADS())
+			{
+				m_RightHandIKTransform = WeaponMesh->GetSocketTransform(TEXT("HandGrip_R"), RTS_World).GetLocation();
+				HandIKAlpha = m_Character->GetAimComponent()->GetHandIKAlpha();
+			}
 		}
 	}
 

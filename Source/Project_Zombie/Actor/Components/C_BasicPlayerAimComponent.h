@@ -50,12 +50,15 @@ private:
 	float m_RuntimeTargetFOV;
 	FVector m_RuntimeTargetOffset;
 	EAimState m_CurAimState = EAimState::None;
+	float m_HandIKAlpha = 0.0f; // 0.0 (미조준, IK 고정 안함), 1.0 (조준, IK 고정)
 
 protected:
 	virtual void BeginPlay() override;
 
 public:
 	bool IsTransitioningCamera() { return bIsTransitioningCamera; }
+
+	float GetHandIKAlpha() const { return m_HandIKAlpha; }
 
 	EAimState GetCurrentAimState() { return m_CurAimState; }
 
@@ -69,6 +72,10 @@ public:
 
 public:
 	bool IsAiming() { return bIsAiming; }
+
+public:
+	// 정조준(ADS) 상태만 판별 (추 후 필요할 때 사용할 함수)
+	bool IsADS() const { return bIsAiming && (m_CurAimState == EAimState::ADS); }
 
 public:
 	UC_BasicPlayerAimComponent();

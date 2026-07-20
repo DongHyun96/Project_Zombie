@@ -23,14 +23,18 @@ void UC_BasicPlayerAimComponent::BeginPlay()
 
 	m_CurPlayer = Cast<AC_BasicPlayer>(GetOwner());
 
-	if (m_CurPlayer->GetCamera())
+	if (m_CurPlayer)
 	{
-		BaseFOV = m_CurPlayer->GetCamera()->FieldOfView;
-	}
 
-	if (m_CurPlayer->GetSpringArm())
-	{
-		BaseCameraOffset = m_CurPlayer->GetSpringArm()->SocketOffset;
+		if (m_CurPlayer->GetCamera())
+		{
+			BaseFOV = m_CurPlayer->GetCamera()->FieldOfView;
+		}
+
+		if (m_CurPlayer->GetSpringArm())
+		{
+			BaseCameraOffset = m_CurPlayer->GetSpringArm()->SocketOffset;
+		}
 	}
 
 }
@@ -53,10 +57,19 @@ void UC_BasicPlayerAimComponent::UpdateCameraInterpolation(float DeltaTime)
 {
 	if (!m_CurPlayer) return;
 
+	// 조준 중 이면 1.0, 해제 상태면 0.0
+	float TargetAlpha = (bIsAiming && m_CurAimState != EAimState::None) ? 1.0f : 0.0f;
+
+	m_HandIKAlpha = FMath::FInterpTo(m_HandIKAlpha, TargetAlpha, DeltaTime, m_AimSpeed);
+
 	APlayerController* PC = Cast<APlayerController>(m_CurPlayer->GetController());
 	if (!PC) return;
 
-	AC_GunBase* GunBase = Cast<AC_GunBase>(m_CurPlayer->GetEquippedComponent()->GetCurWeapon());
+	AC_GunBase* GunBase = nullptr;
+	if (UC_EquippedComponent* EquipComp = m_CurPlayer->GetEquippedComponent())
+	{
+		GunBase = Cast<AC_GunBase>(EquipComp->GetCurWeapon());
+	}
 
 	if (!GunBase)
 	{

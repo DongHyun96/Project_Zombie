@@ -25,6 +25,8 @@ bool AC_Rifle::OnStartFire(AC_BasicPlayer* _WeaponUser)
 	if (nullptr == _WeaponUser)
 		return false;
 
+	_WeaponUser->PlayAnimMontage(m_PlayerFireAnimation);
+
 	m_WeaponUser = _WeaponUser;
 	PullTrigger();
 
@@ -61,6 +63,9 @@ bool AC_Rifle::Reload(AC_BasicPlayer* _WeaponUser)
 	else
 	{
 		Gun_Reload();
+
+		_WeaponUser->PlayAnimMontage(m_PlayerReloadAnimation);
+
 		return true;
 	}
 }

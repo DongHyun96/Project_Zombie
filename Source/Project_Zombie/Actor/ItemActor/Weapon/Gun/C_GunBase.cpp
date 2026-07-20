@@ -89,6 +89,8 @@ void AC_GunBase::Gun_init()
 	m_FireAnimation		= Cast<UAnimSequence>(m_DataCom->GetAssetData("FireAnimation").LoadSynchronous());
 	m_ReloadAnimation	= Cast<UAnimSequence>(m_DataCom->GetAssetData("ReloadAnimation").LoadSynchronous());
 	m_ShellMesh			= Cast<UStaticMesh>(m_DataCom->GetAssetData("ShellMesh").LoadSynchronous());
+	m_PlayerFireAnimation = Cast<UAnimMontage>(m_DataCom->GetAssetData("PlayerFireAnimation").LoadSynchronous());
+	m_PlayerReloadAnimation = Cast<UAnimMontage>(m_DataCom->GetAssetData("PlayerReloadAnimation").LoadSynchronous());
 
 	if (!m_FireAnimation) { UE_LOG(LogTemp, Warning, TEXT("FireAnimation 로드 실패")); }
 	if (!m_ReloadAnimation) { UE_LOG(LogTemp, Warning, TEXT("ReloadAnimation 로드 실패")); }

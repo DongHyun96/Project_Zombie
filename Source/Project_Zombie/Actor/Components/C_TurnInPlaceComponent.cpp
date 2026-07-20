@@ -52,8 +52,11 @@ bool UC_TurnInPlaceComponent::StartTurnInPlaceMotion(float _YawRotDelta)
 	if (m_OwnerPlayer->GetMesh()->GetAnimInstance()->Montage_IsPlaying(TurnInPlaceMontagesToPlay[1])) return false;
 
 	// Default full body + Addit Lower body TurnInPlace 재생 처리
-	if (m_OwnerPlayer->GetAimComponent()->IsAiming())
+	if (m_OwnerPlayer->GetAimComponent()->IsAiming() || m_OwnerPlayer->GetAimComponent()->IsADS())
+	{
+		//UC_Util::Print("TurnInPlace Lower", FColor::MakeRandomColor(), 10.f);
 		m_OwnerPlayer->PlayAnimMontage(TurnInPlaceMontagesToPlay[1]);
+	}
 	else
 	{
 		for (UAnimMontage* Montage : TurnInPlaceMontagesToPlay)

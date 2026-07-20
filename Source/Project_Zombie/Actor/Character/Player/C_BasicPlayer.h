@@ -79,7 +79,7 @@ protected:
 	// TurnInPlace 처리 담당 Actor Component (속도가 0인 상황에서, 왼쪽 오른쪽 회전 시 몸체 회전 모션 처리를 자연스럽게 도와준다)
 	// 해당 기능은 PlayerCharacter만 처리를 할 예정
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (DisplayName = "PlayerAimComponent"))
-	class UC_BasicPlayerAimComponent* m_PlayerAimComponent;
+	class UC_BasicPlayerAimComponent* m_BasicPlayerAimComponent;
 
 	/// <summary>
 	/// InvenComponent,
@@ -254,7 +254,7 @@ public:
 	
 	UC_PingSystemComponent* GetPingSystemComponent() const { return m_PingSystemComponent; }
 
-	UC_BasicPlayerAimComponent* GetAimComponent() const { return m_PlayerAimComponent; }
+	UC_BasicPlayerAimComponent* GetAimComponent() const { return m_BasicPlayerAimComponent; }
 
 	FCursorItem GetCurDraggedItem() {return curDraggedItem;}
 	
