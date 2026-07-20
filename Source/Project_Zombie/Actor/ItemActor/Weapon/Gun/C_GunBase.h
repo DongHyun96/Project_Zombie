@@ -56,8 +56,13 @@ protected:
 
 	
 protected:
-	// 현재 이 Gun을 사용중인 WeaponUser
-	class AC_BasicPlayer* m_WeaponUser{};
+	// 현재 이 Gun을 사용중인 WeaponUser (Player)
+	UPROPERTY()
+	AC_BasicPlayer* m_WeaponPlayerUser{};
+	
+	// 현재 이 Gun을 사용중인 CopZombieUser
+	UPROPERTY()
+	class AC_CopZombie* m_WeaponCopZombieUser{};
 	
 private:
 
@@ -133,7 +138,10 @@ public:
 public:
 	
 	virtual bool AttachToHand(USceneComponent* _ParentMesh) override;
+	virtual bool AttachToEnemyHand(USceneComponent* _ParentMesh) override;
+	
     virtual bool AttachToHolster(USceneComponent* _ParentMesh) override;
+	
 	virtual void PullTrigger() {}
 	virtual void ReleaseTrigger() {}
 

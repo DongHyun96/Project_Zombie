@@ -20,6 +20,10 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Skill")
 	ESkillSlot	m_SkillSlot;
 
+protected:
+	
+	// bool m_bUseRotate
+	
 public:
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& _OwnCom, uint8* _NodeMemory) override;
 	virtual void TickTask(UBehaviorTreeComponent& _OwnCom, uint8* _NodeMemory, float _DeltaSeconds);

@@ -67,7 +67,8 @@ void UC_PlayerAnimInstance::NativeUpdateAnimation(float _DT)
 	{
 		if (USkeletalMeshComponent* WeaponMesh = CurrentGun->GetWeaponMesh())
 		{
-			m_LeftHandIKTransform = WeaponMesh->GetSocketTransform(TEXT("IK_Socket_LeftHand"), RTS_World).GetLocation();;
+			// m_LeftHandIKTransform = WeaponMesh->GetSocketTransform(TEXT("IK_Socket_LeftHand"), RTS_World).GetLocation();;
+			m_LeftHandIKTransform = WeaponMesh->GetSocketLocation(TEXT("IK_Socket_LeftHand"));
 		}
 	}
 

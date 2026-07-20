@@ -9,6 +9,7 @@
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "../WeaponComponent/GunComponent/C_GunDataTableComponent.h"
 #include "Actor/Character/NPC/Enemy/C_BasicEnemy.h"
+#include "Actor/Character/NPC/Enemy/Zombie/CopZombie/C_CopZombie.h"
 
 #include "Components/SphereComponent.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -174,7 +175,7 @@ void AC_GunBase::ProcessLineTraceDamage(float DamageVal)
 		FHitResult HitResult;
 		FCollisionQueryParams QueryParams;
 		QueryParams.AddIgnoredActor(this);
-		QueryParams.AddIgnoredActor(m_WeaponUser);
+		QueryParams.AddIgnoredActor(m_WeaponPlayerUser);
 
 		bool bHasHit = GetWorld()->LineTraceSingleByChannel(HitResult, StartLocation, MaxEndLocation, ECC_Visibility, QueryParams);
 		FVector ActualEndLocation = bHasHit ? HitResult.ImpactPoint : MaxEndLocation;
@@ -187,7 +188,7 @@ void AC_GunBase::ProcessLineTraceDamage(float DamageVal)
 
 			if (AC_BasicEnemy* Enemy = Cast<AC_BasicEnemy>(HitResult.GetActor()))
 			{
-				UGameplayStatics::ApplyDamage(Enemy, DamageVal, m_WeaponUser->GetController(), this, nullptr);
+				UGameplayStatics::ApplyDamage(Enemy, DamageVal, m_WeaponPlayerUser->GetController(), this, nullptr);
 			}
 		}
 	}
@@ -199,7 +200,7 @@ bool AC_GunBase::AttachToHand(USceneComponent* _ParentMesh)
 	AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(_ParentMesh->GetOwner());
 	if (!Player) return false; // 장착 시도하는 Owner Character가 Player형이 아닌 경우, return false
 
-	m_WeaponUser = Player;
+	m_WeaponPlayerUser = Player;
 
 	// Main HUD MeleeWeapon 종류로 초기화
 	if (APlayerController* PC = Player->GetController<APlayerController>())
@@ -220,6 +221,20 @@ bool AC_GunBase::AttachToHand(USceneComponent* _ParentMesh)
 		Player->SetHandState(EHandState::WeaponGun);
 	
 	return bIsAttached;
+}
+
+bool AC_GunBase::AttachToEnemyHand(USceneComponent* _ParentMesh)
+{
+	if (!_ParentMesh) return false;
+	m_WeaponCopZombieUser = Cast<AC_CopZombie>(_ParentMesh->GetOwner());
+	if (!m_WeaponCopZombieUser) return false;
+	
+	return AttachToComponent
+	(
+		_ParentMesh,
+		FAttachmentTransformRules(EAttachmentRule::KeepRelative, true),
+		s_HandSocketName
+	);
 }
 
 bool AC_GunBase::AttachToHolster(USceneComponent* _ParentMesh)

@@ -30,5 +30,10 @@ public:
 		uint8*					NodeMemory,
 		EBTNodeResult::Type 	TaskResult
 	) override;
+
+protected:
+	
+	UPROPERTY(EditAnywhere, Category = "Blackboard")
+	FBlackboardKeySelector m_MainState{};
 	
 };

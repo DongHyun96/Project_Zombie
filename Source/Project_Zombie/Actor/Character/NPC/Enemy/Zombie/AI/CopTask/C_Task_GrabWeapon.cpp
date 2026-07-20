@@ -8,6 +8,7 @@
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/Components/C_EquippedComponent.h"
 #include "Actor/Components/StatComponent/C_StatComponentBase.h"
+#include "BehaviorTree/BlackboardComponent.h"
 #include "Utility/C_Util.h"
 
 UC_Task_GrabWeapon::UC_Task_GrabWeapon()
@@ -68,8 +69,12 @@ void UC_Task_GrabWeapon::OnTaskFinished
 	
 	// MainWeapon을 뺏을 Player 대상이 있음 -> 대상의 Weapon을 CopZombie에게 부착 처리한다
 	// Player의 MainWeaponSlot 없앰과 동시에, 탈취(PrevSlotWeapon return됨)
-	AC_WeaponBase* StolenWeapon = BestGrabPlayer->GetEquippedComponent()->SetSlotWeapon(EWeaponSlot::MainWeapon, nullptr);  
-
+	AC_WeaponBase* StolenWeapon = BestGrabPlayer->GetEquippedComponent()->SetSlotWeapon(EWeaponSlot::MainWeapon, nullptr);
+	if (!StolenWeapon) return; // BestGrabPlayer의 이전 Weapon이 없었던 상태(애초에 위에서 체킹해서 이 방어코드로 들어오면 안되긴 함)
 	
+	// 뺏은 무기 장착 시도
+	if (!CopZombie->EquipWeapon(StolenWeapon)) return;
 	
+	// 제대로 장착 처리되었다면 MainState 키값 수정 (다른 Zombie는 Service에서 바꾸지만, 이 해당 키는 바로 바꿔주어야 해당 Task를 바로 실행)
+	OwnerComp.GetBlackboardComponent()->SetValueAsEnum(m_MainState.SelectedKeyName, static_cast<uint8>(ECopZombieState::WeaponEarned));
 }

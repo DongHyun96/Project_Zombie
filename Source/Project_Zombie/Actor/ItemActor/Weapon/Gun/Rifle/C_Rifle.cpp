@@ -25,7 +25,7 @@ bool AC_Rifle::OnStartFire(AC_BasicPlayer* _WeaponUser)
 	if (nullptr == _WeaponUser)
 		return false;
 
-	m_WeaponUser = _WeaponUser;
+	m_WeaponPlayerUser = _WeaponUser;
 	PullTrigger();
 
 	return true;

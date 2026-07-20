@@ -61,10 +61,16 @@ public:
 	virtual bool AttachToHolster(USceneComponent* _ParentMesh) PURE_VIRTUAL(AC_WeaponBase::AttachToHolster, return false;);
 
 	/// <summary>
-	/// 손에 장착하기
+	/// Player 손에 장착하기
 	/// </summary>
 	/// <returns> 실패 시 return false </returns>
 	virtual bool AttachToHand(USceneComponent* _ParentMesh) PURE_VIRTUAL(AC_WeaponBase::AttachToHand, return false;);
+
+	/// <summary>
+	/// Enemy 손에 장착하기
+	/// </summary>
+	/// <returns> : 실패 시 return false (Enemy가 사용하지 못하는 무기 종류의 경우, override 하지 말것) </returns>
+	virtual bool AttachToEnemyHand(USceneComponent* _ParentMesh) { return false; }
 
 public:
 	
