@@ -18,6 +18,10 @@ UC_Task_GrabWeapon::UC_Task_GrabWeapon()
 
 EBTNodeResult::Type UC_Task_GrabWeapon::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
+	AC_CopZombie* CopZombie = Cast<AC_CopZombie>(OwnerComp.GetAIOwner()->GetPawn());
+	if (CopZombie->GetEquippedGun()) return EBTNodeResult::Failed; // 이미 무기를 장착 중인 상황
+
+	// 무기뺏기 시도 실행
 	return Super::ExecuteTask(OwnerComp, NodeMemory);
 }
 

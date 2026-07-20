@@ -90,7 +90,9 @@ void AC_CopZombie::DropWeapon()
 {
 	// 현재 들고있는 무기가 없을 때
 	if (!m_EquippedGun) return;
+	if (!m_EquippedGun->DetachFromEnemyHand()) return;
 
-	m_EquippedGun->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+	// TODO : 해당 무기 Launch 느낌으로 나오게끔 처리할 것
+	
 	m_EquippedGun = nullptr;
 }

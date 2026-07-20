@@ -12,6 +12,7 @@
 #include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 #include "Utility/C_Util.h"
 #include "Zombie/NurseZombie/C_NurseZombie.h"
+#include "Zombie/Controller/C_ZombieController.h"
 
 const int8 AC_BasicEnemy::s_MaxHealRequestRegisterCount = 2;
 
@@ -50,6 +51,11 @@ void AC_BasicEnemy::BeginPlay()
 	
 	// 바닥면으로 위치 맞추기
 	m_HealedEffectNGComponent->SetRelativeLocation(FVector(0.f, 0.f, -GetCapsuleComponent()->GetScaledCapsuleHalfHeight()));
+	
+	m_ZombieController = GetController<AC_ZombieController>();
+	if (!m_ZombieController)
+		UC_Util::Print("From AC_BasicEnemy::BeginPlay : Use ZombieController instead of other controller!", FColor::Red, 10.f);
+	
 }
 
 float AC_BasicEnemy::TakeDamage

@@ -4,6 +4,7 @@
 #include "C_CopFire.h"
 
 #include "Actor/Character/NPC/Enemy/Zombie/CopZombie/C_CopZombie.h"
+#include "Actor/ItemActor/Weapon/Gun/C_GunBase.h"
 #include "Utility/C_Util.h"
 
 bool UC_CopFire::Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data)
@@ -16,5 +17,12 @@ bool UC_CopFire::Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data)
 void UC_CopFire::Fire(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data)
 {
 	AC_CopZombie* Cop = Cast<AC_CopZombie>(_Owner);
-	// if (!Cop || !Cop->GetEquippedGun()) return;
+	
+	// 이 때 실질적인 총기 발사가 이루어져야 함
+	if (!Cop || !Cop->GetEquippedGun()) return;
+	
+	if (!Cop->GetEquippedGun()->AIFire()) // 발사할 수 없는 상황(총알을 모두 소비하는 등)
+	{
+		// 해당 Skill 비활성화 처리 & 총기 반납 처리해야 함
+	}
 }

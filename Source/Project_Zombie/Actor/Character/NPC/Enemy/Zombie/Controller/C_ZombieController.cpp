@@ -252,3 +252,8 @@ void AC_ZombieController::ClearSensedTarget(float _LimitTime)
 		}
 	}
 }
+
+AActor* AC_ZombieController::GetCurrentBBTarget() const
+{
+	return Blackboard ? Cast<AActor>(Blackboard->GetValueAsObject(TEXT("Target"))) : nullptr;
+}

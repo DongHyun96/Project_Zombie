@@ -16,7 +16,12 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (DisplayName = "SkillComponent"))
 	class UC_EnemySkillComponent*			m_SkillCom;
 
-protected:  
+private:
+	
+	UPROPERTY()
+	class AC_ZombieController* m_ZombieController{};
+	
+protected:
 	
 	// 힐을 받았을 때 활성화시킬 NiagaraEffectComponent
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Niagara")
@@ -48,6 +53,8 @@ public:
 public:
 	
 	UC_EnemySkillComponent* GetSkillComponent() const { return m_SkillCom; }
+
+	AC_ZombieController* GetZombieController() const { return m_ZombieController; }
 	
 private:
 	

@@ -18,4 +18,7 @@ public:
 	
 	virtual bool Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data) override;
 	virtual void Fire(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data) override;
+
+	
+	
 };

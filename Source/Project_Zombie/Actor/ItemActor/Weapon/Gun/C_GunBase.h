@@ -99,12 +99,19 @@ public:
 	void SpawnShellEject();
 
 	/// <summary>
-	/// 공통 라인트레이스 데미지 처리
+	/// 공통 라인트레이스 데미지 처리 (플레이어용)
 	/// </summary>
 	void ProcessLineTraceDamage(float DamageVal);
+	
+private:
+	
+	/// <summary>
+	/// AI 전용 Damage 주기 처리
+	/// </summary>
+	void AIProcessLineTraceDamage(float _DamageVal);
 
 public:
-	class USkeletalMeshComponent* GetWeaponMesh() { return m_WeaponMesh; }
+	USkeletalMeshComponent* GetWeaponMesh() const { return m_WeaponMesh; }
 
 public:
 	/// <summary>
@@ -134,17 +141,33 @@ public:
 	/// <param name="_WeaponUser"> : 이 Weapon을 사용하는 Player 객체 </param>
 	/// <returns> : R키에 대한 처리가 필요없거나 실패했을 경우 return false </returns>
 	virtual bool Reload(AC_BasicPlayer* _WeaponUser) override;
+
+public:
+	
+	/// <summary>
+	/// <para> Enemy AI 총기 발사 처리 </para>
+	/// <para> (단순 1발 발사 처리로 처리할 것 -> Sniper같은 총기류도 Montage 이어서 재장전 모션 나오게끔 처리예정) </para>
+	/// </summary>
+	virtual bool AIFire();
 	
 public:
 	
 	virtual bool AttachToHand(USceneComponent* _ParentMesh) override;
-	virtual bool AttachToEnemyHand(USceneComponent* _ParentMesh) override;
-	
     virtual bool AttachToHolster(USceneComponent* _ParentMesh) override;
 	
 	virtual void PullTrigger() {}
 	virtual void ReleaseTrigger() {}
 
+public: /* AI Attachment 처리 관련 */
+
+	/// <summary>
+	/// Enemy 손에 장착하기
+	/// </summary>
+	/// <param name="_ParentMesh"></param>
+	/// <returns> : 실패 시 return false </returns>
+	bool AttachToEnemyHand(USceneComponent* _ParentMesh);
+	
+	bool DetachFromEnemyHand();
 
 protected:
 	virtual void BeginPlay() override;

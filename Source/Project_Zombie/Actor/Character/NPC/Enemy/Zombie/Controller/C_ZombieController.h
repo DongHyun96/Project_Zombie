@@ -79,6 +79,11 @@ public:
 	FSensedTargetInfo* FindSensedTarget(const AActor* _Target);
 	void ClearSensedTarget(float _LimitTime);
 
+	/// <summary>
+	/// 현재 BB에 세팅된 Target Get
+	/// </summary>
+	AActor* GetCurrentBBTarget() const;
+	
 public:
 	/// <summary>
 	/// 타겟 감지함수
