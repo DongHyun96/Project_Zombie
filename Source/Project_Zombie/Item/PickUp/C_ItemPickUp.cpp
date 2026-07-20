@@ -158,6 +158,7 @@ void AC_ItemPickUp::OnRep_MeshRef()
 
 void AC_ItemPickUp::OnRep_ItemEntry()
 {
+    
 }
 
 void AC_ItemPickUp::Server_RequestPickup_Implementation(AC_BasicPlayer* Player)
