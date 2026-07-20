@@ -103,14 +103,11 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Status")
 	EPlayerState		m_PlayerState;
 	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Status")
-	EPlayerPoseState	m_PlayerMoveSpeedState;
+	UPROPERTY(ReplicatedUsing = OnRep_PlayerPoseState, VisibleAnywhere, BlueprintReadOnly, Category = "Status")
+	EPlayerPoseState	m_PlayerPoseState;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Status")
 	EHandState			m_HandState;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Status")
-	bool				m_IsDead;
 
 
 	// => 여기서부터는 나중에 StatComponent으로 분리?
@@ -240,8 +237,8 @@ public:
 	EPlayerState GetPlayerState() const { return m_PlayerState; }
 	void SetPlayerState(EPlayerState _NewState) { m_PlayerState = _NewState; }
 	
-	EPlayerPoseState GetPlayerMoveState() const { return m_PlayerMoveSpeedState; }
-	void SetPlayerMoveState(EPlayerPoseState _MoveSpeedState) { m_PlayerMoveSpeedState = _MoveSpeedState; }
+	EPlayerPoseState GetPlayerMoveState() const { return m_PlayerPoseState; }
+	void SetPlayerMoveState(EPlayerPoseState _MoveSpeedState) { m_PlayerPoseState = _MoveSpeedState; }
 
 	EHandState GetHandState() const { return m_HandState; }
 	void SetHandState(EHandState _HandState) { m_HandState = _HandState; }
@@ -264,8 +261,8 @@ public:
 	// curDraggedItem 초기화 및 서버에 Drag로 인한 잠금 해제 요청
 	void ClearCurDraggedItem();
 public:
-	bool IsDead() const { return m_IsDead; }
-	void SetIsDead(bool _IsDead) { m_IsDead = _IsDead; }
+
+	bool IsDead() const { return m_PlayerState == EPlayerState::Dead; }
 
 	bool IsJumpInput() const { return m_IsJumpInput; }
 	void SetIsJumpInput(bool _IsJumpInput) { m_IsJumpInput = _IsJumpInput; }
@@ -278,8 +275,8 @@ public:
 
 	bool IsCrouchTransitioning() const;
 
-	bool IsSprinting() const { return m_PlayerMoveSpeedState == EPlayerPoseState::Sprint; }
-	bool IsCrouching() const { return m_PlayerMoveSpeedState == EPlayerPoseState::Crouch; }
+	bool IsSprinting() const { return m_PlayerPoseState == EPlayerPoseState::Sprint; }
+	bool IsCrouching() const { return m_PlayerPoseState == EPlayerPoseState::Crouch; }
 
 public:
 	/// <summary>
@@ -321,6 +318,27 @@ public:
 	/// 속도 적용(달리기, 걷기, 웅크리기 등)
 	/// </summary>
 	void ApplyMovementSpeed();
+
+
+private: // 캐릭터 그로기 처리
+
+	/// 실제 죽음 처리 함수
+	void Die();
+
+
+	// Server함수
+protected:
+	
+	UFUNCTION()
+	void OnRep_PlayerPoseState();
+
+	// 서버에 자세 변경 요청
+	UFUNCTION(Server, Reliable)
+	void Server_RequestSetPoseState(EPlayerPoseState _NewPoseState);
+
+	// 서버에서 자세 변경 처리
+	void SetPoseStateOnServer(EPlayerPoseState _NewPoseState);
+
 
 	// Server함수 
 public:
@@ -364,6 +382,10 @@ protected:
 	
 	//
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+	// 리플리케이트 할 변수 등록
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 
 public:
 	USpringArmComponent* GetSpringArm() { return m_SpringArm; }

@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "C_StatComponentBase.h"
@@ -228,7 +228,7 @@ bool UC_StatComponentBase::DecreaseCurHP(float _DecreaseAmount)
 	if (_DecreaseAmount < 0.f) return false;
 
 	float* pCurHP = m_Stats.Find(TEXT("CurHP"));
-	*pCurHP       = FMath::Max(1.f, *pCurHP - _DecreaseAmount); // TODO : For Testing Max값 0.f로 돌려놓기
+	*pCurHP       = FMath::Max(0.f, *pCurHP - _DecreaseAmount); 
 
 	
 	// CurHP 0을 찍었으면 Delegate 호출 처리
