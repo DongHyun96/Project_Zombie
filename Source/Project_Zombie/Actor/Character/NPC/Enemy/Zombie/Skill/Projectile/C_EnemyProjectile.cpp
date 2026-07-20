@@ -20,7 +20,7 @@
 
 AC_EnemyProjectile::AC_EnemyProjectile()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 
 	// 1. 충돌 컴포넌트
 	m_Sphere = CreateDefaultSubobject<USphereComponent>(TEXT("Sphere"));
@@ -46,13 +46,14 @@ AC_EnemyProjectile::AC_EnemyProjectile()
 	m_LifeTime = 5.f; // 기본 수명 설정(초기값 설정 없을 시 기본값)
 }
 
-void AC_EnemyProjectile::InitProjectile(AC_BasicEnemy* _SkillUser, UC_EnemySkillData* _Skill)
+void AC_EnemyProjectile::InitProjectile(AC_BasicEnemy* _SkillUser, UC_EnemySkillData* _Skill, const FVector& _TargetLocation)
 {
 	check(_Skill);
 	check(_SkillUser);
 
 	m_SkillUser = _SkillUser;
 	m_Skill = _Skill;
+	m_TargetLocation = _TargetLocation;
 
 	m_Sphere->IgnoreActorWhenMoving(m_SkillUser, true);
 
@@ -60,7 +61,14 @@ void AC_EnemyProjectile::InitProjectile(AC_BasicEnemy* _SkillUser, UC_EnemySkill
 
 	m_PMC->InitialSpeed = _Skill->ProjectileSpeed;
 	m_PMC->MaxSpeed = _Skill->ProjectileSpeed;
-	m_PMC->Velocity = GetActorForwardVector() * _Skill->ProjectileSpeed;
+
+	const FVector StartLocation = GetActorLocation();
+	const FVector Direction = (m_TargetLocation - StartLocation).GetSafeNormal();
+
+	m_PMC->Velocity = Direction * _Skill->ProjectileSpeed;
+
+	// 투사체 회전 필요시
+	//SetActorRotation(Direction.Rotation());
 
 	SetLifeSpan(m_LifeTime);
 }
@@ -76,10 +84,12 @@ void AC_EnemyProjectile::BeginPlay()
 	}
 }
 
+
 void AC_EnemyProjectile::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	const FVector CurrentLocation = GetActorLocation();
 }
 
 void AC_EnemyProjectile::OnHit(AActor* _OtherActor, UPrimitiveComponent* _OtherCom, const FHitResult& _Hit)
@@ -119,7 +129,9 @@ void AC_EnemyProjectile::OnProjectileHit(UPrimitiveComponent* HitComponent, AAct
 	if (!OtherActor || OtherActor == this || OtherActor == m_SkillUser)
 		return;
 
-	UC_Util::Print("Projectile Hit");
-
 	OnHit(OtherActor, OtherComp, Hit);
+}
+
+void AC_EnemyProjectile::ReachTarget()
+{
 }

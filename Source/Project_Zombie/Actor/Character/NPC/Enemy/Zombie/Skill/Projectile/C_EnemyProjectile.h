@@ -36,11 +36,28 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill")
 	class UC_EnemySkillData*			m_Skill; // 투사체를 생성시킨 스킬
 
+	UPROPERTY()
+	FVector								m_TargetLocation; // 타겟의 위치
+
+	UPROPERTY()
+	FVector								m_FireDirection; // 투사체 방향
+
+	UPROPERTY(EditAnywhere, Category = "Projectile")
+	float								m_ArriveDistance; 
+
 public:
-	void InitProjectile(AC_BasicEnemy* _SkillUser, UC_EnemySkillData* _Skill);
+	/// <summary>
+	/// 투사체 초기화 함수
+	/// </summary>
+	void InitProjectile(AC_BasicEnemy* _SkillUser, UC_EnemySkillData* _Skill, const FVector& _TargetLocation);
 
 protected:
 	virtual void BeginPlay() override;
+
+	/// <summary>
+	/// 투사체가 타겟에 도착했을 때 호출되는 함수
+	/// </summary>
+	virtual void ReachTarget();
 
 public:	
 	virtual void Tick(float DeltaTime) override;

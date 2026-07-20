@@ -105,4 +105,6 @@ void UC_Serv_SelectTarget::TickNode(UBehaviorTreeComponent& _OwnCom, uint8* _Nod
 	
 	pBBCom->SetValueAsObject(m_Target.SelectedKeyName, pBestTarget);
 
+	bool bInRange = false;
+
 }
