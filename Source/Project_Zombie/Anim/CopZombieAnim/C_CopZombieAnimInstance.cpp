@@ -35,7 +35,7 @@ void UC_CopZombieAnimInstance::NativeUpdateAnimation(float _DT)
 	
 	if (m_CopZombieState == ECopZombieState::WeaponEarned)
 	{
-		if (AC_GunBase* Gun = Cast<AC_GunBase>(m_OwnerCopZombie->GetEquippedWeapon()))
+		if (AC_GunBase* Gun = m_OwnerCopZombie->GetEquippedGun())
 			m_LeftHandIKTranslation = Gun->GetWeaponMesh()->GetSocketLocation(TEXT("IK_Enemy_LeftHand"));
 	}
 }

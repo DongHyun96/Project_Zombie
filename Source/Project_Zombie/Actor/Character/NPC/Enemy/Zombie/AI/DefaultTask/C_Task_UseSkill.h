@@ -26,6 +26,10 @@ protected:
 	
 public:
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& _OwnCom, uint8* _NodeMemory) override;
+
+	/// <summary>
+	/// Target을 향해 Skill에 부여된 RotateSpeed를 이용하여 Target을 향한 Rotate 처리
+	/// </summary>
 	virtual void TickTask(UBehaviorTreeComponent& _OwnCom, uint8* _NodeMemory, float _DeltaSeconds);
 
 	// Task 종료 시, 호출됨 -> Skill 사용 중 aborted 처리된 경우 해당 Skill 사용을 Manual하게 EndSkill 처리해주어야 함

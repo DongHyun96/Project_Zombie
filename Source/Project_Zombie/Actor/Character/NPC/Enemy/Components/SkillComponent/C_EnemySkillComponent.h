@@ -70,7 +70,7 @@ protected:
 
 	// 현재 사용중인 스킬
 	UPROPERTY(Transient)
-	TObjectPtr<class UC_EnemySkillData>			m_CurSkillData;
+	TSoftObjectPtr<class UC_EnemySkillData>			m_CurSkillData;
 
 	// 쿨타임 기록 컨테이너
 	// 스킬의 고유 ( 경로 + 카테고리명 ) 을 키값으로 사용한다
@@ -91,6 +91,12 @@ protected:
 public:	
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
+public:
+	
+	const TSoftObjectPtr<UC_EnemySkillData> GetCurSkillData() { return m_CurSkillData; }
+	
+public:
+	
 	/// <summary>
 	/// 스킬이 사용중인지 체크하는 함수
 	/// </summary>

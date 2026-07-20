@@ -58,6 +58,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillInfo")
 	float RotateSpeed; // 스킬 사용시 캐릭터 방향회전 속도
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillInfo")
+	bool bRotateToTargetOnActivation = true; // 스킬 실행 시작 시, 바로 Target을 향해 돌지 결정	
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillAnim")
 	UAnimMontage* Montage; // 스킬 모션(동작)
