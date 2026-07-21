@@ -6,6 +6,7 @@
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/ItemActor/Weapon/C_WeaponBase.h"
 #include "Actor/ItemActor/Weapon/Gun/C_GunBase.h"
+#include "Actor/ItemActor/Weapon/WeaponComponent/GunComponent/C_AIGunUsageComponent.h"
 #include "Components/BoxComponent.h"
 #include "Utility/C_Util.h"
 
@@ -77,7 +78,7 @@ bool AC_CopZombie::EquipWeapon(AC_GunBase* _StolenWeapon)
 	if (m_EquippedGun) return false; // 이미 빼앗은 무기가 존재
 
 	// 손에 부착 시도
-	if (!_StolenWeapon->AttachToEnemyHand(GetMesh()))
+	if (!_StolenWeapon->GetAIGunUsageComponent()->AttachToHand(GetMesh()))
 		return false;
 	
 	// 부착 성공, State 변화 및 EquippedWeapon 저장
@@ -90,9 +91,7 @@ void AC_CopZombie::DropWeapon()
 {
 	// 현재 들고있는 무기가 없을 때
 	if (!m_EquippedGun) return;
-	if (!m_EquippedGun->DetachFromEnemyHand()) return;
-
-	// TODO : 해당 무기 Launch 느낌으로 나오게끔 처리할 것
+	if (!m_EquippedGun->GetAIGunUsageComponent()->DetachFromHand()) return;
 	
 	m_EquippedGun = nullptr;
 }

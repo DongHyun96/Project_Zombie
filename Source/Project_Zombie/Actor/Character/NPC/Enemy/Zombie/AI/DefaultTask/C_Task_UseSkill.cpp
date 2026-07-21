@@ -65,7 +65,7 @@ EBTNodeResult::Type UC_Task_UseSkill::ExecuteTask(UBehaviorTreeComponent& _OwnCo
 	if (!pSkillCom->UseSkill(m_SkillSlot))
 		return EBTNodeResult::Failed; // 실패 시, 이 Task Failed 처리
 	
-	// 스킬 사용 성공 (Activate 성공)
+	/* 스킬 사용 성공 (Activate 성공) */
 	
 	// 타겟 방향으로 바로 회전하는 Skill이면 바로 회전 처리
 	if (pSkillCom->GetCurSkillData().Get()->bRotateToTargetOnActivation)

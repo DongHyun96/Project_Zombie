@@ -33,7 +33,7 @@ void UC_PingSystemComponent::BeginPlay()
 	
 	FActorSpawnParameters Param{};
 	Param.Owner = OwnerPlayer;
-	m_WorldPingActor = GetWorld()->SpawnActor<AC_WorldPingActor>(m_WorldPingActorClass, Param);
+	m_WorldPingActor = GetWorld()->SpawnActor<AC_WorldPingActor>(m_WorldPingActorClass, Param); // PingActor BeginPlay에 자기자신 비활성화 처리 들어가 있음
 }
 
 bool UC_PingSystemComponent::TrySpawnPing()

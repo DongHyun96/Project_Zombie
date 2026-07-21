@@ -55,6 +55,12 @@ UCLASS()
 class PROJECT_ZOMBIE_API AC_BasicPlayer : public AC_BasicCharacter, public IGenericTeamAgentInterface
 {
 	GENERATED_BODY()
+
+protected:
+
+	// 게임 시작 시, 플레이어가 지정한 이름 (TODO : Dongman 지우기)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PlayerName", meta = (DisplayName = "PlayerName"))
+	FString m_PlayerName = "Dongman";
 	
 // [Component]
 protected:

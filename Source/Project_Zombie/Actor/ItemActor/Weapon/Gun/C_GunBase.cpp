@@ -11,6 +11,7 @@
 #include "Actor/Character/NPC/Enemy/C_BasicEnemy.h"
 #include "Actor/Character/NPC/Enemy/Zombie/Controller/C_ZombieController.h"
 #include "Actor/Character/NPC/Enemy/Zombie/CopZombie/C_CopZombie.h"
+#include "Actor/ItemActor/Weapon/WeaponComponent/GunComponent/C_AIGunUsageComponent.h"
 
 #include "Components/SphereComponent.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -34,7 +35,12 @@ AC_GunBase::AC_GunBase()
 	m_WeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
 	m_WeaponMesh->SetupAttachment(RootComponent);
 
+	m_WeaponMesh->SetLinearDamping(1.f);
+	m_WeaponMesh->SetAngularDamping(1.f);
+	
 	m_DataCom = CreateDefaultSubobject<UC_GunDataTableComponent>(TEXT("DataComponent"));
+	
+	m_AIGunUsageComponent = CreateDefaultSubobject<UC_AIGunUsageComponent>(TEXT("AIGunUsageComponent"));
 }
 
 void AC_GunBase::BeginPlay()
@@ -42,6 +48,11 @@ void AC_GunBase::BeginPlay()
 	Super::BeginPlay();
 	
 	Gun_init();
+	m_Collision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	
+	m_WeaponMesh->SetMassOverrideInKg(NAME_None, 2000.f);
+	m_WeaponMesh->SetLinearDamping(1.5f);
+	m_WeaponMesh->SetAngularDamping(3.f);
 }
 
 void AC_GunBase::Tick(float DeltaTime)
@@ -195,50 +206,6 @@ void AC_GunBase::ProcessLineTraceDamage(float DamageVal)
 	}
 }
 
-void AC_GunBase::AIProcessLineTraceDamage(float _DamageVal)
-{
-	if (!m_WeaponCopZombieUser)
-	{
-		UC_Util::Print("From AC_GunBase::AIProcessLineTraceDamage : AI Weapon user nullptr", FColor::Red, 10.f);
-		return;
-	}
-	
-	AActor* Target = m_WeaponCopZombieUser->GetZombieController()->GetCurrentBBTarget();
-	
-	// TODO : 무조건 Target을 맞추는 것이 아닌 오차를 좀 주긴 해야 함 (일단은 Target을 무조건 맞추는 처리로 함)
-	// 사망 시에도 EndLocation Front 방면으로 줄것
-	const FVector StartLocation = m_WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
-	const FVector EndLocation   = Target ? Target->GetActorLocation()
-									  	 : StartLocation + m_WeaponMesh->GetSocketRotation(TEXT("MuzzleFlash")).Vector() * 5000.0f;
-		                              
-	
-	FHitResult HitResult{};
-	FCollisionQueryParams QueryParams{};
-	QueryParams.AddIgnoredActor(this);
-	QueryParams.AddIgnoredActor(m_WeaponCopZombieUser);
-	
-	bool bHasHit = GetWorld()->LineTraceSingleByChannel
-	(
-		HitResult,
-		StartLocation,
-		EndLocation,
-		ECC_Visibility,
-		QueryParams
-	);
-	const FVector ActualEndLocation = bHasHit ? HitResult.ImpactPoint : EndLocation;
-	
-	DrawDebugLine(GetWorld(), StartLocation, ActualEndLocation, FColor::Green, false, 5.f);
-
-	if (bHasHit)
-	{
-		DrawDebugSphere(GetWorld(), ActualEndLocation, 7.f, 12, FColor::Red, true);
-
-		// TODO : 거점사격에 대한 처리도 해주어야 함 (거점 퍼센티지 다운)
-		if (AC_BasicCharacter* HitCharacter = Cast<AC_BasicCharacter>(HitResult.GetActor()))
-			UGameplayStatics::ApplyDamage(HitCharacter, _DamageVal, m_WeaponCopZombieUser->GetController(), this, nullptr);
-	}
-}
-
 bool AC_GunBase::AttachToHand(USceneComponent* _ParentMesh)
 {
 	if (!_ParentMesh) return false;
@@ -266,42 +233,6 @@ bool AC_GunBase::AttachToHand(USceneComponent* _ParentMesh)
 		Player->SetHandState(EHandState::WeaponGun);
 	
 	return bIsAttached;
-}
-
-bool AC_GunBase::AttachToEnemyHand(USceneComponent* _ParentMesh)
-{
-	if (!_ParentMesh) return false;
-	m_WeaponCopZombieUser = Cast<AC_CopZombie>(_ParentMesh->GetOwner());
-	if (!m_WeaponCopZombieUser) return false;
-
-	const bool Attached = AttachToComponent
-	(
-		_ParentMesh,
-		FAttachmentTransformRules(EAttachmentRule::KeepRelative, true),
-		s_HandSocketName
-	);
-	
-	if (Attached) 
-	{
-		// MaxAmmoCount로 탄창 초기화 처리
-		m_CurrentAmmo = m_MaxAmmo;
-
-		// 이미 사격중이었던 Weapon인 경우, Trigger 해제
-		ReleaseTrigger();
-		
-		return true;
-	}
-	
-	return false;
-}
-
-bool AC_GunBase::DetachFromEnemyHand()
-{
-	// 이 무기를 사용중인 CopZombie가 없을 때(또는 Valid하지 않은 경우)
-	if (!m_WeaponCopZombieUser) return false;
-	
-	DetachFromActor(FDetachmentTransformRules::KeepRelativeTransform);
-	return true;
 }
 
 bool AC_GunBase::AttachToHolster(USceneComponent* _ParentMesh)
@@ -338,26 +269,4 @@ bool AC_GunBase::OnFireEnd(AC_BasicPlayer* _WeaponUser)
 bool AC_GunBase::Reload(AC_BasicPlayer* _WeaponUser)
 {
 	return false;
-}
-
-bool AC_GunBase::AIFire()
-{
-	// 사격 불가능한 상황
-	if (--m_CurrentAmmo <= 0)
-	{
-		m_CurrentAmmo = 0;
-		return false;
-	}
-	
-	// 총기 자체의 발사 애니메이션 재생
-	if (m_WeaponMesh && m_FireAnimation)
-		m_WeaponMesh->PlayAnimation(m_FireAnimation, false);
-	
-	SpawnShellEject();
-
-	// 사격 방면 LineTrace Damage 처리
-	AIProcessLineTraceDamage(m_BaseDamage);
-	
-	// 사격 성공
-	return true;
 }

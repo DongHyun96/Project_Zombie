@@ -69,7 +69,7 @@ float AC_BasicEnemy::TakeDamage
 	const float DamageAmount = Super::TakeDamage(_DamageAmount, _DamageEvent, _EventInstigator, _DamageCauser);
 	if (DamageAmount <= 0.f) return 0.f; // Damage가 들어오지 않음
 	
-	UC_Util::Print("Zombie Damaged", FColor::Red, 10.f);
+	// UC_Util::Print("Zombie Damaged", FColor::Red, 10.f);
 
 	/* 힐 요청 처리 관련 */
 

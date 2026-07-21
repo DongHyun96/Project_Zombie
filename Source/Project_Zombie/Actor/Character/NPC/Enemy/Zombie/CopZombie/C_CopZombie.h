@@ -102,6 +102,8 @@ private:
 private: // 빼앗아서 장착한 무기
 	
 	UPROPERTY()
-	class AC_GunBase* m_EquippedGun{};
+	AC_GunBase* m_EquippedGun{};
+	
+	
 	
 };

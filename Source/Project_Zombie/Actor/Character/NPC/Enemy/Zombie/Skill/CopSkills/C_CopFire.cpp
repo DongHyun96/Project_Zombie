@@ -3,8 +3,10 @@
 
 #include "C_CopFire.h"
 
+#include "Actor/Character/NPC/Enemy/Components/SkillComponent/C_EnemySkillComponent.h"
 #include "Actor/Character/NPC/Enemy/Zombie/CopZombie/C_CopZombie.h"
 #include "Actor/ItemActor/Weapon/Gun/C_GunBase.h"
+#include "Actor/ItemActor/Weapon/WeaponComponent/GunComponent/C_AIGunUsageComponent.h"
 #include "Utility/C_Util.h"
 
 bool UC_CopFire::Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data)
@@ -21,8 +23,11 @@ void UC_CopFire::Fire(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data)
 	// 이 때 실질적인 총기 발사가 이루어져야 함
 	if (!Cop || !Cop->GetEquippedGun()) return;
 	
-	if (!Cop->GetEquippedGun()->AIFire()) // 발사할 수 없는 상황(총알을 모두 소비하는 등)
+	if (!Cop->GetEquippedGun()->GetAIGunUsageComponent()->AIFire()) // 발사할 수 없는 상황(총알을 모두 소비하는 등)
 	{
-		// 해당 Skill 비활성화 처리 & 총기 반납 처리해야 함
+		// 스킬 비활성화 처리 (Task쪽 TaskFinished에서 마지막 발사 이후 및 현재 EndSkillManually 처리일 경우,
+		// 두 상황 모두 스킬을 끝내고 총을 뱉어내야 하는 상황인지 따져서 던져버림)
+		// 일망타진으로 상황조치를 취하는건 OnTaskFinished 쪽에서 구현처리함 (두번 처리 하지 않기 위함)
+		Cop->GetSkillComponent()->EndSkillManually();
 	}
 }
