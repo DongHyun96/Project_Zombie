@@ -281,6 +281,8 @@ void UC_PoseColliderHandlerComponent::ApplyCapsuleHalfHeight(float _NewHalfHeigh
 
 	FHitResult Hit;
 
+	
+	// 캡슐의 루트 (위치) 이동
 	m_CharacterMovementComponent->SafeMoveUpdatedComponent
 	(
 		MoveDelta,
@@ -288,13 +290,16 @@ void UC_PoseColliderHandlerComponent::ApplyCapsuleHalfHeight(float _NewHalfHeigh
 		false,
 		Hit
 	);
-
+	
+	// Capsule 크기 변경
+	/// 지형에 끼지 않도록 이동 후에 크기 변경
 	m_CapsuleComponent->SetCapsuleSize(
 		m_StandRadius,
 		_NewHalfHeight,
 		false
 	);
 
+	// Mesh 위치 보정
 	FVector NewMeshRelativeLocation = m_StandMeshRelativeLocation;
 
 	NewMeshRelativeLocation.Z += (m_StandHalfHeight - _NewHalfHeight);
@@ -448,17 +453,23 @@ void UC_PoseColliderHandlerComponent::FinishTransition()
 			ETeleportType::TeleportPhysics // 물리 시뮬레이션을 텔레포트 방식으로 처리
 		);
 
+		m_Player->CacheInitialMeshOffset
+		(
+			FinalMeshRelativeLocation,
+			m_MeshComponent->GetRelativeRotation()
+		);
+
 		// 서버에 있는 클라이언트 캐릭터들은 OnRep() 함수를 호출하지 않아서 여기서 보정
-		const bool bRemoteClinetOnListenServer = m_Player->HasAuthority() && !m_Player->IsLocallyControlled();
-		
-		if (bRemoteClinetOnListenServer)
-		{
-			m_Player->CacheInitialMeshOffset
-			(
-				FinalMeshRelativeLocation,
-				m_MeshComponent->GetRelativeRotation()
-			);
-		}
+		//const bool bRemoteClinetOnListenServer = m_Player->HasAuthority() && !m_Player->IsLocallyControlled();
+		//
+		//if (bRemoteClinetOnListenServer)
+		//{
+		//	m_Player->CacheInitialMeshOffset
+		//	(
+		//		FinalMeshRelativeLocation,
+		//		m_MeshComponent->GetRelativeRotation()
+		//	);
+		//}
 	}
 
 	// 전환이 끝났으므로 Tick 비활성화

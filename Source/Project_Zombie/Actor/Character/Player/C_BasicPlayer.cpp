@@ -433,7 +433,7 @@ void AC_BasicPlayer::OnRep_PlayerPoseState()
 
 	const bool bWantsToCrouch = m_PlayerPoseState == EPlayerPoseState::Crouch;
 
-	m_PoseColliderHandlerComponent->ApplyRemotePose(bWantsToCrouch);
+	m_PoseColliderHandlerComponent->StartCrouchTransition(bWantsToCrouch);
 
 	ApplyMovementSpeed();
 }

@@ -40,6 +40,7 @@ public:
 	/// </summary>
 	void StartCrouchTransition(bool _bIsCrouched);
 
+	/// 안쓰는 함수
 	/// <summary>
 	///	원격 플레이어용 함수. 서버에서 리플리케이트된 자세를 적용만 하고 Root 이동은 하지 않음
 	/// </summary>
