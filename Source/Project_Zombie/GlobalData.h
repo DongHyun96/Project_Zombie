@@ -3,6 +3,8 @@
 #include "Engine/DataTable.h"
 #include "GlobalEnum.h"
 #include "Net/Serialization/FastArraySerializer.h"
+//#include "InstancedStruct.h"
+#include "StructUtils/InstancedStruct.h"
 #include "GlobalData.generated.h" // UHT	
 
 // 데이터 테이블로 관리할 아이템 정보
@@ -53,7 +55,10 @@ struct FItemData : public FTableRowBase
 
     // ── [소모품 전용 스펙 - 타 타입일 경우 무시] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Consumable Spec")
+    
     float HealAmount_HP = 0.0f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment")
+    TSubclassOf<class AC_WeaponBase> WeaponClass;
 };
 
 // 인벤에 들어가 있는 아이템 정보
@@ -72,26 +77,23 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
     FName ItemRowName = NAME_None;
 
-    // ── [실시간 공통 데이터] ──
+    // ── [실시간 공통 데이터] ── 아이템의 갯수
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
     int32 CurCount = 0;
 
-    // ── [실시간 공통 데이터] ──
+    // ── [실시간 공통 데이터] ── 현재 사용?중인 플레이어의 ID, 현재는 드래그 드롭 중에 상호작용중인 PlayerID가 들어가고 있음.
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
     int32 LockedByPlayerID = INDEX_NONE; // INDEX_NONE == -1
     
-    // ── [실시간 인스턴스 변수 - 무기/장비용] ──
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory | Weapon")
-    int32 UpgradeLevel = 0;
+    // 어떤 구조체든 다형성처럼 동적으로 담을 수 있음
+    // C++에서 값 생성하기     : CustomData = FInstancedStruct::Make(구조체);
+    // C++에서 데이터 가져오기 : CustomData.GetPrt<구조체 타입>() or CustomData.Get<구조체 타입>() \
+    // 초기화의 두가지 방법 : 
+    // 1. CustomData.Reset(); : CustomData 자체를 비워버림.
+    // 2. CustomData.InitializeAs<구조체 타입>(); : 특정 구조체 타입의 기본값으로 다시 생성할 때 사용.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    FInstancedStruct CustomData;
 
-    // ── [실시간 인스턴스 변수 - 무기/장비용] ──
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory | Weapon")
-    int32 CurAmmo = 0;
-
-    
-    // ── [실시간 인스턴스 변수 - 무기/장비용] ──
-    //UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory | Weapon")
-    //float Durability = 100.0f;
 public:
     // 빈 슬롯인지 확인하는 함수.
     bool IsEmpty() const {return ItemRowName.IsNone() || CurCount == 0;}
@@ -101,9 +103,9 @@ public:
     {
         ItemRowName = NAME_None;
         CurCount = 0;
-        UpgradeLevel = 0;
-        CurAmmo = 0;
         LockedByPlayerID = INDEX_NONE; 
+        SlotIndex = -1;
+        CustomData.Reset();
     }
     
 };
@@ -151,6 +153,31 @@ struct FCursorItem
         
         return true;
     }
+};
+
+// ******************************
+// 아이템 CustomData 구조체 선언부
+// ******************************
+USTRUCT(BlueprintType)
+struct FGunCustomData
+{
+    GENERATED_BODY()
+    
+    // 데미지의 업그레이드의 레벨 혹은 추가 데미지
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    int32 Upgrade_Damage = 0;
+    
+    // MaxAmmo의 업그레이드의 레벨 혹은 추가 MaxAmmo
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    int32 Upgrade_MaxAmmo = 0;
+    
+    // FireRate의 업그레이드의 레벨 혹은 추가 FireRate
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    int32 Upgrade_FireRate = 0;
+    
+    // 이건 인벤이나 ItemPickUp에서 총의 CurAmmo값을 저장하기 위해 존재.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    int32 CurAmmo = 0;
 };
 
 
