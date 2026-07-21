@@ -3,6 +3,8 @@
 
 #include "C_PoseColliderHandlerComponent.h"
 
+#include "Engine/Engine.h"
+
 #include "../Character/Player/C_BasicPlayer.h"
 
 #include "Components/CapsuleComponent.h"
@@ -88,7 +90,8 @@ void UC_PoseColliderHandlerComponent::TickComponent(float DeltaTime, ELevelTick 
 		return;
 	}
 
-	if (!m_bTargetCrouched && !CanStand())
+	// 서버만 캐릭터가 일어날 수 있는지 판단
+	if (!m_bTargetCrouched && !CanStand() && m_Player->HasAuthority())
 	{
 		m_bTargetCrouched = true;
 	}
@@ -276,20 +279,23 @@ void UC_PoseColliderHandlerComponent::ApplyCapsuleHalfHeight(float _NewHalfHeigh
 	}
 
 	
-	// Root 이동량
-	const FVector MoveDelta = FVector(0.f, 0.f, HeightDifference);
+	// 서버만 Root 이동
+	if (m_Player->HasAuthority())
+	{
+		// Root 이동량
+		const FVector MoveDelta = FVector(0.f, 0.f, HeightDifference);
 
-	FHitResult Hit;
+		FHitResult Hit;
 
-	
-	// 캡슐의 루트 (위치) 이동
-	m_CharacterMovementComponent->SafeMoveUpdatedComponent
-	(
-		MoveDelta,
-		m_Player->GetActorQuat(),
-		false,
-		Hit
-	);
+		// 캡슐의 루트 (위치) 이동
+		m_CharacterMovementComponent->SafeMoveUpdatedComponent
+		(
+			MoveDelta,
+			m_Player->GetActorQuat(),
+			false,
+			Hit
+		);
+	}
 	
 	// Capsule 크기 변경
 	/// 지형에 끼지 않도록 이동 후에 크기 변경
