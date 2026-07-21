@@ -22,7 +22,7 @@ void UC_DivideItemWidget::UpdateWidget()
 	
 	if (!ItemManager) return;
 	
-	const FItemData* curDraggedItemData = ItemManager->GetItemData(CursorItem.Item.ItemRowName);
+	const FItemData* curDraggedItemData = ItemManager->GetItemData<FItemData>(EItemTableType::General, CursorItem.Item.ItemRowName);
 	
 	if (!curDraggedItemData) return;
 	

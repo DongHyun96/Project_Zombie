@@ -153,7 +153,7 @@ bool UC_ItemSlotWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDro
         
         // [중요] 드롭할 대상 슬롯이 비어있다면 원본 아이템의 정보를, 채워져 있다면 타겟 아이템의 정보를 기준으로 삼습니다.
         FName TargetRowName = (ToEntry.ItemRowName == NAME_None) ? FromEntry.ItemRowName : ToEntry.ItemRowName;
-        const FItemData* ToItemData = ItemManager->GetItemData(TargetRowName);
+        const FItemData* ToItemData = ItemManager->GetItemData<FItemData>(EItemTableType::General, TargetRowName);
         
         // [필수] 여기서 널 체크를 해서 안전하게 반환 처리를 해줍니다.
         if (!ToItemData) 
@@ -237,8 +237,8 @@ void UC_ItemSlotWidget::InitDragVisual(UC_DragDropOperation* InDragDropOp)
     Border->SetBrushColor(BorderColor);
     UImage* DragVisual = NewObject<UImage>(this);
     
-    DragVisual->SetBrush(ItemIcon->Brush);
-    DragVisual->Brush.ImageSize = FVector2D(64.f, 64.f);
+    DragVisual->SetBrush(ItemIcon->GetBrush());
+    DragVisual->SetBrushSize(FVector2D(64.f, 64.f));
     Border->SetContent(DragVisual);
     
     InDragDropOp->DefaultDragVisual = Border;

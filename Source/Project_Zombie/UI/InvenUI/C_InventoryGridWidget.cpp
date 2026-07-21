@@ -28,7 +28,7 @@ void UC_InventoryGridWidget::RefreshAllSlots(const TArray<FInventoryEntry>& Inve
         const FInventoryEntry& Entry = InventoryItems[i];
 
         // 아이템 매니저를 통해 데이터 테이블의 원본 비주얼/기본 스펙 데이터를 가져옴
-        const FItemData* CoreData = ItemManager->GetItemData(Entry.ItemRowName);
+        const FItemData* CoreData = ItemManager->GetItemData<FItemData>(EItemTableType::General, Entry.ItemRowName);
         //if (!CoreData) continue; // TODO : 인벤에 없는 데이터인 경우 따로 처리해주기.
         // 실시간 인스턴스 데이터(Entry)와 원본 스펙 데이터(CoreData)를 함께 넘겨줌
         SlotWidgets[i]->UpdateSlot(Entry, CoreData);
@@ -42,7 +42,7 @@ void UC_InventoryGridWidget::RefreshSlotAt(int32 SlotIndex, const FInventoryEntr
 
     if (SlotWidgets.IsValidIndex(SlotIndex) && SlotWidgets[SlotIndex])
     {
-        const FItemData* CoreData = ItemManager->GetItemData(ItemData.ItemRowName);
+        const FItemData* CoreData = ItemManager->GetItemData<FItemData>(EItemTableType::General, ItemData.ItemRowName);
 
         SlotWidgets[SlotIndex]->UpdateSlot(ItemData, CoreData);
     }
