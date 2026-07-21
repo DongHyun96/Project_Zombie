@@ -1,62 +1,61 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
+// C_ItemManager.cpp
 #include "GameModeAndManager/C_ItemManager.h"
 #include "../Item/PickUp/C_ItemPickUp.h"
+#include "ProjectSettings/C_ItemManagerSettings.h"
 #include "Utility/C_Util.h"
 
 void UC_ItemManager::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
 
-    // 런타임(Initialize 함수)이므로 StaticLoadObject를 사용합니다.
-    UDataTable* LoadedDataTable = Cast<UDataTable>(StaticLoadObject(
-        UDataTable::StaticClass(),
-        nullptr,
-        TEXT("/Game/SangYeon/Item/DT_ItemData_Sang.DT_ItemData_Sang")
-    ));
+    // Settings 클래스로부터 설정 에셋 포인터 가져오기
+    const UC_ItemManagerSettings* Settings = GetDefault<UC_ItemManagerSettings>();
+    if (!Settings) return;
 
-    // 데이터 테이블 로드 성공
-    if (LoadedDataTable)
+    // Helper Lambda: SoftObjectPtr을 로드하고 Map에 등록
+    auto RegisterTable = [this](EItemTableType Type, const TSoftObjectPtr<UDataTable>& SoftTablePtr)
     {
-        ItemDataTable = LoadedDataTable;
-        UE_LOG(LogTemp, Log, TEXT("ItemDataTableSuccessfully Loaded!"));
-    }
-    // 데이터 테이블 로드 실패
-    else
-    {
-        UE_LOG(LogTemp, Error, TEXT("Failed to load ItemDataTable! Check your asset path."));
-    }
+        if (SoftTablePtr.IsNull()) return;
+
+        UDataTable* LoadedTable = SoftTablePtr.LoadSynchronous();
+        if (LoadedTable)
+        {
+            CachedItemTables.Add(Type, LoadedTable);
+        }
+    };
+
+    // 설정된 데이터 테이블들을 동기 로드 및 캐싱
+    RegisterTable(EItemTableType::General, Settings->GeneralItemDataTableConfig);
+    RegisterTable(EItemTableType::Gun, Settings->GunDataTableConfig);
+    RegisterTable(EItemTableType::Melee, Settings->MeleeDataTableConfig);
+    RegisterTable(EItemTableType::Throwable, Settings->ThrowableDataTableConfig);
 }
 
-const FItemData* UC_ItemManager::GetItemData(FName InRowName) const
+const UDataTable* UC_ItemManager::GetTargetTable(EItemTableType InTableType) const
 {
-    if (!ItemDataTable || InRowName.IsNone()) return nullptr;
-
-    // FindRow는 내부적으로 TMap 해시 조회를 하기 때문에 매우 빠릅니다.
-    return ItemDataTable->FindRow<FItemData>(InRowName, TEXT("GetItemDataContext"));
+    // Find는 const TMap에서 const TObjectPtr<UDataTable>* 를 반환합니다.
+    if (const TObjectPtr<UDataTable>* FoundPtr = CachedItemTables.Find(InTableType))
+    {
+        return *FoundPtr; // TObjectPtr -> UDataTable* 자동 형변환
+    }
+    
+    return nullptr;
 }
 
 AC_ItemPickUp* UC_ItemManager::SpawnItem(FName InRowName, int32 InCount, const FVector& SpawnLocation)
 {
-    // 1. 안전성 검사 및 데이터 가져오기
-    const FItemData* Data = GetItemData(InRowName);
+    const FItemData* Data = GetItemData<FItemData>(EItemTableType::General, InRowName);
     if (!Data) return nullptr;
 
     UWorld* World = GetWorld();
     if (!World) return nullptr;
 
-    // 2. 월드에 기본 아이템 액터 스폰 (AItemActor는 월드에 떨어질 공통 베이스 액터)
     FActorSpawnParameters SpawnParams;
     SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
     
-    // TSubclassOf<AItemActor> 등으로 지정된 클래스를 스폰 (여기서는 가상의 스폰 예시)
     AC_ItemPickUp* NewItem = World->SpawnActor<AC_ItemPickUp>(AC_ItemPickUp::StaticClass(), SpawnLocation, FRotator::ZeroRotator, SpawnParams);
-    
     if (NewItem)
     {
-        // 3. 생성된 아이템 액터에 데이터 테이블 정보를 주입!
-        // (예: 아이템 에셋의 StaticMesh를 바꾸거나, 수량을 설정하는 함수 호출)
         NewItem->ItemEntry.ItemRowName = InRowName;
         NewItem->ItemEntry.CurCount = InCount;
         NewItem->SetMeshRef(Data->DropMesh);
@@ -68,45 +67,65 @@ AC_ItemPickUp* UC_ItemManager::SpawnItem(FName InRowName, int32 InCount, const F
 
 bool UC_ItemManager::DropItemByPlayer(FName InRowName, int32 InCount, AActor* InActor)
 {
-    if (!InActor)
-    {
-        return false;
-    }
+    if (!InActor) return false;
     
     FVector SpawnLocation = InActor->GetActorLocation() + FVector(0.f, 0.f, 30.f);
-    
-    // 2. 던질 방향 벡터 계산 (마인크래프트 스타일)
     FVector ForwardVec = InActor->GetActorForwardVector();
-    FVector UpVec	   = InActor->GetActorUpVector();
+    FVector UpVec = InActor->GetActorUpVector();
     
-    SpawnLocation += ForwardVec * 100;
+    SpawnLocation += ForwardVec * 100.f;
     
     AC_ItemPickUp* NewItem = SpawnItem(InRowName, InCount, SpawnLocation);
-    
     if (NewItem)
     {
         FVector LaunchVelocity = (ForwardVec * 300.f) + (UpVec * 150.f);
-    
-        // 약간의 랜덤성을 부여하면 매번 똑같이 떨어지지 않고 더 자연스러워집니다.
         LaunchVelocity.X += FMath::FRandRange(-50.f, 50.f);
         LaunchVelocity.Y += FMath::FRandRange(-50.f, 50.f);
         
-        //UC_Util::Print(LaunchVelocity);
-        
         if (UPrimitiveComponent* RootPrim = Cast<UPrimitiveComponent>(NewItem->GetRootComponent()))
         {
-            // 1. 물리를 켭니다. (에디터에서 미리 켜두어도 됩니다)
             RootPrim->SetSimulatePhysics(true);
-            
-            // 2. 만약 힘이 전달되었다면 해당 방향으로 툭 던집니다.
             if (!LaunchVelocity.IsNearlyZero())
             {
-                // Velocity를 즉각 변화시키는 Impulse 방식을 사용합니다.
-                // VelChange를 true로 하면 질량(Mass)에 상관없이 일정한 속도로 날아갑니다.
                 RootPrim->AddImpulse(LaunchVelocity, NAME_None, true);
             }
         }
     }
     
     return NewItem != nullptr;
+}
+
+bool UC_ItemManager::GetItemDataBP(EItemTableType InTableType, FName InRowName, FInstancedStruct& OutData)
+{
+    switch (InTableType)
+    {
+    case EItemTableType::General:
+        if (const FItemData* Ptr = GetItemData<FItemData>(InTableType, InRowName))
+        {
+            OutData.InitializeAs<FItemData>(*Ptr);
+            return true;
+        }
+        break;
+
+    case EItemTableType::Gun:
+        if (const FGunData* Ptr = GetItemData<FGunData>(InTableType, InRowName))
+        {
+            OutData.InitializeAs<FGunData>(*Ptr);
+            return true;
+        }
+        break;
+
+    case EItemTableType::Melee:
+        if (const FMeleeData* Ptr = GetItemData<FMeleeData>(InTableType, InRowName))
+        {
+            OutData.InitializeAs<FMeleeData>(*Ptr);
+            return true;
+        }
+        break;
+
+    case EItemTableType::Throwable:
+        // TODO: FThrowableData 추가 시 작성
+        break;
+    }
+    return false;
 }
