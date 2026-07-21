@@ -3,9 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Actor/Ping/C_WorldPingActor.h"
 #include "Blueprint/UserWidget.h"
 #include "C_CompassMarkerWidget.generated.h"
 
+enum class EPingType : uint8;
 /**
  * 
  */
@@ -24,11 +26,16 @@ public:
 
 public:
 
-	void TogglePingMarker(bool _Visible);
+	void TogglePingMarker(bool _Visible, EGamePingType _PingType = EGamePingType::DefaultMarker);
 	void SetWorldMarkerSpawnedLocation(const FVector& _SpawnedLocation) { m_WorldMarkerSpawnedLocation = _SpawnedLocation; }	
 
 	bool IsActive() const { return m_bIsActive; }
 
+private:
+	
+	void InitDynamicMtrls();
+	void UpdateCurrentDynamicMtrl(EGamePingType _PingType);
+	
 private:
 	
 	class AC_BasicPlayer*	m_LocalPlayer{};
@@ -51,8 +58,18 @@ protected:
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Compass")
 	float m_CompassHalfWidth{};
 	
+protected:
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	TMap<EGamePingType, UMaterialInstance*>			m_PingMaterialInsts{};
+
+	UPROPERTY(Transient)
+	TMap<EGamePingType, UMaterialInstanceDynamic*>	m_CreatedDynamicMtrls{};
+
+	// 현재 사용중인 DynamicMat
 private:
 	
-	UMaterialInstanceDynamic* m_MarkerDynamicMtrl{};
+	UPROPERTY()
+	UMaterialInstanceDynamic* m_CurrentDynamicMtrl{};
 	
 };

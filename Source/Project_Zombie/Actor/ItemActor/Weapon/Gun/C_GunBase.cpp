@@ -49,10 +49,6 @@ void AC_GunBase::BeginPlay()
 	
 	Gun_init();
 	m_Collision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	
-	m_WeaponMesh->SetMassOverrideInKg(NAME_None, 2000.f);
-	m_WeaponMesh->SetLinearDamping(1.5f);
-	m_WeaponMesh->SetAngularDamping(3.f);
 }
 
 void AC_GunBase::Tick(float DeltaTime)

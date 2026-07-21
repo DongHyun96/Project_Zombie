@@ -3,12 +3,13 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Actor/Ping/C_WorldPingActor.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/Image.h"
 #include "C_PingWidget.generated.h"
 
 /**
- * 
+ * World에 배치되는 PingWidget 관리와 동시에, PlayerMainHUD의 CompassBar Ping 정보 노출도 여기서 호출 처리
  */
 UCLASS()
 class PROJECT_ZOMBIE_API UC_PingWidget : public UUserWidget
@@ -30,7 +31,7 @@ public:
 	/// </summary>
 	void SetPingMarkerColor(const FLinearColor& _Color) { PingMarkerImage->SetColorAndOpacity(_Color); }
 
-	void ShowPingWidget(const FVector& _WorldPingSpawnedLocation);
+	void ShowPingWidget(const FVector& _WorldPingSpawnedLocation, EGamePingType _PingType = EGamePingType::DefaultMarker);
 	void HidePingWidget();
 	
 	void SetSpawnedLocation(const FVector& _SpawnedLocation) { m_SpawnedLocation = _SpawnedLocation; }
@@ -58,5 +59,12 @@ private:
 	FVector m_SpawnedLocation{};
 
 	// Player HUD CompassBar 내에 위치한 대응되는 CompassMarkerWidget -> 이 친구의 Meter 정보를 여기서 일괄 업데이트 시킴
+	UPROPERTY()
 	class UC_CompassMarkerWidget* m_TargetCompassMarkerWidget{};
+
+protected:
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta = (DisplayName = "PingMarkerTextures"))
+	TMap<EGamePingType, UTexture2D*> m_PingMarkerTextures{};
+	
 };

@@ -47,11 +47,14 @@ void UC_PingWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 	DistanceText->SetText(DistText);
 }
 
-void UC_PingWidget::ShowPingWidget(const FVector& _WorldPingSpawnedLocation)
+void UC_PingWidget::ShowPingWidget(const FVector& _WorldPingSpawnedLocation, EGamePingType _PingType)
 {
 	// 이미 핑을 보여주는 상태
 	if (m_bCurrentShowingPingMarker) return;
 
+	// PingMarker 종류에 맞는 PingImage 세팅
+	PingMarkerImage->SetBrushFromTexture(m_PingMarkerTextures[_PingType]);
+	
 	m_bCurrentShowingPingMarker = true;
 	m_SpawnedLocation           = _WorldPingSpawnedLocation;
 	

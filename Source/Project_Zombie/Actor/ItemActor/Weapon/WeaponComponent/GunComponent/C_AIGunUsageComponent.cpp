@@ -152,7 +152,7 @@ void UC_AIGunUsageComponent::AIProcessLineTraceDamage(float _DamageVal)
 
 	if (bHasHit)
 	{
-		DrawDebugSphere(GetWorld(), ActualEndLocation, 7.f, 12, FColor::Red, true);
+		DrawDebugSphere(GetWorld(), ActualEndLocation, 7.f, 12, FColor::Red, false, 7.5f);
 
 		// TODO : 거점사격에 대한 처리도 해주어야 함 (거점 퍼센티지 다운)
 		if (AC_BasicCharacter* HitCharacter = Cast<AC_BasicCharacter>(HitResult.GetActor()))
@@ -162,11 +162,10 @@ void UC_AIGunUsageComponent::AIProcessLineTraceDamage(float _DamageVal)
 
 void UC_AIGunUsageComponent::HandleGunMeshPhysicsStopped()
 {
-	if (m_OwnerGun->GetWeaponMesh()->IsAnyRigidBodyAwake())
-	{
-		UC_Util::Print("RBODY AWAKE", FColor::MakeRandomColor(), 2.f);
-		return;
-	}
+	// 아직 SimulatePhysics 처리에 의해 움직이는 중
+	if (m_OwnerGun->GetWeaponMesh()->IsAnyRigidBodyAwake()) return;
+	
+	/* 움직임이 멈춤 */
 	
 	GetWorld()->GetTimerManager().ClearTimer(m_GunMeshStoppedCheckTimer);
 	
@@ -178,5 +177,11 @@ void UC_AIGunUsageComponent::HandleGunMeshPhysicsStopped()
 	m_OwnerGun->m_Collision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	
 	// TODO : 무기 외곽에 Outline 활성화 및 WorldPingActor 스폰 처리
+	
+	// 무기 외곽선 활성화
+	m_OwnerGun->GetWeaponMesh()->SetCustomDepthStencilValue(1);
+
+	// 무기 WorldPingActor 스폰
+	
 }
 

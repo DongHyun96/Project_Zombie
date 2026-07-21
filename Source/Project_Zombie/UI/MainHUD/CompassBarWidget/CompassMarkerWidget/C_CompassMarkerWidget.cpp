@@ -14,7 +14,9 @@ void UC_CompassMarkerWidget::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
 
-	m_MarkerDynamicMtrl     = CompassMarkerImage->GetDynamicMaterial();
+	// DynamicMtrl 캐싱 처리 초기화
+	InitDynamicMtrls();
+
 	m_LocalPlayer           = Cast<AC_BasicPlayer>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
 	m_LocalPlayerController = m_LocalPlayer->GetController<APlayerController>();
 	
@@ -37,9 +39,8 @@ void UC_CompassMarkerWidget::NativeTick(const FGeometry& MyGeometry, float InDel
 	/* Update Mtrl Yaw */
 	const float RawControllerYaw = m_LocalPlayerController->GetControlRotation().Yaw;
 	const float RawLookAtYaw     = UKismetMathLibrary::FindLookAtRotation(m_LocalPlayer->GetActorLocation(), m_WorldMarkerSpawnedLocation).Yaw;
-	
-    
-	m_MarkerDynamicMtrl->SetScalarParameterValue(TEXT("yaw"), (RawControllerYaw - RawLookAtYaw) / 360.f);
+
+	m_CurrentDynamicMtrl->SetScalarParameterValue(TEXT("yaw"), (RawControllerYaw - RawLookAtYaw) / 360.f);
 
 	/* DistanceText 업데이트 */
 	const float Distance      = FVector::Distance(m_WorldMarkerSpawnedLocation, m_LocalPlayer->GetActorLocation());
@@ -78,9 +79,50 @@ void UC_CompassMarkerWidget::NativeTick(const FGeometry& MyGeometry, float InDel
 		PingMarkerMeterText->SetVisibility(ESlateVisibility::HitTestInvisible);
 }
 
-void UC_CompassMarkerWidget::TogglePingMarker(bool _Visible)
+void UC_CompassMarkerWidget::TogglePingMarker(bool _Visible, EGamePingType _PingType)
 {
 	m_bIsActive = _Visible;
-	CompassMarkerImage->SetVisibility(_Visible ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
-	PingMarkerMeterText->SetVisibility(_Visible ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+
+	if (_Visible)
+	{
+		UpdateCurrentDynamicMtrl(_PingType);
+		CompassMarkerImage->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		PingMarkerMeterText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	}
+	else
+	{
+		CompassMarkerImage->SetVisibility(ESlateVisibility::Collapsed);
+		PingMarkerMeterText->SetVisibility(ESlateVisibility::Collapsed);
+	}
+}
+
+void UC_CompassMarkerWidget::InitDynamicMtrls()
+{
+	m_CreatedDynamicMtrls.Empty();
+
+	// MID 만들어두기
+	for (const TPair<EGamePingType, UMaterialInstance*>& Pair : m_PingMaterialInsts)
+	{
+		if (!Pair.Value)
+		{
+			UC_Util::Print("From UC_CompassMarkerWidget::InitDynamicMtrls : Please init item on Editor", FColor::Red, 10.f);
+			continue;
+		}
+		
+		if (UMaterialInstanceDynamic* DynamicMtrl = UMaterialInstanceDynamic::Create(Pair.Value, this))
+			m_CreatedDynamicMtrls.Add(Pair.Key, DynamicMtrl);
+	}
+}
+
+void UC_CompassMarkerWidget::UpdateCurrentDynamicMtrl(EGamePingType _PingType)
+{
+	UMaterialInstanceDynamic** FoundMID = m_CreatedDynamicMtrls.Find(_PingType);
+	if (!FoundMID)
+	{
+		UC_Util::Print("From UC_CompassMarkerWidget::UpdateCurrentDynamicMtrl : MID not found", FColor::Red, 10.f);
+		return;
+	}
+	
+	m_CurrentDynamicMtrl = *FoundMID;
+	CompassMarkerImage->SetBrushFromMaterial(m_CurrentDynamicMtrl);
 }

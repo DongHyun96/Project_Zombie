@@ -48,22 +48,23 @@ void AC_WorldPingActor::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
-void AC_WorldPingActor::SpawnPingActorToWorld(const FHitResult& _TraceHitResult)
+void AC_WorldPingActor::SpawnPingActorToWorld(const FHitResult& _TraceHitResult, EGamePingType _PingType)
 {
-	// 대략 경사도 45도까지는 바닥면으로 간주
-	const bool bIsFloor = _TraceHitResult.ImpactNormal.Z > 0.7f;
+	HidePing(); // 이전 핑 지우기용 처리
 
-	// 이전 핑 지우기용 처리
-	HidePing();
-	
-	if (!bIsFloor)
+	// DefaultMarker에 대해서만 바닥면을 따짐 (다른 Ping 종류의 경우 무조건 FullPingActor 모습으로 스폰 처리)
+	if (_PingType == EGamePingType::DefaultMarker)
 	{
-		m_PingWidgetComponent->SetWorldLocation(_TraceHitResult.ImpactPoint);
-		m_PingWidget->ShowPingWidget(_TraceHitResult.ImpactPoint);
-		return;
+		// 대략 경사도 45도까지는 바닥면으로 간주
+		if (_TraceHitResult.ImpactNormal.Z < 0.7f)
+		{
+			m_PingWidgetComponent->SetWorldLocation(_TraceHitResult.ImpactPoint);
+			m_PingWidget->ShowPingWidget(_TraceHitResult.ImpactPoint);
+			return;
+		}
 	}
 	
-	// 바닥면인 경우, 해당 위치에 전체 Actor 보이게끔 처리
+	// 바닥면이나 DefaultMarker가 아닌 경우, 해당 위치에 전체 Actor 보이게끔 처리
 
 	// Adjust spline position & show
 	m_SplineMeshComponent->SetHiddenInGame(false);
@@ -85,7 +86,7 @@ void AC_WorldPingActor::SpawnPingActorToWorld(const FHitResult& _TraceHitResult)
 
 	// Adjusting WidgetComponent Location
 	m_PingWidgetComponent->SetWorldLocation(SplineEndPos + FVector::UnitZ() * 25.f);
-	m_PingWidget->ShowPingWidget((_TraceHitResult.ImpactPoint + SplineEndPos) * 0.5f);
+	m_PingWidget->ShowPingWidget((_TraceHitResult.ImpactPoint + SplineEndPos) * 0.5f, _PingType);
 }
 
 void AC_WorldPingActor::HidePing()
