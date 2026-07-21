@@ -9,6 +9,8 @@
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 
+#include "Utility/C_Util.h"
+
 #include "Actor/Character/NPC/Enemy/Zombie/Skill/Projectile/C_EnemyProjectile.h"
 
 UC_ToxicAttack::UC_ToxicAttack()
@@ -53,7 +55,28 @@ void UC_ToxicAttack::Fire(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data)
 	FRotator SpawnRotation = _Owner->GetActorRotation();
 
 	// Fire Notify가 실행된 순간의 플레이어 위치
-	const FVector TargetLocation = Target->GetActorLocation();
+	FVector TargetLocation = Target->GetActorLocation();
+
+	// 플레이어 아래 바닥 검색
+	const FVector TraceStart = Target->GetActorLocation() + FVector::UpVector * 100.f;
+	const FVector TraceEnd = Target->GetActorLocation() - FVector::UpVector * 1000.f;
+
+	FHitResult GroundHit;
+
+	FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(ToxicAttackTargetGround), false);
+
+	QueryParams.AddIgnoredActor(_Owner);
+	QueryParams.AddIgnoredActor(Target);
+
+	FCollisionObjectQueryParams ObjectParams;
+	ObjectParams.AddObjectTypesToQuery(ECC_WorldStatic);
+
+	const bool bFoundTargetGround = World->LineTraceSingleByObjectType(GroundHit, TraceStart, TraceEnd, ObjectParams, QueryParams);
+
+	if (bFoundTargetGround)
+	{
+		TargetLocation = GroundHit.ImpactPoint;
+	}
 
 	AC_EnemyProjectile* Projectile =
 		GetWorld()->SpawnActor<AC_EnemyProjectile>(
@@ -63,14 +86,10 @@ void UC_ToxicAttack::Fire(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data)
 
 	if (!Projectile)
 	{
-		UE_LOG(LogTemp, Error, TEXT("SpawnActor Failed"));
+		UC_Util::Print("SpawnActor Failed");
+		return;
 	}
 	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("SpawnActor Success"));
-	}
-
-	if (Projectile)
 	{
 		Projectile->InitProjectile(_Owner, _Data, TargetLocation);
 	}

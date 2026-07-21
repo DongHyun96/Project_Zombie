@@ -37,19 +37,28 @@ protected:
 	class UC_EnemySkillData*			m_Skill; // 투사체를 생성시킨 스킬
 
 	UPROPERTY()
-	FVector								m_TargetLocation; // 타겟의 위치
+	FVector								m_TargetLocation; // 투사체 목표위치
 
 	UPROPERTY(EditAnywhere, Category = "Projectile")
-	float								m_ArriveDistance = 30.f; 
+	float								m_ArriveDistance = 30.f; // 도착했다고 판단할 거리
 	
+protected:
+	// Tick에서 목표 도착검사 여부 
+	bool m_bUseTargetArrivalCheck = true;
+
 public:
 	/// <summary>
 	/// 투사체 초기화 함수
 	/// </summary>
-	void InitProjectile(AC_BasicEnemy* _SkillUser, UC_EnemySkillData* _Skill, const FVector& _TargetLocation);
+	virtual void InitProjectile(AC_BasicEnemy* _SkillUser, UC_EnemySkillData* _Skill, const FVector& _TargetLocation);
 
 protected:
 	virtual void BeginPlay() override;
+
+	/// <summary>
+	/// 투사체가 충돌했을 때 호출되는 함수
+	/// </summary>
+	virtual void OnHit(AActor* _OtherActor, UPrimitiveComponent* _OtherCom, const FHitResult& _Hit);
 
 	/// <summary>
 	/// 투사체가 타겟에 도착했을 때 호출되는 함수
@@ -59,10 +68,6 @@ protected:
 public:	
 	virtual void Tick(float DeltaTime) override;
 
-	/// <summary>
-	/// 투사체가 충돌했을 때 호출되는 함수
-	/// </summary>
-	virtual void OnHit(AActor* _OtherActor, UPrimitiveComponent* _OtherCom, const FHitResult& _Hit);
 
 	/// <summary>
 	/// HitEffect를 스폰하는 함수
