@@ -1,8 +1,9 @@
 #include "UI/InvenUI/C_InventoryGridWidget.h"
 #include "Components/UniformGridPanel.h"
-#include "C_ItemSlotWidget.h"
+#include "C_GridItemSlotWidget.h"
 #include "GameModeAndManager/C_ItemManager.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
+#include "Actor/Components/C_EquippedComponent.h"
 #include "Actor/Components/C_InvenComponent.h"
 #include "Utility/C_Util.h"
 
@@ -16,22 +17,28 @@ void UC_InventoryGridWidget::RefreshAllSlots(const TArray<FInventoryEntry>& Inve
     UC_ItemManager* ItemManager = GetGameInstance()->GetSubsystem<UC_ItemManager>();
     if (!ItemManager) return;
 
-    // 데이터 배열과 위젯 배열의 크기 중 작은 것을 기준으로 안전하게 순회
-    int32 LoopCount = FMath::Min(SlotWidgets.Num(), InventoryItems.Num());
-
-
-    for (int32 i = 0; i < LoopCount; ++i)
+    // UI 슬롯 위젯 기준으로 순회하여 실제 InvenComponent의 아이템 데이터를 매핑
+    for (UC_GridItemSlotWidget* SlotWidget : SlotWidgets)
     {
-        if (!SlotWidgets[i]) continue;
-        
-        SlotWidgets[i]->SetAssociatedComponent(InvenComp);
-        const FInventoryEntry& Entry = InventoryItems[i];
+        if (!SlotWidget) continue;
 
-        // 아이템 매니저를 통해 데이터 테이블의 원본 비주얼/기본 스펙 데이터를 가져옴
-        const FItemData* CoreData = ItemManager->GetItemData<FItemData>(EItemTableType::General, Entry.ItemRowName);
-        //if (!CoreData) continue; // TODO : 인벤에 없는 데이터인 경우 따로 처리해주기.
-        // 실시간 인스턴스 데이터(Entry)와 원본 스펙 데이터(CoreData)를 함께 넘겨줌
-        SlotWidgets[i]->UpdateSlot(Entry, CoreData);
+        SlotWidget->SetAssociatedComponent(InvenComp);
+
+        int32 TargetSlotIndex = SlotWidget->GetSlotIndex();
+
+        // InvenComponent의 배열 범위 내에 있는지 안전하게 체크
+        if (InvenComp && InventoryItems.IsValidIndex(TargetSlotIndex))
+        {
+            const FInventoryEntry& Entry = InventoryItems[TargetSlotIndex];
+            const FItemData* CoreData = ItemManager->GetItemData<FItemData>(EItemTableType::General, Entry.ItemRowName);
+
+            SlotWidget->UpdateSlot(Entry, CoreData);
+        }
+        //else
+        //{
+        //    // 범위를 벗어나거나 아이템이 없으면 빈 슬롯으로 초기화
+        //    SlotWidget->UpdateSlot(FInventoryEntry(), nullptr);
+        //}
     }
 }
 
@@ -40,11 +47,16 @@ void UC_InventoryGridWidget::RefreshSlotAt(int32 SlotIndex, const FInventoryEntr
     UC_ItemManager* ItemManager = GetGameInstance()->GetSubsystem<UC_ItemManager>();
     if (!ItemManager) return;
 
-    if (SlotWidgets.IsValidIndex(SlotIndex) && SlotWidgets[SlotIndex])
+    int32 TargetSlotIndex = SlotIndex - SlotStartIdx;
+    
+    // 내 범위(3 ~ 47)가 아니면 0.0001초만에 즉시 리턴
+    if (SlotIndex < SlotStartIdx || SlotIndex >= SlotStartIdx + MaxSlots) return;
+    
+    if (SlotWidgets.IsValidIndex(TargetSlotIndex) && SlotWidgets[TargetSlotIndex])
     {
         const FItemData* CoreData = ItemManager->GetItemData<FItemData>(EItemTableType::General, ItemData.ItemRowName);
 
-        SlotWidgets[SlotIndex]->UpdateSlot(ItemData, CoreData);
+        SlotWidgets[TargetSlotIndex]->UpdateSlot(ItemData, CoreData);
     }
 }
 
@@ -57,15 +69,16 @@ void UC_InventoryGridWidget::NativeOnInitialized()
     // [조건문 없음] 평생 딱 한 번만 실행되므로 그냥 냅다 만듭니다.
     ItemGridPanel->ClearChildren();
     SlotWidgets.Reset();
-
+    
+    // 0 ~ EWeaponSlot::Max - 1까지는 장비 전용 슬롯
     for (int32 i = 0; i < MaxSlots; ++i)
     {
-        UC_ItemSlotWidget* NewSlot = CreateWidget<UC_ItemSlotWidget>(this, SlotWidgetClass);
+        UC_GridItemSlotWidget* NewSlot = CreateWidget<UC_GridItemSlotWidget>(this, SlotWidgetClass);
         //if (!NewSlot) continue;
 
         NewSlot->SetSlotIndex(i); 
         NewSlot->SetGridWidget(this);
-
+        
         int32 CurRow = i / Column;
         int32 CurColumn = i % Column;
         
@@ -75,35 +88,6 @@ void UC_InventoryGridWidget::NativeOnInitialized()
 
     return;
 }
-
-/*bool UC_InventoryGridWidget::Initialize()
-{
-    if (!Super::Initialize()) return false;
-
-    // 에디터에서 컴포넌트나 클래스가 제대로 세팅되었는지 최소한의 방어선만 확인
-    if (!ItemGridPanel || !SlotWidgetClass) return true;
-
-    // [조건문 없음] 평생 딱 한 번만 실행되므로 그냥 냅다 만듭니다.
-    ItemGridPanel->ClearChildren();
-    SlotWidgets.Reset();
-
-    for (int32 i = 0; i < MaxSlots; ++i)
-    {
-        UC_ItemSlotWidget* NewSlot = CreateWidget<UC_ItemSlotWidget>(this, SlotWidgetClass);
-        //if (!NewSlot) continue;
-
-        NewSlot->SetSlotIndex(i); 
-        NewSlot->SetGridWidget(this);
-
-        int32 CurRow = i / Column;
-        int32 CurColumn = i % Column;
-        
-        ItemGridPanel->AddChildToUniformGrid(NewSlot, CurRow, CurColumn);
-        SlotWidgets.Add(NewSlot);
-    }
-
-    return true;
-}*/
 
 void UC_InventoryGridWidget::SetInvenComponent(class UC_InvenComponent* InventoryComponent)
 {
@@ -122,15 +106,34 @@ void UC_InventoryGridWidget::SetInvenComponent(class UC_InvenComponent* Inventor
         InvenComp->OnInventorySlotChanged.RemoveDynamic(this, &UC_InventoryGridWidget::RefreshSlotAt);
         InvenComp->OnInventorySlotChanged.AddDynamic(this, &UC_InventoryGridWidget::RefreshSlotAt);
         
+        // bHasEquipmentSlots 여부에 따라 장비 슬롯 개수(EWeaponSlot::Max)만큼 오프셋 적용(Max를 사용하면 None이 아무 것도 없는 슬롯이 되서 한칸 버리게 됨)
+        int32 StartOffset = InvenComp->GetHasEquipmentSlots() ? static_cast<int32>(EWeaponSlot::None) : 0;
+        SetSlotStartIdx(StartOffset);
+            
         // 전체 슬롯 다시 그리기
         RefreshAllSlots(InvenComp->GetInventoryItems());
     }
     else
     {
+        SetSlotStartIdx(0);
         // 만약 nullptr이 들어왔다면(창고에서 멀어졌다면) UI의 흔적을 청소해 줍니다.
         // (필요에 따라 빈 배열을 넘겨 슬롯을 다 비우거나 비활성화 처리)
         TArray<FInventoryEntry> EmptyArray;
         RefreshAllSlots(EmptyArray);
+    }
+}
+
+void UC_InventoryGridWidget::SetSlotStartIdx(int32 InSlotStartIdx)
+{
+    SlotStartIdx = InSlotStartIdx;
+
+    for (int32 i = 0; i < SlotWidgets.Num(); ++i)
+    {
+        if (SlotWidgets[i])
+        {
+            // UI의 i번째 칸에게 실제 InvenComponent 상의 인덱스를 재지정 (예: 0 -> 3, 1 -> 4)
+            SlotWidgets[i]->SetSlotIndex(i + SlotStartIdx);
+        }
     }
 }
 
