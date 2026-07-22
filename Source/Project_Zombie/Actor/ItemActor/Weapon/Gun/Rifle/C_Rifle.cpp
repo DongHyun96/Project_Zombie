@@ -25,8 +25,6 @@ bool AC_Rifle::OnStartFire(AC_BasicPlayer* _WeaponUser)
 	if (nullptr == _WeaponUser)
 		return false;
 
-	_WeaponUser->PlayAnimMontage(m_PlayerFireAnimation);
-
 	m_WeaponUser = _WeaponUser;
 	PullTrigger();
 
@@ -64,7 +62,10 @@ bool AC_Rifle::Reload(AC_BasicPlayer* _WeaponUser)
 	{
 		Gun_Reload();
 
-		_WeaponUser->PlayAnimMontage(m_PlayerReloadAnimation);
+		if (m_bIsReloading)
+		{
+			_WeaponUser->PlayAnimMontage(m_PlayerReloadAnimation);
+		}
 
 		return true;
 	}
@@ -89,11 +90,9 @@ void AC_Rifle::PullTrigger()
 
 void AC_Rifle::ReleaseTrigger()
 {
-	if (!m_bIsFiring) return;
-	m_bIsFiring = false;
-
 	// 작동 중이던 연사 타이머 중지
 	GetWorldTimerManager().ClearTimer(m_FireTimerHandle);
+	m_bIsFiring = false;
 }
 
 void AC_Rifle::Gun_Reload()
@@ -139,6 +138,12 @@ void AC_Rifle::PlayFireEffects()
 	if (!ConsumeAmmo())
 	{
 		return;
+	}
+
+	if (m_WeaponUser && m_PlayerFireAnimation)
+	{
+		// PlayAnimMontage 재생
+		m_WeaponUser->PlayAnimMontage(m_PlayerFireAnimation);
 	}
 
 	// 총기 발사 애니메이션 재생

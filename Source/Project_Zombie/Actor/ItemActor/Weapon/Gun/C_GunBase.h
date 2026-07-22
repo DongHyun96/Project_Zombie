@@ -58,7 +58,16 @@ protected:
 
 	class UStaticMesh*		m_ShellMesh;
 
-	
+protected:
+	// 현재 사격 버튼을 누르고 있는 상태인지 확인
+	bool m_bIsFiring = false;
+
+	// 현재 재장전 상태인지 확인
+	bool m_bIsReloading = false;
+
+	// 연사 타이머를 관리하기 위한 핸들
+	FTimerHandle m_FireTimerHandle;
+
 protected:
 	// 현재 이 Gun을 사용중인 WeaponUser
 	class AC_BasicPlayer* m_WeaponUser{};
