@@ -94,9 +94,10 @@ public: // Ingame Log 관련
 	/// Player Warning Log 추가
 	/// </summary>
 	/// <param name="WarningLog"> : Warning log </param>
+	/// <param name="_LogColor"> : Log 색상 </param>
 	/// <returns> : 제대로 추가되지 않았다면 return false </returns>
 	UFUNCTION(BlueprintCallable)
-	bool AddPlayerWarningLog(const FString& WarningLog);
+	bool AddPlayerWarningLog(const FString& WarningLog, const FColor& _LogColor = FColor::White);
 
 protected:
 

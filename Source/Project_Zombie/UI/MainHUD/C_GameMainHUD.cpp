@@ -51,7 +51,7 @@ void UC_GameMainHUD::UpdateLeftAmmoTotalCount(int32 _LeftAmmoTotalCount)
 	PlayerStatWidget->UpdateLeftAmmoTotalCount(_LeftAmmoTotalCount);
 }
 
-bool UC_GameMainHUD::AddPlayerWarningLog(const FString& WarningLog)
+bool UC_GameMainHUD::AddPlayerWarningLog(const FString& WarningLog, const FColor& _LogColor)
 {
-	return InformWidget->AddPlayerWarningLog(WarningLog);
+	return InformWidget->AddPlayerWarningLog(WarningLog, _LogColor);
 }

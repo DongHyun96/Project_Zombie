@@ -93,15 +93,15 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	class UBoxComponent* m_GrabRangeCollider{};
 
-private:
+protected:
 
 	// Grab Range에 들어온 Player들
-	UPROPERTY()
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TSet<AC_BasicPlayer*> m_GrabRangeEnteredPlayers{};
 	
-private: // 빼앗아서 장착한 무기
+protected: // 빼앗아서 장착한 무기
 	
-	UPROPERTY()
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	AC_GunBase* m_EquippedGun{};
 	
 	

@@ -11,6 +11,8 @@
 #include "Actor/Character/NPC/Enemy/C_BasicEnemy.h"
 #include "Actor/Character/NPC/Enemy/Zombie/Controller/C_ZombieController.h"
 #include "Actor/Character/NPC/Enemy/Zombie/CopZombie/C_CopZombie.h"
+#include "Actor/Components/C_EquippedComponent.h"
+#include "Actor/Components/C_PingSystemComponent.h"
 #include "Actor/ItemActor/Weapon/WeaponComponent/GunComponent/C_AIGunUsageComponent.h"
 
 #include "Components/SphereComponent.h"
@@ -49,6 +51,7 @@ void AC_GunBase::BeginPlay()
 	
 	Gun_init();
 	m_Collision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	m_Collision->OnComponentBeginOverlap.AddDynamic(this, &AC_GunBase::OnMainColliderBeginOverlap);
 }
 
 void AC_GunBase::Tick(float DeltaTime)
@@ -220,7 +223,7 @@ bool AC_GunBase::AttachToHand(USceneComponent* _ParentMesh)
 	const bool bIsAttached = AttachToComponent
 	(
 		_ParentMesh,
-		FAttachmentTransformRules(EAttachmentRule::KeepRelative, true),
+		FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true),
 		s_HandSocketName
 	);
 	
@@ -239,7 +242,7 @@ bool AC_GunBase::AttachToHolster(USceneComponent* _ParentMesh)
 	const bool bIsAttached = AttachToComponent
 	(
 		_ParentMesh,
-		FAttachmentTransformRules(EAttachmentRule::KeepRelative, true),
+		FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true),
 		m_HolsterSocketName
 	);
 	
@@ -264,4 +267,39 @@ bool AC_GunBase::OnFireEnd(AC_BasicPlayer* _WeaponUser)
 bool AC_GunBase::Reload(AC_BasicPlayer* _WeaponUser)
 {
 	return false;
+}
+
+void AC_GunBase::OnMainColliderBeginOverlap
+(
+	UPrimitiveComponent* _OverlapComponent,
+	AActor*				 _OtherActor,
+	UPrimitiveComponent* _OtherComp,
+	int32				 _OtherBodyIndex,
+	bool				 _bFromSweep,
+	const FHitResult&	 _SweepResult
+)
+{
+	/* 무기를 줍는 처리 */
+
+	// 이미 이 무기의 주인이 존재
+	if (m_OwnerPlayer) return;
+
+	AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(_OtherActor);
+	if (!Player) return; // Player가 아닌 다른 물체와 Overlap
+	
+	// 해당 Player의 MainWeaponSlot에 이미 MainWeapon이 장착되어 있는 경우
+	if (Player->GetEquippedComponent()->GetSlotWeapon(EWeaponSlot::MainWeapon)) return;
+	
+	Player->GetEquippedComponent()->SetSlotWeapon(EWeaponSlot::MainWeapon, this);
+	m_Collision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	
+	// Outline 비활성화(활성화 되어있건 이미 비활성이건)
+	m_WeaponMesh->SetCustomDepthStencilValue(0);
+
+	if (Player->GetPingSystemComponent()->GetLastInstigator() == this)
+	{
+		// 아직 마지막으로 핑을 스폰한 LastInstigator가 이 총기일 경우 -> 아직 해당 정보의 Ping이 나온 상태
+		// Ping 정보를 가려준다
+		Player->GetPingSystemComponent()->HidePing();
+	}
 }

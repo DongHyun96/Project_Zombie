@@ -55,7 +55,11 @@ bool UC_AIGunUsageComponent::AttachToHand(USceneComponent* _ParentMesh)
 {
 	if (!_ParentMesh) return false;
 	m_WeaponCopZombieUser = Cast<AC_CopZombie>(_ParentMesh->GetOwner());
-	if (!m_WeaponCopZombieUser) return false;
+	if (!m_WeaponCopZombieUser)
+	{
+		UC_Util::Print("From UC_AIGunUsageComponent::AttachToHand : Only Cop Owner among enemy can own GunBase Weapon!", FColor::Red, 10.f);
+		return false;
+	}
 
 	const bool Attached = m_OwnerGun->AttachToComponent
 	(
@@ -73,7 +77,7 @@ bool UC_AIGunUsageComponent::AttachToHand(USceneComponent* _ParentMesh)
 	
 	// MaxAmmoCount로 탄창 초기화 처리
 	// m_OwnerGun->m_CurrentAmmo = m_OwnerGun->m_MaxAmmo;
-	m_OwnerGun->m_CurrentAmmo = 10; // TODO : 위의 코드로 수정할 것
+	m_OwnerGun->m_CurrentAmmo = 3; // TODO : 위의 코드로 수정할 것
 
 	// 이미 사격중이었던 Weapon인 경우, Trigger 해제
 	m_OwnerGun->ReleaseTrigger();
@@ -197,8 +201,9 @@ void UC_AIGunUsageComponent::HandleGunMeshPhysicsStopped()
 
 	m_PrevOwnerPlayer->GetPingSystemComponent()->SpawnFullPing
 	(
-		m_OwnerGun->GetActorLocation(), // -> 이거 이상하게 위치가 이전 위치가 잡히는 중
-		EGamePingType::GunBaseMarker
+		m_OwnerGun->GetActorLocation(),
+		EGamePingType::GunBaseMarker,
+		m_OwnerGun // Last 유발자를 이 Gun으로 처리 -> 추후 떨군 무기를 먹었을 때 해당 핑이 아직 활성화 중인 경우 HidePing 처리를 해야하는지 확인할 때 사용
 	);
 	
 	m_PrevOwnerPlayer = nullptr;

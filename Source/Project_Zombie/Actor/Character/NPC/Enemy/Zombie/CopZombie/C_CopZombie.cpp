@@ -82,7 +82,7 @@ bool AC_CopZombie::EquipWeapon(AC_GunBase* _StolenWeapon)
 		return false;
 	
 	// 부착 성공, State 변화 및 EquippedWeapon 저장
-	m_EquippedGun = _StolenWeapon;
+	m_EquippedGun    = _StolenWeapon;
 	m_CopZombieState = ECopZombieState::WeaponEarned; // ABP 무기 자세로 자세전환
 	return true;
 }

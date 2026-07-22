@@ -46,7 +46,6 @@ AC_WeaponBase* UC_EquippedComponent::SetSlotWeapon(EWeaponSlot TargetSlot, AC_We
 	}
 	
 	const uint8 TargetSlotIdx = static_cast<uint8>(TargetSlot); 
-	UC_Util::Print("Setting : " + FString::FromInt(TargetSlotIdx), FColor::MakeRandomColor(), 100.f);
 	AC_WeaponBase* PrevSlotWeapon = m_Weapons[TargetSlotIdx];
 
     // 들어온 슬롯의 이전 무기가 존재할 때, 이전 무기 해제 및 OwnerPlayer 초기화
