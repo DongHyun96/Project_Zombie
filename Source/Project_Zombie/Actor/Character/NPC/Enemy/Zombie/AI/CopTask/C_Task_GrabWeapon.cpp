@@ -88,6 +88,8 @@ void UC_Task_GrabWeapon::OnTaskFinished
 	// 장착 성공, AIUsage에 이전 Player 주인 세팅
 	StolenGun->GetAIGunUsageComponent()->SetPrevOwnerPlayer(BestGrabPlayer);
 
+	// GetWorld()->GetFirstPlayerController()
+	
 	AC_UIManager* UIManager = Cast<AC_UIManager>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD());
 	UIManager->GetMainHUDWidget()->AddPlayerWarningLog("MAIN WEAPON HAS BEEN STOLEN!", FColor::Red);
 	

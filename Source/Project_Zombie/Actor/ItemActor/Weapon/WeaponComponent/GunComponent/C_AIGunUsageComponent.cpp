@@ -76,8 +76,7 @@ bool UC_AIGunUsageComponent::AttachToHand(USceneComponent* _ParentMesh)
 	}
 	
 	// MaxAmmoCount로 탄창 초기화 처리
-	// m_OwnerGun->m_CurrentAmmo = m_OwnerGun->m_MaxAmmo;
-	m_OwnerGun->m_CurrentAmmo = 3; // TODO : 위의 코드로 수정할 것
+	m_OwnerGun->m_CurrentAmmo = m_OwnerGun->m_MaxAmmo;
 
 	// 이미 사격중이었던 Weapon인 경우, Trigger 해제
 	m_OwnerGun->ReleaseTrigger();

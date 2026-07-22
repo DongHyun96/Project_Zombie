@@ -4,6 +4,8 @@
 #include "C_PlayerStatComponent.h"
 
 #include "GlobalData.h"
+#include "Actor/Character/C_BasicCharacter.h"
+#include "GameModeAndManager/C_UIManager.h"
 
 
 UC_PlayerStatComponent::UC_PlayerStatComponent()
@@ -11,9 +13,27 @@ UC_PlayerStatComponent::UC_PlayerStatComponent()
 	PrimaryComponentTick.bCanEverTick = true;
 }
 
+void UC_PlayerStatComponent::BeginPlay()
+{
+	Super::BeginPlay();
+
+	/*if (m_OwnerCharacter->IsLocallyControlled())
+	{
+		AC_UIManager* UIManager =    
+	}*/
+	
+}
+
 UScriptStruct* UC_PlayerStatComponent::GetStatDataStruct() const
 {
 	return FPlayerStatData::StaticStruct();
+}
+
+void UC_PlayerStatComponent::OnHPUpdate(float _CurHP)
+{
+	// '나'의 Player 캐릭터가 아니라면, UI를 업데이트 하지 않는다 
+	if (!m_OwnerCharacter->IsLocallyControlled()) return;
+	
 }
 
 /*
