@@ -152,6 +152,6 @@ void AC_Rifle::PlayFireEffects()
 	}
 
 	SpawnShellEject();
-	ProcessLineTraceDamage(m_BaseDamage);
+	ProcessLineTraceDamage(m_Damage);
 
 }

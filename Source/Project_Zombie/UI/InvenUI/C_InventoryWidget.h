@@ -6,6 +6,7 @@
 #include "Blueprint/UserWidget.h"
 #include "C_InventoryWidget.generated.h"
 
+class UC_EquipmentWidget;
 class UC_DivideItemWidget;
 class UC_DragDropOperation;
 
@@ -29,6 +30,8 @@ public:
 	
 	UC_InventoryGridWidget* GetStorageGridWidget() { return StorageGridWidget; }
 	
+	UC_EquipmentWidget* GetEquipmentWidget() { return EquipmentGridWidget; }
+	
 	UC_DivideItemWidget* GetDivideItemWidget() { return DivideItemWidget; }
 	
 	virtual void SetVisibility(ESlateVisibility InVisibility) override;
@@ -36,13 +39,17 @@ public:
 protected:
 	// Player의 아이템 슬롯을 가지고 있을 그리드 위젯
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
-	class UC_InventoryGridWidget* PlayerGridWidget = nullptr;
+	UC_InventoryGridWidget* PlayerGridWidget = nullptr;
 	
 	// Storage(창고)의 아이템 슬롯을 가지고 있을 그리드 위젯
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
-	class UC_InventoryGridWidget* StorageGridWidget = nullptr;
+	UC_InventoryGridWidget* StorageGridWidget = nullptr;
+	
+	// Equipment(장비창)의 아이템 슬롯을 가지고 있을 그리드 위젯.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
+	UC_EquipmentWidget* EquipmentGridWidget = nullptr;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
-	class UC_DivideItemWidget* DivideItemWidget = nullptr;
+	UC_DivideItemWidget* DivideItemWidget = nullptr;
 
 };

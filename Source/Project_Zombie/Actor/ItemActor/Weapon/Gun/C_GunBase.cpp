@@ -18,6 +18,7 @@
 #include "Components/SphereComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "GameModeAndManager/C_ItemManager.h"
 
 #include "GameModeAndManager/C_UIManager.h"
 #include "Kismet/GameplayStatics.h"
@@ -69,45 +70,62 @@ void AC_GunBase::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEv
 
 void AC_GunBase::Gun_init()
 {
-	if (!m_DataCom) return;
+	if (ItemEntry.ItemRowName.IsNone()) return;
 
-	// 외형(Mesh) 로드
-	if (USkeletalMesh* WeaponMeshAsset = Cast<USkeletalMesh>(m_DataCom->GetAssetData("WeaponSkeletalMesh").LoadSynchronous()))
-	{
-		if (m_WeaponMesh)
-		{
-			m_WeaponMesh->SetSkeletalMesh(WeaponMeshAsset);
-		}
-	}
-	else
-	{
-		// 테이블에 에셋이 없을 때만 경고
-		UE_LOG(LogTemp, Warning, TEXT("데이터 테이블에 WeaponMesh가 없음!"));
-	}
+	UGameInstance* GI = GetGameInstance();
+	if (!GI) return;
 
-	// 에디터 뷰포트에서 총기를 드래그해 움직일 때는 아래 '무거운 로직/수치 계산'을 패스
-	// HasActorBegunPlay()는 실제 게임 플레이 버튼을 눌렀을 때만 true
-	if (!HasActorBegunPlay())
+	UC_ItemManager* ItemManager = GI->GetSubsystem<UC_ItemManager>();
+	if (!ItemManager) return;
+
+	// 1. UC_ItemManager를 통해 데이터 테이블 항목 가져오기
+	const FGunData* GunData = ItemManager->GetItemData<FGunData>(EItemTableType::Gun, ItemEntry.ItemRowName);
+	if (!GunData)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("[AC_GunBase] GunData를 찾을 수 없음: %s"), *ItemEntry.ItemRowName.ToString());
 		return;
 	}
 
-	m_BaseDamage		= m_DataCom->GetData(TEXT("BaseDamage"));
-	m_MaxAmmo			= m_DataCom->GetData(TEXT("MaxAmmo"));
-	m_CurrentAmmo		= m_MaxAmmo;
-	m_FireRate			= m_DataCom->GetData(TEXT("AttackRate"));
-	m_ShellEjectImpulse = m_DataCom->GetData(TEXT("ShellEjectImpulse"));
+	// 2. Mesh 및 애니메이션 리소스 로드/설정
+	if (GunData->WeaponSkeletalMesh.IsValid() || !GunData->WeaponSkeletalMesh.IsNull())
+	{
+		USkeletalMesh* MeshAsset = GunData->WeaponSkeletalMesh.LoadSynchronous();
+		if (m_WeaponMesh && MeshAsset)
+		{
+			m_WeaponMesh->SetSkeletalMesh(MeshAsset);
+		}
+	}
 
-	m_FireAnimation		= Cast<UAnimSequence>(m_DataCom->GetAssetData("FireAnimation").LoadSynchronous());
-	m_ReloadAnimation	= Cast<UAnimSequence>(m_DataCom->GetAssetData("ReloadAnimation").LoadSynchronous());
-	m_ShellMesh			= Cast<UStaticMesh>(m_DataCom->GetAssetData("ShellMesh").LoadSynchronous());
-	m_PlayerFireAnimation = Cast<UAnimMontage>(m_DataCom->GetAssetData("PlayerFireAnimation").LoadSynchronous());
+	// 게임 플레이 중이 아닐 때는 에셋 메쉬만 맞추고 리턴
+	if (!HasActorBegunPlay()) return;
+
 	m_PlayerReloadAnimation = Cast<UAnimMontage>(m_DataCom->GetAssetData("PlayerReloadAnimation").LoadSynchronous());
+	m_PlayerFireAnimation = Cast<UAnimMontage>(m_DataCom->GetAssetData("PlayerFireAnimation").LoadSynchronous());
+	// 3. 에셋 캐싱
+	m_FireAnimation = GunData->FireAnimation.LoadSynchronous();
+	m_ReloadAnimation = GunData->ReloadAnimation.LoadSynchronous();
+	m_ShellMesh = GunData->ShellMesh.LoadSynchronous();
 
-	if (!m_FireAnimation) { UE_LOG(LogTemp, Warning, TEXT("FireAnimation 로드 실패")); }
-	if (!m_ReloadAnimation) { UE_LOG(LogTemp, Warning, TEXT("ReloadAnimation 로드 실패")); }
-	if (!m_ShellMesh) { UE_LOG(LogTemp, Warning, TEXT("ShellMesh 로드 실패")); }
+	// 4. Base Stats 적용
+	float BaseDamage = GunData->BaseDamage;
+	int32 BaseMaxAmmo = GunData->MaxAmmo;
+	m_FireRate = GunData->AttackRate;
+	m_ShellEjectImpulse = GunData->ShellEjectImpulse;
 
+	// 5. CustomData(강화, 잔탄량) 처리
+	if (const FGunCustomData* GunCustomData = ItemEntry.CustomData.GetPtr<FGunCustomData>())
+	{
+		m_Damage = BaseDamage + (GunCustomData->Upgrade_Damage * 5.0f);
+		m_MaxAmmo = BaseMaxAmmo + (GunCustomData->Upgrade_MaxAmmo * 5);
+		m_CurrentAmmo = GunCustomData->CurAmmo;
+	}
+	else
+	{
+		// CustomData가 없는 초기 아이템 상태
+		m_Damage = BaseDamage;
+		m_MaxAmmo = BaseMaxAmmo;
+		m_CurrentAmmo = m_MaxAmmo;
+	}
 }
 
 bool AC_GunBase::ConsumeAmmo()
@@ -133,48 +151,50 @@ bool AC_GunBase::ConsumeAmmo()
 
 void AC_GunBase::SpawnShellEject()
 {
-	if (m_ShellMesh && m_WeaponMesh && GetWorld())
-	{
-		FTransform EjectTransform = m_WeaponMesh->GetSocketTransform(TEXT("AmmoEject"), RTS_World);
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	if (!m_ShellMesh || !m_WeaponMesh || !GetWorld()) return;
 
-		AActor* SpawnedShell = GetWorld()->SpawnActor<AActor>(AActor::StaticClass(), EjectTransform, SpawnParams);
-		if (SpawnedShell)
-		{
-			UStaticMeshComponent* MeshComp = NewObject<UStaticMeshComponent>(SpawnedShell, TEXT("ShellMeshComp"));
-			if (MeshComp)
-			{
-				MeshComp->SetStaticMesh(m_ShellMesh);
-				MeshComp->SetMobility(EComponentMobility::Movable);
-				SpawnedShell->SetRootComponent(MeshComp);
-				MeshComp->RegisterComponent();
-				SpawnedShell->SetActorTransform(EjectTransform);
+    FTransform EjectTransform = m_WeaponMesh->GetSocketTransform(TEXT("AmmoEject"), RTS_World);
+    
+    FActorSpawnParameters SpawnParams;
+    SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-				MeshComp->SetSimulatePhysics(true);
-				MeshComp->SetCollisionProfileName(TEXT("Custom"));
-				MeshComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
-				MeshComp->SetCollisionResponseToChannel(ECC_PhysicsBody, ECR_Ignore);
-				MeshComp->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
-				MeshComp->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Block);
+    // AStaticMeshActor 사용으로 코드 간소화 및 스폰 안정성 향상
+    AStaticMeshActor* ShellActor = GetWorld()->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), EjectTransform, SpawnParams);
+    if (ShellActor)
+    {
+        UStaticMeshComponent* MeshComp = ShellActor->GetStaticMeshComponent();
+        if (MeshComp)
+        {
+            MeshComp->SetStaticMesh(m_ShellMesh);
+            MeshComp->SetMobility(EComponentMobility::Movable);
+            MeshComp->SetSimulatePhysics(true);
+            
+            MeshComp->SetCollisionProfileName(TEXT("Custom"));
+            MeshComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+            MeshComp->SetCollisionResponseToChannel(ECC_PhysicsBody, ECR_Ignore);
+            MeshComp->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
+            MeshComp->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Block);
 
-				float RandomRightForce = FMath::FRandRange(130.0f, 220.0f);
-				float RandomUpForce = FMath::FRandRange(60.0f, 130.0f);
-				float RandomForwardForce = FMath::FRandRange(-40.0f, 40.0f);
+            float RandomRight = FMath::FRandRange(130.0f, 220.0f);
+            float RandomUp = FMath::FRandRange(60.0f, 130.0f);
+            float RandomForward = FMath::FRandRange(-40.0f, 40.0f);
 
-				FVector EjectDirection = (EjectTransform.GetRotation().GetRightVector() * RandomRightForce)
-					+ (EjectTransform.GetRotation().GetUpVector() * RandomUpForce)
-					+ (EjectTransform.GetRotation().GetForwardVector() * RandomForwardForce);
+            FVector EjectDir = (EjectTransform.GetRotation().GetRightVector() * RandomRight)
+                            + (EjectTransform.GetRotation().GetUpVector() * RandomUp)
+                            + (EjectTransform.GetRotation().GetForwardVector() * RandomForward);
 
-				MeshComp->AddImpulse(EjectDirection, NAME_None, true);
+            MeshComp->AddImpulse(EjectDir, NAME_None, true);
 
-				FVector RandomTorque = FVector(FMath::FRandRange(-50.0f, 50.0f), FMath::FRandRange(-50.0f, 50.0f), FMath::FRandRange(-50.0f, 50.0f));
-				MeshComp->AddAngularImpulseInRadians(RandomTorque, NAME_None, true);
+            FVector RandomTorque = FVector(
+                FMath::FRandRange(-50.0f, 50.0f),
+                FMath::FRandRange(-50.0f, 50.0f),
+                FMath::FRandRange(-50.0f, 50.0f)
+            );
+            MeshComp->AddAngularImpulseInRadians(RandomTorque, NAME_None, true);
 
-				SpawnedShell->SetLifeSpan(3.0f);
-			}
-		}
-	}
+            ShellActor->SetLifeSpan(3.0f);
+        }
+    }
 }
 
 void AC_GunBase::ProcessLineTraceDamage(float DamageVal)
@@ -205,6 +225,33 @@ void AC_GunBase::ProcessLineTraceDamage(float DamageVal)
 			}
 		}
 	}
+}
+
+void AC_GunBase::InitFromInventoryEntry(const FInventoryEntry& InEntry)
+{
+	ItemEntry = InEntry;
+	Gun_init();
+}
+
+FInventoryEntry AC_GunBase::GetUpdatedInventoryEntry()
+{
+	// 실시간으로 변한 수치(예: CurAmmo)를 CustomData에 다시 구겨넣어서 최신화
+	FGunCustomData* GunCustomData = ItemEntry.CustomData.GetMutablePtr<FGunCustomData>();
+	if (!GunCustomData)
+	{
+		// 없으면 새로 생성 후 대입
+		FGunCustomData NewData;
+		ItemEntry.CustomData = FInstancedStruct::Make(NewData);
+		GunCustomData = ItemEntry.CustomData.GetMutablePtr<FGunCustomData>();
+	}
+
+	if (GunCustomData)
+	{
+		GunCustomData->CurAmmo = m_CurrentAmmo;
+		// 필요 시 실시간 변화하는 추가 동적 수치들 업링크
+	}
+
+	return ItemEntry;
 }
 
 bool AC_GunBase::AttachToHand(USceneComponent* _ParentMesh)

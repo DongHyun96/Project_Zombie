@@ -23,7 +23,9 @@ public class Project_Zombie : ModuleRules
             "GameplayTags",
 			"DeveloperSettings",
 			"NetCore",
-			"Niagara"
+			"Niagara",
+			"StructUtils",
+			"DeveloperSettings"
         });
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });

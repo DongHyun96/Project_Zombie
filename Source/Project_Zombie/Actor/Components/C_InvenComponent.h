@@ -28,13 +28,40 @@ public:
 	// 특정 슬롯의 아이템 반환
 	const FInventoryEntry& GetItemAt(int32 SlotIndex) const {return InventoryContainer.Items[SlotIndex];}
 
+	// ItemLinkComponent 등에서 원본 데이터를 직접 가리키기 위한 포인터 반환 함수
+	FInventoryEntry* GetSlotDataPtr(int32 SlotIndex)
+    {
+    	if (InventoryContainer.Items.IsValidIndex(SlotIndex))
+    	{
+    		return &InventoryContainer.Items[SlotIndex];
+    	}
+    	return nullptr;
+    }
+	
+	bool GetHasEquipmentSlots() const {return bHasEquipmentSlots;}
+
+	// 원본 포인터 데이터를 다 수정한 후 FastArray 복제 상태를 갱신해 주는 함수
+	void MarkSlotDirty(int32 SlotIndex)
+    {
+    	if (InventoryContainer.Items.IsValidIndex(SlotIndex))
+    	{
+    		InventoryContainer.MarkItemDirty(InventoryContainer.Items[SlotIndex]);
+    	}
+    }
+	// TODO : 현재 사용하지 않음
 	void SetContainerID(int32 _ContainerID) { ContainerID = _ContainerID; }
 	
+	// TODO : 현재 사용하지 않음
 	int32 GetContainerID() { return ContainerID; }
 	
 public:
-	// 아이템이 드래그 드롭 되었을 때 처리해주는 함수.
-	void ProcessItemMove(UC_InvenComponent* SrcComp, int32 SrcIdx, UC_InvenComponent* DstComp, int32 DstIdx, int32 InPlayerID);
+	// //InvenComponent의 InventoryContainer의 TArray<FInventoryEntry>의 크기를 InMax 초기화 해주고 업데이트 해주는 함수.
+	void SetMaxSlots(int32 InMax)
+	{
+		MaxSlots = InMax;
+		
+		InitInventoryContainerMaxSlots(MaxSlots);
+	}
 
 	void SetEntryCurCount(int32 Idx, int32 InCount);
 	
@@ -43,6 +70,12 @@ public:
 	
 	UFUNCTION(BlueprintCallable)
 	int32 AddItem(FInventoryEntry ItemEntry);
+	
+	// 아이템의 Type에 따라 장비인덱스값에는 들어갈 수 있는지 판단하는 함수. 
+	bool CanSetItemToSlot(int32 TargetSlotIndex, const FInventoryEntry& Entry) const;
+public:
+	// 아이템이 드래그 드롭 되었을 때 처리해주는 함수.
+	void ProcessItemMove(UC_InvenComponent* SrcComp, int32 SrcIdx, UC_InvenComponent* DstComp, int32 DstIdx, int32 InPlayerID);
 	
 	// 드래그 시작
 	void StartDragItemSlot(int32 SlotIndex, int32 InPlayerId);
@@ -85,6 +118,9 @@ protected:
 	// 아이템 병합
 	bool TryMergeItem(UC_InvenComponent* SrcComp, int32 SrcIdx, UC_InvenComponent* DstComp, int32 DstIdx, int32 InPlayerID, int32 MaxCount);
 	
+	// InventoryContainer가 가지고 있는 TArray<FInventoryEntry>의 크기를 초기화 해주는 함수.
+	void InitInventoryContainerMaxSlots(int32 InMax);
+	
 	UFUNCTION(BlueprintCallable)
 	void OnRep_InventoryContainer();
 
@@ -103,6 +139,9 @@ protected:
 	// 고유 ID 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	int32 ContainerID;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
+	bool bHasEquipmentSlots = false;
 public:
     UPROPERTY(BlueprintAssignable)
     FOnInventorySlotChanged OnInventorySlotChanged; // 델리게이트 알림용 변수

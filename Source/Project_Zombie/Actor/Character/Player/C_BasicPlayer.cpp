@@ -33,6 +33,7 @@
 
 #include "UI/InvenUI/C_InventoryGridWidget.h"
 #include "UI/InvenUI/C_InventoryWidget.h"
+#include "UI/InvenUI/Equipment/C_EquipmentWidget.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
 #include "Utility/C_Util.h"
 
@@ -129,9 +130,13 @@ void AC_BasicPlayer::BeginPlay()
 	if (!UIManager) return;
 	
 	UIManager->GetInventoryWidget()->GetPlayerGridWidget()->SetInvenComponent(m_InvenComponent);
+	
+	UIManager->GetInventoryWidget()->GetEquipmentWidget()->InitEquipmentWidget(m_InvenComponent);
 	// 까지
 	
-
+	// 플레이어의 인벤에 장비 전용 인덱스 추가.
+	//m_InvenComponent->SetMaxSlots(45 + static_cast<int32>(EWeaponSlot::Max));
+	
 	// 웅크리기 완료 시 호출할 OnPoseTransitionFinished 바인딩
 	if (m_PoseColliderHandlerComponent)
 	{

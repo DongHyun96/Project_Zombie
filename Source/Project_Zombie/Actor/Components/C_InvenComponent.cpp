@@ -1,5 +1,6 @@
 #include "Actor/Components/C_InvenComponent.h"
 
+#include "C_EquippedComponent.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "GameFramework/GameSession.h"
 #include "GameFramework/PlayerState.h"
@@ -28,23 +29,12 @@ void UC_InvenComponent::BeginPlay()
 	Super::BeginPlay();
 
 	InventoryContainer.OwnerComponent = this;
-	
+
 	if (GetOwner()->HasAuthority())
 	{
-		// 서버는 무조건 45개로 초기화 (기존 데이터가 있다면 덮어씀)
-		InventoryContainer.Items.SetNum(MaxSlots);
-       
-		for (int32 i = 0; i < MaxSlots; ++i)
-		{
-			// 데이터가 비어있을 때만 Clear, 이미 데이터가 있다면(세이브 로드 등) 건드리지 않음
-			if (InventoryContainer.Items[i].ItemRowName == NAME_None)
-			{
-				InventoryContainer.Items[i].Clear();
-			}
-			InventoryContainer.Items[i].SlotIndex = i;
-		}
+		int32 TotalSlots = bHasEquipmentSlots ? (MaxSlots + static_cast<int32>(EWeaponSlot::None)) : MaxSlots;
 		
-		InventoryContainer.MarkArrayDirty();
+		InitInventoryContainerMaxSlots(TotalSlots);
 	}
 }
 
@@ -65,7 +55,7 @@ void UC_InvenComponent::ProcessItemMove(UC_InvenComponent* SrcComp, int32 SrcIdx
 		
 		if (!ItemManager) return;
 		
-		int32 MaxCount = ItemManager->GetItemData(SrcEntry.ItemRowName)->MaxCount;
+		int32 MaxCount = ItemManager->GetItemData<FItemData>(EItemTableType::General, SrcEntry.ItemRowName)->MaxCount;
            
 		if (MaxCount > 1)
 		{
@@ -105,17 +95,20 @@ int32 UC_InvenComponent::AddItem(FInventoryEntry ItemEntry)
     
 	if (!ItemManager) return ItemEntry.CurCount;
 
-	const FItemData* PickUpItemData = ItemManager->GetItemData(ItemEntry.ItemRowName); 
+	const FItemData* PickUpItemData = ItemManager->GetItemData<FItemData>(EItemTableType::General, ItemEntry.ItemRowName); 
 	
 	if (!PickUpItemData) return ItemEntry.CurCount;
 	
     int32 MaxCount = PickUpItemData->MaxCount;
     int32 RemainCount = ItemEntry.CurCount; // 넣어야 할 남은 수량
 
+	// 장비 슬롯 유무에 따라 탐색 시작 인덱스 분기
+	int32 StartIdx = bHasEquipmentSlots ? static_cast<int32>(EWeaponSlot::None) : 0;
+	
     // 1. 기존에 존재하는 동일한 아이템 슬롯 찾아서 채워 넣기 (스택 가능 아이템)
     if (MaxCount > 1)
     {
-        for (int32 i = 0; i < MaxSlots; ++i)
+        for (int32 i = StartIdx; i < MaxSlots; ++i)
         {
             if (InventoryContainer.Items[i].ItemRowName == ItemEntry.ItemRowName)
             {
@@ -144,7 +137,7 @@ int32 UC_InvenComponent::AddItem(FInventoryEntry ItemEntry)
     }
 
     // 2. 아직 남은 수량이 있다면, 빈 슬롯을 찾아 순차적으로 채워 넣기
-    for (int32 i = 0; i < MaxSlots; ++i)
+    for (int32 i = StartIdx; i < MaxSlots; ++i)
     {
         if (InventoryContainer.Items[i].ItemRowName == NAME_None)
         {
@@ -173,6 +166,48 @@ int32 UC_InvenComponent::AddItem(FInventoryEntry ItemEntry)
 
     // 3. 인벤토리가 가득 차서 다 넣지 못한 경우 남은 수량 반환
     return RemainCount;
+}
+
+bool UC_InvenComponent::CanSetItemToSlot(int32 TargetSlotIndex, const FInventoryEntry& Entry) const
+{
+	// 1. 이 인벤토리가 "장비 슬롯을 지원하는 인벤토리(플레이어)"이고
+	//    목표 슬롯이 "장비 슬롯 구역(0~2번)"일 때만 타입 체크를 진행합니다.
+	if (bHasEquipmentSlots && TargetSlotIndex < static_cast<int32>(EWeaponSlot::None)) //
+	{
+		// 빈 슬롯으로 만드는 것(장비 해제)은 항상 허용
+		if (Entry.ItemRowName.IsNone()) return true;
+
+		// Null Check (안전한 서브시스템 접근)
+		UWorld* World = GetWorld();
+		if (!World) return false;
+		
+		UGameInstance* GI = World->GetGameInstance();
+		if (!GI) return false;
+
+		UC_ItemManager* ItemManager = GI->GetSubsystem<UC_ItemManager>();
+		if (!ItemManager) return false;
+		
+		// DataTable을 참조하여 해당 슬롯(주무기/보조무기/투척류)에 맞는 타입인지 검증
+		const FItemData* ItemData = ItemManager->GetItemData<FItemData>(EItemTableType::General, Entry.ItemRowName);
+		
+		if (!ItemData) return false;
+		
+		switch (static_cast<EWeaponSlot>(TargetSlotIndex))
+		{
+		case EWeaponSlot::MainWeapon:
+			return ItemData->ItemType == EItemType::MAINWEAPON;
+		case EWeaponSlot::MeleeWeapon:
+			return ItemData->ItemType == EItemType::MELEEWEAPON;
+		case EWeaponSlot::ThrowableWeapon:
+			return ItemData->ItemType == EItemType::THROWABLE;
+		default:
+			return false;
+		}
+	}
+
+	// 2. 창고(bHasEquipmentSlots == false)이거나,
+	//    플레이어의 일반 가방 구역(3번 이상)이라면 어떤 아이템이든 다 들어갈 수 있습니다!
+	return true;
 }
 
 void UC_InvenComponent::ForceRepInven()
@@ -301,8 +336,26 @@ bool UC_InvenComponent::TryMergeItem(UC_InvenComponent* SrcComp, int32 SrcIdx, U
 	return true;
 }
 
+void UC_InvenComponent::InitInventoryContainerMaxSlots(int32 InMax)
+{
+	// 서버는 무조건 45개로 초기화 (기존 데이터가 있다면 덮어씀)
+	InventoryContainer.Items.SetNum(InMax);
+       
+	for (int32 i = 0; i < InMax; ++i)
+	{
+		// 데이터가 비어있을 때만 Clear, 이미 데이터가 있다면(세이브 로드 등) 건드리지 않음
+		if (InventoryContainer.Items[i].ItemRowName == NAME_None)
+		{
+			InventoryContainer.Items[i].Clear();
+		}
+		InventoryContainer.Items[i].SlotIndex = i;
+	}
+		
+	InventoryContainer.MarkArrayDirty();
+}
+
 bool UC_InvenComponent::ProcessItemDivideMove(UC_InvenComponent* SrcComp, int32 SrcIdx, UC_InvenComponent* DstComp,
-	int32 DstIdx, int32 SplitCount, int32 InPlayerID)
+                                              int32 DstIdx, int32 SplitCount, int32 InPlayerID)
 {
 	if (!GetOwner()->HasAuthority() || !SrcComp || !DstComp) return false;
 
@@ -332,7 +385,7 @@ bool UC_InvenComponent::ProcessItemDivideMove(UC_InvenComponent* SrcComp, int32 
         UC_ItemManager* ItemManager = GetWorld()->GetGameInstance()->GetSubsystem<UC_ItemManager>();
         if (!ItemManager) return false;
 
-        int32 MaxCount = ItemManager->GetItemData(SrcEntry.ItemRowName)->MaxCount;
+        int32 MaxCount = ItemManager->GetItemData<FItemData>(EItemTableType::General, SrcEntry.ItemRowName)->MaxCount;
         
         // 목적지가 이미 풀스택이면 처리 불가 (애초에 진입 금지)
         if (DstEntry.CurCount >= MaxCount) return false;

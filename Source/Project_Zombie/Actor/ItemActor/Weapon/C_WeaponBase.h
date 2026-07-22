@@ -4,8 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "EngineUtils.h" // 이건 뭐지?
+//#include "GameFramework/Actor.h"
+//#include "Actor/ItemActor/C_ItemActor.h"
 #include "GameFramework/Actor.h"
 #include "C_WeaponBase.generated.h"
+
+class UC_ItemLinkComponent;
 
 UCLASS(Abstract)
 class PROJECT_ZOMBIE_API AC_WeaponBase : public AActor
@@ -82,6 +86,8 @@ protected:
 	UPROPERTY()
 	AC_BasicPlayer* m_OwnerPlayer{};
 	
+	UC_ItemLinkComponent* GetLinkComp() {return ItemLinkComp;}
+	
 protected:
 
 	// 해당 무기의 무기 꺼내는 동작 Montage (Player character montage)
@@ -92,5 +98,7 @@ protected:
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, meta = (DisplayName = "SheathMontage"))
 	UAnimMontage* m_SheathMontage{};
 
-
+	// 데이터 연동 전용 컴포넌트
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UC_ItemLinkComponent> ItemLinkComp;
 };

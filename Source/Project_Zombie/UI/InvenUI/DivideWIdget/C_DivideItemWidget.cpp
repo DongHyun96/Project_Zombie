@@ -11,7 +11,7 @@
 #include "Components/TextBlock.h"
 #include "GameModeAndManager/C_ItemManager.h"
 #include "UI/InvenUI/C_InventoryWidget.h"
-#include "UI/InvenUI/C_ItemSlotWidget.h"
+#include "UI/InvenUI/C_GridItemSlotWidget.h"
 #include "Utility/C_Util.h"
 
 void UC_DivideItemWidget::UpdateWidget()
@@ -22,7 +22,7 @@ void UC_DivideItemWidget::UpdateWidget()
 	
 	if (!ItemManager) return;
 	
-	const FItemData* curDraggedItemData = ItemManager->GetItemData(CursorItem.Item.ItemRowName);
+	const FItemData* curDraggedItemData = ItemManager->GetItemData<FItemData>(EItemTableType::General, CursorItem.Item.ItemRowName);
 	
 	if (!curDraggedItemData) return;
 	
@@ -222,7 +222,7 @@ void UC_DivideItemWidget::HandleOnClickButtonDivideEntry()
 	
 	if (!Player) return;
 	
-	UC_ItemSlotWidget* TargetSlot = Cast<UC_ItemSlotWidget>(TargetWidget);
+	UC_GridItemSlotWidget* TargetSlot = Cast<UC_GridItemSlotWidget>(TargetWidget);
 	
 	if (!TargetSlot) return;
 	
@@ -274,7 +274,7 @@ void UC_DivideItemWidget::HandleOnClickButtonExitBtn()
 	
 	if (!Player) return;
 	
-	UC_ItemSlotWidget* TargetSlot = Cast<UC_ItemSlotWidget>(TargetWidget);
+	UC_GridItemSlotWidget* TargetSlot = Cast<UC_GridItemSlotWidget>(TargetWidget);
 	
 	if (!TargetSlot) return;
 	
