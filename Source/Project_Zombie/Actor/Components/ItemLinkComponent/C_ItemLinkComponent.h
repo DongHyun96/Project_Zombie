@@ -6,7 +6,7 @@
 #include "Components/ActorComponent.h"
 #include "C_ItemLinkComponent.generated.h"
 
-
+class FInventoryEntry;
 class UC_InvenComponent;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
