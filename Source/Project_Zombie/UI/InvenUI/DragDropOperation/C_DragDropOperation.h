@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "GlobalData.h"
 #include "Blueprint/DragDropOperation.h"
-#include "UI/InvenUI/C_ItemSlotWidget.h"
+#include "UI/InvenUI/C_GridItemSlotWidget.h"
 #include "C_DragDropOperation.generated.h"
 
 /**
