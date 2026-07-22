@@ -18,7 +18,7 @@ bool AC_GranadeLauncher::OnStartFire(AC_BasicPlayer* _WeaponUser)
 	if (nullptr == _WeaponUser)
 		return false;
 
-	m_WeaponUser = _WeaponUser;
+	//m_OwnerPlayer = _WeaponUser;
 
 	if (m_bIsReloading)
 		return false;
@@ -46,7 +46,7 @@ bool AC_GranadeLauncher::Reload(AC_BasicPlayer* _WeaponUser)
 	if (nullptr == _WeaponUser)
 		return false;
 
-	m_WeaponUser = _WeaponUser;
+	//m_OwnerPlayer = _WeaponUser;
 	StartReload();
 
 	return true;
@@ -86,9 +86,9 @@ void AC_GranadeLauncher::PlayFireEffects()
 
 	m_SpentShellCount++;
 
-	if (m_WeaponUser && m_PlayerFireAnimation)
+	if (m_OwnerPlayer && m_PlayerFireAnimation)
 	{
-		m_WeaponUser->PlayAnimMontage(m_PlayerFireAnimation);
+		m_OwnerPlayer->PlayAnimMontage(m_PlayerFireAnimation);
 	}
 
 	if (m_WeaponMesh && m_FireAnimation)
@@ -124,7 +124,7 @@ void AC_GranadeLauncher::SpawnGrenadeProjectile()
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
-	SpawnParams.Instigator = m_WeaponUser; // 발사한 플레이어 지정 (스플래시 데미지 주체 전달용)
+	SpawnParams.Instigator = m_OwnerPlayer; // 발사한 플레이어 지정 (스플래시 데미지 주체 전달용)
 
 	GetWorld()->SpawnActor<AActor>(m_GrenadeClass, SpawnLocation, SpawnRotation, SpawnParams);
 }
@@ -145,9 +145,9 @@ void AC_GranadeLauncher::StartReload()
 		m_WeaponMesh->PlayAnimation(m_ReloadAnimation, false);
 	}
 
-	if (m_WeaponUser && m_PlayerReloadAnimation)
+	if (m_OwnerPlayer && m_PlayerReloadAnimation)
 	{
-		m_WeaponUser->PlayAnimMontage(m_PlayerReloadAnimation);
+		m_OwnerPlayer->PlayAnimMontage(m_PlayerReloadAnimation);
 	}
 
 	float ReloadDuration = 2.8f;

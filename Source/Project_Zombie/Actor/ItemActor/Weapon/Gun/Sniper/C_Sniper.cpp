@@ -18,7 +18,7 @@ bool AC_Sniper::OnStartFire(AC_BasicPlayer* _WeaponUser)
 	if (nullptr == _WeaponUser)
 		return false;
 
-	m_WeaponUser = _WeaponUser;
+	//m_WeaponUser = _WeaponUser;
 
 	// 재장전 중 사격 키 누르면 사격 차단
 	if (m_bIsReloading)
@@ -47,7 +47,7 @@ bool AC_Sniper::Reload(AC_BasicPlayer* _WeaponUser)
 	if (nullptr == _WeaponUser)
 		return false;
 
-	m_WeaponUser = _WeaponUser;
+	//m_OwnerPlayer = _WeaponUser;
 	StartReload();
 
 	return true;
@@ -89,9 +89,9 @@ void AC_Sniper::PlayFireEffects()
 	}
 
 	// 플레이어 사격/반동 몽타주
-	if (m_WeaponUser && m_PlayerFireAnimation)
+	if (m_OwnerPlayer && m_PlayerFireAnimation)
 	{
-		m_WeaponUser->PlayAnimMontage(m_PlayerFireAnimation);
+		m_OwnerPlayer->PlayAnimMontage(m_PlayerFireAnimation);
 	}
 
 	// 총기 메시 자체 반동 애니메이션
@@ -104,7 +104,7 @@ void AC_Sniper::PlayFireEffects()
 	SpawnShellEject();
 
 	// 스나이퍼 발사 (직진 정밀 사격)
-	ProcessSniperShot(m_BaseDamage);
+	ProcessSniperShot(m_Damage);
 }
 
 void AC_Sniper::ProcessSniperShot(float DamageVal)
@@ -120,7 +120,7 @@ void AC_Sniper::ProcessSniperShot(float DamageVal)
 	FHitResult HitResult;
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(this);
-	QueryParams.AddIgnoredActor(m_WeaponUser);
+	QueryParams.AddIgnoredActor(m_OwnerPlayer);
 
 	bool bHasHit = GetWorld()->LineTraceSingleByChannel(HitResult, StartLocation, MaxEndLocation, ECC_Visibility, QueryParams);
 	FVector ActualEndLocation = bHasHit ? HitResult.ImpactPoint : MaxEndLocation;
@@ -133,7 +133,7 @@ void AC_Sniper::ProcessSniperShot(float DamageVal)
 
 		if (AC_BasicEnemy* Enemy = Cast<AC_BasicEnemy>(HitResult.GetActor()))
 		{
-			UGameplayStatics::ApplyDamage(Enemy, DamageVal, m_WeaponUser->GetController(), this, nullptr);
+			UGameplayStatics::ApplyDamage(Enemy, DamageVal, m_OwnerPlayer->GetController(), this, nullptr);
 		}
 	}
 }
@@ -154,9 +154,9 @@ void AC_Sniper::StartReload()
 	}
 
 	// 플레이어 재장전 몽타주
-	if (m_WeaponUser && m_PlayerReloadAnimation)
+	if (m_OwnerPlayer && m_PlayerReloadAnimation)
 	{
-		m_WeaponUser->PlayAnimMontage(m_PlayerReloadAnimation);
+		m_OwnerPlayer->PlayAnimMontage(m_PlayerReloadAnimation);
 	}
 
 	float ReloadDuration = 0.f;

@@ -139,10 +139,10 @@ void AC_Rifle::PlayFireEffects()
 		return;
 	}
 
-	if (m_WeaponUser && m_PlayerFireAnimation)
+	if (m_OwnerPlayer && m_PlayerFireAnimation)
 	{
 		// PlayAnimMontage 재생
-		m_WeaponUser->PlayAnimMontage(m_PlayerFireAnimation);
+		m_OwnerPlayer->PlayAnimMontage(m_PlayerFireAnimation);
 	}
 
 	// 총기 발사 애니메이션 재생

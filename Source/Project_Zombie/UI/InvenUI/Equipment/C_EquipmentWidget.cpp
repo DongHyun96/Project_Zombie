@@ -2,7 +2,7 @@
 #include "C_EquipmentWidget.h"
 
 #include "Actor/Character/Player/C_BasicPlayer.h"
-#include "UI/InvenUI/C_ItemSlotWidget.h"
+#include "UI/InvenUI/C_GridItemSlotWidget.h"
 #include "Actor/Components/C_InvenComponent.h"
 #include "GameModeAndManager/C_ItemManager.h"
 #include "UI/InvenUI/C_EquipmentItemSlotWidget.h"

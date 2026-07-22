@@ -45,7 +45,7 @@ bool UC_AIGunUsageComponent::AIFire()
 	m_OwnerGun->SpawnShellEject();
 
 	// 사격 방면 LineTrace Damage 처리
-	AIProcessLineTraceDamage(m_OwnerGun->m_BaseDamage);
+	AIProcessLineTraceDamage(m_OwnerGun->m_Damage);
 	
 	// 사격 성공
 	return true;

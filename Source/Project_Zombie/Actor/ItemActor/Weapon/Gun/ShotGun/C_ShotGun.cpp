@@ -23,7 +23,7 @@ bool AC_ShotGun::OnStartFire(AC_BasicPlayer* _WeaponUser)
 	if (nullptr == _WeaponUser)
 		return false;
 
-	m_WeaponUser = _WeaponUser;
+	m_OwnerPlayer = _WeaponUser;
 
 	// 재장전 중에 사격 시도 시 재장전을 중단하고 사격 가능하게 처리
 	if (m_bIsReloading)
@@ -54,7 +54,7 @@ bool AC_ShotGun::Reload(AC_BasicPlayer* _WeaponUser)
 	if (nullptr == _WeaponUser)
 		return false;
 
-	m_WeaponUser = _WeaponUser;
+	m_OwnerPlayer = _WeaponUser;
 	StartReload();
 
 	return true;
@@ -92,9 +92,9 @@ void AC_ShotGun::PlayFireEffects()
 		return;
 	}
 
-	if (m_WeaponUser && m_PlayerFireAnimation)
+	if (m_OwnerPlayer && m_PlayerFireAnimation)
 	{
-		m_WeaponUser->PlayAnimMontage(m_PlayerFireAnimation);
+		m_OwnerPlayer->PlayAnimMontage(m_PlayerFireAnimation);
 	}
 
 	if (m_WeaponMesh && m_FireAnimation)
@@ -103,7 +103,7 @@ void AC_ShotGun::PlayFireEffects()
 	}
 
 	SpawnShellEject();
-	ProcessShotgunPellets(m_BaseDamage);
+	ProcessShotgunPellets(m_Damage);
 }
 
 void AC_ShotGun::ProcessShotgunPellets(float BaseDamagePerPellet)
@@ -121,7 +121,7 @@ void AC_ShotGun::ProcessShotgunPellets(float BaseDamagePerPellet)
 		FHitResult HitResult;
 		FCollisionQueryParams QueryParams;
 		QueryParams.AddIgnoredActor(this);
-		QueryParams.AddIgnoredActor(m_WeaponUser);
+		QueryParams.AddIgnoredActor(m_OwnerPlayer);
 
 		bool bHasHit = GetWorld()->LineTraceSingleByChannel(HitResult, StartLocation, MaxEndLocation, ECC_Visibility, QueryParams);
 		FVector ActualEndLocation = bHasHit ? HitResult.ImpactPoint : MaxEndLocation;
@@ -134,7 +134,7 @@ void AC_ShotGun::ProcessShotgunPellets(float BaseDamagePerPellet)
 
 			if (AC_BasicEnemy* Enemy = Cast<AC_BasicEnemy>(HitResult.GetActor()))
 			{
-				UGameplayStatics::ApplyDamage(Enemy, BaseDamagePerPellet, m_WeaponUser->GetController(), this, nullptr);
+				UGameplayStatics::ApplyDamage(Enemy, BaseDamagePerPellet, m_OwnerPlayer->GetController(), this, nullptr);
 			}
 		}
 	}
@@ -181,9 +181,9 @@ void AC_ShotGun::InsertSingleShell()
 	}
 
 	// 1발 넣는 몽타주/애니메이션
-	if (m_WeaponUser && m_PlayerReloadAnimation)
+	if (m_OwnerPlayer && m_PlayerReloadAnimation)
 	{
-		m_WeaponUser->PlayAnimMontage(m_PlayerReloadAnimation, 1.0f);
+		m_OwnerPlayer->PlayAnimMontage(m_PlayerReloadAnimation, 1.0f);
 	}
 
 	if (m_WeaponMesh && m_ReloadAnimation)
@@ -206,8 +206,8 @@ void AC_ShotGun::EndReload()
 	GetWorldTimerManager().ClearTimer(m_ReloadLoopTimer);
 
 	// 플레이어 재장전 몽타주 정지
-	if (m_WeaponUser && m_PlayerReloadAnimation)
+	if (m_OwnerPlayer && m_PlayerReloadAnimation)
 	{
-		m_WeaponUser->StopAnimMontage(m_PlayerReloadAnimation);
+		m_OwnerPlayer->StopAnimMontage(m_PlayerReloadAnimation);
 	}
 }
