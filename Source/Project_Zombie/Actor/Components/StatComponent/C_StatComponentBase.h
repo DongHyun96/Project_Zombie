@@ -118,7 +118,7 @@ private:
 	/// </summary>
 	virtual void InitAdditionalStat();
 
-private:
+protected:
 	
 	UPROPERTY()
 	class AC_BasicCharacter* m_OwnerCharacter{}; // 이 StatComponent를 소유한 OwnerCharacter 

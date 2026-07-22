@@ -8,6 +8,12 @@
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/Components/C_EquippedComponent.h"
 #include "Actor/Components/StatComponent/C_StatComponentBase.h"
+#include "Actor/ItemActor/Weapon/Gun/C_GunBase.h"
+#include "Actor/ItemActor/Weapon/WeaponComponent/GunComponent/C_AIGunUsageComponent.h"
+#include "BehaviorTree/BlackboardComponent.h"
+#include "GameModeAndManager/C_UIManager.h"
+#include "Kismet/GameplayStatics.h"
+#include "UI/MainHUD/C_GameMainHUD.h"
 #include "Utility/C_Util.h"
 
 UC_Task_GrabWeapon::UC_Task_GrabWeapon()
@@ -16,6 +22,10 @@ UC_Task_GrabWeapon::UC_Task_GrabWeapon()
 
 EBTNodeResult::Type UC_Task_GrabWeapon::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
+	AC_CopZombie* CopZombie = Cast<AC_CopZombie>(OwnerComp.GetAIOwner()->GetPawn());
+	if (CopZombie->GetEquippedGun()) return EBTNodeResult::Failed; // 이미 무기를 장착 중인 상황
+
+	// 무기뺏기 시도 실행
 	return Super::ExecuteTask(OwnerComp, NodeMemory);
 }
 
@@ -68,8 +78,21 @@ void UC_Task_GrabWeapon::OnTaskFinished
 	
 	// MainWeapon을 뺏을 Player 대상이 있음 -> 대상의 Weapon을 CopZombie에게 부착 처리한다
 	// Player의 MainWeaponSlot 없앰과 동시에, 탈취(PrevSlotWeapon return됨)
-	AC_WeaponBase* StolenWeapon = BestGrabPlayer->GetEquippedComponent()->SetSlotWeapon(EWeaponSlot::MainWeapon, nullptr);  
+	AC_WeaponBase* StolenWeapon = BestGrabPlayer->GetEquippedComponent()->SetSlotWeapon(EWeaponSlot::MainWeapon, nullptr);
+	AC_GunBase* StolenGun = Cast<AC_GunBase>(StolenWeapon);
+	if (!StolenGun) return; // BestGrabPlayer의 이전 Weapon이 없었던 상태(애초에 위에서 체킹해서 이 방어코드로 들어오면 안되긴 함)
+	
+	// 뺏은 무기 장착 시도
+	if (!CopZombie->EquipWeapon(StolenGun)) return;
+	
+	// 장착 성공, AIUsage에 이전 Player 주인 세팅
+	StolenGun->GetAIGunUsageComponent()->SetPrevOwnerPlayer(BestGrabPlayer);
 
+	// GetWorld()->GetFirstPlayerController()
 	
+	AC_UIManager* UIManager = Cast<AC_UIManager>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD());
+	UIManager->GetMainHUDWidget()->AddPlayerWarningLog("MAIN WEAPON HAS BEEN STOLEN!", FColor::Red);
 	
+	// 제대로 장착 처리되었다면 MainState 키값 수정 (다른 Zombie는 Service에서 바꾸지만, 이 해당 키는 바로 바꿔주어야 해당 Task를 바로 실행)
+	OwnerComp.GetBlackboardComponent()->SetValueAsEnum(m_MainState.SelectedKeyName, static_cast<uint8>(ECopZombieState::WeaponEarned));
 }

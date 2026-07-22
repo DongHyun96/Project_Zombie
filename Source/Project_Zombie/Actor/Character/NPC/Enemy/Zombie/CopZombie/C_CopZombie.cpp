@@ -4,6 +4,9 @@
 #include "C_CopZombie.h"
 
 #include "Actor/Character/Player/C_BasicPlayer.h"
+#include "Actor/ItemActor/Weapon/C_WeaponBase.h"
+#include "Actor/ItemActor/Weapon/Gun/C_GunBase.h"
+#include "Actor/ItemActor/Weapon/WeaponComponent/GunComponent/C_AIGunUsageComponent.h"
 #include "Components/BoxComponent.h"
 #include "Utility/C_Util.h"
 
@@ -67,4 +70,28 @@ void AC_CopZombie::OnGrabRangeColliderEndOverlap
 {
 	if (AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(OtherActor))
 		m_GrabRangeEnteredPlayers.Remove(Player);
+}
+
+bool AC_CopZombie::EquipWeapon(AC_GunBase* _StolenWeapon)
+{
+	if (!_StolenWeapon) return false;
+	if (m_EquippedGun) return false; // 이미 빼앗은 무기가 존재
+
+	// 손에 부착 시도
+	if (!_StolenWeapon->GetAIGunUsageComponent()->AttachToHand(GetMesh()))
+		return false;
+	
+	// 부착 성공, State 변화 및 EquippedWeapon 저장
+	m_EquippedGun    = _StolenWeapon;
+	m_CopZombieState = ECopZombieState::WeaponEarned; // ABP 무기 자세로 자세전환
+	return true;
+}
+
+void AC_CopZombie::DropWeapon()
+{
+	// 현재 들고있는 무기가 없을 때
+	if (!m_EquippedGun) return;
+	if (!m_EquippedGun->GetAIGunUsageComponent()->DetachFromHand()) return;
+	
+	m_EquippedGun = nullptr;
 }

@@ -37,6 +37,8 @@ public:
 	void SetCopZombieState(ECopZombieState _State) { m_CopZombieState = _State; }
 
 	const TSet<class AC_BasicPlayer*>& GetGrabRangeEnteredPlayers() const { return m_GrabRangeEnteredPlayers; }
+
+	class AC_GunBase* GetEquippedGun() const { return m_EquippedGun; }
 	
 public:
 
@@ -67,6 +69,19 @@ private:
 		UPrimitiveComponent* OtherComp,
 		int32				 OtherBodyIndex
 	);
+
+public:
+	
+	/// <summary>
+	/// 강탈한 무기 자기자신에게 장착 
+	/// </summary>
+	/// <returns> : 장착 실패 시 return false </returns>
+	bool EquipWeapon(AC_GunBase* _StolenGun);
+
+	/// <summary>
+	/// 현재 들고있는 무기 내려놓기 
+	/// </summary>
+	void DropWeapon();
 	
 protected:
 	
@@ -78,10 +93,17 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	class UBoxComponent* m_GrabRangeCollider{};
 
-private:
+protected:
 
 	// Grab Range에 들어온 Player들
-	UPROPERTY()
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TSet<AC_BasicPlayer*> m_GrabRangeEnteredPlayers{};
+	
+protected: // 빼앗아서 장착한 무기
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	AC_GunBase* m_EquippedGun{};
+	
+	
 	
 };

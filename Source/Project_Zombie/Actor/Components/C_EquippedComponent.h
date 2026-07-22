@@ -7,11 +7,11 @@
 UENUM(BlueprintType)
 enum class EWeaponSlot : uint8
 {
-	None,
 	MainWeapon,
 	MeleeWeapon,
 	ThrowableWeapon,
 	Gadget,							// 나중에 추가할지도 모르는 장비 슬롯 (예: 방어구, 액세서리, 설치형 무기등), gadget : 간단한 기계 장치
+	None,
 	Max				UMETA(Hidden)
 };
 
@@ -77,7 +77,8 @@ public:
 	void OnDrawEnd();
 	
 private: /* This component owner Player */
-	
+
+	UPROPERTY()
 	class AC_BasicPlayer* m_OwnerPlayer{};
 	
 protected: /* 장착 무기 Slot */  
@@ -95,9 +96,9 @@ private:
 	// 현재 무기를 바꾸는 과정에 
 	bool m_bIsCurrentlyChangingWeapon{};
 	
-	uint8 m_CurWeaponTypeIdx{}; // 현재 손에 들고 있는 무기 슬롯 Type Idx
-	uint8 m_NextWeaponTypeIdx{}; // 다음에 바꿀 무기 슬롯
-	uint8 m_PrevWeaponTypeIdx{}; // 이전에 들고 있던 무기 슬롯
+	uint8 m_CurWeaponTypeIdx = static_cast<uint8>(EWeaponSlot::None); // 현재 손에 들고 있는 무기 슬롯 Type Idx
+	uint8 m_NextWeaponTypeIdx = static_cast<uint8>(EWeaponSlot::None); // 다음에 바꿀 무기 슬롯
+	uint8 m_PrevWeaponTypeIdx = static_cast<uint8>(EWeaponSlot::None); // 이전에 들고 있던 무기 슬롯
 		
 
 	

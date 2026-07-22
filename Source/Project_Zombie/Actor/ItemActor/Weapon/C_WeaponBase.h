@@ -61,7 +61,7 @@ public:
 	virtual bool AttachToHolster(USceneComponent* _ParentMesh) PURE_VIRTUAL(AC_WeaponBase::AttachToHolster, return false;);
 
 	/// <summary>
-	/// 손에 장착하기
+	/// Player 손에 장착하기
 	/// </summary>
 	/// <returns> 실패 시 return false </returns>
 	virtual bool AttachToHand(USceneComponent* _ParentMesh) PURE_VIRTUAL(AC_WeaponBase::AttachToHand, return false;);
@@ -70,6 +70,17 @@ public:
 	
 	UAnimMontage* GetDrawMontage() const { return m_DrawMontage; }
 	UAnimMontage* GetSheathMontage() const { return m_SheathMontage; }
+
+public:
+	
+	AC_BasicPlayer* GetOwnerPlayer() const { return m_OwnerPlayer; }
+	void SetOwnerPlayer(AC_BasicPlayer* _OwnerPlayer) { m_OwnerPlayer = _OwnerPlayer; }
+	
+protected:
+
+	// 이 Weapon을 자신의 Slot에 장착중인 OwnerPlayer
+	UPROPERTY()
+	AC_BasicPlayer* m_OwnerPlayer{};
 	
 protected:
 

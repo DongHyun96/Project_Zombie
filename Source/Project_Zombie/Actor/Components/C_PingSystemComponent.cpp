@@ -33,10 +33,10 @@ void UC_PingSystemComponent::BeginPlay()
 	
 	FActorSpawnParameters Param{};
 	Param.Owner = OwnerPlayer;
-	m_WorldPingActor = GetWorld()->SpawnActor<AC_WorldPingActor>(m_WorldPingActorClass, Param);
+	m_WorldPingActor = GetWorld()->SpawnActor<AC_WorldPingActor>(m_WorldPingActorClass, Param); // PingActor BeginPlay에 자기자신 비활성화 처리 들어가 있음
 }
 
-bool UC_PingSystemComponent::TrySpawnPing()
+bool UC_PingSystemComponent::TrySpawnPing(UObject* _Instigator)
 {
 	APlayerCameraManager* PCameraManager = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0);
 	const FVector CamLocation            = PCameraManager->GetCameraLocation();
@@ -55,7 +55,24 @@ bool UC_PingSystemComponent::TrySpawnPing()
 	
 	if (!HasHit) return false;
 
+	// TODO : 여기서 LineTrace 결과에 따른 PingType 지정해서 제대로 넣어줄 것 (일단은 DefaultMarker로 처리함) 
 	m_WorldPingActor->SpawnPingActorToWorld(HitResult);
+
+	// 마지막 PingSpawn Instigator로 등록
+	m_LastInstigator = _Instigator;
+	
 	return true;
+}
+
+void UC_PingSystemComponent::SpawnFullPing(const FVector& _SpawnLocation, EGamePingType _PingType, UObject* _Instigator)
+{
+	m_WorldPingActor->SpawnFullPingActorToWorld(_SpawnLocation, _PingType);
+	m_LastInstigator = _Instigator;
+}
+
+void UC_PingSystemComponent::HidePing()
+{
+	m_WorldPingActor->HidePing();
+	m_LastInstigator = nullptr;
 }
 

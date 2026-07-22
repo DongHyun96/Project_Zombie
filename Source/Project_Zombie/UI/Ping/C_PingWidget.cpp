@@ -47,11 +47,14 @@ void UC_PingWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 	DistanceText->SetText(DistText);
 }
 
-void UC_PingWidget::ShowPingWidget(const FVector& _WorldPingSpawnedLocation)
+void UC_PingWidget::ShowPingWidget(const FVector& _WorldPingSpawnedLocation, EGamePingType _PingType)
 {
 	// 이미 핑을 보여주는 상태
 	if (m_bCurrentShowingPingMarker) return;
 
+	// PingMarker 종류에 맞는 PingImage 세팅
+	PingMarkerImage->SetBrushFromTexture(m_PingMarkerTextures[_PingType]);
+	
 	m_bCurrentShowingPingMarker = true;
 	m_SpawnedLocation           = _WorldPingSpawnedLocation;
 	
@@ -62,7 +65,7 @@ void UC_PingWidget::ShowPingWidget(const FVector& _WorldPingSpawnedLocation)
 		if (AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD()))
 		{
 			m_TargetCompassMarkerWidget = UIManager->GetMainHUDWidget()->GetCompassBarWidget()->GetCompassMarkerWidget();
-			m_TargetCompassMarkerWidget->TogglePingMarker(true);
+			m_TargetCompassMarkerWidget->TogglePingMarker(true, _PingType);
 			m_TargetCompassMarkerWidget->SetWorldMarkerSpawnedLocation(m_SpawnedLocation);
 		}
 	}

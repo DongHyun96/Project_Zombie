@@ -26,6 +26,8 @@ class PROJECT_ZOMBIE_API AC_GunBase : public AC_WeaponBase
 {
 	GENERATED_BODY()
 
+	friend class UC_AIGunUsageComponent;
+	
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Component")
 	class USphereComponent* m_Collision;
@@ -36,6 +38,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon|Components", meta = (DisplayName = "DataComponent"))
 	class UC_GunDataTableComponent* m_DataCom;
 
+	// AI Enemy가 Gun을 사용하는 처리 기능 담당
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI", meta = (DisplayName = "AIGunUsageComponent"))
+	UC_AIGunUsageComponent* m_AIGunUsageComponent{};
+	
 protected:
 	float					m_BaseDamage;
 
@@ -68,10 +74,6 @@ protected:
 	// 연사 타이머를 관리하기 위한 핸들
 	FTimerHandle m_FireTimerHandle;
 
-protected:
-	// 현재 이 Gun을 사용중인 WeaponUser
-	class AC_BasicPlayer* m_WeaponUser{};
-	
 private:
 
 	// 이거 희민님이 지정한 오른손 소켓 그냥 써도 되면 그냥 쓰기
@@ -107,13 +109,17 @@ public:
 	void SpawnShellEject();
 
 	/// <summary>
-	/// 공통 라인트레이스 데미지 처리
+	/// 공통 라인트레이스 데미지 처리 (플레이어용)
 	/// </summary>
 	void ProcessLineTraceDamage(float DamageVal);
-
+	
 public:
-	class USkeletalMeshComponent* GetWeaponMesh() { return m_WeaponMesh; }
+	USkeletalMeshComponent* GetWeaponMesh() const { return m_WeaponMesh; }
 
+	int32 GetCurrentAmmo() const { return m_CurrentAmmo; }
+
+	UC_AIGunUsageComponent* GetAIGunUsageComponent() const { return m_AIGunUsageComponent; }
+	
 public:
 	/// <summary>
 	/// 발사 시작 동작 처리 (기본 키 : LMB Started (발사 키 클릭 이벤트 발생 시))
@@ -142,15 +148,28 @@ public:
 	/// <param name="_WeaponUser"> : 이 Weapon을 사용하는 Player 객체 </param>
 	/// <returns> : R키에 대한 처리가 필요없거나 실패했을 경우 return false </returns>
 	virtual bool Reload(AC_BasicPlayer* _WeaponUser) override;
-	
+
 public:
 	
 	virtual bool AttachToHand(USceneComponent* _ParentMesh) override;
     virtual bool AttachToHolster(USceneComponent* _ParentMesh) override;
+	
 	virtual void PullTrigger() {}
 	virtual void ReleaseTrigger() {}
 
-
+private:
+	
+	UFUNCTION()
+	void OnMainColliderBeginOverlap
+	(
+		UPrimitiveComponent* _OverlapComponent,
+		AActor*				 _OtherActor,
+		UPrimitiveComponent* _OtherComp,
+		int32				 _OtherBodyIndex,
+		bool				 _bFromSweep,
+		const FHitResult&	 _SweepResult
+	);
+	
 protected:
 	virtual void BeginPlay() override;
 

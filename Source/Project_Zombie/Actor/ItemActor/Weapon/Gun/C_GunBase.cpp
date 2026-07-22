@@ -9,6 +9,11 @@
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "../WeaponComponent/GunComponent/C_GunDataTableComponent.h"
 #include "Actor/Character/NPC/Enemy/C_BasicEnemy.h"
+#include "Actor/Character/NPC/Enemy/Zombie/Controller/C_ZombieController.h"
+#include "Actor/Character/NPC/Enemy/Zombie/CopZombie/C_CopZombie.h"
+#include "Actor/Components/C_EquippedComponent.h"
+#include "Actor/Components/C_PingSystemComponent.h"
+#include "Actor/ItemActor/Weapon/WeaponComponent/GunComponent/C_AIGunUsageComponent.h"
 
 #include "Components/SphereComponent.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -32,7 +37,12 @@ AC_GunBase::AC_GunBase()
 	m_WeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
 	m_WeaponMesh->SetupAttachment(RootComponent);
 
+	m_WeaponMesh->SetLinearDamping(1.f);
+	m_WeaponMesh->SetAngularDamping(1.f);
+	
 	m_DataCom = CreateDefaultSubobject<UC_GunDataTableComponent>(TEXT("DataComponent"));
+	
+	m_AIGunUsageComponent = CreateDefaultSubobject<UC_AIGunUsageComponent>(TEXT("AIGunUsageComponent"));
 }
 
 void AC_GunBase::BeginPlay()
@@ -40,6 +50,8 @@ void AC_GunBase::BeginPlay()
 	Super::BeginPlay();
 	
 	Gun_init();
+	m_Collision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	m_Collision->OnComponentBeginOverlap.AddDynamic(this, &AC_GunBase::OnMainColliderBeginOverlap);
 }
 
 void AC_GunBase::Tick(float DeltaTime)
@@ -171,12 +183,12 @@ void AC_GunBase::ProcessLineTraceDamage(float DamageVal)
 	{
 		FVector StartLocation = m_WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
 		FVector ForwardDirection = m_WeaponMesh->GetSocketRotation(TEXT("MuzzleFlash")).Vector();
-		FVector MaxEndLocation = StartLocation + (ForwardDirection * 5000.0f);
+		FVector MaxEndLocation = StartLocation + (ForwardDirection * 5000.0f); // TODO : 현재 사거리 50m로 고정되어 있음
 
 		FHitResult HitResult;
 		FCollisionQueryParams QueryParams;
 		QueryParams.AddIgnoredActor(this);
-		QueryParams.AddIgnoredActor(m_WeaponUser);
+		QueryParams.AddIgnoredActor(m_OwnerPlayer);
 
 		bool bHasHit = GetWorld()->LineTraceSingleByChannel(HitResult, StartLocation, MaxEndLocation, ECC_Visibility, QueryParams);
 		FVector ActualEndLocation = bHasHit ? HitResult.ImpactPoint : MaxEndLocation;
@@ -189,7 +201,7 @@ void AC_GunBase::ProcessLineTraceDamage(float DamageVal)
 
 			if (AC_BasicEnemy* Enemy = Cast<AC_BasicEnemy>(HitResult.GetActor()))
 			{
-				UGameplayStatics::ApplyDamage(Enemy, DamageVal, m_WeaponUser->GetController(), this, nullptr);
+				UGameplayStatics::ApplyDamage(Enemy, DamageVal, m_OwnerPlayer->GetController(), this, nullptr);
 			}
 		}
 	}
@@ -199,9 +211,8 @@ bool AC_GunBase::AttachToHand(USceneComponent* _ParentMesh)
 {
 	if (!_ParentMesh) return false;
 	AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(_ParentMesh->GetOwner());
-	if (!Player) return false; // 장착 시도하는 Owner Character가 Player형이 아닌 경우, return false
-
-	m_WeaponUser = Player;
+	if (!Player) return false; // 손에 장착 시도하는 Owner Character가 Player형이 아닌 경우, return false
+	if (Player != m_OwnerPlayer) return false; // 손에 장착 시도하는 Player가 무기주인인 경우가 아닌 경우 
 
 	// Main HUD MeleeWeapon 종류로 초기화
 	if (APlayerController* PC = Player->GetController<APlayerController>())
@@ -214,7 +225,7 @@ bool AC_GunBase::AttachToHand(USceneComponent* _ParentMesh)
 	const bool bIsAttached = AttachToComponent
 	(
 		_ParentMesh,
-		FAttachmentTransformRules(EAttachmentRule::KeepRelative, true),
+		FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true),
 		s_HandSocketName
 	);
 	
@@ -233,7 +244,7 @@ bool AC_GunBase::AttachToHolster(USceneComponent* _ParentMesh)
 	const bool bIsAttached = AttachToComponent
 	(
 		_ParentMesh,
-		FAttachmentTransformRules(EAttachmentRule::KeepRelative, true),
+		FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true),
 		m_HolsterSocketName
 	);
 	
@@ -258,4 +269,39 @@ bool AC_GunBase::OnFireEnd(AC_BasicPlayer* _WeaponUser)
 bool AC_GunBase::Reload(AC_BasicPlayer* _WeaponUser)
 {
 	return false;
+}
+
+void AC_GunBase::OnMainColliderBeginOverlap
+(
+	UPrimitiveComponent* _OverlapComponent,
+	AActor*				 _OtherActor,
+	UPrimitiveComponent* _OtherComp,
+	int32				 _OtherBodyIndex,
+	bool				 _bFromSweep,
+	const FHitResult&	 _SweepResult
+)
+{
+	/* 무기를 줍는 처리 */
+
+	// 이미 이 무기의 주인이 존재
+	if (m_OwnerPlayer) return;
+
+	AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(_OtherActor);
+	if (!Player) return; // Player가 아닌 다른 물체와 Overlap
+	
+	// 해당 Player의 MainWeaponSlot에 이미 MainWeapon이 장착되어 있는 경우
+	if (Player->GetEquippedComponent()->GetSlotWeapon(EWeaponSlot::MainWeapon)) return;
+	
+	Player->GetEquippedComponent()->SetSlotWeapon(EWeaponSlot::MainWeapon, this);
+	m_Collision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	
+	// Outline 비활성화(활성화 되어있건 이미 비활성이건)
+	m_WeaponMesh->SetCustomDepthStencilValue(0);
+
+	if (Player->GetPingSystemComponent()->GetLastInstigator() == this)
+	{
+		// 아직 마지막으로 핑을 스폰한 LastInstigator가 이 총기일 경우 -> 아직 해당 정보의 Ping이 나온 상태
+		// Ping 정보를 가려준다
+		Player->GetPingSystemComponent()->HidePing();
+	}
 }

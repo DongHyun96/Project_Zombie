@@ -27,7 +27,7 @@ bool UC_MolotovExplode::UseStrategy_Implementation(AC_ThrowableWeaponBase* _Thro
 	}
 
 	// 투척한 플레이어 가져오기
-	AC_BasicPlayer* ThrowableUser = _ThrowableWeapon->GetThrowableUser();
+	AC_BasicPlayer* ThrowableUser = _ThrowableWeapon->GetOwnerPlayer();
 
 	// 폭발이 발생한 위치
 	FVector ExplosionLocation = _ThrowableWeapon->GetActorLocation();

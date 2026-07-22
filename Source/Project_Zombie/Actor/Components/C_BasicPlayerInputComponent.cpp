@@ -12,6 +12,7 @@
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/ItemActor/Weapon/C_WeaponBase.h"
 #include "GameModeAndManager/C_UIManager.h"
+#include "StatComponent/C_StatComponentBase.h"
 #include "UI/InvenUI/C_InventoryWidget.h"
 #include "UI/InvenUI/DivideWIdget/C_DivideItemWidget.h"
 
@@ -362,6 +363,8 @@ void UC_BasicPlayerInputComponent::EquipThrowable()
 
 void UC_BasicPlayerInputComponent::ToggleArmed()
 {
+	// TODO : 여기 지울 것 For testing (피 회복 처리)
+	Player->GetStatComponent()->IncreaseCurHP(25.f);
 	Player->GetEquippedComponent()->ToggleArmed();
 }
 

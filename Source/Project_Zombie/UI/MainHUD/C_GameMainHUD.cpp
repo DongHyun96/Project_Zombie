@@ -26,6 +26,11 @@ bool UC_GameMainHUD::UpdateHPBar(float _HP, float _MaxHP)
 	return PlayerStatWidget->UpdateHPBar(_HP, _MaxHP);
 }
 
+bool UC_GameMainHUD::UpdateHPBarRatio(float _Ratio)
+{
+	return PlayerStatWidget->UpdateHPBar(_Ratio);
+}
+
 bool UC_GameMainHUD::UpdateBoostBar(float _Boost, float _MaxBoost)
 {
 	return PlayerStatWidget->UpdateBoostBar(_Boost, _MaxBoost);
@@ -46,7 +51,7 @@ void UC_GameMainHUD::UpdateLeftAmmoTotalCount(int32 _LeftAmmoTotalCount)
 	PlayerStatWidget->UpdateLeftAmmoTotalCount(_LeftAmmoTotalCount);
 }
 
-bool UC_GameMainHUD::AddPlayerWarningLog(const FString& WarningLog)
+bool UC_GameMainHUD::AddPlayerWarningLog(const FString& WarningLog, const FColor& _LogColor)
 {
-	return InformWidget->AddPlayerWarningLog(WarningLog);
+	return InformWidget->AddPlayerWarningLog(WarningLog, _LogColor);
 }

@@ -31,9 +31,6 @@ protected:
 	//float						m_AttackRate;
 
 	UPROPERTY()
-	AC_BasicPlayer*				m_OwnerPlayer;
-
-	UPROPERTY()
 	UAnimMontage*				m_PlayerAttackAnimation;
 
 	FVector						m_PrevHitBoxSockPos;

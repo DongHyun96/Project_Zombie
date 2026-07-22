@@ -42,3 +42,5 @@ protected:
 	UC_InventoryWidget* m_InventoryWidget{};
 	
 };
+
+// #define UI_MANAGER GetControlQ

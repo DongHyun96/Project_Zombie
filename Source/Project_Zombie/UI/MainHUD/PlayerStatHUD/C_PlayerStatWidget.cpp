@@ -53,26 +53,21 @@ bool UC_PlayerStatWidget::UpdateHPBar(float _HP, float _MaxHP)
 		return false;
 	}
 
-	// 힐 적용인지 Damage 입는지에 따라 처리
-	const float PrevRatio = MainHPBar->GetPercent();
 	const float NewRatio  = _HP / _MaxHP;
 	
-	// MainHPbar의 경우, 힐 적용이 되었든, Damage 처리가 되었든 LerpDest 적용은 동일
-	m_MainHPBarPercentLerpDest = NewRatio;
-	
-	if (NewRatio > PrevRatio) // 힐 적용
+	UpdateHPBarBoilerPlate(NewRatio);
+	return true;
+}
+
+bool UC_PlayerStatWidget::UpdateHPBar(float _Ratio)
+{
+	if (_Ratio < 0.f || _Ratio > 1.f)
 	{
-		// Damage Bar 관련 처리
-		DamageIndicatorBar->SetPercent(0.f);     // 아예 DamageBar 안보이게끔 처리
-		m_bEnableDamageBarLerp = false;   // DamageBar Lerp 적용 끄기
-	}
-	else // Damage를 입었을 때
-	{
-		DamageIndicatorBar->SetPercent(PrevRatio); // 이전 HPBar의 Ratio부터 시작해서 DamageBar Lerp 처리 시작
-		m_bEnableDamageBarLerp = true;
-		m_DamageIndicatorPercentLerpDest = NewRatio;
+		UC_Util::Print("From UC_PlayerStatWidget::UpdateHPBar : Invalid Param received!", FColor::Red, 5.f);
+		return false;
 	}
 	
+	UpdateHPBarBoilerPlate(_Ratio);
 	return true;
 }
 
@@ -86,6 +81,28 @@ bool UC_PlayerStatWidget::UpdateBoostBar(float _Boost, float _MaxBoost)
 		
 	m_BoostBarPercentLerpDest = _Boost / _MaxBoost;
 	return true;
+}
+
+void UC_PlayerStatWidget::UpdateHPBarBoilerPlate(float _Ratio)
+{
+	// 힐 적용인지 Damage 입는지에 따라 처리
+	const float PrevRatio = MainHPBar->GetPercent();
+	
+	// MainHPbar의 경우, 힐 적용이 되었든, Damage 처리가 되었든 LerpDest 적용은 동일
+	m_MainHPBarPercentLerpDest = _Ratio;
+	
+	if (_Ratio > PrevRatio) // 힐 적용
+	{
+		// Damage Bar 관련 처리
+		DamageIndicatorBar->SetPercent(0.f);     // 아예 DamageBar 안보이게끔 처리
+		m_bEnableDamageBarLerp = false;   // DamageBar Lerp 적용 끄기
+	}
+	else // Damage를 입었을 때
+	{
+		DamageIndicatorBar->SetPercent(PrevRatio); // 이전 HPBar의 Ratio부터 시작해서 DamageBar Lerp 처리 시작
+		m_bEnableDamageBarLerp = true;
+		m_DamageIndicatorPercentLerpDest = _Ratio;
+	}
 }
 
 bool UC_PlayerStatWidget::ToggleAmmoInfoVisibility

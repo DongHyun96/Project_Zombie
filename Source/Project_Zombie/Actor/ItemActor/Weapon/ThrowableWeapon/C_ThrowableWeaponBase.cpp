@@ -193,7 +193,7 @@ bool AC_ThrowableWeaponBase::AttachToHolster(USceneComponent* _ParentMesh)
 	// 투척류를 안전손잡이까지 뽑았다면 현재 위치에 현재 투척류 그냥 바닥에 떨굼
 
 	// 투척류를 집어넣는 경우, 투척류 상태 초기화
-	CancleThrowAction();
+	CancelThrowAction();
 
 	SetActorHiddenInGame(true);
 	m_ProjectileMovement->Deactivate();
@@ -222,8 +222,8 @@ bool AC_ThrowableWeaponBase::OnStartFire(class AC_BasicPlayer* _WeaponUser)
 		return false;
 	}
 
-	// 무기 사용자를 저장해둠 (애님 노티파이 이벤트에서 사용하기 위함)
-	m_WeaponUser = _WeaponUser;
+	// 무기 사용자를 저장해둠 (애님 노티파이 이벤트에서 사용하기 위함) -> 수정(동현) : WeaponBase의 m_OwnerPlayer(자기자신의 Slot에 장착한 무기주인)을 사용
+	// m_WeaponUser = _WeaponUser;
 
 	// 투척 과정 시작
 	m_bIsCharging = false;
@@ -245,8 +245,8 @@ bool AC_ThrowableWeaponBase::Reload(AC_BasicPlayer* _WeaponUser)
 	if (!_WeaponUser)
 		return false;
 
-	if (m_WeaponUser != _WeaponUser)
-		m_WeaponUser = _WeaponUser;
+	if (m_OwnerPlayer != _WeaponUser)
+		m_OwnerPlayer = _WeaponUser;
 
 	return OnStartCookInput();
 }
@@ -292,7 +292,7 @@ void AC_ThrowableWeaponBase::OnRemovePin()
 
 void AC_ThrowableWeaponBase::OnThrowReadyLoop()
 {
-	UAnimInstance* AnimInstance = m_WeaponUser->GetMesh()->GetAnimInstance();
+	UAnimInstance* AnimInstance = m_OwnerPlayer->GetMesh()->GetAnimInstance();
 	if (!AnimInstance)
 		return;
 	
@@ -313,12 +313,12 @@ void AC_ThrowableWeaponBase::OnThrowReadyLoop()
 	// 차징이 끝났으면, 투척 동작으로 넘어감
 	m_ThrowableState = EThrowableState::Throwing;
 
-	m_WeaponUser->PlayAnimMontage(m_ThrowMontage, 1.f, m_ThrowSectionName);
+	m_OwnerPlayer->PlayAnimMontage(m_ThrowMontage, 1.f, m_ThrowSectionName);
 }
 
 void AC_ThrowableWeaponBase::OnThrowThrowable()
 {
-	if (!m_WeaponUser)
+	if (!m_OwnerPlayer)
 		return;
 
 	if (!m_MainCollider || !m_ProjectileMovement)
@@ -399,7 +399,7 @@ void AC_ThrowableWeaponBase::Explode()
 	/// 수류탄을 들고있는 기본 상태보다 아무것도 들고있지 않는 기본 상태로
 	if (PrevState != EThrowableState::Thrown && PrevState != EThrowableState::Throwing)
 	{
-		UAnimInstance* AnimInstance = m_WeaponUser->GetMesh()->GetAnimInstance();
+		UAnimInstance* AnimInstance = m_OwnerPlayer->GetMesh()->GetAnimInstance();
 
 		if (AnimInstance)
 		{
@@ -460,16 +460,16 @@ void AC_ThrowableWeaponBase::Explode()
 
 // ----------------- 투척 취소 관련 처리 -----------------
 
-void AC_ThrowableWeaponBase::CancleThrowAction()
+void AC_ThrowableWeaponBase::CancelThrowAction()
 {
 	//// 지금은 사용 안하지만 나중에 투척 캔슬시에 사용
 
 	ClearPredictedPath();
 
-	if (!m_WeaponUser)
+	if (!m_OwnerPlayer)
 		return;
 
-	UAnimInstance* AnimInstance = m_WeaponUser->GetMesh()->GetAnimInstance();
+	UAnimInstance* AnimInstance = m_OwnerPlayer->GetMesh()->GetAnimInstance();
 
 	if (AnimInstance)
 	{
@@ -495,7 +495,7 @@ void AC_ThrowableWeaponBase::ResetThrowableState()
 	m_bIsCharging = false;
 	m_bWantsCook = false;
 
-	m_WeaponUser = nullptr;
+	// m_WeaponUser = nullptr; // TODO : 이거 nullptr로 처리함으로써 다른 함수에서 영향을 미치는지 확인해봐야 함
 
 	// 이전 충돌 정보 초기화
 	m_HitResult = FHitResult();
@@ -507,14 +507,14 @@ void AC_ThrowableWeaponBase::ResetThrowableState()
 // 플레이어가 바라보는 방향을 기준으로 투척 방향 반환
 FVector AC_ThrowableWeaponBase::GetThrowDirection() const
 {
-	if (!m_WeaponUser)
+	if (!m_OwnerPlayer)
 		return GetActorForwardVector();
 
 	// 플레이어가 바라보는 방향을 기준으로 투척 방향 계산
-	FVector ThrowDirection = m_WeaponUser->GetActorForwardVector();
+	FVector ThrowDirection = m_OwnerPlayer->GetActorForwardVector();
 
 	// 마우스 방향을 기준으로 투척 방향 계산
-	if (AController* Controller = m_WeaponUser->GetController())
+	if (AController* Controller = m_OwnerPlayer->GetController())
 	{
 		FRotator ControlRotation = Controller->GetControlRotation();
 		ThrowDirection = ControlRotation.Vector();
@@ -530,12 +530,12 @@ FVector AC_ThrowableWeaponBase::GetLaunchLocation(const FVector& _ThrowDirection
 {
 	FVector LaunchLocation = GetActorLocation();
 
-	if (m_WeaponUser)
+	if (m_OwnerPlayer)
 	{
 		// 캐릭터가 바라보는 방향을 기준으로 투척 시작 위치 계산
-		const FVector CharacterForard = m_WeaponUser->GetActorForwardVector().GetSafeNormal();
+		const FVector CharacterForward = m_OwnerPlayer->GetActorForwardVector().GetSafeNormal();
 
-		LaunchLocation += CharacterForard * m_LaunchForwardOffset;
+		LaunchLocation += CharacterForward * m_LaunchForwardOffset;
 		LaunchLocation += FVector::UpVector * m_LaunchUpwardOffset;
 	}
 	else
@@ -588,11 +588,11 @@ void AC_ThrowableWeaponBase::SetupThrowCollision()
 	// ProjectileMovement 로 날아가니까 Physics Simulation은 끄기
 	m_MainCollider->SetSimulatePhysics(false);
 
-	if (m_WeaponUser)
+	if (m_OwnerPlayer)
 	{
 		// Owner와 충돌하지 않도록 설정
-		m_MainCollider->IgnoreActorWhenMoving(m_WeaponUser, true);
-		m_WeaponUser->GetCapsuleComponent()->IgnoreActorWhenMoving(this, true);
+		m_MainCollider->IgnoreActorWhenMoving(m_OwnerPlayer, true);
+		m_OwnerPlayer->GetCapsuleComponent()->IgnoreActorWhenMoving(this, true);
 	}
 }
 
@@ -653,7 +653,7 @@ void AC_ThrowableWeaponBase::OnThrowableHit(UPrimitiveComponent* HitComponent, A
 		return;
 	
 	// 혹시 투척류를 던진 플레이어와 충돌했을 경우 손에서 터질 수 있으므로 충돌 무시
-	if (OtherActor == m_WeaponUser)
+	if (OtherActor == m_OwnerPlayer)
 		return;
 
 	// 충돌 시 폭발 하도록 설정되어 있지 않으면 무시
@@ -730,7 +730,7 @@ void AC_ThrowableWeaponBase::UpdatePredictedPath()
 	// 이전 호출 시점에 그려진 예측 경로를 제거
 	ClearPredictedPath();
 
-	if (!m_WeaponUser || !m_PathSpline)
+	if (!m_OwnerPlayer || !m_PathSpline)
 		return;
 
 	UWorld* World = GetWorld();
@@ -765,7 +765,7 @@ void AC_ThrowableWeaponBase::UpdatePredictedPath()
 	PathParams.bTraceComplex = false; 
 	PathParams.DrawDebugType = EDrawDebugTrace::None;
 	PathParams.ActorsToIgnore.Add(this);
-	PathParams.ActorsToIgnore.AddUnique(m_WeaponUser);
+	PathParams.ActorsToIgnore.AddUnique(m_OwnerPlayer);
 
 	// ----------------- 투척류 예측 경로 계산 -----------------
 

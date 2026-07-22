@@ -15,6 +15,8 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "WeaponData", meta = (RequiredAssetDataTags = "RowStructure=/Script/Project_Zombie.GunData"))
 	UDataTable* m_Table;
 
+	
+	
 public:
 	virtual void BeginPlay() override;
 	virtual void InitData() override;

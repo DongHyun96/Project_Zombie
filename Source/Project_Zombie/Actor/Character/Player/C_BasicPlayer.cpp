@@ -34,6 +34,7 @@
 #include "UI/InvenUI/C_InventoryGridWidget.h"
 #include "UI/InvenUI/C_InventoryWidget.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
+#include "Utility/C_Util.h"
 
 AC_BasicPlayer::AC_BasicPlayer()
 {
@@ -191,7 +192,10 @@ void AC_BasicPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 
 float AC_BasicPlayer::TakeDamage(float _Damage, FDamageEvent const& _DamageEvent, AController* _InstigatorController, AActor* _InstigatorActor)
 {
-	return Super::TakeDamage(_Damage, _DamageEvent, _InstigatorController, _InstigatorActor);
+	UC_Util::Print("Player Damaged", FColor::MakeRandomColor(), 10.f);
+
+	const float DamageAmount = Super::TakeDamage(_Damage, _DamageEvent, _InstigatorController, _InstigatorActor);
+	return DamageAmount;
 }
 
 bool AC_BasicPlayer::SetCurDraggedItem(struct FInventoryEntry InEntry, UC_InvenComponent* SrcInvenComp, int32 SrcSlotIdx)

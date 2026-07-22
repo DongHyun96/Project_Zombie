@@ -34,6 +34,14 @@ public: // HP Bar 및 BoostBar 정보 업데이트 관련
 	bool UpdateHPBar(float _HP, float _MaxHP);
 
 	/// <summary>
+	/// HP Bar Percent 업데이트
+	/// </summary>
+	/// <param name="_Ratio"> : HP 비율 </param>
+	/// <returns> : 잘못된 값이 들어왔을 경우 return false </returns>
+	UFUNCTION(BlueprintCallable)
+	bool UpdateHPBarRatio(float _Ratio);
+	
+	/// <summary>
 	/// Boost Bar 업데이트
 	/// </summary>
 	/// <param name="_Boost"> : 현재 Boost 량 </param>
@@ -86,9 +94,10 @@ public: // Ingame Log 관련
 	/// Player Warning Log 추가
 	/// </summary>
 	/// <param name="WarningLog"> : Warning log </param>
+	/// <param name="_LogColor"> : Log 색상 </param>
 	/// <returns> : 제대로 추가되지 않았다면 return false </returns>
 	UFUNCTION(BlueprintCallable)
-	bool AddPlayerWarningLog(const FString& WarningLog);
+	bool AddPlayerWarningLog(const FString& WarningLog, const FColor& _LogColor = FColor::White);
 
 protected:
 

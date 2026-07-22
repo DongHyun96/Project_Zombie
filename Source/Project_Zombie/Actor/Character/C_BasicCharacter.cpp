@@ -4,6 +4,7 @@
 #include "Actor/Character/C_BasicCharacter.h"
 
 #include "Actor/Components/StatComponent/C_StatComponentBase.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 AC_BasicCharacter::AC_BasicCharacter()
 {
@@ -13,6 +14,8 @@ AC_BasicCharacter::AC_BasicCharacter()
 void AC_BasicCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	GetCharacterMovement()->bEnablePhysicsInteraction = false;
 }
 
 void AC_BasicCharacter::Tick(float DeltaTime)

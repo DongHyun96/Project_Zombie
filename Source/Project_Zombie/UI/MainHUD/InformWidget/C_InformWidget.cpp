@@ -47,7 +47,7 @@ void UC_InformWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 	HandleLogQueuePositionsAndDefaultAlpha(InDeltaTime);
 }
 
-bool UC_InformWidget::AddPlayerWarningLog(const FString& WarningLog)
+bool UC_InformWidget::AddPlayerWarningLog(const FString& WarningLog, const FColor& _LogColor)
 {
 	// 새로운 첫 번째 로그로 맨 뒤 로그 이동시키기
 	int TargetIndex = PlayerWarningLogSequence.Last();
@@ -61,6 +61,8 @@ bool UC_InformWidget::AddPlayerWarningLog(const FString& WarningLog)
 	// 내용 setting 하기
 	TargetTextBlock->SetText(FText::FromString(WarningLog));
 
+	TargetTextBlock->SetColorAndOpacity(_LogColor);
+	
 	// Render Alpha값 기본 값으로 지정
 	TargetTextBlock->SetRenderOpacity(1.f);
 

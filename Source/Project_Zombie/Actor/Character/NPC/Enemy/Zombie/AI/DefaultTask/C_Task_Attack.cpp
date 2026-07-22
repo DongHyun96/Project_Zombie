@@ -26,4 +26,5 @@ EBTNodeResult::Type UC_Task_Attack::ExecuteTask(UBehaviorTreeComponent& _OwnCom,
 
 void UC_Task_Attack::TickTask(UBehaviorTreeComponent& _OwnCom, uint8* _NodeMemory, float _DeltaSeconds)
 {
+	Super::TickTask(_OwnCom, _NodeMemory, _DeltaSeconds);
 }

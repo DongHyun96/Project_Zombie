@@ -6,6 +6,14 @@
 #include "GameFramework/Actor.h"
 #include "C_WorldPingActor.generated.h"
 
+UENUM(BlueprintType)
+enum class EGamePingType : uint8
+{
+	DefaultMarker, // 기본 Marker
+	GunBaseMarker,
+	End UMETA(Hidden)
+};
+
 /// <summary>
 /// World에 배치되는 Ping marker actor
 /// </summary>
@@ -32,8 +40,24 @@ public:
 	/// Ping 정보 World에 스폰처리 
 	/// </summary>
 	/// <param name="_TraceHitResult"> : 스폰용 LineTrace 검사결과 </param>
-	void SpawnPingActorToWorld(const FHitResult& _TraceHitResult);
+	/// <param name="_PingType"> : 핑 종류 </param>
+	void SpawnPingActorToWorld
+	(
+		const FHitResult&	_TraceHitResult,
+		EGamePingType		_PingType   = EGamePingType::DefaultMarker
+	);
 
+	/// <summary>
+	/// Ping 정보 World에 스폰처리 (무조건 FullPing 모습으로 스폰처리)
+	/// </summary>
+	/// <param name="_SpawnLocation"> : Spawn 위치 </param>
+	/// <param name="_PingType"> : 핑 종류 </param>
+	void SpawnFullPingActorToWorld
+	(
+		const FVector&	_SpawnLocation,
+		EGamePingType	_PingType
+	);
+	
 	void HidePing();
 	
 protected:
@@ -52,7 +76,8 @@ protected:
 	USceneComponent* m_RootSceneComp{};	
 	
 private:
-	
+
+	UPROPERTY()
 	class UC_PingWidget* m_PingWidget{};
 	
 protected:

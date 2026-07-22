@@ -42,6 +42,13 @@ public:
 	
 	float GetHealingAuraHPS() const { return m_HealAuraHPS; }
 	
+private:
+	
+	/// <summary>
+	/// HealTarget 컨테이너에서 제거함과 동시에, Enemy 쪽 HealRequestRegisterCnt 하나 줄이기 처리 & Delegate 구독 해제 처리
+	/// </summary>
+	void RemoveHealProjectileTarget(AC_BasicEnemy* _Target);
+	
 public:
 	
 	/// <summary>
@@ -74,6 +81,10 @@ private:
 	UFUNCTION()
 	void OnHealSkillEnd(AC_BasicEnemy* _Enemy);
 
+private:
+	
+	virtual void OnDead(AC_BasicCharacter* _DeadCharacter) override;
+	
 protected:
 
 	// 주의 : Healing ActionState라고 해서 무조건 HealSkill을 발동중이 아닐 수 있다

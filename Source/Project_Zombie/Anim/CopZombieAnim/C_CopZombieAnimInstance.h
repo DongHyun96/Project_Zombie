@@ -35,5 +35,8 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "CopZombie")
 	ECopZombieState m_CopZombieState{};
+
+	UPROPERTY(BlueprintReadOnly, Category = "IK")
+	FVector m_LeftHandIKTranslation{};
 	
 };
