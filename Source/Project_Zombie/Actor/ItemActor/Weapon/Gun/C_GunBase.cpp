@@ -168,7 +168,8 @@ void AC_GunBase::SpawnShellEject()
             MeshComp->SetStaticMesh(m_ShellMesh);
             MeshComp->SetMobility(EComponentMobility::Movable);
             MeshComp->SetSimulatePhysics(true);
-            
+        	MeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        	
             MeshComp->SetCollisionProfileName(TEXT("Custom"));
             MeshComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
             MeshComp->SetCollisionResponseToChannel(ECC_PhysicsBody, ECR_Ignore);
