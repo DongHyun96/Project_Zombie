@@ -2,18 +2,12 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "GlobalData.h"
 #include "C_EquippedComponent.generated.h"
 
-UENUM(BlueprintType)
-enum class EWeaponSlot : uint8
-{
-	None,
-	MainWeapon,
-	MeleeWeapon,
-	ThrowableWeapon,
-	Gadget,							// 나중에 추가할지도 모르는 장비 슬롯 (예: 방어구, 액세서리, 설치형 무기등), gadget : 간단한 기계 장치
-	Max				UMETA(Hidden)
-};
+class UC_InvenComponent;
+
+
 
 /// <summary>
 /// 장착된 무기 관리 및 무기전환, 현재 손에 들고 있는 무기 관리 처리 Component
@@ -46,6 +40,8 @@ public:
 	/// <returns> : 해당 slot의 이전 무기 (없었다면 return nullptr) </returns>
 	AC_WeaponBase* SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* WeaponToEquip);
 
+	
+public:	
 	/// <summary>
 	/// 현재 손에 든 무기 바꾸기
 	/// </summary>
@@ -59,7 +55,7 @@ public:
 	/// <returns> : 실패 시 return false </returns>
 	bool ToggleArmed();
 
-	
+
 	
 public:
 	
@@ -89,6 +85,7 @@ protected: /* 장착 무기 Slot */
 
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)
 	TMap<EWeaponSlot, TSubclassOf<AC_WeaponBase>> m_WeaponClassToSpawn{};
+
 	
 private:
 
