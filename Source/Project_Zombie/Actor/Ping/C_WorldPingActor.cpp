@@ -89,6 +89,33 @@ void AC_WorldPingActor::SpawnPingActorToWorld(const FHitResult& _TraceHitResult,
 	m_PingWidget->ShowPingWidget((_TraceHitResult.ImpactPoint + SplineEndPos) * 0.5f, _PingType);
 }
 
+void AC_WorldPingActor::SpawnFullPingActorToWorld(const FVector& _SpawnLocation, EGamePingType _PingType)
+{
+	HidePing(); // 이전 핑 지우기용 처리
+	
+	// Adjust spline position & show
+	m_SplineMeshComponent->SetHiddenInGame(false);
+	m_SplineMeshComponent->SetStartPosition(_SpawnLocation);
+	const FVector SplineEndPos = _SpawnLocation + FVector::UnitZ() * 175.f;
+	m_SplineMeshComponent->SetEndPosition(SplineEndPos);
+
+	// Spawn Ping Effect
+	m_PingEffectComp = UNiagaraFunctionLibrary::SpawnSystemAtLocation
+	(
+		GetWorld(),
+		m_PingEffect,
+		_SpawnLocation,		// 스폰할 위치 (FVector)
+		GetActorRotation(), // 스폰할 회전 (FRotator)
+		FVector(1.0f),      // 스케일 (FVector)
+		false,              // AutoDestroy (재생 완료 후 자동 소멸 여부)
+		true				// AutoActivate (스폰 즉시 재생 여부)
+	);
+
+	// Adjusting WidgetComponent Location
+	m_PingWidgetComponent->SetWorldLocation(SplineEndPos + FVector::UnitZ() * 25.f);
+	m_PingWidget->ShowPingWidget((_SpawnLocation + SplineEndPos) * 0.5f, _PingType);
+}
+
 void AC_WorldPingActor::HidePing()
 {
 	// Hide PingEffect

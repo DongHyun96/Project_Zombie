@@ -39,12 +39,22 @@ void UC_EquippedComponent::BeginPlay()
 
 AC_WeaponBase* UC_EquippedComponent::SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* WeaponToEquip)
 {
-	const uint8 TargetSlotIdx = static_cast<uint8>(TargetSlot); 
+	if (TargetSlot == EWeaponSlot::None || TargetSlot == EWeaponSlot::Max)
+	{
+		UC_Util::Print("From UC_EquippedComponent::SetSlotWeapon : wrong TargetSlot received", FColor::Red, 10.f);
+		return nullptr;
+	}
 	
+	const uint8 TargetSlotIdx = static_cast<uint8>(TargetSlot); 
+	UC_Util::Print("Setting : " + FString::FromInt(TargetSlotIdx), FColor::MakeRandomColor(), 100.f);
 	AC_WeaponBase* PrevSlotWeapon = m_Weapons[TargetSlotIdx];
 
-    // 들어온 슬롯의 이전 무기가 존재할 때, 이전 무기 해제 
-    if (PrevSlotWeapon) m_Weapons[TargetSlotIdx]->DetachFromActor(FDetachmentTransformRules::KeepRelativeTransform);
+    // 들어온 슬롯의 이전 무기가 존재할 때, 이전 무기 해제 및 OwnerPlayer 초기화
+    if (PrevSlotWeapon)
+    {
+    	m_Weapons[TargetSlotIdx]->DetachFromActor(FDetachmentTransformRules::KeepRelativeTransform);
+    	PrevSlotWeapon->SetOwnerPlayer(nullptr);
+    }
 
     m_Weapons[TargetSlotIdx] = WeaponToEquip; // 새로 들어온 무기로 교체
     
@@ -70,7 +80,10 @@ AC_WeaponBase* UC_EquippedComponent::SetSlotWeapon(EWeaponSlot TargetSlot, AC_We
 
     // m_Weapons[InSlot]->SetRelativeTransformToInitial(); // TODO : 무기 부착 시 위치 이상해지면, 이 함수처리 고려할 것
     m_Weapons[TargetSlotIdx]->AttachToHolster(m_OwnerPlayer->GetMesh());
-    
+
+	// 무기에게 자신의 OwnerPlayer 세팅
+	m_Weapons[TargetSlotIdx]->SetOwnerPlayer(m_OwnerPlayer);
+	
     return PrevSlotWeapon;
 }
 

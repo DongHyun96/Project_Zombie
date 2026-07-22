@@ -9,6 +9,7 @@
 #include "Actor/Components/C_EquippedComponent.h"
 #include "Actor/Components/StatComponent/C_StatComponentBase.h"
 #include "Actor/ItemActor/Weapon/Gun/C_GunBase.h"
+#include "Actor/ItemActor/Weapon/WeaponComponent/GunComponent/C_AIGunUsageComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Utility/C_Util.h"
 
@@ -80,6 +81,10 @@ void UC_Task_GrabWeapon::OnTaskFinished
 	
 	// 뺏은 무기 장착 시도
 	if (!CopZombie->EquipWeapon(StolenGun)) return;
+	
+	// 장착 성공, AIUsage에 이전 Player 주인 세팅
+	StolenGun->GetAIGunUsageComponent()->SetPrevOwnerPlayer(BestGrabPlayer);
+	
 	
 	// 제대로 장착 처리되었다면 MainState 키값 수정 (다른 Zombie는 Service에서 바꾸지만, 이 해당 키는 바로 바꿔주어야 해당 Task를 바로 실행)
 	OwnerComp.GetBlackboardComponent()->SetValueAsEnum(m_MainState.SelectedKeyName, static_cast<uint8>(ECopZombieState::WeaponEarned));

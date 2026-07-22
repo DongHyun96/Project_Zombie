@@ -70,6 +70,17 @@ public:
 	
 	UAnimMontage* GetDrawMontage() const { return m_DrawMontage; }
 	UAnimMontage* GetSheathMontage() const { return m_SheathMontage; }
+
+public:
+	
+	AC_BasicPlayer* GetOwnerPlayer() const { return m_OwnerPlayer; }
+	void SetOwnerPlayer(AC_BasicPlayer* _OwnerPlayer) { m_OwnerPlayer = _OwnerPlayer; }
+	
+protected:
+
+	// 이 Weapon을 자신의 Slot에 장착중인 OwnerPlayer
+	UPROPERTY()
+	AC_BasicPlayer* m_OwnerPlayer{};
 	
 protected:
 

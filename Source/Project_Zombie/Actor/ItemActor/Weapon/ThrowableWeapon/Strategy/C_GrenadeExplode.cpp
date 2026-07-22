@@ -186,9 +186,9 @@ bool UC_GrenadeExplode::UseStrategy_Implementation(AC_ThrowableWeaponBase* _Thro
 
 		// 4. 데미지를 입히기
 		AController* InstigatorController = nullptr;
-		if (AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(_ThrowableWeapon->GetThrowableUser()))
+		if (_ThrowableWeapon->GetOwnerPlayer())
 		{
-			InstigatorController = Player->GetController();
+			InstigatorController = _ThrowableWeapon->GetOwnerPlayer()->GetController();
 		}
 
 		// 데미지 이벤트 전달

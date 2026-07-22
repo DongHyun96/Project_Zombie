@@ -65,7 +65,7 @@ void UC_PingWidget::ShowPingWidget(const FVector& _WorldPingSpawnedLocation, EGa
 		if (AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD()))
 		{
 			m_TargetCompassMarkerWidget = UIManager->GetMainHUDWidget()->GetCompassBarWidget()->GetCompassMarkerWidget();
-			m_TargetCompassMarkerWidget->TogglePingMarker(true);
+			m_TargetCompassMarkerWidget->TogglePingMarker(true, _PingType);
 			m_TargetCompassMarkerWidget->SetWorldMarkerSpawnedLocation(m_SpawnedLocation);
 		}
 	}

@@ -6,6 +6,8 @@
 #include "Actor/Character/C_BasicCharacter.h"
 #include "Actor/Character/NPC/Enemy/Zombie/Controller/C_ZombieController.h"
 #include "Actor/Character/NPC/Enemy/Zombie/CopZombie/C_CopZombie.h"
+#include "Actor/Character/Player/C_BasicPlayer.h"
+#include "Actor/Components/C_PingSystemComponent.h"
 #include "Actor/ItemActor/Weapon/Gun/C_GunBase.h"
 #include "Components/SphereComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -75,7 +77,6 @@ bool UC_AIGunUsageComponent::AttachToHand(USceneComponent* _ParentMesh)
 
 	// 이미 사격중이었던 Weapon인 경우, Trigger 해제
 	m_OwnerGun->ReleaseTrigger();
-	m_OwnerGun->m_WeaponPlayerUser = nullptr; // -> Enemy가 이용을 끝낸 총기의 경우 누구누구의 총기 여기있다 표시를 하려면 해당 Owner필요함
 	
 	return true;
 }
@@ -112,6 +113,9 @@ bool UC_AIGunUsageComponent::DetachFromHand()
 		0.5f,
 		true
 	);
+
+	// OwnerCopZombie 초기화
+	m_WeaponCopZombieUser = nullptr;
 	
 	return true;
 }
@@ -173,15 +177,30 @@ void UC_AIGunUsageComponent::HandleGunMeshPhysicsStopped()
 	m_OwnerGun->GetWeaponMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	m_OwnerGun->GetWeaponMesh()->SetSimulatePhysics(false);
 
+	// OwnerGun Actor의 위치 정상복구 처리
+	const FTransform& MeshWorldTransform = m_OwnerGun->GetWeaponMesh()->GetComponentTransform();
+	m_OwnerGun->SetActorTransform(MeshWorldTransform);
+	m_OwnerGun->GetWeaponMesh()->SetRelativeTransform(FTransform::Identity);
+	
 	// 파밍 처리 가능하게끔 MainCollider 활성화 (Overlap 검사)
 	m_OwnerGun->m_Collision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	
-	// TODO : 무기 외곽에 Outline 활성화 및 WorldPingActor 스폰 처리
 	
 	// 무기 외곽선 활성화
 	m_OwnerGun->GetWeaponMesh()->SetCustomDepthStencilValue(1);
 
-	// 무기 WorldPingActor 스폰
+	// 무기 WorldPingActor 스폰 (이전 Player 주인의 PingSystemComponent 사용) -> 원칙 : 핑 정보는 인당 하나만 표시로 무조건 통일
+	if (!m_PrevOwnerPlayer)
+	{
+		UC_Util::Print("From UC_AIGunUsageComponent::HandleGunMeshPhysicsStopped : Prev OwnerPlayer nullptr!", FColor::Red, 10.f);
+		return;
+	}
+
+	m_PrevOwnerPlayer->GetPingSystemComponent()->SpawnFullPing
+	(
+		m_OwnerGun->GetActorLocation(), // -> 이거 이상하게 위치가 이전 위치가 잡히는 중
+		EGamePingType::GunBaseMarker
+	);
 	
+	m_PrevOwnerPlayer = nullptr;
 }
 

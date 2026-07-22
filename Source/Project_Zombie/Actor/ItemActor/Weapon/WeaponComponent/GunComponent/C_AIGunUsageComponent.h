@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Actor/Ping/C_WorldPingActor.h"
 #include "Components/ActorComponent.h"
 #include "C_AIGunUsageComponent.generated.h"
 
@@ -20,6 +21,13 @@ protected:
 	
 	virtual void BeginPlay() override;
 
+public:
+	
+	/// <summary>
+	/// 이전 무기주인 set
+	/// </summary>
+	void SetPrevOwnerPlayer(class AC_BasicPlayer* _PrevOwnerPlayer) { m_PrevOwnerPlayer = _PrevOwnerPlayer; }
+	
 public:
 	
 	/// <summary>
@@ -63,6 +71,9 @@ private:
 	// 현재 이 Gun을 사용중인 CopZombieUser
 	UPROPERTY()
 	class AC_CopZombie* m_WeaponCopZombieUser{};
+	
+	UPROPERTY()
+	AC_BasicPlayer* m_PrevOwnerPlayer{};
 
 private:
 	

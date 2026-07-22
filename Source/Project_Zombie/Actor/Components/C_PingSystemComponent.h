@@ -7,6 +7,8 @@
 #include "C_PingSystemComponent.generated.h"
 
 
+enum class EGamePingType : uint8;
+
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class PROJECT_ZOMBIE_API UC_PingSystemComponent : public UActorComponent
 {
@@ -22,7 +24,18 @@ protected:
 
 public:
 	
+	/// <summary>
+	/// 핑 스폰 시도
+	/// </summary>
+	/// <returns> : 제대로 Spawn되지 않았다면 return false </returns>
 	bool TrySpawnPing();
+
+	/// <summary>
+	/// FullPing 모습 그대로 PingSpawn 처리
+	/// </summary>
+	/// <param name="_SpawnLocation"> : 핑 스폰 위치 </param>
+	/// <param name="_PingType"> : 핑 타입 </param>
+	void SpawnFullPing(const FVector& _SpawnLocation, EGamePingType _PingType);
 	
 private:
 	

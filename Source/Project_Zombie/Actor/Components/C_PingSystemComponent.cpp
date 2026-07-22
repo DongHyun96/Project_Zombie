@@ -55,7 +55,13 @@ bool UC_PingSystemComponent::TrySpawnPing()
 	
 	if (!HasHit) return false;
 
+	// TODO : 여기서 LineTrace 결과에 따른 PingType 지정해서 제대로 넣어줄 것 (일단은 DefaultMarker로 처리함) 
 	m_WorldPingActor->SpawnPingActorToWorld(HitResult);
 	return true;
+}
+
+void UC_PingSystemComponent::SpawnFullPing(const FVector& _SpawnLocation, EGamePingType _PingType)
+{
+	m_WorldPingActor->SpawnFullPingActorToWorld(_SpawnLocation, _PingType);
 }
 

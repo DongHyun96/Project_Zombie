@@ -183,7 +183,7 @@ void AC_GunBase::ProcessLineTraceDamage(float DamageVal)
 		FHitResult HitResult;
 		FCollisionQueryParams QueryParams;
 		QueryParams.AddIgnoredActor(this);
-		QueryParams.AddIgnoredActor(m_WeaponPlayerUser);
+		QueryParams.AddIgnoredActor(m_OwnerPlayer);
 
 		bool bHasHit = GetWorld()->LineTraceSingleByChannel(HitResult, StartLocation, MaxEndLocation, ECC_Visibility, QueryParams);
 		FVector ActualEndLocation = bHasHit ? HitResult.ImpactPoint : MaxEndLocation;
@@ -196,7 +196,7 @@ void AC_GunBase::ProcessLineTraceDamage(float DamageVal)
 
 			if (AC_BasicEnemy* Enemy = Cast<AC_BasicEnemy>(HitResult.GetActor()))
 			{
-				UGameplayStatics::ApplyDamage(Enemy, DamageVal, m_WeaponPlayerUser->GetController(), this, nullptr);
+				UGameplayStatics::ApplyDamage(Enemy, DamageVal, m_OwnerPlayer->GetController(), this, nullptr);
 			}
 		}
 	}
@@ -206,9 +206,8 @@ bool AC_GunBase::AttachToHand(USceneComponent* _ParentMesh)
 {
 	if (!_ParentMesh) return false;
 	AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(_ParentMesh->GetOwner());
-	if (!Player) return false; // 장착 시도하는 Owner Character가 Player형이 아닌 경우, return false
-
-	m_WeaponPlayerUser = Player;
+	if (!Player) return false; // 손에 장착 시도하는 Owner Character가 Player형이 아닌 경우, return false
+	if (Player != m_OwnerPlayer) return false; // 손에 장착 시도하는 Player가 무기주인인 경우가 아닌 경우 
 
 	// Main HUD MeleeWeapon 종류로 초기화
 	if (APlayerController* PC = Player->GetController<APlayerController>())

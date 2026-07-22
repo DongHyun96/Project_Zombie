@@ -93,8 +93,6 @@ public: // 쿠킹 입력
 
 public:  // Getter & Setter
 	
-	AC_BasicPlayer* GetThrowableUser() const { return m_WeaponUser; }
-
 	float GetExplosionRadius() const { return m_ExplosionRadius; }
 	void SetExplosionRadius(float _ExplosionRadius) { m_ExplosionRadius = _ExplosionRadius; }
 
@@ -122,7 +120,7 @@ private:
 	/// <summary>
 	/// 투척 취소 동작
 	/// </summary> 
-	void CancleThrowAction();
+	void CancelThrowAction();
 
 	/// <summary>
 	///	Throwable Weapon의 상태 초기화
@@ -333,10 +331,6 @@ protected:
 
 
 protected:
-
-	// 이 Throwable Weapon을 사용하는 Player
-	UPROPERTY()
-	AC_BasicPlayer* m_WeaponUser;
 
 	// Throwable Weapon의 타입
 	EThrowableType m_ThrowableType;

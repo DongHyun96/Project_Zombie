@@ -43,6 +43,13 @@ public:
 	/// <param name="_PingType"> : 핑 종류 </param>
 	void SpawnPingActorToWorld(const FHitResult& _TraceHitResult, EGamePingType _PingType = EGamePingType::DefaultMarker);
 
+	/// <summary>
+	/// Ping 정보 World에 스폰처리 (무조건 FullPing 모습으로 스폰처리)
+	/// </summary>
+	/// <param name="_SpawnLocation"> : Spawn 위치 </param>
+	/// <param name="_PingType"> : 핑 종류 </param>
+	void SpawnFullPingActorToWorld(const FVector& _SpawnLocation, EGamePingType _PingType);
+	
 	void HidePing();
 	
 protected:
