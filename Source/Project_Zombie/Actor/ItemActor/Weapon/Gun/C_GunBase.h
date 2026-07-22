@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GlobalData.h"
 #include "GameFramework/Actor.h"
 #include "../C_WeaponBase.h"
 #include "C_GunBase.generated.h"
@@ -31,29 +32,39 @@ protected:
 	class USphereComponent* m_Collision;
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Mesh", meta = (AllowPrivateAccess = "true"))
-	class USkeletalMeshComponent* m_WeaponMesh;
+	class USkeletalMeshComponent* m_WeaponMesh;		// 정적정보 - 상연, 데이터 테이블에서 가져와서 초기화 해주기.
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon|Components", meta = (DisplayName = "DataComponent"))
 	class UC_GunDataTableComponent* m_DataCom;
 
 protected:
-	float					m_BaseDamage;
+	// 총이 갖는 최종 데미지
+	float					m_Damage;
 
-	//현재 남아있는 총알 수
+	// 현재 남아있는 총알 수
 	int32					m_CurrentAmmo;
 
+	// 총이 갖는 최종 MaxAmmo
 	int32					m_MaxAmmo;
 
+	// 총이 갖는 최종 FireRate
 	float					m_FireRate;
 
-	float					m_ShellEjectImpulse;
+	// 총이 갖는 최종 ShellEjectImpulse(탄피 배출에 가하는 힘), TODO : 아마 나중에 Actor로 만든게 아니라 나이아가라등으로 바꾸면서 사라질 수 도? 
+	float					m_ShellEjectImpulse;	// 살짝 애매 - 상연
+	
+	UPROPERTY(Transient)
+	TObjectPtr<class UAnimSequence> m_FireAnimation;   		// 정적정보. - 상연, 데이터 테이블에서 가져와서 초기화 해주기.
+	
+	UPROPERTY(Transient)
+	TObjectPtr<class UAnimSequence> m_ReloadAnimation;		// 정적정보. - 상연, 데이터 테이블에서 가져와서 초기화 해주기.
+	
+	UPROPERTY(Transient)
+	TObjectPtr<class UStaticMesh> m_ShellMesh;				// 정적정보. - 상연, 데이터 테이블에서 가져와서 초기화 해주기.
 
-	class UAnimSequence*	m_FireAnimation;
-
-	class UAnimSequence*	m_ReloadAnimation;
-
-	class UStaticMesh*		m_ShellMesh;
-
+	// 이 무기의 원본 데이터 및 동적 데이터(CustomData)를 보유하는 통합 Entry
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Data")
+	FInventoryEntry			ItemEntry;
 	
 protected:
 	// 현재 이 Gun을 사용중인 WeaponUser
@@ -72,9 +83,9 @@ protected:
 #endif
 
 	// Holster Socket Name (각 MeleeWeapon 블루프린트에서 Name 초기화 해줄 것)
-	// 이거는 무기마다 Socket Transform 다를 수 있다고 판단됨
+	// 이거는 무기마다 Socket Transform 다를 수 있다고 판단됨 
 	UPROPERTY(EditDefaultsOnly, meta = (DisplayName = "HolsterSocketName"))
-	FName m_HolsterSocketName{};
+	FName m_HolsterSocketName{}; // 그렇다면 DataTable에서 관리해도 될듯? 정적 정보로 판단. - 상연
 
 public:
 
@@ -97,6 +108,14 @@ public:
 	/// 공통 라인트레이스 데미지 처리
 	/// </summary>
 	void ProcessLineTraceDamage(float DamageVal);
+	
+	// 리팩토링중....
+public:
+	// 인벤토리나 Pickup에서 Spawn/Attach 시 호출하여 데이터를 주입, TODO : ItemActor를 상속받게 하고 ItemActor에서 선언하기.
+	virtual void InitFromInventoryEntry(const FInventoryEntry& InEntry);
+
+	// 액터에서 수정된 동적 정보(남은 탄약, 업그레이드 등)를 반영한 최신 Entry 반환, TODO : ItemActor를 상속받게 하고 ItemActor에서 선언하기.
+	virtual FInventoryEntry GetUpdatedInventoryEntry();
 
 public:
 	class USkeletalMeshComponent* GetWeaponMesh() { return m_WeaponMesh; }
