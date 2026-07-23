@@ -82,6 +82,7 @@ public:
 	/// <summary>
 	/// 현재 BB에 세팅된 Target Get
 	/// </summary>
+	UFUNCTION(BlueprintCallable)
 	AActor* GetCurrentBBTarget() const;
 	
 public:
