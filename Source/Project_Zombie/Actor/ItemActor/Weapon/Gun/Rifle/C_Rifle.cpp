@@ -152,6 +152,89 @@ void AC_Rifle::PlayFireEffects()
 	}
 
 	SpawnShellEject();
-	ProcessLineTraceDamage(m_Damage);
+	RifleLineTraceDamage(m_Damage, m_SpreadAngle);
 
+}
+
+void AC_Rifle::RifleLineTraceDamage(float DamageVal, float SpreadAngleDegree)
+{
+	if (!m_WeaponMesh || !GetWorld() || !m_OwnerPlayer)
+		return;
+
+	// 1. 플레이어의 컨트롤러(카메라) 가져오기
+	APlayerController* PC = Cast<APlayerController>(m_OwnerPlayer->GetController());
+	if (!PC || !PC->PlayerCameraManager)
+		return;
+
+	// =========================================================================
+	// [1단계] 카메라 중앙에서 1차 라인트레이스를 쏴서 '크로스헤어가 가리키는 타겟' 찾기
+	// =========================================================================
+	FVector CameraStart = PC->PlayerCameraManager->GetCameraLocation();
+	FVector CameraForward = PC->PlayerCameraManager->GetCameraRotation().Vector();
+
+	// 사거리 설정 (기존 코드의 3500.f 사용)
+	float TraceRange = 3500.0f;
+	FVector CameraEnd = CameraStart + (CameraForward * TraceRange);
+
+	FHitResult CameraHitResult;
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+	QueryParams.AddIgnoredActor(m_OwnerPlayer);
+
+	bool bCameraHit = GetWorld()->LineTraceSingleByChannel(
+		CameraHitResult,
+		CameraStart,
+		CameraEnd,
+		ECC_Visibility,
+		QueryParams
+	);
+
+	// 카메라 레이저가 맞은 진짜 목표 지점 (안 맞았으면 사거리 끝 지점)
+	FVector TargetPoint = bCameraHit ? CameraHitResult.ImpactPoint : CameraEnd;
+
+	// =========================================================================
+	// [2단계] 실제 총구(MuzzleFlash)에서 타겟 지점(TargetPoint)을 향해 사격
+	// =========================================================================
+	FVector MuzzleStart = m_WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
+
+	// 총구 ➔ TargetPoint 로 향하는 사격 방향 벡터 계산
+	FVector ShootDirection = (TargetPoint - MuzzleStart).GetSafeNormal();
+
+	// 탄돌림(탄착군 오차) 적용
+	if (SpreadAngleDegree > 0.0f)
+	{
+		float ConeHalfAngleRad = FMath::DegreesToRadians(SpreadAngleDegree);
+		ShootDirection = FMath::VRandCone(ShootDirection, ConeHalfAngleRad);
+	}
+
+	FVector FinalMuzzleEnd = MuzzleStart + (ShootDirection * TraceRange);
+
+	// 총구 기준 2차 라인트레이스 (실제 데미지 판단용)
+	FHitResult MuzzleHitResult;
+	bool bMuzzleHit = GetWorld()->LineTraceSingleByChannel(
+		MuzzleHitResult,
+		MuzzleStart,
+		FinalMuzzleEnd,
+		ECC_Visibility,
+		QueryParams
+	);
+
+	FVector ActualEndLocation = bMuzzleHit ? MuzzleHitResult.ImpactPoint : FinalMuzzleEnd;
+
+	// Debug 그린 선 (총구 ➔ 실제 타격 지점)
+	DrawDebugLine(GetWorld(), MuzzleStart, ActualEndLocation, FColor::Green, false, 0.5f, 0, 1.5f);
+
+	// =========================================================================
+	// [3단계] 데미지 적용
+	// =========================================================================
+	if (bMuzzleHit)
+	{
+		DrawDebugSphere(GetWorld(), ActualEndLocation, 7.0f, 12, FColor::Red, false, 0.5f, 0, 1.5f);
+
+		if (AC_BasicEnemy* Enemy = Cast<AC_BasicEnemy>(MuzzleHitResult.GetActor()))
+		{
+			AController* InstigatorController = m_OwnerPlayer->GetController();
+			UGameplayStatics::ApplyDamage(Enemy, DamageVal, InstigatorController, this, nullptr);
+		}
+	}
 }

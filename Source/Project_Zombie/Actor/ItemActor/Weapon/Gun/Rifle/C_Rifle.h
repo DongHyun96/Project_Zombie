@@ -14,6 +14,11 @@ class PROJECT_ZOMBIE_API AC_Rifle : public AC_GunBase
 {
 	GENERATED_BODY()
 
+protected:
+	// 탄 퍼짐 수치 0에 가까울 수록 중앙
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Stat")
+	float m_SpreadAngle = 1.5f;
+
 public:
 	/// <summary>
 	/// 마우스 왼쪽 버튼 클릭 (사격 시작)
@@ -39,6 +44,11 @@ public:
 	/// 방아쇠를 당겼을 때 애니메이션 재생 함수
 	/// <summary>
 	void PlayFireEffects();
+
+	/// <summary>
+	/// 공통 라인트레이스 데미지 처리 (플레이어용)
+	/// </summary>
+	void RifleLineTraceDamage(float DamageVal, float SpreadAngleDegree);
 
 public:
 	/// <summary>

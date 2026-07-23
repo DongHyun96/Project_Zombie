@@ -108,33 +108,81 @@ void AC_ShotGun::PlayFireEffects()
 
 void AC_ShotGun::ProcessShotgunPellets(float BaseDamagePerPellet)
 {
-	if (!m_WeaponMesh || !GetWorld()) return;
+	if (!m_WeaponMesh || !GetWorld() || !m_OwnerPlayer)
+		return;
 
-	FVector StartLocation = m_WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
-	FRotator MuzzleRotation = m_WeaponMesh->GetSocketRotation(TEXT("MuzzleFlash"));
+	// 1. 플레이어 컨트롤러(카메라) 확인
+	APlayerController* PC = Cast<APlayerController>(m_OwnerPlayer->GetController());
+	if (!PC || !PC->PlayerCameraManager)
+		return;
 
+	// =========================================================================
+	// [1단계] 카메라 정중앙(크로스헤어)에서 1차 라인트레이스를 쏴서 주 타겟점 구하기
+	// =========================================================================
+	FVector CameraStart = PC->PlayerCameraManager->GetCameraLocation();
+	FVector CameraForward = PC->PlayerCameraManager->GetCameraRotation().Vector();
+
+	float TraceRange = 3500.0f;
+	FVector CameraEnd = CameraStart + (CameraForward * TraceRange);
+
+	FHitResult CameraHitResult;
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+	QueryParams.AddIgnoredActor(m_OwnerPlayer);
+
+	bool bCameraHit = GetWorld()->LineTraceSingleByChannel(
+		CameraHitResult,
+		CameraStart,
+		CameraEnd,
+		ECC_Visibility,
+		QueryParams
+	);
+
+	// 카메라가 가리키는 정중앙 목표 위치 (벽/적의 충돌 지점)
+	FVector TargetPoint = bCameraHit ? CameraHitResult.ImpactPoint : CameraEnd;
+
+	// =========================================================================
+	// [2단계] 총구(MuzzleFlash)에서 타겟점을 향하는 '기본 메인 방향' 계산
+	// =========================================================================
+	FVector MuzzleStart = m_WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
+	FVector MainDirection = (TargetPoint - MuzzleStart).GetSafeNormal();
+
+	// =========================================================================
+	// [3단계] 메인 방향을 기준으로 펠릿(m_PelletCount)만큼 퍼뜨려서 2차 발사
+	// =========================================================================
 	for (int32 i = 0; i < m_PelletCount; ++i)
 	{
-		FVector SpreadDir = FMath::VRandCone(MuzzleRotation.Vector(), FMath::DegreesToRadians(m_SpreadAngle));
-		FVector MaxEndLocation = StartLocation + (SpreadDir * 3500.0f);
+		// 총구->타겟 메인 방향을 중심으로 산탄 각도(m_SpreadAngle)만큼 무작위 분산
+		FVector SpreadDir = MainDirection;
+		if (m_SpreadAngle > 0.0f)
+		{
+			SpreadDir = FMath::VRandCone(MainDirection, FMath::DegreesToRadians(m_SpreadAngle));
+		}
 
-		FHitResult HitResult;
-		FCollisionQueryParams QueryParams;
-		QueryParams.AddIgnoredActor(this);
-		QueryParams.AddIgnoredActor(m_OwnerPlayer);
+		FVector MaxEndLocation = MuzzleStart + (SpreadDir * TraceRange);
 
-		bool bHasHit = GetWorld()->LineTraceSingleByChannel(HitResult, StartLocation, MaxEndLocation, ECC_Visibility, QueryParams);
-		FVector ActualEndLocation = bHasHit ? HitResult.ImpactPoint : MaxEndLocation;
+		FHitResult PelletHitResult;
+		bool bHasHit = GetWorld()->LineTraceSingleByChannel(
+			PelletHitResult,
+			MuzzleStart,
+			MaxEndLocation,
+			ECC_Visibility,
+			QueryParams
+		);
 
-		DrawDebugLine(GetWorld(), StartLocation, ActualEndLocation, FColor::Green, false, 0.3f, 0, 1.0f);
+		FVector ActualEndLocation = bHasHit ? PelletHitResult.ImpactPoint : MaxEndLocation;
+
+		// 펠릿 디버그 선 (총구 ➔ 탄착점)
+		DrawDebugLine(GetWorld(), MuzzleStart, ActualEndLocation, FColor::Green, false, 0.3f, 0, 1.0f);
 
 		if (bHasHit)
 		{
 			DrawDebugSphere(GetWorld(), ActualEndLocation, 4.0f, 8, FColor::Red, false, 0.4f, 0, 1.0f);
 
-			if (AC_BasicEnemy* Enemy = Cast<AC_BasicEnemy>(HitResult.GetActor()))
+			if (AC_BasicEnemy* Enemy = Cast<AC_BasicEnemy>(PelletHitResult.GetActor()))
 			{
-				UGameplayStatics::ApplyDamage(Enemy, BaseDamagePerPellet, m_OwnerPlayer->GetController(), this, nullptr);
+				AController* InstigatorController = m_OwnerPlayer->GetController();
+				UGameplayStatics::ApplyDamage(Enemy, BaseDamagePerPellet, InstigatorController, this, nullptr);
 			}
 		}
 	}

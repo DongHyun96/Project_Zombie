@@ -20,6 +20,9 @@
 #include "Components/StaticMeshComponent.h"
 #include "GameModeAndManager/C_ItemManager.h"
 
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraComponent.h"
+
 #include "GameModeAndManager/C_UIManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
@@ -151,80 +154,25 @@ bool AC_GunBase::ConsumeAmmo()
 
 void AC_GunBase::SpawnShellEject()
 {
-	if (!m_ShellMesh || !m_WeaponMesh || !GetWorld()) return;
+	// 나이아가라 시스템, 탄피 메시, 무기 메시가 모두 유효할 때만 실행
+	if (!m_ShellEjectNiagaraSystem || !m_ShellMesh || !m_WeaponMesh || !GetWorld()) return;
 
-    FTransform EjectTransform = m_WeaponMesh->GetSocketTransform(TEXT("AmmoEject"), RTS_World);
-    
-    FActorSpawnParameters SpawnParams;
-    SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	FTransform EjectTransform = m_WeaponMesh->GetSocketTransform(TEXT("AmmoEject"), RTS_World);
 
-    // AStaticMeshActor 사용으로 코드 간소화 및 스폰 안정성 향상
-    AStaticMeshActor* ShellActor = GetWorld()->SpawnActor<AStaticMeshActor>(AStaticMeshActor::StaticClass(), EjectTransform, SpawnParams);
-    if (ShellActor)
-    {
-        UStaticMeshComponent* MeshComp = ShellActor->GetStaticMeshComponent();
-        if (MeshComp)
-        {
-            MeshComp->SetStaticMesh(m_ShellMesh);
-            MeshComp->SetMobility(EComponentMobility::Movable);
-            MeshComp->SetSimulatePhysics(true);
-        	MeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-        	
-            MeshComp->SetCollisionProfileName(TEXT("Custom"));
-            MeshComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
-            MeshComp->SetCollisionResponseToChannel(ECC_PhysicsBody, ECR_Ignore);
-            MeshComp->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
-            MeshComp->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Block);
+	UNiagaraComponent* NiagaraComp = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+		GetWorld(),
+		m_ShellEjectNiagaraSystem,
+		EjectTransform.GetLocation(),
+		EjectTransform.GetRotation().Rotator()
+	);
 
-            float RandomRight = FMath::FRandRange(130.0f, 220.0f);
-            float RandomUp = FMath::FRandRange(60.0f, 130.0f);
-            float RandomForward = FMath::FRandRange(-40.0f, 40.0f);
-
-            FVector EjectDir = (EjectTransform.GetRotation().GetRightVector() * RandomRight)
-                            + (EjectTransform.GetRotation().GetUpVector() * RandomUp)
-                            + (EjectTransform.GetRotation().GetForwardVector() * RandomForward);
-
-            MeshComp->AddImpulse(EjectDir, NAME_None, true);
-
-            FVector RandomTorque = FVector(
-                FMath::FRandRange(-50.0f, 50.0f),
-                FMath::FRandRange(-50.0f, 50.0f),
-                FMath::FRandRange(-50.0f, 50.0f)
-            );
-            MeshComp->AddAngularImpulseInRadians(RandomTorque, NAME_None, true);
-
-            ShellActor->SetLifeSpan(3.0f);
-        }
-    }
-}
-
-void AC_GunBase::ProcessLineTraceDamage(float DamageVal)
-{
-	if (m_WeaponMesh && GetWorld())
+	if (NiagaraComp)
 	{
-		FVector StartLocation = m_WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
-		FVector ForwardDirection = m_WeaponMesh->GetSocketRotation(TEXT("MuzzleFlash")).Vector();
-		FVector MaxEndLocation = StartLocation + (ForwardDirection * 5000.0f); // TODO : 현재 사거리 50m로 고정되어 있음
+		// Gun_init()에서 데이터 테이블로 로드해둔 m_ShellMesh를 나이아가라 변수로 넘김
+		NiagaraComp->SetVariableStaticMesh(FName("ShellMesh"), m_ShellMesh);
 
-		FHitResult HitResult;
-		FCollisionQueryParams QueryParams;
-		QueryParams.AddIgnoredActor(this);
-		QueryParams.AddIgnoredActor(m_OwnerPlayer);
-
-		bool bHasHit = GetWorld()->LineTraceSingleByChannel(HitResult, StartLocation, MaxEndLocation, ECC_Visibility, QueryParams);
-		FVector ActualEndLocation = bHasHit ? HitResult.ImpactPoint : MaxEndLocation;
-
-		DrawDebugLine(GetWorld(), StartLocation, ActualEndLocation, FColor::Green, false, 0.5f, 0, 1.5f);
-
-		if (bHasHit)
-		{
-			DrawDebugSphere(GetWorld(), ActualEndLocation, 7.0f, 12, FColor::Red, false, 0.5f, 0, 1.5f);
-
-			if (AC_BasicEnemy* Enemy = Cast<AC_BasicEnemy>(HitResult.GetActor()))
-			{
-				UGameplayStatics::ApplyDamage(Enemy, DamageVal, m_OwnerPlayer->GetController(), this, nullptr);
-			}
-		}
+		// 일반 총기는 1발
+		NiagaraComp->SetIntParameter(FName("ShellCount"), 1);
 	}
 }
 
