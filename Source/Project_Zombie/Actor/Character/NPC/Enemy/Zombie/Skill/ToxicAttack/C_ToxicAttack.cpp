@@ -51,8 +51,10 @@ void UC_ToxicAttack::Fire(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data)
 	if (!World)
 		return;
 
-	FVector SpawnLocation = _Owner->GetActorLocation();
-	FRotator SpawnRotation = _Owner->GetActorRotation();
+	USkeletalMeshComponent* Mesh = _Owner->GetMesh();
+
+	FVector SpawnLocation = Mesh->GetSocketLocation(TEXT("MouthSocket"));
+	FRotator SpawnRotation = Mesh->GetSocketRotation(TEXT("MouthSocket"));
 
 	// Fire Notify가 실행된 순간의 플레이어 위치
 	FVector TargetLocation = Target->GetActorLocation();

@@ -65,16 +65,12 @@ void AC_ToxicProjectile::InitProjectile(AC_BasicEnemy* _SkillUser, UC_EnemySkill
 	if (bFoundVelocity)
 	{
 		m_PMC->Velocity = LaunchVelocity;
-
-		UC_Util::Print("!!Arc Success!!");
 	}
 	else
 	{
 		const FVector Direction = (_TargetLocation - GetActorLocation()).GetSafeNormal();
 
 		m_PMC->Velocity = Direction * LaunchSpeed;
-
-		UC_Util::Print("!!Arc Failed!!");
 	}
 }
 
@@ -97,14 +93,14 @@ void AC_ToxicProjectile::SpawnToxicPool(const FVector& _SpawnLocation, const FRo
 	SpawnParams.Owner = m_SkillUser;
 	SpawnParams.Instigator = m_SkillUser;
 
-	World->SpawnActor<AC_ToxicPool>(m_ToxicPoolClass, _SpawnLocation, _SpawnRotation, SpawnParams);
+	AC_ToxicPool* Pool =  World->SpawnActor<AC_ToxicPool>(m_ToxicPoolClass, _SpawnLocation, _SpawnRotation, SpawnParams);
 
+	if (IsValid(Pool))
+	{
+		Pool->InitPool(m_SkillUser, m_Skill);
+	}
 }
 
-void AC_ToxicProjectile::OnHit(AActor* _OtherActor, UPrimitiveComponent* _OtherCom, const FHitResult& _Hit)
-{
-	SpawnPoolAtGround(_Hit.ImpactPoint, nullptr);
-}
 
 bool AC_ToxicProjectile::FindPoolGround(const FVector& _ImpactLocation, AActor* _IgnoreActor, FVector& _OutSpawnLocation, FRotator& _OutSpawnRotation) const
 {
@@ -174,14 +170,19 @@ void AC_ToxicProjectile::SpawnPoolAtGround(const FVector& _ImpactLocation, AActo
 
 	if (bFoundGround)
 	{
-		UC_Util::Print("!! PoolGround Found !!");
+		//UC_Util::Print("!! PoolGround Found !!");
 
 		SpawnToxicPool(PoolSpawnLocation, PoolSpawnRotation);
 	}
 	else
 	{
-		UC_Util::Print("PoolGround not Found");
+		//UC_Util::Print("PoolGround not Found");
 	}
 
 	Destroy();
+}
+
+void AC_ToxicProjectile::OnHit(AActor* _OtherActor, UPrimitiveComponent* _OtherCom, const FHitResult& _Hit)
+{
+	SpawnPoolAtGround(_Hit.ImpactPoint, nullptr);
 }

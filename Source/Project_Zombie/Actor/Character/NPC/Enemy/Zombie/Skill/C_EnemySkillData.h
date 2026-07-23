@@ -77,9 +77,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
 	float ProjectileLifetime; // 투사체 수명
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Pool")
-	float PoolLifetime; // 장판 수명
-
 public:
 	virtual FPrimaryAssetId GetPrimaryAssetId() const override
 	{

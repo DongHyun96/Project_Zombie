@@ -149,7 +149,7 @@ void AC_EnemyProjectile::PlayHitSound(const FVector& _Location)
 
 void AC_EnemyProjectile::OnProjectileHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-	UC_Util::Print("!! Projectile Hit Event !!");
+	//UC_Util::Print("!! Projectile Hit Event !!");
 
 	if (!OtherActor || OtherActor == this || OtherActor == m_SkillUser)
 		return;
