@@ -1,6 +1,11 @@
 // C_ItemManager.cpp
 #include "GameModeAndManager/C_ItemManager.h"
 #include "../Item/PickUp/C_ItemPickUp.h"
+#include "Actor/Character/Player/C_BasicPlayer.h"
+#include "Actor/Components/C_InvenComponent.h"
+#include "Actor/Components/ItemLinkComponent/C_ItemLinkComponent.h"
+#include "Actor/ItemActor/Weapon/C_WeaponBase.h"
+#include "Actor/ItemActor/Weapon/Gun/C_GunBase.h"
 #include "ProjectSettings/C_ItemManagerSettings.h"
 #include "Utility/C_Util.h"
 
@@ -42,7 +47,7 @@ const UDataTable* UC_ItemManager::GetTargetTable(EItemTableType InTableType) con
     return nullptr;
 }
 
-AC_ItemPickUp* UC_ItemManager::SpawnItem(FName InRowName, int32 InCount, const FVector& SpawnLocation)
+AC_ItemPickUp* UC_ItemManager::SpawnItemPickUp(FName InRowName, int32 InCount, const FVector& SpawnLocation)
 {
     const FItemData* Data = GetItemData<FItemData>(EItemTableType::General, InRowName);
     if (!Data) return nullptr;
@@ -75,9 +80,15 @@ bool UC_ItemManager::DropItemByPlayer(FName InRowName, int32 InCount, AActor* In
     
     SpawnLocation += ForwardVec * 100.f;
     
-    AC_ItemPickUp* NewItem = SpawnItem(InRowName, InCount, SpawnLocation);
+    AC_ItemPickUp* NewItem = SpawnItemPickUp(InRowName, InCount, SpawnLocation);
     if (NewItem)
     {
+        AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(InActor);
+        if (Player)
+        {
+            Player->GetInvenComponent()->GetItemAt()[Slot]
+            NewItem->ItemEntry = 
+        }
         FVector LaunchVelocity = (ForwardVec * 300.f) + (UpVec * 150.f);
         LaunchVelocity.X += FMath::FRandRange(-50.f, 50.f);
         LaunchVelocity.Y += FMath::FRandRange(-50.f, 50.f);
@@ -93,6 +104,102 @@ bool UC_ItemManager::DropItemByPlayer(FName InRowName, int32 InCount, AActor* In
     }
     
     return NewItem != nullptr;
+}
+
+AC_WeaponBase* UC_ItemManager::SpawnEquippedActor(FName InRowName, AActor* InOwner, const FTransform& SpawnTransform)
+{
+    if (InRowName.IsNone()) return nullptr;
+
+    UWorld* World = GetWorld();
+    if (!World) return nullptr;
+
+    // 1차: General 테이블(FItemData) 검증
+    const FItemData* GeneralData = GetItemData<FItemData>(EItemTableType::General, InRowName);
+    if (!GeneralData)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[ItemManager] '%s' Row is missing in General Table!"), *InRowName.ToString());
+        return nullptr;
+    }
+    
+    AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(InOwner);
+        
+    if (!Player) return nullptr;
+        
+    UC_InvenComponent* InvenComp = Cast<UC_InvenComponent>(Player->GetInvenComponent());
+        
+    if (!InvenComp) return nullptr;
+    
+    
+    FActorSpawnParameters SpawnParams;
+    SpawnParams.Owner = InOwner;
+    SpawnParams.Instigator = Cast<APawn>(InOwner);
+    SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+    TSubclassOf<AC_WeaponBase> TargetClass = nullptr;
+
+    // 2차: EItemType에 따른 세부 테이블 및 Class 추출
+    
+    int32 SlotIdx = -1;
+    
+    const FWeaponData* InRawData = nullptr;
+    switch (GeneralData->ItemType)
+    {
+    case EItemType::MAINWEAPON:
+        if (const FGunData* GunData = GetItemData<FGunData>(EItemTableType::Gun, InRowName))
+        {
+            TargetClass = GunData->EquippedActorClass;
+            SlotIdx = 0;
+            InRawData = GunData;
+        }
+        break;
+
+    case EItemType::MELEEWEAPON:
+        if (const FMeleeData* MeleeData = GetItemData<FMeleeData>(EItemTableType::Melee, InRowName))
+        {
+            TargetClass = MeleeData->EquippedActorClass;
+            SlotIdx = 1;
+            InRawData = MeleeData;
+        }
+        break;
+
+    case EItemType::THROWABLE:
+        // TODO: Throwable 테이블 연결 시 작성
+        break;
+
+    case EItemType::CONSUMABLE:
+    case EItemType::MATTER:
+    case EItemType::GADGET:
+    default:
+        break;
+    }
+
+    if (!TargetClass || SlotIdx == -1)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[ItemManager] Failed to resolve EquippedActorClass for Row: %s"), *InRowName.ToString());
+        return nullptr;
+    }
+    
+    // 무기 스폰 및 ItemEntry 주입 초기화
+    AC_WeaponBase* SpawnedWeapon = World->SpawnActor<AC_WeaponBase>(TargetClass, SpawnTransform, SpawnParams);
+    if (SpawnedWeapon)
+    {
+        // 스폰 된 무기의 ItemLinkComponent의 초기화
+        UC_ItemLinkComponent* LinkComp = SpawnedWeapon->GetLinkComp();
+        
+        if (!LinkComp)
+        {
+            UC_Util::Print("ItemLinkComponent of SpawnedWeapon is nullptr in SpawnedWeapon Spawn Equipped Actor", FColor::Red, 10.f);
+            SpawnedWeapon->Destroy();
+            return nullptr;
+        }
+        
+        LinkComp->InitializeLink(InvenComp, SlotIdx);
+        
+        // 무기의 초기화
+        SpawnedWeapon->InitializeItemActor(InRawData);
+    }
+
+    return SpawnedWeapon;
 }
 
 bool UC_ItemManager::GetItemDataBP(EItemTableType InTableType, FName InRowName, FInstancedStruct& OutData)

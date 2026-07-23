@@ -5,6 +5,7 @@
 #include "GlobalData.h"
 #include "C_ItemManager.generated.h"
 
+class AC_WeaponBase;
 class AC_ItemPickUp;
 class UDataTable;
 
@@ -22,12 +23,25 @@ public:
 	template <typename T>
 	const T* GetItemData(EItemTableType InTableType, FName InRowName) const;
 
+	// 바닥에 주울 수 있는 아이템으로 생성.
 	UFUNCTION(BlueprintCallable, Category = "ItemManager")
-	AC_ItemPickUp* SpawnItem(FName InRowName, int32 InCount, const FVector& SpawnLocation);
+	AC_ItemPickUp* SpawnItemPickUp(FName InRowName, int32 InCount, const FVector& SpawnLocation);
     
+	// 플레이어가 자신이 들고 있는 아이템을 마크처럼 레벨에 뱉어냄.(AC_ItemPickUp 형태로)
+	// TODO : 적어도 여기서는 AC_ItemPickUp이 인벤토리가 뱉어내는 아이템의 FInventoryEntry와 동일한 정보를 가진 아이템을 뱉게 할 것.
 	UFUNCTION(BlueprintCallable, Category = "ItemManager")
 	bool DropItemByPlayer(FName InRowName, int32 InCount, AActor* InActor);
     
+	// [플레이어 장착용] 무조건 인벤의 있는 아이템의 정보를 사용한다.
+	UFUNCTION(BlueprintCallable, Category = "ItemManager")
+	AC_WeaponBase* SpawnEquippedActor(FName InRowName, AActor* InOwner = nullptr, const FTransform& SpawnTransform = FTransform());
+
+	//template <typename T>
+	//T* SpawnEquippedActor(FName InRowName, const FTransform& SpawnTransform, AActor* InOwner = nullptr)
+	//{
+	//	return Cast<T>(SpawnEquippedActor(InRowName, SpawnTransform, InOwner));
+	//}
+	
 	// [블루프린트 전용] Generic/BlueprintCallable 래퍼 함수
 	UFUNCTION(BlueprintCallable, Category = "ItemManager", meta = (DisplayName = "Get Item Data"))
 	bool GetItemDataBP(EItemTableType InTableType, FName InRowName, FInstancedStruct& OutData);
@@ -35,7 +49,7 @@ public:
 private:
 	// Enum 키값 기반 데이터 테이블 원본 포인터 반환 헬퍼
 	const UDataTable* GetTargetTable(EItemTableType InTableType) const;
-
+	
 private:
 	// 동기 로드 완료된 데이터 테이블 포인터 맵 (런타임 캐싱)
 	UPROPERTY()
