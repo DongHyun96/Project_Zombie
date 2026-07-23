@@ -257,3 +257,19 @@ AActor* AC_ZombieController::GetCurrentBBTarget() const
 {
 	return Blackboard ? Cast<AActor>(Blackboard->GetValueAsObject(TEXT("Target"))) : nullptr;
 }
+
+bool AC_ZombieController::IsCurrentlyOnSight(AActor* _TargetActor) const
+{
+	if (!_TargetActor) return false;
+	
+	if (const FActorPerceptionInfo* ActorPerceptionInfo = m_PerceptionCom->GetActorInfo(*_TargetActor))
+		for (const FAIStimulus& Stimulus : ActorPerceptionInfo->LastSensedStimuli)
+		{
+			const TSubclassOf<UAISense> SenseClass = UAIPerceptionSystem::GetSenseClassForStimulus(GetWorld(), Stimulus);
+			if (SenseClass != UAISense_Sight::StaticClass()) continue; // 다른 인지기관 (Sight 기관이 필요함)
+			
+			if (Stimulus.WasSuccessfullySensed()) return true;
+		}
+	
+	return false;
+}
