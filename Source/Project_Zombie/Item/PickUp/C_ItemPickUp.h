@@ -80,7 +80,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	class UStaticMeshComponent* MeshComp;
 
-	// 클라이언트가 이 변수가 변경될 때마다 메시를 로드합니다.
+	// 클라이언트가 이 변수가 변경될 때마다 메시를 로드합니다. TODO : 이거 꼭 필요한가?
 	UPROPERTY(ReplicatedUsing = OnRep_MeshRef, EditAnywhere, BlueprintReadWrite)
 	TSoftObjectPtr<UStaticMesh> MeshRef;
 	
