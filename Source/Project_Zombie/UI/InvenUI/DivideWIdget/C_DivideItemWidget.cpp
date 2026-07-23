@@ -57,6 +57,7 @@ FReply UC_DivideItemWidget::NativeOnPreviewKeyDown(const FGeometry& InGeometry, 
 	if (PressedKey == EKeys::Escape)
 	{
 		ExecuteCancelAction();
+		UC_Util::Print("ESC pressed in DivideItemWidget");
 		return FReply::Handled(); // 입력을 여기서 완전히 소비하여 종료합니다.
 	}
 
@@ -252,8 +253,6 @@ void UC_DivideItemWidget::HandleOnClickButtonDivideItem()
 	
 	UC_InventoryWidget* TargetSlot = Cast<UC_InventoryWidget>(TargetWidget);
 	
-	if (!TargetSlot) return;
-	
 	UC_InvenComponent* SrcInvenComp = CursorItem.SourceInvenComp;
 	
 	if (!SrcInvenComp) return;
@@ -276,25 +275,26 @@ void UC_DivideItemWidget::HandleOnClickButtonExitBtn()
 	
 	UC_GridItemSlotWidget* TargetSlot = Cast<UC_GridItemSlotWidget>(TargetWidget);
 	
-	if (!TargetSlot) return;
-	
 	UC_InvenComponent* SrcInvenComp = CursorItem.SourceInvenComp;
 	
+	if (!SrcInvenComp) return;
+
 	int32 SrcIdx = CursorItem.SourceSlotIndex;
 	
 	UC_InvenComponent* DstInvenComp = TargetSlot->GetAssociatedComponent();
 	
-	int32 DstIdx = TargetSlot->GetSlotIndex();
-	
+	if (TargetSlot)
+	{
+		int32 DstIdx = TargetSlot->GetSlotIndex();
+		Player->Server_RequestUnlockSlot(DstInvenComp, DstIdx);
+
+	}
 	Player->Server_RequestUnlockSlot(SrcInvenComp, SrcIdx);
-	Player->Server_RequestUnlockSlot(DstInvenComp, DstIdx);
 	
 	SetVisibility(ESlateVisibility::Collapsed);
 	
 	// CursorItem Clear
 	CursorItem.Clear();
-	
-
 }
 
 void UC_DivideItemWidget::ReFocusDroppedCountText()
