@@ -49,7 +49,19 @@ const UDataTable* UC_ItemManager::GetTargetTable(EItemTableType InTableType) con
 
 AC_ItemPickUp* UC_ItemManager::SpawnItemPickUp(FName InRowName, int32 InCount, const FVector& SpawnLocation)
 {
-    const FItemData* Data = GetItemData<FItemData>(EItemTableType::General, InRowName);
+    FInventoryEntry TempEntry;
+    TempEntry.ItemRowName = InRowName;
+    TempEntry.CurCount = InCount;
+
+    // Entry 버전을 호출해서 코드 중복 제거!
+    return SpawnItemPickUp(TempEntry, SpawnLocation);
+}
+
+AC_ItemPickUp* UC_ItemManager::SpawnItemPickUp(const FInventoryEntry& InEntry, const FVector& SpawnLocation)
+{
+    if (InEntry.ItemRowName.IsNone() || InEntry.CurCount <= 0) return nullptr;
+
+    const FItemData* Data = GetItemData<FItemData>(EItemTableType::General, InEntry.ItemRowName);
     if (!Data) return nullptr;
 
     UWorld* World = GetWorld();
@@ -61,8 +73,8 @@ AC_ItemPickUp* UC_ItemManager::SpawnItemPickUp(FName InRowName, int32 InCount, c
     AC_ItemPickUp* NewItem = World->SpawnActor<AC_ItemPickUp>(AC_ItemPickUp::StaticClass(), SpawnLocation, FRotator::ZeroRotator, SpawnParams);
     if (NewItem)
     {
-        NewItem->ItemEntry.ItemRowName = InRowName;
-        NewItem->ItemEntry.CurCount = InCount;
+        // InEntry데이터 복사
+        NewItem->ItemEntry = InEntry; 
         NewItem->SetMeshRef(Data->DropMesh);
         NewItem->SetPickupMeshAsync(NewItem->GetMeshRef());
     }
@@ -70,9 +82,9 @@ AC_ItemPickUp* UC_ItemManager::SpawnItemPickUp(FName InRowName, int32 InCount, c
     return NewItem;
 }
 
-bool UC_ItemManager::DropItemByPlayer(FName InRowName, int32 InCount, AActor* InActor)
+bool UC_ItemManager::DropItemByPlayer(const FInventoryEntry& InEntry, AActor* InActor)
 {
-    if (!InActor) return false;
+    if (!InActor || InEntry.ItemRowName.IsNone() || InEntry.CurCount <= 0) return false;
     
     FVector SpawnLocation = InActor->GetActorLocation() + FVector(0.f, 0.f, 30.f);
     FVector ForwardVec = InActor->GetActorForwardVector();
@@ -80,15 +92,10 @@ bool UC_ItemManager::DropItemByPlayer(FName InRowName, int32 InCount, AActor* In
     
     SpawnLocation += ForwardVec * 100.f;
     
-    AC_ItemPickUp* NewItem = SpawnItemPickUp(InRowName, InCount, SpawnLocation);
+    // Core 스폰 함수 호출
+    AC_ItemPickUp* NewItem = SpawnItemPickUp(InEntry, SpawnLocation);
     if (NewItem)
     {
-        AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(InActor);
-        if (Player)
-        {
-            Player->GetInvenComponent()->GetItemAt()[Slot]
-            NewItem->ItemEntry = 
-        }
         FVector LaunchVelocity = (ForwardVec * 300.f) + (UpVec * 150.f);
         LaunchVelocity.X += FMath::FRandRange(-50.f, 50.f);
         LaunchVelocity.Y += FMath::FRandRange(-50.f, 50.f);
@@ -104,6 +111,16 @@ bool UC_ItemManager::DropItemByPlayer(FName InRowName, int32 InCount, AActor* In
     }
     
     return NewItem != nullptr;
+}
+
+bool UC_ItemManager::DropItemByPlayer(FName InRowName, int32 InCount, AActor* InActor)
+{
+    FInventoryEntry TempEntry;
+    TempEntry.ItemRowName = InRowName;
+    TempEntry.CurCount = InCount;
+
+    // Entry 기반 드롭으로 전달
+    return DropItemByPlayer(TempEntry, InActor);
 }
 
 AC_WeaponBase* UC_ItemManager::SpawnEquippedActor(FName InRowName, AActor* InOwner, const FTransform& SpawnTransform)
