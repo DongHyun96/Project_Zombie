@@ -12,6 +12,18 @@ void UC_InventoryGridWidget::NativeConstruct()
     Super::NativeConstruct();
 }
 
+void UC_InventoryGridWidget::NativeDestruct()
+{
+    // UI가 죽을 때 델리게이트 해제. TODO : 레벨 이동에서도 발동한다고 함.
+    if (InvenComp)
+    {
+        InvenComp->OnInventorySlotChanged.RemoveDynamic(this, &UC_InventoryGridWidget::RefreshSlotAt);
+        InvenComp = nullptr;
+    }
+
+    Super::NativeDestruct();
+}
+
 void UC_InventoryGridWidget::RefreshAllSlots(const TArray<FInventoryEntry>& InventoryItems)
 {
     UC_ItemManager* ItemManager = GetGameInstance()->GetSubsystem<UC_ItemManager>();

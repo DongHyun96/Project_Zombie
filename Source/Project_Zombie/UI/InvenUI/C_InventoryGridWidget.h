@@ -21,7 +21,7 @@ class PROJECT_ZOMBIE_API UC_InventoryGridWidget : public UUserWidget
 {
 	GENERATED_BODY()
 public:
-	virtual void NativeConstruct() override;
+
 
 	// 인벤토리 전체를 강제로 새로고침하고 싶을 때 (인벤토리가 처음 열릴 때 등)
 	void RefreshAllSlots(const TArray<FInventoryEntry>& InventoryItems);
@@ -47,6 +47,10 @@ public:
 	
 protected:
 	void SetSlotStartIdx(int32 InSlotStartIdx);	
+	
+	virtual void NativeConstruct() override;
+	
+	virtual void NativeDestruct() override;
 protected:
 	// C_ItemSlot을 배치할 GridPanel
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
