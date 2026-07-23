@@ -104,7 +104,9 @@ protected:
 	FName m_HolsterSocketName{}; // 그렇다면 DataTable에서 관리해도 될듯? 정적 정보로 판단. - 상연
 
 public:
-
+	
+	virtual bool InitializeItemActor(const FWeaponData* InRawData) override;
+	
 	/// <summary>
 	/// 멤버변수 초기화
 	/// </summary>

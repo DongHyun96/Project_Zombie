@@ -13,6 +13,7 @@
 #include "Actor/Character/NPC/Enemy/Zombie/CopZombie/C_CopZombie.h"
 #include "Actor/Components/C_EquippedComponent.h"
 #include "Actor/Components/C_PingSystemComponent.h"
+#include "Actor/Components/ItemLinkComponent/C_ItemLinkComponent.h"
 #include "Actor/ItemActor/Weapon/WeaponComponent/GunComponent/C_AIGunUsageComponent.h"
 
 #include "Components/SphereComponent.h"
@@ -50,7 +51,7 @@ void AC_GunBase::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	Gun_init();
+	//Gun_init();
 	m_Collision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	m_Collision->OnComponentBeginOverlap.AddDynamic(this, &AC_GunBase::OnMainColliderBeginOverlap);
 }
@@ -65,7 +66,95 @@ void AC_GunBase::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEv
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 
-	Gun_init();
+	//Gun_init();
+}
+
+bool AC_GunBase::InitializeItemActor(const FWeaponData* InRawData)
+{
+	//return Super::InitializeItemActor(InRawData);
+	
+	const FGunData* GunData = static_cast<const FGunData*>(InRawData);
+	
+	if (!GunData)
+	{
+		UC_Util::Print("Failed Cast to const FGunData*", FColor::Red, 10.f);
+		return false;
+	}
+	
+	if (GunData->WeaponSkeletalMesh.IsValid() || !GunData->WeaponSkeletalMesh.IsNull())
+	{
+		USkeletalMesh* MeshAsset = GunData->WeaponSkeletalMesh.LoadSynchronous();
+		if (m_WeaponMesh && MeshAsset)
+		{
+			m_WeaponMesh->SetSkeletalMesh(MeshAsset);
+		}
+	}
+	else
+	{
+		UC_Util::Print("GunData->WeaponSkeletalMesh Is Not Valid", FColor::Red, 10.f);
+		return false;
+	}
+	
+	// 에셋 캐싱
+	m_FireAnimation = GunData->FireAnimation.LoadSynchronous();
+	m_ReloadAnimation = GunData->ReloadAnimation.LoadSynchronous();
+	m_ShellMesh = GunData->ShellMesh.LoadSynchronous();
+	m_PlayerReloadAnimation = GunData->PlayerReloadAnimation.LoadSynchronous();
+	m_PlayerFireAnimation = GunData->PlayerFireAnimation.LoadSynchronous();
+	
+	// Base Stats 적용
+	float BaseDamage = GunData->BaseDamage;
+	int32 BaseMaxAmmo = GunData->MaxAmmo;
+	m_FireRate = GunData->AttackRate;
+	m_ShellEjectImpulse = GunData->ShellEjectImpulse;
+	
+	if (!ItemLinkComp)
+	{
+		UC_Util::Print("GunBase : Item Link Component Is Nullptr!", FColor::Red, 10.f);
+	}
+	
+	// 동적 데이터 임시 처리.
+	if (FInventoryEntry* EntryPtr = ItemLinkComp ? ItemLinkComp->GetItemEntryPtr() : nullptr)
+	{
+		const FGunCustomData* GunCustomData = EntryPtr->CustomData.GetPtr<FGunCustomData>();
+		
+		// 동적 데이터가 없으면 만들어서 넣어주기.
+		if (!GunCustomData)
+		{
+			FGunCustomData TempCustomData{};
+			EntryPtr->CustomData = FInstancedStruct::Make(TempCustomData);
+		}
+		
+		GunCustomData = EntryPtr->CustomData.GetPtr<FGunCustomData>();
+		
+		m_Damage = BaseDamage + (GunCustomData->Upgrade_Damage * 5.0f);
+		m_MaxAmmo = BaseMaxAmmo + (GunCustomData->Upgrade_MaxAmmo * 5);
+		m_CurrentAmmo = GunCustomData->CurAmmo;
+	}
+	else
+	{
+		// Link가 무효한 상태일 때 기본값 처리
+		m_Damage = BaseDamage;
+		m_MaxAmmo = BaseMaxAmmo;
+		m_CurrentAmmo = m_MaxAmmo;
+	}
+	
+	//// 동적 데이터 임시 처리.
+	//if (const FGunCustomData* GunCustomData = ItemLinkComp->GetItemEntryPtr()->CustomData.GetPtr<FGunCustomData>())
+	//{
+	//	m_Damage = BaseDamage + (GunCustomData->Upgrade_Damage * 5.0f);
+	//	m_MaxAmmo = BaseMaxAmmo + (GunCustomData->Upgrade_MaxAmmo * 5);
+	//	m_CurrentAmmo = GunCustomData->CurAmmo;
+	//}
+	//else
+	//{
+	//	// CustomData가 없는 초기 아이템 상태
+	//	m_Damage = BaseDamage;
+	//	m_MaxAmmo = BaseMaxAmmo;
+	//	m_CurrentAmmo = m_MaxAmmo;
+	//}
+	
+	return true;
 }
 
 void AC_GunBase::Gun_init()
@@ -141,6 +230,15 @@ bool AC_GunBase::ConsumeAmmo()
 	}
 
 	m_CurrentAmmo--;
+	
+	if (FInventoryEntry* EntryPtr = ItemLinkComp->GetItemEntryPtr())
+	{
+		if (FGunCustomData* GunCustomData = EntryPtr->CustomData.GetMutablePtr<FGunCustomData>())
+		{
+			GunCustomData->CurAmmo = m_CurrentAmmo;
+			UC_Util::Print(GunCustomData->CurAmmo);
+		}
+	}
 
 	// 현재 남은 장탄수 UI 업데이트
 	if (AC_UIManager* UIManager = Cast<AC_UIManager>(GetWorld()->GetFirstPlayerController()->GetHUD()))
@@ -250,6 +348,7 @@ FInventoryEntry AC_GunBase::GetUpdatedInventoryEntry()
 	{
 		GunCustomData->CurAmmo = m_CurrentAmmo;
 		// 필요 시 실시간 변화하는 추가 동적 수치들 업링크
+
 	}
 
 	return ItemEntry;

@@ -6,8 +6,10 @@
 #include "../WeaponComponent/MeleeComponent/C_MeleeDataTableComponent.h"
 
 #include "Actor/Character/Player/C_BasicPlayer.h"
+#include "Actor/Components/ItemLinkComponent/C_ItemLinkComponent.h"
 #include "GameModeAndManager/C_UIManager.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
+#include "Utility/C_Util.h"
 
 
 AC_MeleeWeaponBase::AC_MeleeWeaponBase()
@@ -37,6 +39,62 @@ void AC_MeleeWeaponBase::PostEditChangeProperty(FPropertyChangedEvent& PropertyC
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 
 	Melee_init();
+}
+
+bool AC_MeleeWeaponBase::InitializeItemActor(const FWeaponData* InRawData)
+{
+	//return Super::InitializeItemActor(InRawData);
+	
+	const FMeleeData* MeleeData = static_cast<const FMeleeData*>(InRawData);
+	
+	if (!MeleeData)
+	{
+		UC_Util::Print("Failed Cast to const FMeleeData*", FColor::Red, 10.f);
+		return false;
+	}
+	
+	if (UStaticMesh* WeaponMeshAsset = (MeleeData->WeaponStaticMesh.LoadSynchronous()))
+	{
+		if (m_WeaponMesh)
+		{
+			m_WeaponMesh->SetStaticMesh(WeaponMeshAsset);
+		}
+	}
+	else
+	{
+		// 테이블에 에셋이 없을 때만 경고
+		UE_LOG(LogTemp, Warning, TEXT("데이터 테이블에 WeaponStaticMesh가 없음!"));
+	}
+	
+	// 에셋 캐싱
+	m_PlayerAttackAnimation = MeleeData->PlayerAttackAnimation.LoadSynchronous();
+	
+	// Base Stats 적용
+	float BaseDamage = MeleeData->BaseDamage;
+	//int32 BaseMaxAmmo = MeleeData->MaxAmmo;
+	//m_FireRate = GunData->AttackRate;
+	//m_ShellEjectImpulse = GunData->ShellEjectImpulse;
+	
+	if (!ItemLinkComp)
+	{
+		UC_Util::Print("MeleeBase : Item Link Component Is Nullptr!", FColor::Red, 10.f);
+	}
+	
+	// 동적 데이터 임시 처리.
+	if (FInventoryEntry* EntryPtr = ItemLinkComp ? ItemLinkComp->GetItemEntryPtr() : nullptr)
+	{
+		if (const FGunCustomData* GunCustomData = EntryPtr->CustomData.GetPtr<FGunCustomData>())
+		{
+			m_Damage = BaseDamage + (GunCustomData->Upgrade_Damage * 5.0f);
+		}
+		else
+		{
+			// CustomData가 없는 초기 아이템 상태
+			m_Damage = BaseDamage;
+		}
+	}
+	
+	return true;
 }
 
 bool AC_MeleeWeaponBase::OnStartFire(AC_BasicPlayer* _WeaponUser)
@@ -120,7 +178,7 @@ void AC_MeleeWeaponBase::Melee_init()
 		return;
 	}
 
-	m_BaseDamage = m_DataCom->GetData("BaseDamage");
+	m_Damage = m_DataCom->GetData("BaseDamage");
 
 	m_PlayerAttackAnimation = Cast<UAnimMontage>(m_DataCom->GetAssetData("PlayerAttackAnimation").LoadSynchronous());
 
