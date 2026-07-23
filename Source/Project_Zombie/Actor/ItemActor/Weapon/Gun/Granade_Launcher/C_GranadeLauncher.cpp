@@ -105,8 +105,10 @@ void AC_GranadeLauncher::EjectAllSpentShells()
 	if (m_SpentShellCount <= 0)
 		return;
 
+	int32 SpentShellCount = m_MaxAmmo - m_CurrentAmmo;
+
 	// 누적된 사용 탄피 개수만큼 반복
-	for (int32 i = 0; i < m_SpentShellCount; ++i)
+	for (int32 i = 0; i < SpentShellCount; ++i)
 	{
 		SpawnShellEject();
 	}

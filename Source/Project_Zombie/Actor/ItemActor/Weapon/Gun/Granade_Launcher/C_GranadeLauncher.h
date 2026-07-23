@@ -16,7 +16,7 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Grenade", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<class AActor> m_GrenadeClass;
 
-	// 누적된 탄피(사용한 유탄 탄피) 개수
+	// 누적된 탄피(사용한 유탄 탄피) 개수 -> 이거 이렇게 변수로 두지 말고 Max - cur로 계산하는게 좋아 보이는데.(상연)
 	int32 m_SpentShellCount = 0;
 
 	bool m_bCanFire = true;           // 단발 발사 쿨타임 관리용
