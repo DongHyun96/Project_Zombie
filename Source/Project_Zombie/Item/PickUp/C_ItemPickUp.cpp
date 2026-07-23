@@ -90,7 +90,7 @@ void AC_ItemPickUp::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* 
     AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(OtherActor);
     
     if (!Player) return;
-
+    
     // 서버 함수 호출
     Server_RequestPickup(Player);
 }
