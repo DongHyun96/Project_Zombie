@@ -114,12 +114,6 @@ void AC_BasicPlayer::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// GameLevelManager에 해당 Player 등록
-	if (UC_GameLevelManager* LevelManager = GetWorld()->GetSubsystem<UC_GameLevelManager>())
-		LevelManager->AddPlayer(this);
-	
-	UpdateBoostBarHUD();
-
 	// InventoryWidget에 Player의 InvenComponent 초기화 및 델리게이트 진행
 	APlayerController* PC = Cast<APlayerController>(GetController());
 	
@@ -129,10 +123,32 @@ void AC_BasicPlayer::BeginPlay()
 	
 	if (!UIManager) return;
 	
-	UIManager->GetInventoryWidget()->GetPlayerGridWidget()->SetInvenComponent(m_InvenComponent);
+	if (m_InvenComponent)
+	{
+		m_InvenComponent->SetHasEquipmentSlots(true);
+		
+		UIManager->GetInventoryWidget()->GetPlayerGridWidget()->SetInvenComponent(m_InvenComponent);
 	
-	UIManager->GetInventoryWidget()->GetEquipmentWidget()->InitEquipmentWidget(m_InvenComponent);
-	// 까지
+		UIManager->GetInventoryWidget()->GetEquipmentWidget()->InitEquipmentWidget(m_InvenComponent);
+	}
+	
+	if (m_InvenComponent && m_EquippedComponent)
+		m_EquippedComponent->SetupInventoryComponent(m_InvenComponent);
+	
+	// GameLevelManager에 해당 Player 등록
+	if (UC_GameLevelManager* LevelManager = GetWorld()->GetSubsystem<UC_GameLevelManager>())
+		LevelManager->AddPlayer(this);
+	
+	UpdateBoostBarHUD();
+
+
+	
+	//if (m_InvenComponent)
+	//{
+	//	UIManager->GetInventoryWidget()->GetPlayerGridWidget()->SetInvenComponent(m_InvenComponent);
+	//
+	//	UIManager->GetInventoryWidget()->GetEquipmentWidget()->InitEquipmentWidget(m_InvenComponent);
+	//}
 	
 	// 플레이어의 인벤에 장비 전용 인덱스 추가.
 	//m_InvenComponent->SetMaxSlots(45 + static_cast<int32>(EWeaponSlot::Max));
