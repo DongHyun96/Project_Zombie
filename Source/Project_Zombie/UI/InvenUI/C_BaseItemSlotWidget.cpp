@@ -46,8 +46,6 @@ void UC_BaseItemSlotWidget::UpdateSlot(const FInventoryEntry& ItemData, const FI
     {
         ItemIconSetOpacity(1.0f);
     }
-    
-    UC_Util::Print(curSlotIdx);
 }
 
 FReply UC_BaseItemSlotWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
