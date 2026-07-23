@@ -3,10 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GlobalData.h"
 #include "Components/ActorComponent.h"
 #include "C_ItemLinkComponent.generated.h"
 
-class FInventoryEntry;
+//class FInventoryEntry;
 class UC_InvenComponent;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -27,7 +28,10 @@ protected:
 	int32 SlotIndex = INDEX_NONE;
 
 public:
-	// 장착/스폰 시점에 데이터 원본과의 연결 초기화
+	// 장착/스폰 시점에 데이터 원본과의 연결 초기화, 
+	// TODO : invencomponent와 연결하는 것과 조금 돌아가지만 붙어 있는 액터의 OwnerPlayer를 변수로 가지고 있는게 주소값이 안전한가?
+	// TODO : 근데 그렇게 안전한 주소값으로는 PlayerController가 더 나아 보이고.
+	// TODO : 안전으로 따지면 그냥 PlayerID 같은걸로 해서 항상 해당 아이디의 플레이어를 찾아 인벤을 찾아가는게 제일 안전하지 않나?
 	UFUNCTION(BlueprintCallable, Category = "Item Link")
 	void InitializeLink(UC_InvenComponent* InInvenComp, int32 InSlotIndex);
 
@@ -42,7 +46,7 @@ public:
 	// 원본 FInventoryEntry 데이터를 포인터로 직접 반환 (읽기/수정용)
 	FInventoryEntry* GetItemEntryPtr() const;
 
-	// 원본 데이터 복사본 반환 (안전한 읽기 전용)
+	// 원본 데이터 복사본 반환 (안전한 읽기 전용), TODO : 뭐지 함수의 반환값은 구현부쪽에 헤더파일 추가해주면 상관없나?
 	UFUNCTION(BlueprintCallable, Category = "Item Link")
 	FInventoryEntry GetItemEntry() const;
 
