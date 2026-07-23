@@ -3,6 +3,7 @@
 #include "C_InvenComponent.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/ItemActor/Weapon/C_WeaponBase.h"
+#include "GameModeAndManager/C_ItemManager.h"
 #include "GameModeAndManager/C_UIManager.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
 
@@ -186,6 +187,69 @@ bool UC_EquippedComponent::ToggleArmed()
 	
 	/* 현재 들고 있는 무기가 없을 때 */
 	return ChangeCurWeapon(static_cast<EWeaponSlot>(m_PrevWeaponTypeIdx));
+}
+
+void UC_EquippedComponent::SetupInventoryComponent(UC_InvenComponent* InInvenComp)
+{
+	// 이미 같은 인벤토리가 바인딩되어 있다면 중복 처리 방지
+	if (BoundInvenComp.Get() == InInvenComp)
+	{
+		return;
+	}
+
+	// 혹시 기존에 묶인 게 있다면 해제
+	ClearInventoryComponent();
+
+	if (InInvenComp)
+	{
+		InInvenComp->OnInventorySlotChanged.AddDynamic(this, &UC_EquippedComponent::OnInventorySlotChanged);
+		BoundInvenComp = InInvenComp;
+	}
+}
+
+void UC_EquippedComponent::ClearInventoryComponent()
+{
+	if (BoundInvenComp.IsValid())
+	{
+		BoundInvenComp->OnInventorySlotChanged.RemoveDynamic(this, &UC_EquippedComponent::OnInventorySlotChanged);
+	}
+	BoundInvenComp.Reset();
+}
+
+void UC_EquippedComponent::OnInventorySlotChanged(int32 SlotIndex, const FInventoryEntry& ItemData)
+{
+	if (SlotIndex < 0 || SlotIndex >= static_cast<int32>(EWeaponSlot::None)) return;	
+	
+	if (m_OwnerPlayer && !m_OwnerPlayer->HasAuthority()) return;
+	
+	// 들어오는 장비가 실제 장비가 있는지 없는 확인
+	// 1. RowName이 NAME_NONE이 드롭되서 들어올 일은 없지만
+	// 2. 장비창의 아이템을 인벤의 빈 슬롯에 드롭하면 들어올 수 있음.
+	// 3. RowName == NAME_None이면 아이템 해제하고 빈칸으로 만들어야 함.
+	// 4. 실제 존재하는 장비가 들어오는 경우
+	// 5. 해당 아이템을 ItemManager로 생성
+	// 6. SetSlotWeapon으로 장착
+	// 7. 이 때 장착했던 장비가 있었으면 Destroy
+	// 8. Destroy되는 장비의 정보(FInventoryEntry)는 인벤에서 Swap으로 이미 들어온 장비와 위치가 바뀜.
+	// 9. 결론은 여기 매개변수로 해당 슬롯 장비를 소환해서 장착하고 탈착된 장비는 Destroy한다.
+	// 10. 그러기 위해 해당 무기를 ItemManager에서 생성하는 함수를 만들어야 한다.
+	
+	
+	if (!GetWorld()) return;
+		
+	UC_ItemManager* ItemManager = GetWorld()->GetGameInstance()->GetSubsystem<UC_ItemManager>();
+		
+	if (!ItemManager) return;
+	
+	AC_WeaponBase* SpawnedWeapon = ItemManager->SpawnEquippedActor(ItemData.ItemRowName, m_OwnerPlayer);
+	
+	AC_WeaponBase* PrevWeapon = SetSlotWeapon(static_cast<EWeaponSlot>(SlotIndex), SpawnedWeapon);
+	
+	if (PrevWeapon) PrevWeapon->Destroy();
+	
+	// 빈슬롯, 장비 해제 처리 확인하기
+	// 동일 무기 교체시 데이터만 교체하는 방식으로 하면 좋음
+	// 무기 교체? 장착? 사운드?
 }
 
 void UC_EquippedComponent::OnSheathEnd()

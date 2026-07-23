@@ -52,8 +52,17 @@ public:
 	/// </summary>
 	/// <returns> : 실패 시 return false </returns>
 	bool ToggleArmed();
+	
+public:
+	// 인벤토리 컴포넌트를 전달받아 델리게이트 바인딩
+	void SetupInventoryComponent(UC_InvenComponent* InInvenComp);
 
-
+	// 연결 해제
+	void ClearInventoryComponent();
+	
+protected:
+	UFUNCTION()
+	void OnInventorySlotChanged(int32 SlotIndex, const FInventoryEntry& ItemData);
 	
 public:
 	
@@ -85,7 +94,8 @@ protected: /* 장착 무기 Slot */
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)
 	TMap<EWeaponSlot, TSubclassOf<AC_WeaponBase>> m_WeaponClassToSpawn{};
 
-	
+	// 가비지 컬렉션을 방해하지 않는 약한 참조 (메모리 부담 전혀 없음)
+	TWeakObjectPtr<UC_InvenComponent> BoundInvenComp{};
 private:
 
 	// 현재 무기를 바꾸는 과정에 
