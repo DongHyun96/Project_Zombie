@@ -133,11 +133,7 @@ void AC_ToxicPool::EndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 
 void AC_ToxicPool::ApplyTickDamage()
 {
-	UE_LOG(
-		LogTemp,
-		Warning,
-		TEXT("[ToxicPool] Timer Tick / TargetNum: %d"),
-		m_OverlapTargets.Num());
+	UE_LOG(LogTemp, Warning, TEXT("ToxicPool Timer Tick / TargetNum: %d"), m_OverlapTargets.Num());
 
 	// 서버인지 확인
 	if (!HasAuthority())
