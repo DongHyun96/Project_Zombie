@@ -44,21 +44,14 @@ struct FItemData : public FTableRowBase
     // ── [비주얼 리소스 - 약참조 포인터] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Visual")
     TSoftObjectPtr<UStaticMesh> DropMesh = nullptr;
-
-    // ── [무기 전용 스펙 - 타 타입일 경우 무시] ──
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Weapon Spec")
-    float BaseDamage = 0.0f;
-
-    // ── [무기 전용 스펙 - 타 타입일 경우 무시] ──
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Weapon Spec")
-    int32 BaseCurAmmo = 0;
-
-    // ── [소모품 전용 스펙 - 타 타입일 경우 무시] ──
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Consumable Spec")
     
-    float HealAmount_HP = 0.0f;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment")
-    TSubclassOf<class AC_WeaponBase> WeaponClass;
+    //UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment")
+    //TSubclassOf<class AC_WeaponBase> WeaponClass;
+    
+    // ── [실제 기능 액터 클래스] ──
+    // 무기일 수도 있고, 나중에 설치형 가짓/특수 장비일 수도 있음 (AActor 상속)
+    //UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Logic")
+    //TSubclassOf<AActor> EquippedActorClass;
 };
 
 // 인벤에 들어가 있는 아이템 정보
@@ -85,6 +78,8 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
     int32 LockedByPlayerID = INDEX_NONE; // INDEX_NONE == -1
     
+    // EItemType을 FInventoryEntry에서도 들고 있을 것 인가? 
+    
     // 어떤 구조체든 다형성처럼 동적으로 담을 수 있음
     // C++에서 값 생성하기     : CustomData = FInstancedStruct::Make(구조체);
     // C++에서 데이터 가져오기 : CustomData.GetPrt<구조체 타입>() or CustomData.Get<구조체 타입>() \
@@ -92,7 +87,7 @@ public:
     // 1. CustomData.Reset(); : CustomData 자체를 비워버림.
     // 2. CustomData.InitializeAs<구조체 타입>(); : 특정 구조체 타입의 기본값으로 다시 생성할 때 사용.
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    FInstancedStruct CustomData;
+    FInstancedStruct CustomData{};
 
 public:
     // 빈 슬롯인지 확인하는 함수.
@@ -178,6 +173,8 @@ struct FGunCustomData
     // 이건 인벤이나 ItemPickUp에서 총의 CurAmmo값을 저장하기 위해 존재.
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     int32 CurAmmo = 0;
+    
+    
 };
 
 
@@ -209,6 +206,11 @@ struct FWeaponData : public FTableRowBase
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual")
     TSoftObjectPtr<UStaticMesh> WeaponStaticMesh;
+    
+    // ── [무기 클래스 지정] ──
+    // 무기일 수도 있고, 나중에 설치형 가짓/특수 장비일 수도 있음 (AActor 상속)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Logic")
+    TSubclassOf<AActor> EquippedActorClass;
 };
 
 // 데이터 테이블로 관리할 총기 데이터
