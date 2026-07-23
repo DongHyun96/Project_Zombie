@@ -65,6 +65,8 @@ public:
 
 	void SetEntryCurCount(int32 Idx, int32 InCount);
 	
+	void SetHasEquipmentSlots(bool bIsEquip) { bHasEquipmentSlots = bIsEquip; }
+	
 	// 특정 슬롯의 아이템 초기화
 	void InitInvenItemAt(int32 Idx);
 	
