@@ -9,6 +9,7 @@
 #include "GameFramework/Actor.h"
 #include "C_WeaponBase.generated.h"
 
+struct FWeaponData;
 class UC_ItemLinkComponent;
 
 UCLASS(Abstract)
@@ -24,6 +25,14 @@ protected:
 
 public:	
 	virtual void Tick(float DeltaTime) override;
+
+	// 아이템 매니저에서 스폰될 때 초기화 시켜주는 함수.
+	// 원래는 더 큰 구조로 잡아서 ItemActor로 모든 기능성 아이템을 포괄하고
+	// const void*로 모든 데이터 테이블을 받아오려다가 우선 무기 한정으로 바꿈. -> TODO : 모든 아이템 데이터 테이블은 FItemData를 상속받으면?
+	// 데이터 테이블의 Base Data + FInventoryEntry의 동적 데이터를 모두 업데이트 해야 한다.
+	// 데이터 테이블은 아이템 매니저에서 매개변수로 주고, FInventoryEntry는 ItemLink를 통한다. 
+	// 실제 자신의 클래스까지 내려가서 재정의해야 한다.
+	virtual bool InitializeItemActor(const FWeaponData* InRawData) PURE_VIRTUAL(AC_WeaponBase::InitializeItemActor, return false;);
 
 public:
 	
@@ -80,13 +89,14 @@ public:
 	AC_BasicPlayer* GetOwnerPlayer() const { return m_OwnerPlayer; }
 	void SetOwnerPlayer(AC_BasicPlayer* _OwnerPlayer) { m_OwnerPlayer = _OwnerPlayer; }
 	
+	UC_ItemLinkComponent* GetLinkComp() {return ItemLinkComp;}
 protected:
 
 	// 이 Weapon을 자신의 Slot에 장착중인 OwnerPlayer
 	UPROPERTY()
 	AC_BasicPlayer* m_OwnerPlayer{};
 	
-	UC_ItemLinkComponent* GetLinkComp() {return ItemLinkComp;}
+
 	
 protected:
 
@@ -100,5 +110,5 @@ protected:
 
 	// 데이터 연동 전용 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UC_ItemLinkComponent> ItemLinkComp;
+	TObjectPtr<UC_ItemLinkComponent> ItemLinkComp{};
 };
