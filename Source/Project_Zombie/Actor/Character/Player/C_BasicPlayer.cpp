@@ -521,11 +521,13 @@ void AC_BasicPlayer::Server_RequestDivideDropItem_Implementation(UC_InvenCompone
 	int32 ActualDropCount = SrcComp->ProcessItemDivideDrop(SrcIdx, SplitCount, PlayerId);
     
 	if (ActualDropCount <= 0) return;
+	
+	TempEntry.CurCount = ActualDropCount;
 
 	// 2. 안전하게 깎인 게 확인되었으므로, 서버 월드에 실제 아이템 액터 스폰
 	UC_ItemManager* ItemManager = GetWorld()->GetGameInstance()->GetSubsystem<UC_ItemManager>();
 	
-	if (ItemManager) ItemManager->DropItemByPlayer(TempName, ActualDropCount, this);
+	if (ItemManager) ItemManager->DropItemByPlayer(TempEntry, this);
 }
 
 bool AC_BasicPlayer::Server_RequestLockSlot_Validate(UC_InvenComponent* TargetComp, int32 SlotIdx)
