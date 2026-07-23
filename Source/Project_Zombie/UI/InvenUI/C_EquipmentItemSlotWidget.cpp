@@ -23,7 +23,7 @@ bool UC_EquipmentItemSlotWidget::NativeOnDrop(const FGeometry& InGeometry, const
 	AC_BasicPlayer* pPlayer = Cast<AC_BasicPlayer>(GetOwningPlayerPawn());
 	if (!pPlayer) return false;
 	
-	// 1. 장비 슬롯 타입 일치 검사
+	// 장비 슬롯 타입 일치 검사
 	FInventoryEntry FromEntry = FromInvenComp->GetItemAt(FromSlot);
 	UC_ItemManager* ItemManager = GetWorld()->GetGameInstance()->GetSubsystem<UC_ItemManager>();
 	if (ItemManager)
@@ -38,14 +38,14 @@ bool UC_EquipmentItemSlotWidget::NativeOnDrop(const FGeometry& InGeometry, const
 		}
 	}
 
-	// 2. 자기 자신 슬롯 드롭 및 슬롯 잠금 여부 검사
+	// 자기 자신 슬롯 드롭 및 슬롯 잠금 여부 검사
 	if ((FromInvenComp == ToInvenComp && FromSlot == ToSlot) || AssociatedInvenComp->GetInventoryItems()[ToSlot].LockedByPlayerID != INDEX_NONE)
 	{
 		pPlayer->Server_RequestUnlockSlot(FromInvenComp, FromSlot);
 		return true;
 	}
 
-	// 3. 조건 통과 시 서버에 아이템 이동/장착 요청
+	// 조건 통과 시 서버에 아이템 이동/장착 요청
 	pPlayer->Server_RequestMoveItem(FromInvenComp, FromSlot, ToInvenComp, ToSlot);
 	return true;
 }
