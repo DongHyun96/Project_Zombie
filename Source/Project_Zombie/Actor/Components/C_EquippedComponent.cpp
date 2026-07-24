@@ -115,6 +115,8 @@ bool UC_EquippedComponent::ChangeCurWeapon(EWeaponSlot _ChangeTo)
 	}*/
 
 	// 현재 무기교체처리가 이미 진행되고 있는 경우
+	UC_Util::Print(m_bIsCurrentlyChangingWeapon); // 1번 총 발사중에 2번 누르면 m_bIsCurrentlyChangingWeapon가 true로 바뀌어서 여기서 리턴되서 안되는 거였음.
+
 	if (m_bIsCurrentlyChangingWeapon) return false;
 	
 	

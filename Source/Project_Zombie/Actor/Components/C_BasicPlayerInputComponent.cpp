@@ -354,6 +354,7 @@ void UC_BasicPlayerInputComponent::EquipMainWeapon()
 void UC_BasicPlayerInputComponent::EquipMeleeWeapon()
 {
 	Player->GetEquippedComponent()->ChangeCurWeapon(EWeaponSlot::MeleeWeapon);
+
 }
 
 void UC_BasicPlayerInputComponent::EquipThrowable()
