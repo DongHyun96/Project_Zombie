@@ -423,14 +423,15 @@ void AC_ThrowableWeaponBase::OnThrowThrowable()
 	// EquippedComponent의 CurrentWeapon은 nullptr 또는 다음 수류탄으로 변경
 	// 수류탄 개수 감소
 	
+	// TODO : 멀티 환경에 맞게 조정해야 할 수 있음.
 	// 투척류는 아이템 갯수가 Ammo라고 보면된다.
 	// 투척하면 하나씩 줄여주고 0이 되면 해당 슬롯의 Entry를 비워준다.
 	if (ItemLinkComp)
 	{
 		if (FInventoryEntry* SlotEntry = ItemLinkComp->GetItemEntryPtr())
 		{
-			SlotEntry->CurCount--;
-			if (SlotEntry->CurCount == 0) SlotEntry->Clear();
+			--SlotEntry->CurCount;
+			if (SlotEntry->CurCount == 0) SlotEntry->Clear();	
 			// TODO : 직후에 인벤토리를 업데이트 해주어야 함.
 
 			int32 Idx = ItemLinkComp->GetSlotIndex();
