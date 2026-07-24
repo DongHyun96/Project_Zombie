@@ -8,12 +8,23 @@
 #include "GlobalData.h" // TODO : FCursorItem curDraggedItem 때문에 넣었는데 문제 생기면 구조 바꿔야함.
 #include "C_BasicPlayer.generated.h"
 
+
+// TODO: PlayerState 랑 PlayerLifeState 를 하나로 통합할지...
 // 캐릭터 상태
 UENUM(BlueprintType)
 enum class EPlayerState : uint8
 {
 	Idle,
 	Dead,
+};
+
+// 캐릭터 생명 상태
+UENUM(BlueprintType)
+enum class EPlayerLifeState : uint8
+{
+	Alive,
+	Downed,
+	GettingUp,
 };
 
 // 이동 속도 결정 상태
@@ -49,6 +60,7 @@ enum class EPlayerViewMode : uint8
 
 class UInputMappingContext;
 class UInputAction;
+class USphereComponent;
 struct FInputActionValue;
 
 UCLASS()
@@ -98,10 +110,16 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Components", meta = (DisplayName = "PoseColliderHandlerComponent"))
 	class UC_PoseColliderHandlerComponent* m_PoseColliderHandlerComponent{};
 	
+	//UPROPERTY(VisibleAnywhere, Category = "Components", meta = (DisplayName = "InteractionComponent"))
+	//class UC_InteractionComponent* m_InteractionComponent{};
+
 // [Status]
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Status")
 	EPlayerState		m_PlayerState;
+
+	UPROPERTY(ReplicatedUsing = OnRep_PlayerLifeState, VisibleAnywhere, BlueprintReadOnly, Category = "Status")
+	EPlayerLifeState 	m_PlayerLifeState;
 	
 	UPROPERTY(ReplicatedUsing = OnRep_PlayerPoseState, VisibleAnywhere, BlueprintReadOnly, Category = "Status")
 	EPlayerPoseState	m_PlayerPoseState;
@@ -209,6 +227,25 @@ protected:
 	//float m_MinBoostToSprint = 10.f;
 
 
+// [Revive]
+protected:
+	// 플레이어와 상호작용할 수 있는 범위
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction", meta = (AllowPrivateAccess = "true"))
+	USphereComponent* m_InteractionSphere;
+
+	// 플레이어를 부활시키는 중인지 여부
+	UPROPERTY(ReplicatedUsing = OnRep_IsRevivingPlayer, VisibleAnywhere, BlueprintReadOnly, Category = "Revive")
+	bool m_IsRevivingPlayer;
+
+	// 구조 중인 플레이어를 참조하는 포인터
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Revive")
+	AC_BasicPlayer* m_RevivingPlayer;
+
+	// Strategy 로 뺌
+	// 부활 후 플레이어가 일어나기까지 걸리는 시간 
+	//UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Status")
+	//float m_GetUpTime;
+
 private:
 	// Free look 상태 (Hold Alt 상태)
 	bool m_IsFreeLook{};
@@ -232,6 +269,12 @@ protected:
 	// TODO : C_DivideItemWidget에 CursorItem을 여기로 대체해야 하나?
 	UPROPERTY()
 	FCursorItem curDraggedItem{};
+
+// [Timer]
+private:
+	// 플레이어의 LifeState 를 변경해서 BasicPlayer 가 관리
+	FTimerHandle m_GetUpTimerHandle;
+
 public:
 	
 	EPlayerState GetPlayerState() const { return m_PlayerState; }
@@ -252,6 +295,8 @@ public:
 	UC_PingSystemComponent* GetPingSystemComponent() const { return m_PingSystemComponent; }
 
 	UC_BasicPlayerAimComponent* GetAimComponent() const { return m_PlayerAimComponent; }
+
+	//UC_InteractionComponent* GetInteractionComponent() const { return m_InteractionComponent; }
 
 	FCursorItem GetCurDraggedItem() {return curDraggedItem;}
 	
@@ -325,8 +370,21 @@ private: // 캐릭터 그로기 처리
 	/// 실제 죽음 처리 함수
 	void Die();
 
+	// Server함수 (생명 상태 변경)
+protected:
+	// 서버에서 플레이어 생명 상태 변경 처리 후 클라이언트에 리플리케이트
+	UFUNCTION()
+	void OnRep_PlayerLifeState();
 
-	// Server함수
+	// 현재 플레이어를 구출 중인지 서버에서 처리 후 클라이언트에 리플리케이트
+	UFUNCTION()
+	void OnRep_IsRevivingPlayer();
+
+	// 플레이어를 GettingUp 상태로 변경하고 서버에서 처리
+	void StartGettingUpOnServer(float _GetUpDuration);
+
+
+	// Server함수 (자세 변경)
 protected:
 	
 	// 서버에서 자세 변경 처리 후 클라이언트에 리플리케이트
@@ -394,6 +452,8 @@ public:
 
 	UCameraComponent* GetCamera() { return m_Camera; }
 	void SetCameraFOV(float _FOV);
+
+	USphereComponent* GetInteractionSphere() { return m_InteractionSphere; }
 
 private:
 	EPlayerPoseState DetermineMoveSpeedState() const;

@@ -23,6 +23,7 @@
 #include "Actor/Components/C_PingSystemComponent.h"
 #include "Actor/Components/C_BasicPlayerAimComponent.h"
 #include "Actor/Components/C_PoseColliderHandlerComponent.h"
+#include "Actor/Components/InteractionComponent/C_InteractionComponent.h"
 
 #include "GameFramework/PlayerState.h"
 #include "Actor/Components/C_PlayerStatComponent.h"
@@ -34,6 +35,11 @@
 #include "UI/InvenUI/C_InventoryGridWidget.h"
 #include "UI/InvenUI/C_InventoryWidget.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
+
+#include "Components/SphereComponent.h"
+#include "Components/CapsuleComponent.h"
+
+#include "TimerManager.h"
 
 #include "Net/UnrealNetwork.h"
 
@@ -53,8 +59,18 @@ AC_BasicPlayer::AC_BasicPlayer()
 	m_Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("MainCamera"));
 	m_Camera->SetupAttachment(m_SpringArm);
 
+	m_InteractionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("InteractionSphere"));
+	m_InteractionSphere->SetupAttachment(RootComponent);
+	m_InteractionSphere->SetSphereRadius(150.0f);
+
+
 	// 캐릭터 상태 초기화
+	m_PlayerLifeState = EPlayerLifeState::Alive;
 	m_PlayerPoseState = EPlayerPoseState::Walk;
+
+	// 부활 중인지 여부 초기화
+	m_IsRevivingPlayer = false;
+	m_RevivingPlayer = nullptr;
 
 	// 점프높이 설정
 	GetCharacterMovement()->JumpZVelocity = 600.f;
@@ -111,6 +127,9 @@ AC_BasicPlayer::AC_BasicPlayer()
 	
 	// PoseColliderHandler Component
 	m_PoseColliderHandlerComponent = CreateDefaultSubobject<UC_PoseColliderHandlerComponent>(TEXT("PoseColliderHandlerComponent"));
+
+	// Interaction Component
+	//m_InteractionComponent = CreateDefaultSubobject<UC_InteractionComponent>(TEXT("InteractionComponent"));
 }
 
 
@@ -161,8 +180,18 @@ void AC_BasicPlayer::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	// 리플리케이트 하고싶은 맴버를 등록 
+	// ======= 리플리케이트 하고싶은 맴버를 등록 ==========
+	// 자세 상태 
 	DOREPLIFETIME(AC_BasicPlayer, m_PlayerPoseState);
+
+	// 플레이어 생존 상태 
+	DOREPLIFETIME(AC_BasicPlayer, m_PlayerLifeState);
+
+	// 다른 플레이어 구조 중인지 
+	DOREPLIFETIME(AC_BasicPlayer, m_IsRevivingPlayer);
+
+	// 구조 중인 플레이어
+	DOREPLIFETIME(AC_BasicPlayer, m_RevivingPlayer);
 }
 
 void AC_BasicPlayer::Tick(float DeltaTime)
@@ -245,6 +274,15 @@ bool AC_BasicPlayer::UseBoost(float _UseAmount)
 	if (_UseAmount <= 0.f || m_MaxBoost <= 0.f || m_CurBoost <= 0.f)
 		return false;
 
+
+	// =================임시용==========================
+	/*if (m_CurBoost >= 0.f)
+	{
+		Die();
+		return false;
+	}*/
+	// ================================================
+
 	float PrevBoost = m_CurBoost;
 	bool bHasBoost = (m_CurBoost >= _UseAmount);
 
@@ -278,10 +316,12 @@ void AC_BasicPlayer::RecoverBoost(float _RecoverAmount)
 
 void AC_BasicPlayer::StartSprint()
 {
-	m_IsSprintInput = true;
-
 	// 공중일 때는 달리기 불가
 	if (!GetCharacterMovement() || GetCharacterMovement()->IsFalling())
+		return;
+
+	// 자세 전환 중에는 달리기 불가
+	if (m_PoseColliderHandlerComponent->IsTransitioning())
 		return;
 
 	// 웅크리기 중이거나 웅크리기 전환 중일 때는 달리기 불가
@@ -292,6 +332,8 @@ void AC_BasicPlayer::StartSprint()
 	if (m_CurBoost <= 0.f)
 		return;
 
+	m_IsSprintInput = true;
+
 	m_PlayerPoseState = EPlayerPoseState::Sprint;
 
 	ApplyMovementSpeed();
@@ -300,6 +342,10 @@ void AC_BasicPlayer::StartSprint()
 void AC_BasicPlayer::StopSprint()
 {
 	m_IsSprintInput = false;
+
+	// 이미 다른 자세로 변경되었다면 Walk 로 변경하지 않음
+	if (m_PlayerPoseState != EPlayerPoseState::Sprint)
+		return;
 
 	m_PlayerPoseState = EPlayerPoseState::Walk;
 
@@ -314,7 +360,13 @@ void AC_BasicPlayer::ToggleCrouch()
 	if (m_PoseColliderHandlerComponent->IsTransitioning())
 		return;
 
-	const EPlayerPoseState NewPoseState 
+	// 달리기 중 웅크리기를 누르면 달리기 입력부터 해제
+	if (m_PlayerPoseState == EPlayerPoseState::Sprint)
+	{
+		m_IsSprintInput = false;
+	}
+
+	const EPlayerPoseState NewPoseState
 		= m_PlayerPoseState == EPlayerPoseState::Crouch ? EPlayerPoseState::Walk : EPlayerPoseState::Crouch;
 
 
@@ -339,6 +391,12 @@ void AC_BasicPlayer::ApplyMovementSpeed()
 {
 	if (!GetCharacterMovement())
 		return;
+
+	if (IsDead())
+	{
+		GetCharacterMovement()->MaxWalkSpeed = 0.f;
+		return;
+	}
 
 	// 웅크리기 전환 중일 때는 잠깐 정지
 	if (m_PoseColliderHandlerComponent->IsTransitioning())
@@ -374,10 +432,12 @@ void AC_BasicPlayer::Die()
 	if (IsDead())
 		return;
 
+	GetStatComponent()->SetCurHP(0.f);
+
 	m_PlayerState = EPlayerState::Dead;
+	m_IsSprintInput = false;
 
 	// 이동 중지
-	GetCharacterMovement()->StopMovementImmediately();
 
 	// 사망 시 다른 플레이어가 살려줄 수 있도록 
 }
@@ -424,6 +484,29 @@ ETeamAttitude::Type AC_BasicPlayer::GetTeamAttitudeTowards(const AActor& _Other)
 
 	// 팀 설정 기능이 없는 Actor 인 경우 중립
 	return ETeamAttitude::Neutral;
+}
+
+void AC_BasicPlayer::OnRep_PlayerLifeState()
+{
+}
+
+void AC_BasicPlayer::OnRep_IsRevivingPlayer()
+{
+}
+
+void AC_BasicPlayer::StartGettingUpOnServer(float _GetUpDuration)
+{
+	// 서버에서만 처리
+	if (!HasAuthority())
+		return;
+
+	// Downed 상태가 아니면 일어날 필요없음
+	if (m_PlayerLifeState != EPlayerLifeState::Downed)
+		return;
+
+	// Timer 중복 방지 // 이미 돌아가고 있었으면 Timer 제거
+	GetWorldTimerManager().ClearTimer(m_GetUpTimerHandle);
+
 }
 
 void AC_BasicPlayer::OnRep_PlayerPoseState()
