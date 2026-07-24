@@ -371,6 +371,9 @@ void UC_BasicPlayerInputComponent::ToggleArmed()
 void UC_BasicPlayerInputComponent::FreeLookHolStart()
 {
 	Player->SetIsFreeLook(true);
+	
+	/*// TODO : 여기 지울 것 For testing
+	Player->GetEquippedComponent()->Server_SetSlotWeapon(EWeaponSlot::MainWeapon, nullptr);*/
 }
 
 void UC_BasicPlayerInputComponent::FreeLookHoldEnd()
