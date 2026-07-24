@@ -191,26 +191,26 @@ struct FWeaponData : public FTableRowBase
 
     // ── [무기 종류 (Type)] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Type")
-    EWeaponType WeaponType;
+    EWeaponType WeaponType = EWeaponType::Gun;
 
     // ── [무기 공통 스탯 (Stats)] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
-    float BaseDamage;     // 무기 기본 데미지
+    float BaseDamage = 1.f;      // 무기 기본 데미지
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
-    float AttackRate;     // 총기 발사간격, 근접 공속, 투척 딜레이 공통 사용 (시간 간격 : 0.1초 = 초당 10발)
+    float AttackRate = 0.1f;     // 총기 발사간격, 근접 공속, 투척 딜레이 공통 사용 (시간 간격 : 0.1초 = 초당 10발)
 
     // ── [무기 공통 매쉬 (Mesh)] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual")
-    TSoftObjectPtr<USkeletalMesh> WeaponSkeletalMesh;
+    TSoftObjectPtr<USkeletalMesh> WeaponSkeletalMesh{};
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual")
-    TSoftObjectPtr<UStaticMesh> WeaponStaticMesh;
+    TSoftObjectPtr<UStaticMesh> WeaponStaticMesh{};
     
     // ── [무기 클래스 지정] ──
     // 무기일 수도 있고, 나중에 설치형 가짓/특수 장비일 수도 있음 (AActor 상속)
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Logic")
-    TSubclassOf<AActor> EquippedActorClass;
+    TSubclassOf<AActor> EquippedActorClass{};
 };
 
 // 데이터 테이블로 관리할 총기 데이터
@@ -221,7 +221,7 @@ struct FGunData : public FWeaponData
 
     // ── [총기 관련 스탯 (Stats)] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
-    float MaxAmmo;     // 총기 최대 탄창 수
+    int32 MaxAmmo = 7;     // 총기 최대 탄창 수
 
     // ── [총기 부가 설정] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
@@ -229,23 +229,24 @@ struct FGunData : public FWeaponData
 
     // ── [총기 관련 매쉬 (Mesh)] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual")
-    TSoftObjectPtr<UStaticMesh> ShellMesh;   // 총기 탄피 매쉬
+    TSoftObjectPtr<UStaticMesh> ShellMesh{};   // 총기 탄피 매쉬
 
     // ── [총기 애니메이션 (Animations)] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animations")
-    TSoftObjectPtr<UAnimSequence> FireAnimation;
+    TSoftObjectPtr<UAnimSequence> FireAnimation{};
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animations")
-    TSoftObjectPtr<UAnimSequence> ReloadAnimation;
+    TSoftObjectPtr<UAnimSequence> ReloadAnimation{};
 
     // ── [총기 플레이어 애니메이션 (Player Animations)] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player_Animations")
-    TSoftObjectPtr<UAnimMontage> PlayerFireAnimation;
+    TSoftObjectPtr<UAnimMontage> PlayerFireAnimation{};
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player_Animations")
-    TSoftObjectPtr<UAnimMontage> PlayerReloadAnimation;
+    TSoftObjectPtr<UAnimMontage> PlayerReloadAnimation{};
 };
 
+// 근접무기 데이터
 USTRUCT(BlueprintType)
 struct FMeleeData : public FWeaponData
 {
@@ -253,7 +254,71 @@ struct FMeleeData : public FWeaponData
 
     // ── [플레이어 근접무기 애니메이션 (Animations)] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animations")
-    TSoftObjectPtr<UAnimMontage> PlayerAttackAnimation;
+    TSoftObjectPtr<UAnimMontage> PlayerAttackAnimation{};
+};
+
+// 투척류 데이터
+USTRUCT(BlueprintType)
+struct FThrowableData : public FWeaponData
+{
+    GENERATED_BODY()
+    
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    UAnimMontage* m_ThrowMontage{};
+    
+    // 핀 제거 가능 여부 
+    // 핀 제거 동작 몽타주를 넣을 것인가?
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Throwable|State")
+    bool m_bHasPin = false;
+
+    // 쿠킹 가능 여부 
+    // R키를 눌렀을 때 쿠킹 가능한가?
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Throwable|State")
+    bool m_bIsCookable = false;
+
+    // 충돌 시 폭발 여부
+    // 충돌하면 바로 폭발하는가?
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Throwable|State")
+    bool m_bExplodeOnImpact = false;
+
+    // 폭발까지 걸리는 시간 (핀 제거 후, 폭발까지 걸리는 시간)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Throwable|State",
+        meta = (EditCondition = "!m_bExplodeOnImpact", EditConditionHides, ClampMin = "0.0"))
+    float m_FuseTime = 0.f;
+
+    // 투척 속도
+    //UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Throwable|State")
+    //float m_ThrowSpeed;
+    
+    // 전략 패턴 : 폭발 기능 클래스
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Throwable|Launch")
+    TSubclassOf<class UObject> m_ExplodeStrategyClass{};
+    
+    // 장판 데미지 영역 클래스
+    // 일단 화염병 전용으로 AC_FireDamageArea를 사용하지만, 나중에 다른 장판 데미지 영역이 생기면 수정 예정	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|Fire Damage Area")
+    // TODO : 전방선언으로 우선 사용하는데 문제가 생기면 그냥 빼버리기
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Throwable|Damage Area")
+    TSubclassOf<class AC_FireDamageArea> m_FireDamageAreaClass{};
+    
+    // 폭발 반경
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Throwable|Explosion")
+    float m_ExplosionRadius = 0.0f;
+
+    // 최대 데미지
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Throwable|Explosion")
+    float m_MaxDamage = 0.0f;
+
+    // 최소 데미지
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Throwable|Explosion")
+    float m_MinDamage = 0.0f;
+    
+    // 폭발 이펙트 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Throwable|Effect")
+    TObjectPtr<UParticleSystem> m_ExplosionEffect{};
+
+    // 폭발 이펙트 크기 (1.0 = 기본 크기)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Throwable|Effect")
+    float m_ExplosionEffectScale = 1.0f;
 };
 
 // ******************************
