@@ -53,3 +53,25 @@ enum class EWeaponSlot : uint8
     None,
     Max				UMETA(Hidden)
 };
+
+// 투척류 타입
+UENUM(BlueprintType)
+enum class EThrowableType : uint8
+{
+	None,
+	Grenade,
+	Molotov,
+};
+
+// 투척류 상태
+UENUM(BlueprintType)
+enum class EThrowableState : uint8
+{
+	Idle,		// 기본 상태
+	RemovePin,	// 핀 제거
+	Ready,		// 투척 준비 
+	ReadyLoop,	// 투척 준비 동작 루프
+	Throwing,	// 투척 중
+	Thrown,		// 투척 
+	Exploded,	// 폭발 
+};
