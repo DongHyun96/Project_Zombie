@@ -34,13 +34,13 @@ protected:
 	UC_InvenComponent* AssociatedInvenComp = nullptr;
 
 	// Designer에서 배치할 장비 슬롯들 (BindWidget 사용)
-	UPROPERTY(meta = (BindWidget))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget))
 	UC_EquipmentItemSlotWidget* Slot_MainGun;
 
-	UPROPERTY(meta = (BindWidget))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget))
 	UC_EquipmentItemSlotWidget* Slot_Melee;
 
-	UPROPERTY(meta = (BindWidget))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget))
 	UC_EquipmentItemSlotWidget* Slot_Throwable;
 
 	//UPROPERTY(meta = (BindWidget))
