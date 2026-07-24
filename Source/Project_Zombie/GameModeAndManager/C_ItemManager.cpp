@@ -180,7 +180,12 @@ AC_WeaponBase* UC_ItemManager::SpawnEquippedActor(FName InRowName, AActor* InOwn
         break;
 
     case EItemType::THROWABLE:
-        // TODO: Throwable 테이블 연결 시 작성
+        if (const FThrowableData* ThrowableData = GetItemData<FThrowableData>(EItemTableType::Throwable, InRowName))
+        {
+            TargetClass = ThrowableData->EquippedActorClass;
+            SlotIdx = 2;
+            InRawData = ThrowableData;
+        }
         break;
 
     case EItemType::CONSUMABLE:
