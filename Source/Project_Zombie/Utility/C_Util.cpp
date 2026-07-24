@@ -3,6 +3,9 @@
 
 #include "C_Util.h"
 
+#include "Engine/Engine.h"
+#include "Engine/World.h"
+
 void UC_Util::Print(const FString& str, const FColor& InColor, float TimeToDisplay)
 {
 	GEngine->AddOnScreenDebugMessage(-1, TimeToDisplay, InColor, *str);
@@ -56,5 +59,5 @@ void UC_Util::Print(AActor* Actor, const FColor& InColor, float TimeToDisplay)
 
 void UC_Util::PrintLogMessage(const FString& str)
 {
-	UE_LOG(LogTemp, Log, TEXT("&s"), *str);
+	UE_LOG(LogTemp, Log, TEXT("%s"), *str);
 }

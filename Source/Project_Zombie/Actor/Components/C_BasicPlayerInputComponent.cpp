@@ -381,5 +381,8 @@ void UC_BasicPlayerInputComponent::FreeLookHoldEnd()
 void UC_BasicPlayerInputComponent::MarkPing()
 {
 	Player->GetPingSystemComponent()->TrySpawnPing();
+	
+	// TODO : 이 Test 코드 지우기
+	Player->GetEquippedComponent()->Server_TestSpawnAllWeapons();
 }
 

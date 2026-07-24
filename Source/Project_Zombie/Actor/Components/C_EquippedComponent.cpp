@@ -4,6 +4,7 @@
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/ItemActor/Weapon/C_WeaponBase.h"
 #include "GameModeAndManager/C_UIManager.h"
+#include "Net/UnrealNetwork.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
 
 #include "Utility/C_Util.h"
@@ -12,6 +13,7 @@ UC_EquippedComponent::UC_EquippedComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 
+	SetIsReplicatedByDefault(true);
 	
 	// 각 Slot칸 nullptr로 미리 확보
 	m_Weapons.SetNum(static_cast<uint8>(EWeaponSlot::Max));
@@ -32,30 +34,58 @@ void UC_EquippedComponent::BeginPlay()
 	
 	//
 	//EquipInvenComp->SetMaxSlots(static_cast<int32>(EWeaponSlot::Max));
-	
-	// Test용으로 무기 미리 스폰
-	for (const TTuple<EWeaponSlot, TSubclassOf<AC_WeaponBase>>& WeaponClassPair : m_WeaponClassToSpawn)
-	{
-		AC_WeaponBase* SpawnedWeapon = GetWorld()->SpawnActor<AC_WeaponBase>(WeaponClassPair.Value);
-		
-		if (IsValid(SpawnedWeapon))
-			SetSlotWeapon(WeaponClassPair.Key, SpawnedWeapon);
-	}
 }
 
-AC_WeaponBase* UC_EquippedComponent::SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* WeaponToEquip)
+void UC_EquippedComponent::Multicast_SetSlotWeapon_Implementation(EWeaponSlot _TargetSlot, AC_WeaponBase* _WeaponToEquip)
 {
+	// 서버 쪽 환경이면 x (Player로 따지면 안됨)
+	if (GetWorld()->GetNetMode() != NM_Client)
+	{
+		PRINT_LOCAL(GetWorld(), "From Multi_ :: Server checked!", FColor::MakeRandomColor(), 20.f);
+		return;
+	}
+	
+	PRINT_LOCAL(GetWorld(), "From Multi_ :: Client checked!", FColor::MakeRandomColor(), 20.f);
+	
+	
+	// 서버 쪽 먼저 업데이트 자기 알아서 처리, 클라이언트단만 SetSlotWeapon 처리를 해주면 됨
+	// if (m_OwnerPlayer->HasAuthority()) return;
+	
+	// 클라이언트단 SetSlotWeapon으로 맞추기
+	SetSlotWeapon(_TargetSlot, _WeaponToEquip);
+}
+
+void UC_EquippedComponent::OnRep_Weapons()
+{
+	
+}
+
+void UC_EquippedComponent::SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* WeaponToEquip)
+{
+	switch (TargetSlot)
+	{
+	case EWeaponSlot::MainWeapon: PRINT_LOCAL(GetWorld(), "MainWeapon SetSlot", FColor::MakeRandomColor(), 10.f);
+		break;
+	case EWeaponSlot::MeleeWeapon: PRINT_LOCAL(GetWorld(), "MeleeWeapon SetSlot", FColor::MakeRandomColor(), 10.f);
+		break;
+	case EWeaponSlot::ThrowableWeapon: PRINT_LOCAL(GetWorld(), "ThrowableWeapon SetSlot", FColor::MakeRandomColor(), 10.f);
+		break;
+	case EWeaponSlot::None:
+		break;
+	case EWeaponSlot::Max:
+		break;
+	}
+	
 	if (TargetSlot == EWeaponSlot::None || TargetSlot == EWeaponSlot::Max)
 	{
 		UC_Util::Print("From UC_EquippedComponent::SetSlotWeapon : wrong TargetSlot received", FColor::Red, 10.f);
-		return nullptr;
+		return;
 	}
 	
 	const uint8 TargetSlotIdx = static_cast<uint8>(TargetSlot); 
-	AC_WeaponBase* PrevSlotWeapon = m_Weapons[TargetSlotIdx];
-
+	
     // 들어온 슬롯의 이전 무기가 존재할 때, 이전 무기 해제 및 OwnerPlayer 초기화
-    if (PrevSlotWeapon)
+    if (AC_WeaponBase* PrevSlotWeapon = m_Weapons[TargetSlotIdx])
     {
     	m_Weapons[TargetSlotIdx]->DetachFromActor(FDetachmentTransformRules::KeepRelativeTransform);
     	PrevSlotWeapon->SetOwnerPlayer(nullptr);
@@ -76,7 +106,7 @@ AC_WeaponBase* UC_EquippedComponent::SetSlotWeapon(EWeaponSlot TargetSlot, AC_We
         		UIManager->GetMainHUDWidget()->ToggleAmmoInfoVisibility(false);
         }
 
-        return PrevSlotWeapon;
+        return;
     }
 
 	// Throwable의 경우 장착된 모습 보이지 않게끔 처리
@@ -88,8 +118,36 @@ AC_WeaponBase* UC_EquippedComponent::SetSlotWeapon(EWeaponSlot TargetSlot, AC_We
 
 	// 무기에게 자신의 OwnerPlayer 세팅
 	m_Weapons[TargetSlotIdx]->SetOwnerPlayer(m_OwnerPlayer);
-	
-    return PrevSlotWeapon;
+}
+
+void UC_EquippedComponent::Server_TestSpawnAllWeapons_Implementation()
+{
+	PRINT_LOCAL(GetWorld(), "Server_TestSpawnAllWeapons_Implementation", FColor::MakeRandomColor(), 10.f);
+
+	// Test용으로 무기 미리 스폰 (서버 환경에서만 -> 나머지 클라이언트들은 알아서 업데이트 처리를 할 예정)
+	for (const TTuple<EWeaponSlot, TSubclassOf<AC_WeaponBase>>& WeaponClassPair : m_WeaponClassToSpawn)
+	{
+		AC_WeaponBase* SpawnedWeapon = GetWorld()->SpawnActor<AC_WeaponBase>(WeaponClassPair.Value);
+		
+		if (IsValid(SpawnedWeapon))
+			Server_SetSlotWeapon(WeaponClassPair.Key, SpawnedWeapon);
+	}
+}
+
+bool UC_EquippedComponent::Server_TestSpawnAllWeapons_Validate()
+{
+	return true;
+}
+
+void UC_EquippedComponent::Server_SetSlotWeapon_Implementation(EWeaponSlot _TargetSlot, AC_WeaponBase* _WeaponToEquip)
+{
+	SetSlotWeapon(_TargetSlot, _WeaponToEquip); // 서버 환경에서의 SetSlotWeapon 처리
+	Multicast_SetSlotWeapon(_TargetSlot, _WeaponToEquip); // 클라이언트단의 SetSlotWeapon도 호출해줌으로써 동기화 처리
+}
+
+bool UC_EquippedComponent::Server_SetSlotWeapon_Validate(EWeaponSlot _TargetSlot, AC_WeaponBase* _WeaponToEquip)
+{
+	return true;
 }
 
 bool UC_EquippedComponent::ChangeCurWeapon(EWeaponSlot _ChangeTo)
@@ -258,4 +316,13 @@ void UC_EquippedComponent::OnDrawEnd()
 	m_Weapons[m_NextWeaponTypeIdx]->AttachToHand(m_OwnerPlayer->GetMesh());
 	m_CurWeaponTypeIdx  = m_NextWeaponTypeIdx;
 	m_NextWeaponTypeIdx = NoneSlotIdx;
+}
+
+void UC_EquippedComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	
+	// 리플리케이트 하고싶은 멤버를 등록 여기서
+	/*DOREPLIFETIME(UC_EquippedComponent, m_Weapons);
+	DOREPLIFETIME(UC_EquippedComponent, m_CurWeaponTypeIdx);*/
 }

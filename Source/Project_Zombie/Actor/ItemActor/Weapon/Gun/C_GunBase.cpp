@@ -340,7 +340,7 @@ void AC_GunBase::OnMainColliderBeginOverlap
 	// 해당 Player의 MainWeaponSlot에 이미 MainWeapon이 장착되어 있는 경우
 	if (Player->GetEquippedComponent()->GetSlotWeapon(EWeaponSlot::MainWeapon)) return;
 	
-	Player->GetEquippedComponent()->SetSlotWeapon(EWeaponSlot::MainWeapon, this);
+	Player->GetEquippedComponent()->Server_SetSlotWeapon(EWeaponSlot::MainWeapon, this);
 	m_Collision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	
 	// Outline 비활성화(활성화 되어있건 이미 비활성이건)

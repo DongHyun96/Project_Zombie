@@ -40,6 +40,8 @@
 AC_BasicPlayer::AC_BasicPlayer()
 {
 	PrimaryActorTick.bCanEverTick = true;
+
+	SetReplicates(true);
 	
 	m_SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	m_SpringArm->SetupAttachment(RootComponent);

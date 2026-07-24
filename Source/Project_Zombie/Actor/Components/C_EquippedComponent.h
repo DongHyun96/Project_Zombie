@@ -30,16 +30,46 @@ public:
 	/// </summary>
 	AC_WeaponBase* GetSlotWeapon(EWeaponSlot _WeaponSlotType) const { return m_Weapons[static_cast<uint8>(_WeaponSlotType)]; }
 	
+public:
+	
+	/// <summary>
+	/// 서버 쪽에 SetSlotWeapon 알림 도착 -> 해당 Slot의 무기 WeaponToEquip로 갈아끼우기 
+	/// </summary>
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_SetSlotWeapon(EWeaponSlot _TargetSlot, AC_WeaponBase* _WeaponToEquip);
+	
+private:
+	
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_SetSlotWeapon(EWeaponSlot _TargetSlot, AC_WeaponBase* _WeaponToEquip);
+
+private:
+	
+	/// <summary>
+	/// 서버에서의 SetSlotWeapon을 통해 m_Weapons 업데이트가 되면, 그에 따른 클라이언트에서의 상호작용 처리  
+	/// </summary>
+	UFUNCTION()
+	void OnRep_Weapons();
+
 	/// <summary>
 	/// 슬롯에 무기 장착하기 / 해제는 Weapon에 nullptr를 줄 것 -> 장착/해제는 이 함수를 통해서 무조건 할 것
 	/// </summary>
 	/// <param name="TargetSlot"> : 장착할 슬롯 위치 </param>
 	/// <param name="WeaponToEquip"> : 해당 slot에 장착할 무기 객체 / 장착 해제는 nullptr </param>
-	/// <returns> : 해당 slot의 이전 무기 (없었다면 return nullptr) </returns>
-	AC_WeaponBase* SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* WeaponToEquip);
+	void SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* WeaponToEquip);
 
+public: // TODO : 이 Test block 지우기
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_TestSpawnAllWeapons();
 	
-public:	
+
+public:
+	
+	//UFUNCTION(Server,Reliable, WithValidation)
+	//void Server_
+	
+public:
 	/// <summary>
 	/// 현재 손에 든 무기 바꾸기
 	/// </summary>
@@ -52,8 +82,6 @@ public:
 	/// </summary>
 	/// <returns> : 실패 시 return false </returns>
 	bool ToggleArmed();
-
-
 	
 public:
 	
@@ -69,6 +97,10 @@ public:
 	/// </summary>
 	UFUNCTION(BlueprintCallable)
 	void OnDrawEnd();
+
+private:
+	
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	
 private: /* This component owner Player */
 
@@ -79,19 +111,21 @@ protected: /* 장착 무기 Slot */
 	
 	// 현재 슬롯 별 장착된 Weapon들 (각 EWeaponSlot Type 자리는, 각 index)
 	// 장착된 무기가 없는 슬롯은 nullptr가 들어간다
-	UPROPERTY(BlueprintReadOnly, VisibleAnywhere)
+	// UPROPERTY(ReplicatedUsing = OnRep_Weapons, VisibleAnywhere, BlueprintReadOnly, DisplayName =  "Weapons")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, DisplayName =  "Weapons")
 	TArray<AC_WeaponBase*> m_Weapons{};
 
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)
 	TMap<EWeaponSlot, TSubclassOf<AC_WeaponBase>> m_WeaponClassToSpawn{};
-
 	
 private:
 
-	// 현재 무기를 바꾸는 과정에 
+	// 현재 무기를 바꾸는 과정인지
 	bool m_bIsCurrentlyChangingWeapon{};
+
+	// UPROPERTY(Replicated)
+	uint8 m_CurWeaponTypeIdx  = static_cast<uint8>(EWeaponSlot::None); // 현재 손에 들고 있는 무기 슬롯 Type Idx
 	
-	uint8 m_CurWeaponTypeIdx = static_cast<uint8>(EWeaponSlot::None); // 현재 손에 들고 있는 무기 슬롯 Type Idx
 	uint8 m_NextWeaponTypeIdx = static_cast<uint8>(EWeaponSlot::None); // 다음에 바꿀 무기 슬롯
 	uint8 m_PrevWeaponTypeIdx = static_cast<uint8>(EWeaponSlot::None); // 이전에 들고 있던 무기 슬롯
 		
