@@ -10,6 +10,9 @@
 #include "../Character/Player/C_BasicPlayer.h"
 #include "../ItemActor/Weapon/Gun/C_GunBase.h"
 
+#include "GameModeAndManager/C_UIManager.h"
+#include "UI/MainHUD/CrosshairWidget/C_CrosshairWidget.h"
+#include "UI/MainHUD/C_GameMainHUD.h"
 
 UC_BasicPlayerAimComponent::UC_BasicPlayerAimComponent()
 {
@@ -44,6 +47,10 @@ void UC_BasicPlayerAimComponent::OnAimPressed(EAimState TargetState)
 	bIsAiming = true;
 	bIsTransitioningCamera = true;
 	m_CurAimState = TargetState;
+
+	if (AC_UIManager* UIManager = Cast<AC_UIManager>(GetWorld()->GetFirstPlayerController()->GetHUD()))
+		UIManager->GetMainHUDWidget()->GetCrosshairWidget()->ZoomIn();
+
 }
 
 void UC_BasicPlayerAimComponent::OnAimReleased()
@@ -51,6 +58,9 @@ void UC_BasicPlayerAimComponent::OnAimReleased()
 	bIsAiming = false;
 	bIsTransitioningCamera = true;
 	m_CurAimState = EAimState::None;
+
+	if (AC_UIManager* UIManager = Cast<AC_UIManager>(GetWorld()->GetFirstPlayerController()->GetHUD()))
+		UIManager->GetMainHUDWidget()->GetCrosshairWidget()->ZoomOut();
 }
 
 void UC_BasicPlayerAimComponent::UpdateCameraInterpolation(float DeltaTime)
@@ -85,7 +95,6 @@ void UC_BasicPlayerAimComponent::UpdateCameraInterpolation(float DeltaTime)
 	if (m_AimSpeed <= 0.f) m_AimSpeed = 10.f;
 	float BlendInTime = 1.f / m_AimSpeed;
 
-	// [1] 상태가 변한 첫 프레임에만 목적지 설정 및 시점 전환
 	if (bIsTransitioningCamera)
 	{
 		if (bIsAiming)
@@ -98,7 +107,6 @@ void UC_BasicPlayerAimComponent::UpdateCameraInterpolation(float DeltaTime)
 			}
 			else if (m_CurAimState == EAimState::Shoulder)
 			{
-				// [견착] 플레이어 본인 시점인지 확인 후 목적지 설정 (스위치는 끄지 않음!)
 				if (PC->GetViewTarget() != m_CurPlayer)
 				{
 					PC->SetViewTargetWithBlend(m_CurPlayer, BlendInTime, EViewTargetBlendFunction::VTBlend_Cubic);

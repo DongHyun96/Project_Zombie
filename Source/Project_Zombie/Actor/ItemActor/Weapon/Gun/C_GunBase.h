@@ -76,6 +76,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Data")
 	FInventoryEntry			ItemEntry;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Effects|Shell")
+	TObjectPtr<class UNiagaraSystem> m_ShellEjectNiagaraSystem;
+
 protected:
 	// 현재 사격 버튼을 누르고 있는 상태인지 확인
 	bool m_bIsFiring = false;
@@ -122,11 +125,6 @@ public:
 	/// 공통 탄피 배출 로직
 	/// </summary>
 	void SpawnShellEject();
-
-	/// <summary>
-	/// 공통 라인트레이스 데미지 처리 (플레이어용)
-	/// </summary>
-	void ProcessLineTraceDamage(float DamageVal);
 	
 	// 리팩토링중....
 public:

@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -88,6 +88,8 @@ public:
 	
 	class UC_CompassBarWidget* GetCompassBarWidget() const { return CompassBarWidget; }
 	
+	class UC_CrosshairWidget* GetCrosshairWidget() const { return CrosshairWidget; }
+
 public: // Ingame Log 관련
 	
 	/// <summary>
@@ -108,6 +110,9 @@ protected:
 	class UC_InformWidget* InformWidget{};
 
 	UPROPERTY(meta = (BindWidget))
-	UC_CompassBarWidget* CompassBarWidget{};
+	class UC_CompassBarWidget* CompassBarWidget{};
+
+	UPROPERTY(meta = (BindWidget))
+	class UC_CrosshairWidget* CrosshairWidget{};
 
 };

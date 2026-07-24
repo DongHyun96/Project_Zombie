@@ -109,31 +109,72 @@ void AC_Sniper::PlayFireEffects()
 
 void AC_Sniper::ProcessSniperShot(float DamageVal)
 {
-	if (!m_WeaponMesh || !GetWorld()) return;
+	if (!m_WeaponMesh || !GetWorld() || !m_OwnerPlayer)
+		return;
 
-	FVector StartLocation = m_WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
-	FVector ForwardVector = m_WeaponMesh->GetSocketRotation(TEXT("MuzzleFlash")).Vector();
+	// 1. 플레이어 컨트롤러(카메라) 확인
+	APlayerController* PC = Cast<APlayerController>(m_OwnerPlayer->GetController());
+	if (!PC || !PC->PlayerCameraManager)
+		return;
 
-	// 사거리 100m (10,000 unit) 정밀 직진 라인트레이스
-	FVector MaxEndLocation = StartLocation + (ForwardVector * 10000.0f);
+	// =========================================================================
+	// [1단계] 카메라 정중앙(크로스헤어/스코프)에서 1차 라인트레이스로 주 타겟점 구하기
+	// =========================================================================
+	FVector CameraStart = PC->PlayerCameraManager->GetCameraLocation();
+	FVector CameraForward = PC->PlayerCameraManager->GetCameraRotation().Vector();
 
-	FHitResult HitResult;
+	float TraceRange = 10000.0f; // 스나이퍼 사거리 100m
+	FVector CameraEnd = CameraStart + (CameraForward * TraceRange);
+
+	FHitResult CameraHitResult;
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(this);
 	QueryParams.AddIgnoredActor(m_OwnerPlayer);
 
-	bool bHasHit = GetWorld()->LineTraceSingleByChannel(HitResult, StartLocation, MaxEndLocation, ECC_Visibility, QueryParams);
-	FVector ActualEndLocation = bHasHit ? HitResult.ImpactPoint : MaxEndLocation;
+	bool bCameraHit = GetWorld()->LineTraceSingleByChannel(
+		CameraHitResult,
+		CameraStart,
+		CameraEnd,
+		ECC_Visibility,
+		QueryParams
+	);
 
-	DrawDebugLine(GetWorld(), StartLocation, ActualEndLocation, FColor::Green, false, 0.5f, 0, 1.5f);
+	// 스코프/크로스헤어가 가리키는 정확한 목표 위치
+	FVector TargetPoint = bCameraHit ? CameraHitResult.ImpactPoint : CameraEnd;
 
-	if (bHasHit)
+	// =========================================================================
+	// [2단계] 총구(MuzzleFlash)에서 TargetPoint를 향해 정밀 사격
+	// =========================================================================
+	FVector MuzzleStart = m_WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
+	FVector ShootDirection = (TargetPoint - MuzzleStart).GetSafeNormal();
+
+	FVector FinalMuzzleEnd = MuzzleStart + (ShootDirection * TraceRange);
+
+	FHitResult MuzzleHitResult;
+	bool bMuzzleHit = GetWorld()->LineTraceSingleByChannel(
+		MuzzleHitResult,
+		MuzzleStart,
+		FinalMuzzleEnd,
+		ECC_Visibility,
+		QueryParams
+	);
+
+	FVector ActualEndLocation = bMuzzleHit ? MuzzleHitResult.ImpactPoint : FinalMuzzleEnd;
+
+	// 스나이퍼 궤적 디버그 선 (총구 ➔ 명중 지점)
+	DrawDebugLine(GetWorld(), MuzzleStart, ActualEndLocation, FColor::Green, false, 0.5f, 0, 1.5f);
+
+	// =========================================================================
+	// [3단계] 데미지 적용
+	// =========================================================================
+	if (bMuzzleHit)
 	{
 		DrawDebugSphere(GetWorld(), ActualEndLocation, 5.0f, 8, FColor::Red, false, 0.5f, 0, 1.5f);
 
-		if (AC_BasicEnemy* Enemy = Cast<AC_BasicEnemy>(HitResult.GetActor()))
+		if (AC_BasicEnemy* Enemy = Cast<AC_BasicEnemy>(MuzzleHitResult.GetActor()))
 		{
-			UGameplayStatics::ApplyDamage(Enemy, DamageVal, m_OwnerPlayer->GetController(), this, nullptr);
+			AController* InstigatorController = m_OwnerPlayer->GetController();
+			UGameplayStatics::ApplyDamage(Enemy, DamageVal, InstigatorController, this, nullptr);
 		}
 	}
 }

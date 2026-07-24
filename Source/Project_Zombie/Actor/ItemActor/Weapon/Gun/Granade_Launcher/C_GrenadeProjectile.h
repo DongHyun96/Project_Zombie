@@ -16,17 +16,6 @@ class PROJECT_ZOMBIE_API AC_GrenadeProjectile : public AC_ThrowableWeaponBase
 {
 	GENERATED_BODY()
 
-public:
-	AC_GrenadeProjectile();
-
-protected:
-	virtual void BeginPlay() override;
-
-	// 충돌 시 호출될 콜백 함수
-	UFUNCTION()
-	void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
-
-
 private:
 	// 충돌체 (Root)
 	UPROPERTY(VisibleAnywhere, Category = "Components")
@@ -43,4 +32,18 @@ private:
 	// 폭발 전략 클래스
 	UPROPERTY(EditDefaultsOnly, Category = "Explosion")
 	TSubclassOf<UC_GrenadeExplode> ExplosionStrategyClass;
+
+public:
+	UProjectileMovementComponent* GetProjectileMovement() { return ProjectileMovement; }
+
+protected:
+	virtual void BeginPlay() override;
+
+	// 충돌 시 호출될 콜백 함수
+	UFUNCTION()
+	void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+
+public:
+	AC_GrenadeProjectile();
+
 };

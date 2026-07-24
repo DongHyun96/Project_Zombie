@@ -3,8 +3,17 @@
 
 #include "C_GranadeLauncher.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
+#include "C_GrenadeProjectile.h"
+
 #include "GameModeAndManager/C_UIManager.h"
+
 #include "UI/MainHUD/C_GameMainHUD.h"
+
+#include "GameFramework/ProjectileMovementComponent.h"
+
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraComponent.h"
+
 #include "Kismet/GameplayStatics.h"
 #include "DrawDebugHelpers.h"
 
@@ -18,7 +27,7 @@ bool AC_GranadeLauncher::OnStartFire(AC_BasicPlayer* _WeaponUser)
 	if (nullptr == _WeaponUser)
 		return false;
 
-	//m_OwnerPlayer = _WeaponUser;
+	// m_OwnerPlayer = _WeaponUser;
 
 	if (m_bIsReloading)
 		return false;
@@ -46,7 +55,7 @@ bool AC_GranadeLauncher::Reload(AC_BasicPlayer* _WeaponUser)
 	if (nullptr == _WeaponUser)
 		return false;
 
-	//m_OwnerPlayer = _WeaponUser;
+	// m_OwnerPlayer = _WeaponUser;
 	StartReload();
 
 	return true;
@@ -102,33 +111,83 @@ void AC_GranadeLauncher::PlayFireEffects()
 
 void AC_GranadeLauncher::EjectAllSpentShells()
 {
-	if (m_SpentShellCount <= 0)
-		return;
 
 	int32 SpentShellCount = m_MaxAmmo - m_CurrentAmmo;
 
-	// 누적된 사용 탄피 개수만큼 반복
-	for (int32 i = 0; i < SpentShellCount; ++i)
+	if (SpentShellCount <= 0 || !m_ShellEjectNiagaraSystem || !m_ShellMesh || !m_WeaponMesh || !GetWorld())
+		return;
+
+	FTransform EjectTransform = m_WeaponMesh->GetSocketTransform(TEXT("AmmoEject"), RTS_World);
+
+	UNiagaraComponent* NiagaraComp = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+		GetWorld(),
+		m_ShellEjectNiagaraSystem,
+		EjectTransform.GetLocation(),
+		EjectTransform.GetRotation().Rotator()
+	);
+
+	if (NiagaraComp)
 	{
-		SpawnShellEject();
+		NiagaraComp->SetVariableStaticMesh(FName("ShellMesh"), m_ShellMesh);
+		NiagaraComp->SetIntParameter(FName("ShellCount"), SpentShellCount);
 	}
 
-	// 카운트 초기화
-	m_SpentShellCount = 0;
 }
 
 void AC_GranadeLauncher::SpawnGrenadeProjectile()
 {
-	if (!m_WeaponMesh || !GetWorld() || !m_GrenadeClass) return;
+	if (!m_WeaponMesh || !GetWorld() || !m_GrenadeClass || !m_OwnerPlayer)
+		return;
 
-	FVector SpawnLocation = m_WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
-	FRotator SpawnRotation = m_WeaponMesh->GetSocketRotation(TEXT("MuzzleFlash"));
+	APlayerController* PC = Cast<APlayerController>(m_OwnerPlayer->GetController());
+	if (!PC || !PC->PlayerCameraManager)
+		return;
+
+	FVector CameraLocation = PC->PlayerCameraManager->GetCameraLocation();
+	FVector CameraForward = PC->PlayerCameraManager->GetCameraRotation().Vector();
+
+	float AimDistance = 5000.0f;
+	FVector CameraEnd = CameraLocation + (CameraForward * AimDistance);
+
+	FHitResult CameraHitResult;
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);          // 총 자체 무시
+	QueryParams.AddIgnoredActor(m_OwnerPlayer);   // 플레이어 자신 무시
+
+	bool bCameraHit = GetWorld()->LineTraceSingleByChannel(
+		CameraHitResult,
+		CameraLocation,
+		CameraEnd,
+		ECC_Visibility,
+		QueryParams
+	);
+
+	FVector TargetPoint = bCameraHit ? CameraHitResult.ImpactPoint : CameraEnd;
+
+	FVector StartLocation = m_WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
+
+	FVector LaunchDirection = (TargetPoint - StartLocation).GetSafeNormal();
+
+	float LaunchSpeed = 2500.0f;
+	FVector LaunchVelocity = LaunchDirection * LaunchSpeed;
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
-	SpawnParams.Instigator = m_OwnerPlayer; // 발사한 플레이어 지정 (스플래시 데미지 주체 전달용)
+	SpawnParams.Instigator = m_OwnerPlayer;
 
-	GetWorld()->SpawnActor<AActor>(m_GrenadeClass, SpawnLocation, SpawnRotation, SpawnParams);
+	FRotator SpawnRotation = LaunchVelocity.Rotation();
+
+	AC_GrenadeProjectile* Grenade = GetWorld()->SpawnActor<AC_GrenadeProjectile>(
+		m_GrenadeClass,
+		StartLocation,
+		SpawnRotation,
+		SpawnParams
+	);
+
+	if (Grenade && Grenade->GetProjectileMovement())
+	{
+		Grenade->GetProjectileMovement()->Velocity = LaunchVelocity;
+	}
 }
 
 void AC_GranadeLauncher::StartReload()
