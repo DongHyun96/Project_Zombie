@@ -14,6 +14,8 @@
 void UC_PlayerAnimInstance::NativeInitializeAnimation()
 {
 	Super::NativeInitializeAnimation();
+
+	m_bIsDead = false;
 }
 
 void UC_PlayerAnimInstance::NativeBeginPlay()
@@ -34,6 +36,9 @@ void UC_PlayerAnimInstance::NativeUpdateAnimation(float _DT)
 
 	if (nullptr == m_Character || nullptr == m_MovementComponent)
 		return;
+
+	// PlayerState 갱신
+	m_bIsDead = m_Character->IsDead();
 
 	// HandState 갱신
 	m_HandState = m_Character->GetHandState();

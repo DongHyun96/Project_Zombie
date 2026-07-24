@@ -23,6 +23,7 @@
 #include "Actor/Components/C_PingSystemComponent.h"
 #include "Actor/Components/C_BasicPlayerAimComponent.h"
 #include "Actor/Components/C_PoseColliderHandlerComponent.h"
+#include "Actor/Components/InteractionComponent/C_InteractionComponent.h"
 
 #include "GameFramework/PlayerState.h"
 #include "Actor/Components/C_PlayerStatComponent.h"
@@ -37,9 +38,20 @@
 #include "UI/MainHUD/C_GameMainHUD.h"
 #include "Utility/C_Util.h"
 
+#include "Components/SphereComponent.h"
+#include "Components/CapsuleComponent.h"
+
+#include "TimerManager.h"
+
+#include "Net/UnrealNetwork.h"
+
 AC_BasicPlayer::AC_BasicPlayer()
 {
 	PrimaryActorTick.bCanEverTick = true;
+
+	// Replication 설정
+	bReplicates = true;
+	SetReplicateMovement(true);
 	
 	m_SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	m_SpringArm->SetupAttachment(RootComponent);
@@ -49,8 +61,18 @@ AC_BasicPlayer::AC_BasicPlayer()
 	m_Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("MainCamera"));
 	m_Camera->SetupAttachment(m_SpringArm);
 
+	m_InteractionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("InteractionSphere"));
+	m_InteractionSphere->SetupAttachment(RootComponent);
+	m_InteractionSphere->SetSphereRadius(150.0f);
+
+
 	// 캐릭터 상태 초기화
-	m_PlayerMoveSpeedState = EPlayerPoseState::Walk;
+	m_PlayerLifeState = EPlayerLifeState::Alive;
+	m_PlayerPoseState = EPlayerPoseState::Walk;
+
+	// 부활 중인지 여부 초기화
+	m_IsRevivingPlayer = false;
+	m_RevivingPlayer = nullptr;
 
 	// 점프높이 설정
 	GetCharacterMovement()->JumpZVelocity = 600.f;
@@ -107,6 +129,9 @@ AC_BasicPlayer::AC_BasicPlayer()
 	
 	// PoseColliderHandler Component
 	m_PoseColliderHandlerComponent = CreateDefaultSubobject<UC_PoseColliderHandlerComponent>(TEXT("PoseColliderHandlerComponent"));
+
+	// Interaction Component
+	//m_InteractionComponent = CreateDefaultSubobject<UC_InteractionComponent>(TEXT("InteractionComponent"));
 }
 
 
@@ -118,6 +143,14 @@ void AC_BasicPlayer::BeginPlay()
 	if (UC_GameLevelManager* LevelManager = GetWorld()->GetSubsystem<UC_GameLevelManager>())
 		LevelManager->AddPlayer(this);
 	
+
+	// 웅크리기 완료 시 호출할 OnPoseTransitionFinished 바인딩
+	if (m_PoseColliderHandlerComponent)
+	{
+		m_PoseColliderHandlerComponent
+			->OnPoseTransitionFinished.AddUObject(this, &AC_BasicPlayer::OnPoseTransitionFinished);
+	}
+
 	UpdateBoostBarHUD();
 
 	// InventoryWidget에 Player의 InvenComponent 초기화 및 델리게이트 진행
@@ -134,6 +167,7 @@ void AC_BasicPlayer::BeginPlay()
 	UIManager->GetInventoryWidget()->GetEquipmentWidget()->InitEquipmentWidget(m_InvenComponent);
 	// 까지
 	
+
 	// 플레이어의 인벤에 장비 전용 인덱스 추가.
 	//m_InvenComponent->SetMaxSlots(45 + static_cast<int32>(EWeaponSlot::Max));
 	
@@ -143,6 +177,7 @@ void AC_BasicPlayer::BeginPlay()
 		m_PoseColliderHandlerComponent
 			->OnPoseTransitionFinished.AddUObject(this, &AC_BasicPlayer::OnPoseTransitionFinished);
 	}
+
 
 	// 입력 시스템 초기화
 	//InitInput();
@@ -156,13 +191,31 @@ void AC_BasicPlayer::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Server_CancelDragItemSlot(curDraggedItem.SourceSlotIndex, curDraggedItem.SourceInvenComp);
 }
 
+void AC_BasicPlayer::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	// ======= 리플리케이트 하고싶은 맴버를 등록 ==========
+	// 자세 상태 
+	DOREPLIFETIME(AC_BasicPlayer, m_PlayerPoseState);
+
+	// 플레이어 생존 상태 
+	DOREPLIFETIME(AC_BasicPlayer, m_PlayerLifeState);
+
+	// 다른 플레이어 구조 중인지 
+	DOREPLIFETIME(AC_BasicPlayer, m_IsRevivingPlayer);
+
+	// 구조 중인 플레이어
+	DOREPLIFETIME(AC_BasicPlayer, m_RevivingPlayer);
+}
+
 void AC_BasicPlayer::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
 	/// 나중에 스탯 컴포넌트로 분리할 예정
 	// 달리기 중이면 부스트 소모
-	if (m_PlayerMoveSpeedState == EPlayerPoseState::Sprint)
+	if (m_PlayerPoseState == EPlayerPoseState::Sprint)
 	{
 		UseBoost(m_SprintBoostUseCost * DeltaTime);
 		
@@ -239,6 +292,15 @@ bool AC_BasicPlayer::UseBoost(float _UseAmount)
 	if (_UseAmount <= 0.f || m_MaxBoost <= 0.f || m_CurBoost <= 0.f)
 		return false;
 
+
+	// =================임시용==========================
+	/*if (m_CurBoost >= 0.f)
+	{
+		Die();
+		return false;
+	}*/
+	// ================================================
+
 	float PrevBoost = m_CurBoost;
 	bool bHasBoost = (m_CurBoost >= _UseAmount);
 
@@ -272,21 +334,25 @@ void AC_BasicPlayer::RecoverBoost(float _RecoverAmount)
 
 void AC_BasicPlayer::StartSprint()
 {
-	m_IsSprintInput = true;
-
 	// 공중일 때는 달리기 불가
 	if (!GetCharacterMovement() || GetCharacterMovement()->IsFalling())
 		return;
 
+	// 자세 전환 중에는 달리기 불가
+	if (m_PoseColliderHandlerComponent->IsTransitioning())
+		return;
+
 	// 웅크리기 중이거나 웅크리기 전환 중일 때는 달리기 불가
-	if (m_PlayerMoveSpeedState == EPlayerPoseState::Crouch)
+	if (m_PlayerPoseState == EPlayerPoseState::Crouch)
 		return;
 
 	// 부스트가 없으면 달리기 불가
 	if (m_CurBoost <= 0.f)
 		return;
 
-	m_PlayerMoveSpeedState = EPlayerPoseState::Sprint;
+	m_IsSprintInput = true;
+
+	m_PlayerPoseState = EPlayerPoseState::Sprint;
 
 	ApplyMovementSpeed();
 }
@@ -295,7 +361,11 @@ void AC_BasicPlayer::StopSprint()
 {
 	m_IsSprintInput = false;
 
-	m_PlayerMoveSpeedState = EPlayerPoseState::Walk;
+	// 이미 다른 자세로 변경되었다면 Walk 로 변경하지 않음
+	if (m_PlayerPoseState != EPlayerPoseState::Sprint)
+		return;
+
+	m_PlayerPoseState = EPlayerPoseState::Walk;
 
 	ApplyMovementSpeed();
 }
@@ -308,26 +378,27 @@ void AC_BasicPlayer::ToggleCrouch()
 	if (m_PoseColliderHandlerComponent->IsTransitioning())
 		return;
 
-	const bool bWantsToCrouch = m_PlayerMoveSpeedState != EPlayerPoseState::Crouch;
-
-	const bool bStartTransition = m_PoseColliderHandlerComponent->SetCrouched(bWantsToCrouch);
-
-	if (!bStartTransition)
-		return;
-
-	// 자세 전환 중에 잠깐 멈춤
-	GetCharacterMovement()->MaxWalkSpeed = 0.f;
-
-	if (bWantsToCrouch)
+	// 달리기 중 웅크리기를 누르면 달리기 입력부터 해제
+	if (m_PlayerPoseState == EPlayerPoseState::Sprint)
 	{
-		// 웅크리기 시작 시 달리기 입력 초기화
 		m_IsSprintInput = false;
-
-		m_PlayerMoveSpeedState = EPlayerPoseState::Crouch;
 	}
+
+	const EPlayerPoseState NewPoseState
+		= m_PlayerPoseState == EPlayerPoseState::Crouch ? EPlayerPoseState::Walk : EPlayerPoseState::Crouch;
+
+
+	// 서버가 한거면 바로 PoseState를 변경
+	if (HasAuthority())
+	{
+		// Replicated 변수이므로 서버에서 변경 시 클라이언트에 자동으로 동기화됨
+		// 그래서 Multicast를 사용하지 않고 바로 서버에서 변경
+		SetPoseStateOnServer(NewPoseState);
+	}
+	// 클라이언트가 한거면 서버에 요청
 	else
 	{
-		m_PlayerMoveSpeedState = EPlayerPoseState::Walk;
+		Server_RequestSetPoseState(NewPoseState);
 	}
 }
 
@@ -339,6 +410,12 @@ void AC_BasicPlayer::ApplyMovementSpeed()
 	if (!GetCharacterMovement())
 		return;
 
+	if (IsDead())
+	{
+		GetCharacterMovement()->MaxWalkSpeed = 0.f;
+		return;
+	}
+
 	// 웅크리기 전환 중일 때는 잠깐 정지
 	if (m_PoseColliderHandlerComponent->IsTransitioning())
 	{
@@ -347,7 +424,7 @@ void AC_BasicPlayer::ApplyMovementSpeed()
 	}
 
 	// 상태에 따른 이동 속도 적용
-	switch (m_PlayerMoveSpeedState)
+	switch (m_PlayerPoseState)
 	{
 	case EPlayerPoseState::Walk:
 		GetCharacterMovement()->MaxWalkSpeed = m_WalkSpeed;
@@ -368,7 +445,20 @@ void AC_BasicPlayer::ApplyMovementSpeed()
 	}
 }
 
+void AC_BasicPlayer::Die()
+{
+	if (IsDead())
+		return;
 
+	GetStatComponent()->SetCurHP(0.f);
+
+	m_PlayerState = EPlayerState::Dead;
+	m_IsSprintInput = false;
+
+	// 이동 중지
+
+	// 사망 시 다른 플레이어가 살려줄 수 있도록 
+}
 
 
 void AC_BasicPlayer::UpdateBoostBarHUD() const
@@ -383,9 +473,10 @@ void AC_BasicPlayer::UpdateBoostBarHUD() const
 	}
 }
 
+
 void AC_BasicPlayer::OnPoseTransitionFinished(bool _bIsCrouched)
 {
-	m_PlayerMoveSpeedState = _bIsCrouched ? EPlayerPoseState::Crouch : EPlayerPoseState::Walk;
+	m_PlayerPoseState = _bIsCrouched ? EPlayerPoseState::Crouch : EPlayerPoseState::Walk;
 
 	// 웅크리기 전환 완료 후 이동 속도 갱신
 	ApplyMovementSpeed();
@@ -412,6 +503,75 @@ ETeamAttitude::Type AC_BasicPlayer::GetTeamAttitudeTowards(const AActor& _Other)
 	// 팀 설정 기능이 없는 Actor 인 경우 중립
 	return ETeamAttitude::Neutral;
 }
+
+void AC_BasicPlayer::OnRep_PlayerLifeState()
+{
+}
+
+void AC_BasicPlayer::OnRep_IsRevivingPlayer()
+{
+}
+
+void AC_BasicPlayer::StartGettingUpOnServer(float _GetUpDuration)
+{
+	// 서버에서만 처리
+	if (!HasAuthority())
+		return;
+
+	// Downed 상태가 아니면 일어날 필요없음
+	if (m_PlayerLifeState != EPlayerLifeState::Downed)
+		return;
+
+	// Timer 중복 방지 // 이미 돌아가고 있었으면 Timer 제거
+	GetWorldTimerManager().ClearTimer(m_GetUpTimerHandle);
+
+}
+
+void AC_BasicPlayer::OnRep_PlayerPoseState()
+{
+	if (!m_PoseColliderHandlerComponent)
+		return;
+
+	const bool bWantsToCrouch = m_PlayerPoseState == EPlayerPoseState::Crouch;
+
+	m_PoseColliderHandlerComponent->StartCrouchTransition(bWantsToCrouch);
+
+	ApplyMovementSpeed();
+}
+
+
+void AC_BasicPlayer::SetPoseStateOnServer(EPlayerPoseState _NewPoseState)
+{
+	if (!HasAuthority())
+		return;
+
+	if (m_PlayerPoseState == _NewPoseState)
+		return;
+
+	if (GetCharacterMovement()->IsFalling())
+		return;
+
+	const bool bWantsToCrouch = _NewPoseState == EPlayerPoseState::Crouch;
+
+	const bool bStart = m_PoseColliderHandlerComponent->SetCrouched(bWantsToCrouch);
+
+	if (!bStart)
+		return;
+
+	m_PlayerPoseState = _NewPoseState;
+
+	// 자세 전환 중에 잠깐 멈춤
+	ApplyMovementSpeed();
+
+	// 상태를 가능한 빨리 변경
+	// ForceNetUpdate();
+}
+
+void AC_BasicPlayer::Server_RequestSetPoseState_Implementation(EPlayerPoseState _NewPoseState)
+{
+	SetPoseStateOnServer(_NewPoseState);
+}
+
 
 bool AC_BasicPlayer::Server_RequestMoveItem_Validate(UC_InvenComponent* SrcComp, int32 SrcIdx,
 	UC_InvenComponent* DstComp, int32 DstIdx)
