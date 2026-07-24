@@ -30,7 +30,7 @@ public:
 	
 	UC_InventoryGridWidget* GetStorageGridWidget() { return StorageGridWidget; }
 	
-	UC_EquipmentWidget* GetEquipmentWidget() { return EquipmentGridWidget; }
+	UC_EquipmentWidget* GetEquipmentWidget() { return EquipmentWidget; }
 	
 	UC_DivideItemWidget* GetDivideItemWidget() { return DivideItemWidget; }
 	
@@ -47,7 +47,7 @@ protected:
 	
 	// Equipment(장비창)의 아이템 슬롯을 가지고 있을 그리드 위젯.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
-	UC_EquipmentWidget* EquipmentGridWidget = nullptr;
+	UC_EquipmentWidget* EquipmentWidget = nullptr;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
 	UC_DivideItemWidget* DivideItemWidget = nullptr;
