@@ -82,6 +82,7 @@ public:
 	/// <summary>
 	/// 현재 BB에 세팅된 Target Get
 	/// </summary>
+	UFUNCTION(BlueprintCallable)
 	AActor* GetCurrentBBTarget() const;
 	
 public:
@@ -100,6 +101,15 @@ protected:
 	/// <param name="_Pawn"></param>
 	virtual void OnPossess(APawn* _Pawn) override;
 
+public:
+	
+	/// <summary>
+	/// 해당 Actor가 PerceptionComponent의 Sight에 실시간으로 잡혀있는 상황인지 체크
+	/// </summary>
+	/// <param name="_TargetActor"> 검사해 볼 Actor </param>
+	/// <returns> : 시야에 들어와 있는 상황(SightConfig에 잡힌 보이는 상황) 이면 return true </returns>
+	bool IsCurrentlyOnSight(AActor* _TargetActor) const;
+	
 public:
 	AC_ZombieController();
 

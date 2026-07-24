@@ -220,14 +220,9 @@ void AC_ShotGun::InsertSingleShell()
 	m_CurrentAmmo++;
 
 	// UI 갱신
-	if (AC_UIManager* UIManager = Cast<AC_UIManager>(GetWorld()->GetFirstPlayerController()->GetHUD()))
-	{
-		if (UIManager->GetMainHUDWidget())
-		{
-			UIManager->GetMainHUDWidget()->UpdateMagazineAmmoCount(m_CurrentAmmo);
-		}
-	}
-
+	if (m_OwnerPlayer && m_OwnerPlayer->IsLocallyControlled())
+		UI_MANAGER(GetWorld())->GetMainHUDWidget()->UpdateMagazineAmmoCount(m_CurrentAmmo);
+	
 	// 1발 넣는 몽타주/애니메이션
 	if (m_OwnerPlayer && m_PlayerReloadAnimation)
 	{

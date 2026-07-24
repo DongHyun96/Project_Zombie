@@ -137,8 +137,8 @@ bool AC_MeleeWeaponBase::AttachToHand(USceneComponent* _ParentMesh)
 
 	// Main HUD MeleeWeapon 종류로 초기화
 	// TODO : 각 MeleeWeapon에 맞는 이미지 아이콘(?) 표시해주면 좋을 듯 (일단은 AmmoInfo쪽 정보 감추는 처리로 함)
-	if (AC_UIManager* UIManager = Cast<AC_UIManager>(Player->GetController<APlayerController>()->GetHUD()))
-		UIManager->GetMainHUDWidget()->ToggleAmmoInfoVisibility(false);
+	if (Player->IsLocallyControlled()) // OwnerPlayer가 자기자신인 경우에만 UI 업데이트
+		UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility(false);
 
 	const bool bIsAttached = AttachToComponent
 	(

@@ -8,6 +8,8 @@
 AC_WeaponBase::AC_WeaponBase()
 {
 	PrimaryActorTick.bCanEverTick = true; // Tick 필요 없으면 끄기.
+
+	SetReplicates(true);
 	
 	ItemLinkComp = CreateDefaultSubobject<UC_ItemLinkComponent>(TEXT("ItemLinkComp"));
 }

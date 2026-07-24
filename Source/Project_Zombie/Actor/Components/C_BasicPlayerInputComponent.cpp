@@ -348,30 +348,32 @@ void UC_BasicPlayerInputComponent::ToggleInventoryWidget()
 
 void UC_BasicPlayerInputComponent::EquipMainWeapon()
 {
-	Player->GetEquippedComponent()->ChangeCurWeapon(EWeaponSlot::MainWeapon);
+	Player->GetEquippedComponent()->Server_ChangeCurWeapon(EWeaponSlot::MainWeapon);
 }
 
 void UC_BasicPlayerInputComponent::EquipMeleeWeapon()
 {
-	Player->GetEquippedComponent()->ChangeCurWeapon(EWeaponSlot::MeleeWeapon);
-
+	Player->GetEquippedComponent()->Server_ChangeCurWeapon(EWeaponSlot::MeleeWeapon);
 }
 
 void UC_BasicPlayerInputComponent::EquipThrowable()
 {
-	Player->GetEquippedComponent()->ChangeCurWeapon(EWeaponSlot::ThrowableWeapon);
+	Player->GetEquippedComponent()->Server_ChangeCurWeapon(EWeaponSlot::ThrowableWeapon);
 }
 
 void UC_BasicPlayerInputComponent::ToggleArmed()
 {
 	// TODO : 여기 지울 것 For testing (피 회복 처리)
 	Player->GetStatComponent()->IncreaseCurHP(25.f);
-	Player->GetEquippedComponent()->ToggleArmed();
+	Player->GetEquippedComponent()->Server_ToggleArmed();
 }
 
 void UC_BasicPlayerInputComponent::FreeLookHolStart()
 {
 	Player->SetIsFreeLook(true);
+	
+	/*// TODO : 여기 지울 것 For testing
+	Player->GetEquippedComponent()->Server_SetSlotWeapon(EWeaponSlot::MainWeapon, nullptr);*/
 }
 
 void UC_BasicPlayerInputComponent::FreeLookHoldEnd()
@@ -382,5 +384,8 @@ void UC_BasicPlayerInputComponent::FreeLookHoldEnd()
 void UC_BasicPlayerInputComponent::MarkPing()
 {
 	Player->GetPingSystemComponent()->TrySpawnPing();
+	
+	// TODO : 이 Test 코드 지우기
+	Player->GetEquippedComponent()->Server_TestSpawnAllWeapons();
 }
 

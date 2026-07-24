@@ -225,8 +225,8 @@ bool AC_GunBase::ConsumeAmmo()
 	// 총알이 없다면 사격 중지
 	if (m_CurrentAmmo <= 0)
 	{
-		if (AC_UIManager* UIManager = Cast<AC_UIManager>(GetWorld()->GetFirstPlayerController()->GetHUD()))
-			UIManager->GetMainHUDWidget()->AddPlayerWarningLog("OUT OF AMMO");
+		if (m_OwnerPlayer && m_OwnerPlayer->IsLocallyControlled())
+			UI_MANAGER(GetWorld())->GetMainHUDWidget()->AddPlayerWarningLog("OUT OF AMMO");
 
 		ReleaseTrigger();
 		return false;
@@ -244,8 +244,8 @@ bool AC_GunBase::ConsumeAmmo()
 	}
 
 	// 현재 남은 장탄수 UI 업데이트
-	if (AC_UIManager* UIManager = Cast<AC_UIManager>(GetWorld()->GetFirstPlayerController()->GetHUD()))
-		UIManager->GetMainHUDWidget()->UpdateMagazineAmmoCount(m_CurrentAmmo);
+	if (m_OwnerPlayer && m_OwnerPlayer->IsLocallyControlled())
+		UI_MANAGER(GetWorld())->GetMainHUDWidget()->UpdateMagazineAmmoCount(m_CurrentAmmo);
 
 	return true;
 }
@@ -309,13 +309,10 @@ bool AC_GunBase::AttachToHand(USceneComponent* _ParentMesh)
 	if (!Player) return false; // 손에 장착 시도하는 Owner Character가 Player형이 아닌 경우, return false
 	if (Player != m_OwnerPlayer) return false; // 손에 장착 시도하는 Player가 무기주인인 경우가 아닌 경우 
 
-	// Main HUD MeleeWeapon 종류로 초기화
-	if (APlayerController* PC = Player->GetController<APlayerController>())
-	{
-		// TODO : 각 MeleeWeapon에 맞는 이미지 아이콘(?) 표시해주면 좋을 듯 (일단은 AmmoInfo쪽 정보 감추는 처리로 함)
-		if (AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD()))
-			UIManager->GetMainHUDWidget()->ToggleAmmoInfoVisibility(true, EFireMode::FullAuto, m_CurrentAmmo, m_MaxAmmo); // TODO : FireMode 현재 FireMode로 넣어줄 것
-	}
+	
+	// TODO : 각 MeleeWeapon에 맞는 이미지 아이콘(?) 표시해주면 좋을 듯 (일단은 AmmoInfo쪽 정보 감추는 처리로 함)
+	if (m_OwnerPlayer->IsLocallyControlled())
+		UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility(true, EFireMode::FullAuto, m_CurrentAmmo, m_MaxAmmo); // TODO : FireMode 현재 FireMode로 넣어줄 것
 
 	const bool bIsAttached = AttachToComponent
 	(
@@ -387,7 +384,7 @@ void AC_GunBase::OnMainColliderBeginOverlap
 	// 해당 Player의 MainWeaponSlot에 이미 MainWeapon이 장착되어 있는 경우
 	if (Player->GetEquippedComponent()->GetSlotWeapon(EWeaponSlot::MainWeapon)) return;
 	
-	Player->GetEquippedComponent()->SetSlotWeapon(EWeaponSlot::MainWeapon, this);
+	Player->GetEquippedComponent()->Server_SetSlotWeapon(EWeaponSlot::MainWeapon, this);
 	m_Collision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	
 	// Outline 비활성화(활성화 되어있건 이미 비활성이건)

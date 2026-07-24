@@ -6,6 +6,16 @@
 #include "GameFramework/HUD.h"
 #include "C_UIManager.generated.h"
 
+/// <summary>
+/// Debug 메시지 용
+/// </summary>
+struct FLocalDebugMessage
+{
+	FString Text{};
+	FColor Color{};
+	float ExpireTime{}; // 화면에서 사라질 시간
+};
+
 /**
  * 
  */
@@ -16,13 +26,33 @@ class PROJECT_ZOMBIE_API AC_UIManager : public AHUD
 
 public:
 	
+	static AC_UIManager* Get(const UWorld* _World)
+	{
+		if (!_World) return nullptr;
+		
+		// 클라이언트/리슨서버 호스트 화면의 로컬 PlayerController(0번)를 구합니다.
+		APlayerController* PC = _World->GetFirstPlayerController();
+		
+		if (PC && PC->IsLocalController()) return Cast<AC_UIManager>(PC->GetHUD());
+		return nullptr;
+	}
+	
+public:
+	
 	virtual void BeginPlay() override;
 
+	virtual void DrawHUD() override;
+	
 public:
 
 	class UC_GameMainHUD* GetMainHUDWidget() const { return m_MainHUDWidget; }
 	
 	class UC_InventoryWidget* GetInventoryWidget() const { return m_InventoryWidget; }
+	
+public:
+	
+	void PrintLocalDebugMessage(const FString& _Message, const FColor& _Color, float _Duration);
+	
 protected:
 
 	// HUD로 사용할 최상위 UUserWidget 클래스
@@ -41,6 +71,25 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	UC_InventoryWidget* m_InventoryWidget{};
 	
+private:
+	
+	TArray<FLocalDebugMessage> m_DebugMessages{};
 };
 
-// #define UI_MANAGER GetControlQ
+#define UI_MANAGER(_World) AC_UIManager::Get(_World)
+
+
+/// <summary>
+/// 리슨 서버 환경에서의 프린트 출력  
+/// </summary>
+#if !UE_BUILD_SHIPPING
+#define PRINT_LOCAL(_World, _Msg, _Color, _Duration) \
+do { \
+if (AC_UIManager* UIMgr = UI_MANAGER(_World)) \
+{ \
+UIMgr->PrintLocalDebugMessage(_Msg, _Color, _Duration); \
+} \
+} while (0)
+#else
+#define PRINT_LOCAL(_World, _Msg, _Color, _Duration) do {} while (0)
+#endif
