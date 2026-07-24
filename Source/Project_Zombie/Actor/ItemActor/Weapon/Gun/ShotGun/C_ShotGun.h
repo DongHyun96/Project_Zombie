@@ -13,6 +13,7 @@ UCLASS()
 class PROJECT_ZOMBIE_API AC_ShotGun : public AC_GunBase
 {
 	GENERATED_BODY()
+	
 private:
 	// 샷건 특화 수치 (필요 시 DataTable에서 세팅 가능)
 	UPROPERTY(EditDefaultsOnly, Category = "Shotgun", meta = (AllowPrivateAccess = "true"))

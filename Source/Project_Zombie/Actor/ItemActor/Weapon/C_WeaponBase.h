@@ -99,7 +99,8 @@ protected:
 
 	
 protected:
-
+	// TODO : 이 두 애니메이션도 데이터 테이블에 넣어주는게 나을 것 같긴한데.
+	
 	// 해당 무기의 무기 꺼내는 동작 Montage (Player character montage)
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, meta = (DisplayName = "DrawMontage"))
 	UAnimMontage* m_DrawMontage{};
