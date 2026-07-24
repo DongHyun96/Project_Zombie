@@ -23,8 +23,15 @@ protected:
 	ESkillSlot	m_SkillSlot{};
 	
 public:
+	/// <summary>
+	/// 공격 사거리에 들어왔는지 판단하는 함수
+	/// </summary>
+	/// <returns> : true false 반환
 	virtual bool CalculateRawConditionValue(UBehaviorTreeComponent& _OwnCom, uint8* _NodeMem) const override;
 	virtual void TickNode(UBehaviorTreeComponent& _OwnCom, uint8* _NodeMemory, float _DeltaSeconds) override;
+
+	virtual void OnBecomeRelevant(UBehaviorTreeComponent& _OwnCom, uint8* _NodeMemory) override;
+	virtual void OnCeaseRelevant(UBehaviorTreeComponent& _OwnCom, uint8* _NodeMemory) override;
 
 public:
 	UC_Deco_IsInRange();

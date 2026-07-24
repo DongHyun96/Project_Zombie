@@ -134,6 +134,9 @@ public:
 	/// </summary>
 	float GetRemainingCooldown(ESkillSlot _Slot) const;
 
+	/// <summary>
+	/// 발사 스킬 사용시 호출
+	/// </summary>
 	void Fire();
 
 	float GetSkillRange(ESkillSlot _Slot) const;

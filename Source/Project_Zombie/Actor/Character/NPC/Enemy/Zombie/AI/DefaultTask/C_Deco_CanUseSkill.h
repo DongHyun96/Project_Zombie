@@ -19,6 +19,7 @@ protected:
 	ESkillSlot m_SkillSlot = ESkillSlot::Skill_1;
 
 public:
+	virtual void TickNode(UBehaviorTreeComponent& _OwnCom, uint8* _NodeMemory, float _DeltaSeconds) override;
 	virtual bool CalculateRawConditionValue(UBehaviorTreeComponent& _OwnerCom, uint8* _NodeMemory) const override;
 
 public:

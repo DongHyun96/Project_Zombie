@@ -11,6 +11,17 @@
 UC_Deco_CanUseSkill::UC_Deco_CanUseSkill()
 {
     NodeName = TEXT("Can Use Skill");
+
+    // notifyTick 활성화 매크로 
+    INIT_DECORATOR_NODE_NOTIFY_FLAGS();
+}
+
+void UC_Deco_CanUseSkill::TickNode(UBehaviorTreeComponent& _OwnCom, uint8* _NodeMemory, float _DeltaSeconds)
+{
+    Super::TickNode(_OwnCom, _NodeMemory, _DeltaSeconds);
+
+    // 데코레이터 조건이 바뀌었는지 검사하는 함수
+    ConditionalFlowAbort(_OwnCom, EBTDecoratorAbortRequest::ConditionResultChanged);
 }
 
 bool UC_Deco_CanUseSkill::CalculateRawConditionValue(UBehaviorTreeComponent& _OwnerCom, uint8* _NodeMemory) const
