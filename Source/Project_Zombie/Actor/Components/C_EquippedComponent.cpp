@@ -3,6 +3,7 @@
 #include "C_InvenComponent.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/ItemActor/Weapon/C_WeaponBase.h"
+#include "Actor/ItemActor/Weapon/ThrowableWeapon/C_ThrowableWeaponBase.h"
 #include "GameModeAndManager/C_ItemManager.h"
 #include "GameModeAndManager/C_UIManager.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
@@ -245,7 +246,24 @@ void UC_EquippedComponent::OnInventorySlotChanged(int32 SlotIndex, const FInvent
 	
 	AC_WeaponBase* PrevWeapon = SetSlotWeapon(static_cast<EWeaponSlot>(SlotIndex), SpawnedWeapon);
 	
-	if (PrevWeapon) PrevWeapon->Destroy();
+	if (!PrevWeapon) return;
+	
+	AC_ThrowableWeaponBase* ThrowableWeapon = Cast<AC_ThrowableWeaponBase>(PrevWeapon);
+	
+	if (ThrowableWeapon)
+	{
+		// ThrowableWeaponBase::OnThrowThrowable에서 투척류 숫자 차감하고 업데이트하고 있음.
+		// ThrowableWeapon은 투척한거면 여기서 삭제하면 안됨.
+		if (static_cast<int32>(EThrowableState::RemovePin) < static_cast<int32>(ThrowableWeapon->GetThrowableState()))
+		{
+			return;
+		}
+	}
+	
+	
+	PrevWeapon->Destroy();
+		
+	
 	
 	// 빈슬롯, 장비 해제 처리 확인하기
 	// 동일 무기 교체시 데이터만 교체하는 방식으로 하면 좋음
