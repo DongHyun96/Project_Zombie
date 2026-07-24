@@ -42,6 +42,8 @@ AC_GunBase::AC_GunBase()
 	m_WeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
 	m_WeaponMesh->SetupAttachment(RootComponent);
 
+	//m_WeaponMesh->replicate
+
 	m_WeaponMesh->SetLinearDamping(1.f);
 	m_WeaponMesh->SetAngularDamping(1.f);
 	

@@ -39,7 +39,6 @@
 #include "UI/MainHUD/C_GameMainHUD.h"
 #include "Utility/C_Util.h"
 
-
 #include "Components/SphereComponent.h"
 #include "Components/CapsuleComponent.h"
 
@@ -174,7 +173,9 @@ void AC_BasicPlayer::BeginPlay()
 	}
 	
 	if (m_InvenComponent && m_EquippedComponent)
+	{
 		m_EquippedComponent->SetupInventoryComponent(m_InvenComponent);
+	}
 	
 	// GameLevelManager에 해당 Player 등록
 	if (UC_GameLevelManager* LevelManager = GetWorld()->GetSubsystem<UC_GameLevelManager>())
@@ -620,7 +621,7 @@ bool AC_BasicPlayer::Server_RequestMoveItem_Validate(UC_InvenComponent* SrcComp,
 void AC_BasicPlayer::Server_RequestMoveItem_Implementation(UC_InvenComponent* SrcComp, int32 SrcIdx,
 	UC_InvenComponent* DstComp, int32 DstIdx)
 {
-	APlayerController* pPC = Cast<APlayerController>( GetController());
+	APlayerController* pPC = Cast<APlayerController>(GetController());
 	
 	if (!pPC || !pPC->PlayerState) return;
 

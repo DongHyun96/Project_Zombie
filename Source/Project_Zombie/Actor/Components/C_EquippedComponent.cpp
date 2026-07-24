@@ -121,6 +121,47 @@ void UC_EquippedComponent::SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* 
 	m_Weapons[TargetSlotIdx]->SetOwnerPlayer(m_OwnerPlayer);
 }
 
+bool UC_EquippedComponent::Server_RequestSpawnEquippedActor_Validate(int32 SlotIndex, const FInventoryEntry& ItemData)
+{
+	return true;
+}
+
+void UC_EquippedComponent::Server_RequestSpawnEquippedActor_Implementation(int32 SlotIndex, const FInventoryEntry& ItemData)
+{
+	if (!GetWorld()) return;
+
+	UC_ItemManager* ItemManager = GetWorld()->GetGameInstance()->GetSubsystem<UC_ItemManager>();
+
+	PRINT_LOCAL(GetWorld(), "ItemManager", FColor::Green, 5.f);
+
+	if (!ItemManager) return;
+
+	PRINT_LOCAL(GetWorld(), "SpawnEquippedActor", FColor::Green, 5.f);
+
+	AC_WeaponBase* SpawnedWeapon = ItemManager->SpawnEquippedActor(ItemData.ItemRowName, m_OwnerPlayer);
+
+	AC_WeaponBase* PrevWeapon = m_Weapons[SlotIndex];
+
+	SetSlotWeapon(static_cast<EWeaponSlot>(SlotIndex), SpawnedWeapon);
+
+	if (!PrevWeapon) return;
+
+	AC_ThrowableWeaponBase* ThrowableWeapon = Cast<AC_ThrowableWeaponBase>(PrevWeapon);
+
+	if (ThrowableWeapon)
+	{
+		// ThrowableWeaponBase::OnThrowThrowable에서 투척류 숫자 차감하고 업데이트하고 있음.
+		// ThrowableWeapon은 투척한거면 여기서 삭제하면 안됨.
+		if (static_cast<int32>(EThrowableState::RemovePin) < static_cast<int32>(ThrowableWeapon->GetThrowableState()))
+		{
+			return;
+		}
+	}
+
+
+	PrevWeapon->Destroy();
+}
+
 void UC_EquippedComponent::Server_TestSpawnAllWeapons_Implementation()
 {
 	PRINT_LOCAL(GetWorld(), "Server_TestSpawnAllWeapons_Implementation", FColor::MakeRandomColor(), 10.f);
@@ -142,6 +183,8 @@ bool UC_EquippedComponent::Server_TestSpawnAllWeapons_Validate()
 
 void UC_EquippedComponent::Server_SetSlotWeapon_Implementation(EWeaponSlot _TargetSlot, AC_WeaponBase* _WeaponToEquip)
 {
+	PRINT_LOCAL(GetWorld(), "Server_SetSlotWeapon_Implementation", FColor::MakeRandomColor(), 10.f);
+
 	SetSlotWeapon(_TargetSlot, _WeaponToEquip); // 서버 환경에서의 SetSlotWeapon 처리
 	// Multicast_SetSlotWeapon(_TargetSlot, _WeaponToEquip); // 클라이언트단의 SetSlotWeapon도 호출해줌으로써 동기화 처리
 }
@@ -325,10 +368,22 @@ void UC_EquippedComponent::ClearInventoryComponent()
 
 void UC_EquippedComponent::OnInventorySlotChanged(int32 SlotIndex, const FInventoryEntry& ItemData)
 {
+	FString DebugMsg = FString::FromInt(SlotIndex);
+
+	PRINT_LOCAL(GetWorld(), DebugMsg, FColor::Green, 5.f);
 	if (SlotIndex < 0 || SlotIndex >= static_cast<int32>(EWeaponSlot::None)) return;	
-	
-	if (m_OwnerPlayer && !m_OwnerPlayer->HasAuthority()) return;
-	
+
+	PRINT_LOCAL(GetWorld(), "GetOwner", FColor::Green, 5.f);
+	if (GetOwner() == nullptr) return;
+
+	PRINT_LOCAL(GetWorld(), "HasAuthority", FColor::Green, 5.f);
+	//if (GetOwner()->HasAuthority()) return;
+
+	Server_RequestSpawnEquippedActor(SlotIndex, ItemData);
+
+	//if (m_OwnerPlayer) return;
+	//
+	//if (m_OwnerPlayer->HasAuthority()) return;
 	// 들어오는 장비가 실제 장비가 있는지 없는 확인
 	// 1. RowName이 NAME_NONE이 드롭되서 들어올 일은 없지만
 	// 2. 장비창의 아이템을 인벤의 빈 슬롯에 드롭하면 들어올 수 있음.
@@ -340,35 +395,39 @@ void UC_EquippedComponent::OnInventorySlotChanged(int32 SlotIndex, const FInvent
 	// 8. Destroy되는 장비의 정보(FInventoryEntry)는 인벤에서 Swap으로 이미 들어온 장비와 위치가 바뀜.
 	// 9. 결론은 여기 매개변수로 해당 슬롯 장비를 소환해서 장착하고 탈착된 장비는 Destroy한다.
 	// 10. 그러기 위해 해당 무기를 ItemManager에서 생성하는 함수를 만들어야 한다.
-	
-	
-	if (!GetWorld()) return;
-		
-	UC_ItemManager* ItemManager = GetWorld()->GetGameInstance()->GetSubsystem<UC_ItemManager>();
-		
-	if (!ItemManager) return;
-	
-	AC_WeaponBase* SpawnedWeapon = ItemManager->SpawnEquippedActor(ItemData.ItemRowName, m_OwnerPlayer);
-
-	AC_WeaponBase* PrevWeapon = m_Weapons[SlotIndex];
-	Server_SetSlotWeapon(static_cast<EWeaponSlot>(SlotIndex), SpawnedWeapon);
-	
-	if (!PrevWeapon) return;
-	
-	AC_ThrowableWeaponBase* ThrowableWeapon = Cast<AC_ThrowableWeaponBase>(PrevWeapon);
-	
-	if (ThrowableWeapon)
-	{
-		// ThrowableWeaponBase::OnThrowThrowable에서 투척류 숫자 차감하고 업데이트하고 있음.
-		// ThrowableWeapon은 투척한거면 여기서 삭제하면 안됨.
-		if (static_cast<int32>(EThrowableState::RemovePin) < static_cast<int32>(ThrowableWeapon->GetThrowableState()))
-		{
-			return;
-		}
-	}
-	
-	
-	PrevWeapon->Destroy();
+	//PRINT_LOCAL(GetWorld(), "!GetWorld()", FColor::Green, 5.f);
+	//if (!GetWorld()) return;
+	//	
+	//UC_ItemManager* ItemManager = GetWorld()->GetGameInstance()->GetSubsystem<UC_ItemManager>();
+	//	
+	//PRINT_LOCAL(GetWorld(), "ItemManager", FColor::Green, 5.f);
+	//
+	//if (!ItemManager) return;
+	//
+	//PRINT_LOCAL(GetWorld(), "SpawnEquippedActor", FColor::Green, 5.f);
+	//
+	//AC_WeaponBase* SpawnedWeapon = ItemManager->SpawnEquippedActor(ItemData.ItemRowName, m_OwnerPlayer);
+	//
+	//AC_WeaponBase* PrevWeapon = m_Weapons[SlotIndex];
+	//
+	//Server_SetSlotWeapon(static_cast<EWeaponSlot>(SlotIndex), SpawnedWeapon);
+	//
+	//if (!PrevWeapon) return;
+	//
+	//AC_ThrowableWeaponBase* ThrowableWeapon = Cast<AC_ThrowableWeaponBase>(PrevWeapon);
+	//
+	//if (ThrowableWeapon)
+	//{
+	//	// ThrowableWeaponBase::OnThrowThrowable에서 투척류 숫자 차감하고 업데이트하고 있음.
+	//	// ThrowableWeapon은 투척한거면 여기서 삭제하면 안됨.
+	//	if (static_cast<int32>(EThrowableState::RemovePin) < static_cast<int32>(ThrowableWeapon->GetThrowableState()))
+	//	{
+	//		return;
+	//	}
+	//}
+	//
+	//
+	//PrevWeapon->Destroy();
 		
 	
 	
