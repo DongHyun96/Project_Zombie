@@ -19,9 +19,9 @@ private:
 	// 누적된 탄피(사용한 유탄 탄피) 개수
 	int32 m_SpentShellCount = 0;
 
-	bool m_bCanFire = true;           // 단발 발사 쿨타임 관리용
-	FTimerHandle m_ShotCooldownTimer; // 쿨타임 타이머 핸들
-	FTimerHandle m_ReloadTimerHandle; // 재장전 타이머 핸들
+	bool m_bCanFire = true;       
+	FTimerHandle m_ShotCooldownTimer;
+	FTimerHandle m_ReloadTimerHandle;
 
 public:
 	virtual bool OnStartFire(AC_BasicPlayer* _WeaponUser) override;

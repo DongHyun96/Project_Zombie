@@ -5,18 +5,18 @@
 #include "Animation/WidgetAnimation.h"
 
 
-//void UC_CrosshairWidget::ZoomIn()
-//{
-//	if (Anim_AimZoom)
-//	{
-//		PlayAnimationForward(Anim_AimZoom);
-//	}
-//}
-//
-//void UC_CrosshairWidget::ZoomOut()
-//{
-//	if (Anim_AimZoom)
-//	{
-//		PlayAnimationReverse(Anim_AimZoom);
-//	}
-//}
+void UC_CrosshairWidget::ZoomIn()
+{
+	if (Anim_AimZoom)
+	{
+		PlayAnimationForward(Anim_AimZoom);
+	}
+}
+
+void UC_CrosshairWidget::ZoomOut()
+{
+	if (Anim_AimZoom)
+	{
+		PlayAnimationReverse(Anim_AimZoom);
+	}
+}
