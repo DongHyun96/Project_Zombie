@@ -77,10 +77,19 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
 	float ProjectileLifetime; // 투사체 수명
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillKnockback")
+	float KnockbackPower = 1200.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillKnockback")
+	float KnockbackUpPower = 250.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SkillKnockback")
+	float FriendlyKnockbackPower = 800.f;
+
 public:
 	virtual FPrimaryAssetId GetPrimaryAssetId() const override
 	{
 		return FPrimaryAssetId("SkillData", GetFName());
 	}
 	
-};
+}; 
