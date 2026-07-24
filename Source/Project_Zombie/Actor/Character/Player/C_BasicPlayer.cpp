@@ -30,12 +30,20 @@
 #include "GameModeAndManager/C_ItemManager.h"
 #include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 #include "GameModeAndManager/C_UIManager.h"
+#include "Net/UnrealNetwork.h"
 
 #include "UI/InvenUI/C_InventoryGridWidget.h"
 #include "UI/InvenUI/C_InventoryWidget.h"
 #include "UI/InvenUI/Equipment/C_EquipmentWidget.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
 #include "Utility/C_Util.h"
+
+void AC_BasicPlayer::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	
+	DOREPLIFETIME(AC_BasicPlayer, m_HandState);
+}
 
 AC_BasicPlayer::AC_BasicPlayer()
 {
@@ -375,6 +383,9 @@ void AC_BasicPlayer::ApplyMovementSpeed()
 
 void AC_BasicPlayer::UpdateBoostBarHUD() const
 {
+	// 자기 자신의 Player인 경우에만 자신의 BoostBar 업데이트 처리
+	if (!IsLocallyControlled()) return;
+	
 	if (APlayerController* PC = GetController<APlayerController>())
 	{
 		if (AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD()))

@@ -62,21 +62,38 @@ public: // TODO : 이 Test block 지우기
 
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_TestSpawnAllWeapons();
-	
 
 public:
 	
-	//UFUNCTION(Server,Reliable, WithValidation)
-	//void Server_
+	/// <summary>
+	/// 무기 바꾸기 server 쪽으로 요청 
+	/// </summary>
+	/// <param name="_ChangeTo"> : 바꿔들 무기 슬롯 종류 </param>
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_ChangeCurWeapon(EWeaponSlot _ChangeTo);
+
+private:
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_ChangeCurWeapon(EWeaponSlot _ChangeTo);
 	
-public:
 	/// <summary>
 	/// 현재 손에 든 무기 바꾸기
 	/// </summary>
 	/// <param name="_ChangeTo"> : 새로이 바꿔서 들려고 하는 무기 슬롯 종류 </param>
 	/// <returns> 바꾸기 성공했다면 return true </returns>
 	bool ChangeCurWeapon(EWeaponSlot _ChangeTo);
+	
+public:
 
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_ToggleArmed();
+
+private:
+	
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_ToggleArmed();
+	
 	/// <summary>
 	/// X키를 통한 무기 집어넣기 및 직전 무기 꺼내기
 	/// </summary>
@@ -111,8 +128,8 @@ protected: /* 장착 무기 Slot */
 	
 	// 현재 슬롯 별 장착된 Weapon들 (각 EWeaponSlot Type 자리는, 각 index)
 	// 장착된 무기가 없는 슬롯은 nullptr가 들어간다
-	// UPROPERTY(ReplicatedUsing = OnRep_Weapons, VisibleAnywhere, BlueprintReadOnly, DisplayName =  "Weapons")
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, DisplayName =  "Weapons")
+	/*UPROPERTY(ReplicatedUsing = , VisibleAnywhere, BlueprintReadOnly, DisplayName =  "Weapons")*/
+	UPROPERTY(ReplicatedUsing = OnRep_Weapons, VisibleAnywhere, BlueprintReadOnly, DisplayName =  "Weapons")
 	TArray<AC_WeaponBase*> m_Weapons{};
 
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)
@@ -123,10 +140,13 @@ private:
 	// 현재 무기를 바꾸는 과정인지
 	bool m_bIsCurrentlyChangingWeapon{};
 
-	// UPROPERTY(Replicated)
+	UPROPERTY(Replicated)
 	uint8 m_CurWeaponTypeIdx  = static_cast<uint8>(EWeaponSlot::None); // 현재 손에 들고 있는 무기 슬롯 Type Idx
-	
+
+	UPROPERTY(Replicated)
 	uint8 m_NextWeaponTypeIdx = static_cast<uint8>(EWeaponSlot::None); // 다음에 바꿀 무기 슬롯
+	
+	UPROPERTY(Replicated)
 	uint8 m_PrevWeaponTypeIdx = static_cast<uint8>(EWeaponSlot::None); // 이전에 들고 있던 무기 슬롯
 		
 

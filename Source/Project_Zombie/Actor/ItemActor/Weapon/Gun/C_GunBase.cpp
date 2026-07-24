@@ -133,8 +133,8 @@ bool AC_GunBase::ConsumeAmmo()
 	// 총알이 없다면 사격 중지
 	if (m_CurrentAmmo <= 0)
 	{
-		if (AC_UIManager* UIManager = Cast<AC_UIManager>(GetWorld()->GetFirstPlayerController()->GetHUD()))
-			UIManager->GetMainHUDWidget()->AddPlayerWarningLog("OUT OF AMMO");
+		if (m_OwnerPlayer && m_OwnerPlayer->IsLocallyControlled())
+			UI_MANAGER(GetWorld())->GetMainHUDWidget()->AddPlayerWarningLog("OUT OF AMMO");
 
 		ReleaseTrigger();
 		return false;
@@ -143,8 +143,8 @@ bool AC_GunBase::ConsumeAmmo()
 	m_CurrentAmmo--;
 
 	// 현재 남은 장탄수 UI 업데이트
-	if (AC_UIManager* UIManager = Cast<AC_UIManager>(GetWorld()->GetFirstPlayerController()->GetHUD()))
-		UIManager->GetMainHUDWidget()->UpdateMagazineAmmoCount(m_CurrentAmmo);
+	if (m_OwnerPlayer && m_OwnerPlayer->IsLocallyControlled())
+		UI_MANAGER(GetWorld())->GetMainHUDWidget()->UpdateMagazineAmmoCount(m_CurrentAmmo);
 
 	return true;
 }
@@ -262,13 +262,10 @@ bool AC_GunBase::AttachToHand(USceneComponent* _ParentMesh)
 	if (!Player) return false; // 손에 장착 시도하는 Owner Character가 Player형이 아닌 경우, return false
 	if (Player != m_OwnerPlayer) return false; // 손에 장착 시도하는 Player가 무기주인인 경우가 아닌 경우 
 
-	// Main HUD MeleeWeapon 종류로 초기화
-	if (APlayerController* PC = Player->GetController<APlayerController>())
-	{
-		// TODO : 각 MeleeWeapon에 맞는 이미지 아이콘(?) 표시해주면 좋을 듯 (일단은 AmmoInfo쪽 정보 감추는 처리로 함)
-		if (AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD()))
-			UIManager->GetMainHUDWidget()->ToggleAmmoInfoVisibility(true, EFireMode::FullAuto, m_CurrentAmmo, m_MaxAmmo); // TODO : FireMode 현재 FireMode로 넣어줄 것
-	}
+	
+	// TODO : 각 MeleeWeapon에 맞는 이미지 아이콘(?) 표시해주면 좋을 듯 (일단은 AmmoInfo쪽 정보 감추는 처리로 함)
+	if (m_OwnerPlayer->IsLocallyControlled())
+		UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility(true, EFireMode::FullAuto, m_CurrentAmmo, m_MaxAmmo); // TODO : FireMode 현재 FireMode로 넣어줄 것
 
 	const bool bIsAttached = AttachToComponent
 	(

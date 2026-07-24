@@ -92,9 +92,9 @@ void UC_Task_GrabWeapon::OnTaskFinished
 	StolenGun->GetAIGunUsageComponent()->SetPrevOwnerPlayer(BestGrabPlayer);
 
 	// GetWorld()->GetFirstPlayerController()
-	
-	AC_UIManager* UIManager = Cast<AC_UIManager>(UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetHUD());
-	UIManager->GetMainHUDWidget()->AddPlayerWarningLog("MAIN WEAPON HAS BEEN STOLEN!", FColor::Red);
+
+	if (BestGrabPlayer->IsLocallyControlled())
+		UI_MANAGER(BestGrabPlayer->GetWorld())->GetMainHUDWidget()->AddPlayerWarningLog("MAIN WEAPON HAS BEEN STOLEN!", FColor::Red);
 	
 	// 제대로 장착 처리되었다면 MainState 키값 수정 (다른 Zombie는 Service에서 바꾸지만, 이 해당 키는 바로 바꿔주어야 해당 Task를 바로 실행)
 	OwnerComp.GetBlackboardComponent()->SetValueAsEnum(m_MainState.SelectedKeyName, static_cast<uint8>(ECopZombieState::WeaponEarned));

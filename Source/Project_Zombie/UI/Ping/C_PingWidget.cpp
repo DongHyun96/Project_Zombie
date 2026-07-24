@@ -59,16 +59,10 @@ void UC_PingWidget::ShowPingWidget(const FVector& _WorldPingSpawnedLocation, EGa
 	m_SpawnedLocation           = _WorldPingSpawnedLocation;
 	
 	PlayAnimation(SpawnAnimation);
-	
-	if (APlayerController* PC = m_MyPlayer->GetController<APlayerController>())
-	{
-		if (AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD()))
-		{
-			m_TargetCompassMarkerWidget = UIManager->GetMainHUDWidget()->GetCompassBarWidget()->GetCompassMarkerWidget();
-			m_TargetCompassMarkerWidget->TogglePingMarker(true, _PingType);
-			m_TargetCompassMarkerWidget->SetWorldMarkerSpawnedLocation(m_SpawnedLocation);
-		}
-	}
+
+	m_TargetCompassMarkerWidget = UI_MANAGER(GetWorld())->GetMainHUDWidget()->GetCompassBarWidget()->GetCompassMarkerWidget();
+	m_TargetCompassMarkerWidget->TogglePingMarker(true, _PingType);
+	m_TargetCompassMarkerWidget->SetWorldMarkerSpawnedLocation(m_SpawnedLocation);
 }
 
 void UC_PingWidget::HidePingWidget()

@@ -164,11 +164,6 @@ void AC_GranadeLauncher::CompleteReload()
 	m_CurrentAmmo = m_MaxAmmo;
 	m_bIsReloading = false;
 
-	if (AC_UIManager* UIManager = Cast<AC_UIManager>(GetWorld()->GetFirstPlayerController()->GetHUD()))
-	{
-		if (UIManager->GetMainHUDWidget())
-		{
-			UIManager->GetMainHUDWidget()->UpdateMagazineAmmoCount(m_CurrentAmmo);
-		}
-	}
+	if (m_OwnerPlayer && m_OwnerPlayer->IsLocallyControlled())
+		UI_MANAGER(GetWorld())->GetMainHUDWidget()->UpdateMagazineAmmoCount(m_CurrentAmmo);
 }

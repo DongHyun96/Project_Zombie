@@ -127,8 +127,8 @@ void AC_Rifle::CompleteReload()
 	m_bIsReloading = false; // 재장전 완료
 
 	// 새로 장전된 장탄수 UI 업데이트
-	if (AC_UIManager* UIManager = Cast<AC_UIManager>(GetWorld()->GetFirstPlayerController()->GetHUD()))
-		UIManager->GetMainHUDWidget()->UpdateMagazineAmmoCount(m_CurrentAmmo);
+	if (m_OwnerPlayer && m_OwnerPlayer->IsLocallyControlled())
+		UI_MANAGER(GetWorld())->GetMainHUDWidget()->UpdateMagazineAmmoCount(m_CurrentAmmo);
 }
 
 // 총알 소모 로직 후 애니메이션 실행 함수

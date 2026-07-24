@@ -175,11 +175,6 @@ void AC_Sniper::CompleteReload()
 	m_bIsReloading = false;
 
 	// UI 갱신
-	if (AC_UIManager* UIManager = Cast<AC_UIManager>(GetWorld()->GetFirstPlayerController()->GetHUD()))
-	{
-		if (UIManager->GetMainHUDWidget())
-		{
-			UIManager->GetMainHUDWidget()->UpdateMagazineAmmoCount(m_CurrentAmmo);
-		}
-	}
+	if (m_OwnerPlayer && m_OwnerPlayer->IsLocallyControlled())
+		UI_MANAGER(GetWorld())->GetMainHUDWidget()->UpdateMagazineAmmoCount(m_CurrentAmmo);
 }
