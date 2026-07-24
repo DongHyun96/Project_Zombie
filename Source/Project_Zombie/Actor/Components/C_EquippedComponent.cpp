@@ -349,8 +349,9 @@ void UC_EquippedComponent::OnInventorySlotChanged(int32 SlotIndex, const FInvent
 	if (!ItemManager) return;
 	
 	AC_WeaponBase* SpawnedWeapon = ItemManager->SpawnEquippedActor(ItemData.ItemRowName, m_OwnerPlayer);
-	
-	AC_WeaponBase* PrevWeapon = SetSlotWeapon(static_cast<EWeaponSlot>(SlotIndex), SpawnedWeapon);
+
+	AC_WeaponBase* PrevWeapon = m_Weapons[SlotIndex];
+	Server_SetSlotWeapon(static_cast<EWeaponSlot>(SlotIndex), SpawnedWeapon);
 	
 	if (!PrevWeapon) return;
 	

@@ -47,14 +47,6 @@
 
 #include "Net/UnrealNetwork.h"
 
-void AC_BasicPlayer::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	
-	DOREPLIFETIME(AC_BasicPlayer, m_HandState);
-}
-
-
 AC_BasicPlayer::AC_BasicPlayer()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -239,6 +231,8 @@ void AC_BasicPlayer::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 
 	// 구조 중인 플레이어
 	DOREPLIFETIME(AC_BasicPlayer, m_RevivingPlayer);
+	
+	DOREPLIFETIME(AC_BasicPlayer, m_HandState);
 }
 
 void AC_BasicPlayer::Tick(float DeltaTime)

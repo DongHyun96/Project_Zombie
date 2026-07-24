@@ -491,8 +491,6 @@ public:
 	
 public:
 	class UC_InvenComponent* GetInvenComponent() { return m_InvenComponent; }
-
-	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	
 public:
 	AC_BasicPlayer();

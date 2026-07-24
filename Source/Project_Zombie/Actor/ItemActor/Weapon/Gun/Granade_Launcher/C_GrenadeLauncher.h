@@ -4,10 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "Actor/ItemActor/Weapon/Gun/C_GunBase.h"
-#include "C_GranadeLauncher.generated.h"
+#include "C_GrenadeLauncher.generated.h"
 
 UCLASS()
-class PROJECT_ZOMBIE_API AC_GranadeLauncher : public AC_GunBase
+class PROJECT_ZOMBIE_API AC_GrenadeLauncher : public AC_GunBase
 {
 	GENERATED_BODY()
 
@@ -15,9 +15,6 @@ private:
 	// 스폰할 유탄 블루프린트/클래스
 	UPROPERTY(EditDefaultsOnly, Category = "Grenade", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<class AActor> m_GrenadeClass;
-
-	// 누적된 탄피(사용한 유탄 탄피) 개수 -> 이거 이렇게 변수로 두지 말고 Max - cur로 계산하는게 좋아 보이는데.(상연)
-	int32 m_SpentShellCount = 0;
 
 	bool m_bCanFire = true;       
 	FTimerHandle m_ShotCooldownTimer;
@@ -47,5 +44,5 @@ private:
 	void ResetFireCooldown();
 
 public:
-	AC_GranadeLauncher();
+	AC_GrenadeLauncher();
 };

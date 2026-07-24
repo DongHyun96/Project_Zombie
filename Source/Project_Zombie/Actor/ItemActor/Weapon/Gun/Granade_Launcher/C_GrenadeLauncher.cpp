@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "C_GranadeLauncher.h"
+#include "C_GrenadeLauncher.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "C_GrenadeProjectile.h"
 
@@ -17,12 +17,12 @@
 #include "Kismet/GameplayStatics.h"
 #include "DrawDebugHelpers.h"
 
-AC_GranadeLauncher::AC_GranadeLauncher()
+AC_GrenadeLauncher::AC_GrenadeLauncher()
 {
 
 }
 
-bool AC_GranadeLauncher::OnStartFire(AC_BasicPlayer* _WeaponUser)
+bool AC_GrenadeLauncher::OnStartFire(AC_BasicPlayer* _WeaponUser)
 {
 	if (nullptr == _WeaponUser)
 		return false;
@@ -36,12 +36,12 @@ bool AC_GranadeLauncher::OnStartFire(AC_BasicPlayer* _WeaponUser)
 	return true;
 }
 
-bool AC_GranadeLauncher::OnFireOnGoing(AC_BasicPlayer* _WeaponUser)
+bool AC_GrenadeLauncher::OnFireOnGoing(AC_BasicPlayer* _WeaponUser)
 {
 	return false;
 }
 
-bool AC_GranadeLauncher::OnFireEnd(AC_BasicPlayer* _WeaponUser)
+bool AC_GrenadeLauncher::OnFireEnd(AC_BasicPlayer* _WeaponUser)
 {
 	if (nullptr == _WeaponUser)
 		return false;
@@ -50,7 +50,7 @@ bool AC_GranadeLauncher::OnFireEnd(AC_BasicPlayer* _WeaponUser)
 	return true;
 }
 
-bool AC_GranadeLauncher::Reload(AC_BasicPlayer* _WeaponUser)
+bool AC_GrenadeLauncher::Reload(AC_BasicPlayer* _WeaponUser)
 {
 	if (nullptr == _WeaponUser)
 		return false;
@@ -61,7 +61,7 @@ bool AC_GranadeLauncher::Reload(AC_BasicPlayer* _WeaponUser)
 	return true;
 }
 
-void AC_GranadeLauncher::PullTrigger()
+void AC_GrenadeLauncher::PullTrigger()
 {
 	if (m_bIsFiring || m_bIsReloading || !m_bCanFire) return;
 
@@ -70,21 +70,21 @@ void AC_GranadeLauncher::PullTrigger()
 
 	PlayFireEffects();
 
-	GetWorldTimerManager().SetTimer(m_ShotCooldownTimer, this, &AC_GranadeLauncher::ResetFireCooldown, m_FireRate, false);
+	GetWorldTimerManager().SetTimer(m_ShotCooldownTimer, this, &AC_GrenadeLauncher::ResetFireCooldown, m_FireRate, false);
 }
 
-void AC_GranadeLauncher::ReleaseTrigger()
+void AC_GrenadeLauncher::ReleaseTrigger()
 {
 	m_bIsFiring = false;
 }
 
-void AC_GranadeLauncher::ResetFireCooldown()
+void AC_GrenadeLauncher::ResetFireCooldown()
 {
 	m_bCanFire = true;
 	m_bIsFiring = false;
 }
 
-void AC_GranadeLauncher::PlayFireEffects()
+void AC_GrenadeLauncher::PlayFireEffects()
 {
 	if (!ConsumeAmmo())
 	{
@@ -92,8 +92,6 @@ void AC_GranadeLauncher::PlayFireEffects()
 		m_bCanFire = true;
 		return;
 	}
-
-	m_SpentShellCount++;
 
 	if (m_OwnerPlayer && m_PlayerFireAnimation)
 	{
@@ -109,7 +107,7 @@ void AC_GranadeLauncher::PlayFireEffects()
 	SpawnGrenadeProjectile();
 }
 
-void AC_GranadeLauncher::EjectAllSpentShells()
+void AC_GrenadeLauncher::EjectAllSpentShells()
 {
 
 	int32 SpentShellCount = m_MaxAmmo - m_CurrentAmmo;
@@ -134,7 +132,7 @@ void AC_GranadeLauncher::EjectAllSpentShells()
 
 }
 
-void AC_GranadeLauncher::SpawnGrenadeProjectile()
+void AC_GrenadeLauncher::SpawnGrenadeProjectile()
 {
 	if (!m_WeaponMesh || !GetWorld() || !m_GrenadeClass || !m_OwnerPlayer)
 		return;
@@ -190,7 +188,7 @@ void AC_GranadeLauncher::SpawnGrenadeProjectile()
 	}
 }
 
-void AC_GranadeLauncher::StartReload()
+void AC_GrenadeLauncher::StartReload()
 {
 	ReleaseTrigger();
 
@@ -217,10 +215,10 @@ void AC_GranadeLauncher::StartReload()
 		ReloadDuration = m_ReloadAnimation->GetPlayLength();
 	}
 
-	GetWorldTimerManager().SetTimer(m_ReloadTimerHandle, this, &AC_GranadeLauncher::CompleteReload, ReloadDuration, false);
+	GetWorldTimerManager().SetTimer(m_ReloadTimerHandle, this, &AC_GrenadeLauncher::CompleteReload, ReloadDuration, false);
 }
 
-void AC_GranadeLauncher::CompleteReload()
+void AC_GrenadeLauncher::CompleteReload()
 {
 	m_CurrentAmmo = m_MaxAmmo;
 	m_bIsReloading = false;
