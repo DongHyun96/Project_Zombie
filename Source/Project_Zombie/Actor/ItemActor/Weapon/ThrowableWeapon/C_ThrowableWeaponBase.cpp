@@ -4,6 +4,8 @@
 #include "C_ThrowableWeaponBase.h"
 
 #include "Actor/Character/Player/C_BasicPlayer.h"
+#include "Actor/Components/C_InvenComponent.h"
+#include "Actor/Components/ItemLinkComponent/C_ItemLinkComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 
@@ -35,6 +37,11 @@ AC_ThrowableWeaponBase::AC_ThrowableWeaponBase()
 	m_MainCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision); // 직접 투척하기 이전까지는 Collision을 비활성화 처리해주어야 한다
 	SetRootComponent(m_MainCollider);
 
+	// Create StaticMeshComponent,
+	m_WeaponMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WeaponMesh"));
+	m_WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	m_WeaponMesh->SetupAttachment(RootComponent);
+	
 	// 충돌 이벤트 연결
 	m_MainCollider->OnComponentHit.AddDynamic(this, &AC_ThrowableWeaponBase::OnThrowableHit);
 
@@ -140,6 +147,59 @@ void AC_ThrowableWeaponBase::BeginPlay()
 void AC_ThrowableWeaponBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+}
+
+bool AC_ThrowableWeaponBase::InitializeItemActor(const FWeaponData* InRawData)
+{
+	//return Super::InitializeItemActor(InRawData);
+	
+	const FThrowableData* ThrowableData = static_cast<const FThrowableData*>(InRawData);
+	
+	if (!ThrowableData)
+	{
+		UC_Util::Print("Failed Cast to const FThrowableData*", FColor::Red, 10.f);
+		return false;
+	}
+	
+	if (ThrowableData->WeaponStaticMesh.IsValid() || !ThrowableData->WeaponStaticMesh.IsNull())
+	{
+		UStaticMesh* MeshAsset =  ThrowableData->WeaponStaticMesh.LoadSynchronous();
+		
+		if (m_WeaponMesh && MeshAsset)
+			m_WeaponMesh->SetStaticMesh(MeshAsset);
+	}
+	else
+	{
+		UC_Util::Print("ThrowableData->WeaponStaticMesh Is Not Valid", FColor::Red, 10.f);
+		return false;
+	}
+	
+	// 에셋 캐싱
+	m_ThrowMontage			= ThrowableData->m_ThrowMontage;
+	m_ExplodeStrategyClass	= ThrowableData->m_ExplodeStrategyClass;
+	m_ExplosionEffect		= ThrowableData->m_ExplosionEffect;
+	m_FireDamageAreaClass	= ThrowableData->m_FireDamageAreaClass;
+	
+	m_bExplodeOnImpact 		= ThrowableData->m_bExplodeOnImpact;
+	m_bHasPin				= ThrowableData->m_bHasPin;
+	m_bIsCookable			= ThrowableData->m_bIsCookable;
+	m_ExplosionEffectScale	= ThrowableData->m_ExplosionEffectScale;
+	m_ExplosionRadius		= ThrowableData->m_ExplosionRadius;
+	m_FuseTime				= ThrowableData->m_FuseTime;
+	m_MaxDamage 			= ThrowableData->m_MaxDamage;
+	m_MinDamage 			= ThrowableData->m_MinDamage;
+
+	
+	// 현재 투척류는 CustomData가 없음.
+	
+	if (!ItemLinkComp)
+	{
+		UC_Util::Print("ThrowableBase : Item Link Component Is Nullptr!", FColor::Red, 10.f);
+	}
+	
+	
+	
+	return true;
 }
 
 bool AC_ThrowableWeaponBase::AttachToHand(USceneComponent* _ParentMesh)
@@ -270,6 +330,7 @@ bool AC_ThrowableWeaponBase::OnFireEnd(AC_BasicPlayer* _WeaponUser)
 
 	// 투척류 예측 경로 제거
 	ClearPredictedPath();
+	
 
 	return true;
 }
@@ -361,6 +422,27 @@ void AC_ThrowableWeaponBase::OnThrowThrowable()
 	// 수류탄 던짐
 	// EquippedComponent의 CurrentWeapon은 nullptr 또는 다음 수류탄으로 변경
 	// 수류탄 개수 감소
+	
+	// 투척류는 아이템 갯수가 Ammo라고 보면된다.
+	// 투척하면 하나씩 줄여주고 0이 되면 해당 슬롯의 Entry를 비워준다.
+	if (ItemLinkComp)
+	{
+		if (FInventoryEntry* SlotEntry = ItemLinkComp->GetItemEntryPtr())
+		{
+			SlotEntry->CurCount--;
+			if (SlotEntry->CurCount == 0) SlotEntry->Clear();
+			// TODO : 직후에 인벤토리를 업데이트 해주어야 함.
+
+			int32 Idx = ItemLinkComp->GetSlotIndex();
+			
+			// 서버에서 사용하면 이걸 써야 할 걸?
+			//ItemLinkComp->GetOwningInvenComp()->MarkSlotDirty(Idx);		
+			
+			
+			ItemLinkComp->GetOwningInvenComp()->OnInventorySlotChanged.Broadcast(Idx, *SlotEntry);
+		}
+	}
+	
 }
 
 // ----------------- 쿠킹 관련 처리 -----------------

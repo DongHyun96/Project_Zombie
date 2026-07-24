@@ -7,6 +7,8 @@
 #include "Engine/EngineTypes.h"
 #include "Engine/HitResult.h"
 #include "CollisionQueryParams.h"
+#include "GlobalEnum.h"
+
 #include "C_ThrowableWeaponBase.generated.h"
 
 class AC_FireDamageArea;
@@ -16,25 +18,6 @@ class USplineComponent;
 class USplineMeshComponent;
 class UStaticMeshComponent;
 
-UENUM(BlueprintType)
-enum class EThrowableType : uint8
-{
-	None,
-	Grenade,
-	Molotov,
-};
-
-UENUM(BlueprintType)
-enum class EThrowableState : uint8
-{
-	Idle,		// 기본 상태
-	RemovePin,	// 핀 제거
-	Ready,		// 투척 준비 
-	ReadyLoop,	// 투척 준비 동작 루프
-	Throwing,	// 투척 중
-	Thrown,		// 투척 
-	Exploded,	// 폭발 
-};
 
 UCLASS()
 class PROJECT_ZOMBIE_API AC_ThrowableWeaponBase : public AC_WeaponBase
@@ -50,6 +33,7 @@ protected:
 public:
 	virtual void Tick(float DeltaTime) override;
 
+	virtual bool InitializeItemActor(const FWeaponData* InRawData) override;
 public:
 	virtual bool AttachToHand(USceneComponent* _ParentMesh) override;
 	virtual bool AttachToHolster(USceneComponent* _ParentMesh) override;
@@ -107,6 +91,8 @@ public:  // Getter & Setter
 	TSubclassOf<AC_FireDamageArea> GetFireDamageAreaClass() const { return m_FireDamageAreaClass; }
 
 	const FHitResult& GetHitResult() const { return m_HitResult; }
+	
+	EThrowableState GetThrowableState() const { return m_ThrowableState; }
 
 protected: // 폭발
 
@@ -241,6 +227,7 @@ public: // 몽타주 관련
 
 public: 
 
+	// 생성자에서 초기화중
 	// Section 이름들
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)
 	FName m_RemovePinSectionName;
@@ -276,15 +263,18 @@ public: // Throwable Weapon의 투척 특성 관련
 		meta = (EditCondition = "!m_bExplodeOnImpact", EditConditionHides, ClampMin = "0.0"))
 	float m_FuseTime;
 
+	// 생성자에서 초기화중
 	// 투척 속도
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|State")
 	float m_ThrowSpeed;
 
+	// 생성자에서 초기화중.
 	// Player의 Hand Socket 위치에서 Forward 방향으로 Offset만큼 이동한 위치에서 투척
 	// Player Collider와 충돌하는 문제를 방지하기 위해
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|Launch")
 	float m_LaunchForwardOffset;
 
+	// 생성자에서 초기화중.
 	// Player의 Hand Socket 위치에서 Upward 방향으로 Offset만큼 이동한 위치에서 투척
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|Launch")
 	float m_LaunchUpwardOffset;
@@ -317,7 +307,7 @@ public: // Throwable Weapon의 투척 특성 관련
 	/// ---------나중에 스킬 데이터로 따로 빠질수도-----------
 	// 폭발 이펙트 
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|Effect")
-	TObjectPtr<UParticleSystem> m_ExplosionEffect;
+	TObjectPtr<UParticleSystem> m_ExplosionEffect{};
 
 	// 폭발 이펙트 크기 (1.0 = 기본 크기)
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|Effect")
@@ -326,15 +316,12 @@ public: // Throwable Weapon의 투척 특성 관련
 
 protected:
 	
+	// 블루프린트에서 값 초기화중인 듯?
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, meta = (DisplayName = "ProjectileMovementCom"))
 	class UProjectileMovementComponent* m_ProjectileMovement{};
 
 
 protected:
-
-	// Throwable Weapon의 타입
-	EThrowableType m_ThrowableType;
-
 	// Throwable Weapon의 상태
 	EThrowableState m_ThrowableState;
 
@@ -346,7 +333,7 @@ protected:
 	// 벽에 충돌했을때 장판이 생성되는 위치를 결정하기 위해 사용
 	FHitResult m_HitResult;
 
-protected: // 예상 투척 경로
+protected: // 예상 투척 경로 TODO : 이 부분은 일단은 데이터 테이블로 넘기지 않았음.
 
 	// 예상 경로의 위치들을 저장
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Throwable|Predicted Path")
@@ -376,6 +363,10 @@ protected: // 예상 투척 경로
 	// 예상 경로를 표시할 Mesh들을 배열에 저장
 	UPROPERTY(Transient)
 	TArray<USplineMeshComponent*> m_PredictedPathMeshes;
+	
+protected:
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Mesh", meta = (AllowPrivateAccess = "true"))
+	class UStaticMeshComponent* m_WeaponMesh;
 
 private:
 
