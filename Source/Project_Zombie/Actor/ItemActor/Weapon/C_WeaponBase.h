@@ -9,7 +9,6 @@
 #include "GameFramework/Actor.h"
 #include "C_WeaponBase.generated.h"
 
-struct FStreamableHandle;
 struct FWeaponData;
 class UC_ItemLinkComponent;
 
@@ -24,8 +23,6 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	// 액터가 레벨에서 제거되거나 Destroy될 때 호출되는 언리얼 기본 이벤트 함수, 이 때 비동기 로드중인 에셋 취소
-	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 public:	
 	virtual void Tick(float DeltaTime) override;
 
@@ -37,15 +34,6 @@ public:
 	// 실제 자신의 클래스까지 내려가서 재정의해야 한다.
 	virtual bool InitializeItemActor(const FWeaponData* InRawData) PURE_VIRTUAL(AC_WeaponBase::InitializeItemActor, return false;);
 
-	// 클라이언트가 생성된 Weapon의 에셋들을 로드하기 위한 리플리케이션 함수.
-	UFUNCTION()
-	void OnRep_WeaponRowName();
-	
-protected:
-	// 데이터 테이블의 에셋들을 비동기 로드하기 위한 함수, 무기마다 다를 수 있기 때문에 순수 가상 함수로 선언. return 값을 bool 처리 할까?
-	virtual void LoadAsyncAssets(const FWeaponData* InRawData) PURE_VIRTUAL(AC_WeaponBase::LoadAsyncAssets, );
-	
-	void CancelAsyncLoad();
 public:
 	
 	/// <summary>
@@ -96,29 +84,22 @@ public:
 	UAnimMontage* GetDrawMontage() const { return m_DrawMontage; }
 	UAnimMontage* GetSheathMontage() const { return m_SheathMontage; }
 
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 public:
 	
 	AC_BasicPlayer* GetOwnerPlayer() const { return m_OwnerPlayer; }
 	void SetOwnerPlayer(AC_BasicPlayer* _OwnerPlayer) { m_OwnerPlayer = _OwnerPlayer; }
 	
 	UC_ItemLinkComponent* GetLinkComp() {return ItemLinkComp;}
-	
-	void SetItemRowName(FName InRowName) { m_WeaponRowName = InRowName; }
 protected:
 
 	// 이 Weapon을 자신의 Slot에 장착중인 OwnerPlayer
-	UPROPERTY(Replicated, BlueprintReadOnly)
+	UPROPERTY()
 	AC_BasicPlayer* m_OwnerPlayer{};
 	
-	// 무기의 고유 RowName (서버에서 설정되면 클라이언트로 복제됨)
-	UPROPERTY(ReplicatedUsing = OnRep_WeaponRowName, Transient)
-	FName m_WeaponRowName{};
+
 	
 protected:
 	// TODO : 이 두 애니메이션도 데이터 테이블에 넣어주는게 나을 것 같긴한데.
-	// Draw, Sheath는 블프에서 넣어주고 있음.
-	// TODO : 동작이 고정된 되어서 사용한다면 플레이어쪽에, 무기마다 다르다면 데이터 테이블로 처리하는게 나을 듯
 	
 	// 해당 무기의 무기 꺼내는 동작 Montage (Player character montage)
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, meta = (DisplayName = "DrawMontage"))
@@ -131,8 +112,4 @@ protected:
 	// 데이터 연동 전용 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UC_ItemLinkComponent> ItemLinkComp{};
-	
-protected:
-	// 비동기 로딩 핸들을 관리할 스마트 포인터
-	TSharedPtr<FStreamableHandle> AsyncLoadHandle;
 };

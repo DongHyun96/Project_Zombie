@@ -3,18 +3,15 @@
 
 #include "C_ThrowableWeaponBase.h"
 
-#include "NiagaraSystem.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/Components/C_InvenComponent.h"
 #include "Actor/Components/ItemLinkComponent/C_ItemLinkComponent.h"
-#include "Area/C_FireDamageArea.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 
 #include "Components/SplineComponent.h"
 #include "Components/SplineMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
-#include "Engine/AssetManager.h"
 #include "Engine/StaticMesh.h"
 
 #include "Kismet/GameplayStatics.h"
@@ -164,97 +161,45 @@ bool AC_ThrowableWeaponBase::InitializeItemActor(const FWeaponData* InRawData)
 		return false;
 	}
 	
-	// 기본 수치 및 플래그 설정 (서버 로직)
-	m_bExplodeOnImpact     = ThrowableData->m_bExplodeOnImpact;
-	m_bHasPin              = ThrowableData->m_bHasPin;
-	m_bIsCookable         = ThrowableData->m_bIsCookable;
-	m_ExplosionEffectScale = ThrowableData->m_ExplosionEffectScale;
-	m_ExplosionRadius      = ThrowableData->m_ExplosionRadius;
-	m_FuseTime             = ThrowableData->m_FuseTime;
-	m_MaxDamage           = ThrowableData->m_MaxDamage;
-	m_MinDamage           = ThrowableData->m_MinDamage;
+	if (ThrowableData->WeaponStaticMesh.IsValid() || !ThrowableData->WeaponStaticMesh.IsNull())
+	{
+		UStaticMesh* MeshAsset =  ThrowableData->WeaponStaticMesh.LoadSynchronous();
+		
+		if (m_WeaponMesh && MeshAsset)
+			m_WeaponMesh->SetStaticMesh(MeshAsset);
+	}
+	else
+	{
+		UC_Util::Print("ThrowableData->WeaponStaticMesh Is Not Valid", FColor::Red, 10.f);
+		return false;
+	}
+	
+	// 에셋 캐싱
+	m_ThrowMontage			= ThrowableData->m_ThrowMontage;
+	m_ExplodeStrategyClass	= ThrowableData->m_ExplodeStrategyClass;
+	m_ExplosionEffect		= ThrowableData->m_ExplosionEffect;
+	m_FireDamageAreaClass	= ThrowableData->m_FireDamageAreaClass;
+	
+	m_bExplodeOnImpact 		= ThrowableData->m_bExplodeOnImpact;
+	m_bHasPin				= ThrowableData->m_bHasPin;
+	m_bIsCookable			= ThrowableData->m_bIsCookable;
+	m_ExplosionEffectScale	= ThrowableData->m_ExplosionEffectScale;
+	m_ExplosionRadius		= ThrowableData->m_ExplosionRadius;
+	m_FuseTime				= ThrowableData->m_FuseTime;
+	m_MaxDamage 			= ThrowableData->m_MaxDamage;
+	m_MinDamage 			= ThrowableData->m_MinDamage;
 
+	
+	// 현재 투척류는 CustomData가 없음.
+	
 	if (!ItemLinkComp)
 	{
 		UC_Util::Print("ThrowableBase : Item Link Component Is Nullptr!", FColor::Red, 10.f);
 	}
-
-	// 비동기 에셋 로드 호출
-	LoadAsyncAssets(ThrowableData);
+	
+	
+	
 	return true;
-}
-
-void AC_ThrowableWeaponBase::LoadAsyncAssets(const FWeaponData* InRawData)
-{
-	//Super::LoadAsyncAssets(InRawData);
-
-    const FThrowableData* ThrowableData = static_cast<const FThrowableData*>(InRawData);
-    if (!ThrowableData)
-    {
-       UC_Util::Print("Failed Cast to const FThrowableData*", FColor::Red, 10.f);
-       return;
-    }
-
-    // 기존 로딩 핸들 취소 및 정리 (오타 수정: CancelAsyncLoad)
-    CancelAsyncLoad();
-
-    // 비동기로 로드할 SoftPath 목록 수집
-    TArray<FSoftObjectPath> AssetsToLoad;
-
-    if (!ThrowableData->WeaponStaticMesh.IsNull())        AssetsToLoad.Add(ThrowableData->WeaponStaticMesh.ToSoftObjectPath());
-    if (!ThrowableData->m_ThrowMontage.IsNull())          AssetsToLoad.Add(ThrowableData->m_ThrowMontage.ToSoftObjectPath());
-    if (!ThrowableData->m_ExplodeStrategyClass.IsNull())  AssetsToLoad.Add(ThrowableData->m_ExplodeStrategyClass.ToSoftObjectPath());
-    if (!ThrowableData->m_ExplosionEffect.IsNull())        AssetsToLoad.Add(ThrowableData->m_ExplosionEffect.ToSoftObjectPath());
-    if (!ThrowableData->m_FireDamageAreaClass.IsNull())   AssetsToLoad.Add(ThrowableData->m_FireDamageAreaClass.ToSoftObjectPath());
-
-    if (AssetsToLoad.Num() > 0)
-    {
-        FStreamableManager& Streamable = UAssetManager::GetStreamableManager();
-
-        // 람다 안전 캡처용 SoftPointer 복사
-        TSoftObjectPtr<UStaticMesh>     SoftMesh            = ThrowableData->WeaponStaticMesh;
-        TSoftObjectPtr<UAnimMontage>    SoftThrowMontage    = ThrowableData->m_ThrowMontage;
-        TSoftClassPtr<UObject>          SoftStrategyClass   = ThrowableData->m_ExplodeStrategyClass;
-        TSoftObjectPtr<UParticleSystem>  SoftExplosionEffect = ThrowableData->m_ExplosionEffect;
-        TSoftClassPtr<AC_FireDamageArea>           SoftDamageAreaClass = ThrowableData->m_FireDamageAreaClass;
-
-        AsyncLoadHandle = Streamable.RequestAsyncLoad(AssetsToLoad, FStreamableDelegate::CreateLambda([
-            this,
-            SoftMesh,
-            SoftThrowMontage,
-            SoftStrategyClass,
-            SoftExplosionEffect,
-            SoftDamageAreaClass
-        ]()
-        {
-            if (!IsValid(this)) return;
-
-            // 1. 스태틱 메쉬 설정 (UStaticMeshComponent 캐스팅 또는 전용 메쉬 확인)
-            if (SoftMesh.IsValid())
-            {
-                // AC_WeaponBase의 m_WeaponMesh가 USceneComponent/UMeshComponent이거나 
-                // StaticMeshComponent로 다운캐스팅이 필요한 경우 대응
-                if (UStaticMeshComponent* StaticMeshComp = Cast<UStaticMeshComponent>(m_WeaponMesh))
-                {
-                    StaticMeshComp->SetStaticMesh(SoftMesh.Get());
-                }
-            }
-
-            // 2. 에셋 캐싱 (IsValid 체크 후 Get()으로 안전하게 할당)
-            if (SoftThrowMontage.IsValid())     m_ThrowMontage         = SoftThrowMontage.Get();
-            if (SoftStrategyClass.IsValid())    m_ExplodeStrategyClass = SoftStrategyClass.Get();
-            if (SoftExplosionEffect.IsValid())  m_ExplosionEffect      = SoftExplosionEffect.Get();
-            if (SoftDamageAreaClass.IsValid())  m_FireDamageAreaClass  = SoftDamageAreaClass.Get();
-
-            UC_Util::Print("Throwable Weapon Assets Async Loaded Successfully!", FColor::Green, 5.f);
-
-            // 로딩 완료 후 핸들 정리
-            if (AsyncLoadHandle.IsValid())
-            {
-                AsyncLoadHandle.Reset();
-            }
-        }));
-    }
 }
 
 bool AC_ThrowableWeaponBase::AttachToHand(USceneComponent* _ParentMesh)

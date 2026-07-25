@@ -219,7 +219,6 @@ AC_WeaponBase* UC_ItemManager::SpawnEquippedActor(FName InRowName, AActor* InOwn
         
         // 무기의 초기화
         SpawnedWeapon->InitializeItemActor(InRawData);
-        SpawnedWeapon->SetItemRowName(InRowName);
     }
 
     return SpawnedWeapon;

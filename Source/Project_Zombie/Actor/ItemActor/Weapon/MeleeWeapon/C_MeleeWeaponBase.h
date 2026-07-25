@@ -80,9 +80,7 @@ public:
 	/// 공격 시 캐릭터 애니메이션 재생 함수(도입예정?)
 	/// <summary>
 	// void PlayAttackEffects();
-protected:
-	// 데이터 테이블의 에셋들을 비동기 로드하기 위한 함수, 무기마다 다를 수 있기 때문에 순수 가상 함수로 선언. return 값을 bool 처리 할까?
-	virtual void LoadAsyncAssets(const FWeaponData* InRawData) override;
+
 
 protected:
 
