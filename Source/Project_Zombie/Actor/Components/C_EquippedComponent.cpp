@@ -34,57 +34,10 @@ void UC_EquippedComponent::BeginPlay()
 		UC_Util::Print("From UC_EquippedComponent::BeginPlay : OwnerPlayer init failed!", FColor::Red, 10.f);
 		UE_LOG(LogTemp, Error, TEXT("From UC_EquippedComponent::BeginPlay : OwnerPlayer init failed!"));
 	}
-	
-	//
-	//EquipInvenComp->SetMaxSlots(static_cast<int32>(EWeaponSlot::Max));
 }
-
-void UC_EquippedComponent::TickComponent(float DeltaTime, enum ELevelTick TickType,
-	FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-	
-	/*
-	if (!m_OwnerPlayer)
-	{
-		PRINT_LOCAL(GetWorld(), "No OwnerPlayer", FColor::Red, 1.f);
-	}
-	else PRINT_LOCAL(GetWorld(), "Yes OwnerPlayer", FColor::Red, 1.f);*/
-}
-
-/*void UC_EquippedComponent::OnRep_Weapons()
-{
-	PRINT_LOCAL(GetWorld(), "OnRep_Weapons", FColor::MakeRandomColor(), 10.f);
-
-	// OwnerPlayer 한번 더 초기화 (안정성 때문에 초기화 처리 한번 더 넣어줌)
-	for (AC_WeaponBase* Weapon : m_Weapons)
-		if (Weapon) Weapon->SetOwnerPlayer(m_OwnerPlayer);
-	
-	UpdateAmmoWidget();
-}
-
-void UC_EquippedComponent::OnRep_CurWeaponTypeIdx()
-{
-	PRINT_LOCAL(GetWorld(), "OnRep_CurWeaponTypeIdx : Current WeaponTypeIdx -> " + FString::FromInt(m_CurWeaponTypeIdx), FColor::MakeRandomColor(), 10.f);
-	UpdateAmmoWidget();
-}*/
 
 void UC_EquippedComponent::SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* WeaponToEquip)
 {
-	/*switch (TargetSlot)
-	{
-	case EWeaponSlot::MainWeapon: PRINT_LOCAL(GetWorld(), "MainWeapon SetSlot", FColor::MakeRandomColor(), 10.f);
-		break;
-	case EWeaponSlot::MeleeWeapon: PRINT_LOCAL(GetWorld(), "MeleeWeapon SetSlot", FColor::MakeRandomColor(), 10.f);
-		break;
-	case EWeaponSlot::ThrowableWeapon: PRINT_LOCAL(GetWorld(), "ThrowableWeapon SetSlot", FColor::MakeRandomColor(), 10.f);
-		break;
-	case EWeaponSlot::None:
-		break;
-	case EWeaponSlot::Max:
-		break;
-	}*/
-	
 	if (TargetSlot == EWeaponSlot::None || TargetSlot == EWeaponSlot::Max)
 	{
 		UC_Util::Print("From UC_EquippedComponent::SetSlotWeapon : wrong TargetSlot received", FColor::Red, 10.f);
@@ -283,25 +236,6 @@ bool UC_EquippedComponent::ChangeCurWeapon(EWeaponSlot _ChangeTo)
 	return true;
 }
 
-void UC_EquippedComponent::Server_ToggleArmed_Implementation()
-{
-	ToggleArmed();
-	UpdateAmmoWidget(); // 서버 환경 자기자신일 때의 UI 업데이트
-	Multicast_ToggleArmed();
-}
-
-bool UC_EquippedComponent::Server_ToggleArmed_Validate()
-{
-	return true;
-}
-
-void UC_EquippedComponent::Multicast_ToggleArmed_Implementation()
-{
-	UWorld* World = GetWorld();
-	if (World->GetNetMode() != NM_Client) return;
-	ToggleArmed();
-}
-
 bool UC_EquippedComponent::ToggleArmed()
 {
 	const uint8 NoneSlotIdx = static_cast<uint8>(EWeaponSlot::None);
@@ -422,6 +356,9 @@ void UC_EquippedComponent::OnInventorySlotChanged(int32 SlotIndex, const FInvent
 void UC_EquippedComponent::OnSheathEnd()
 {
 	if (!m_OwnerPlayer->IsLocallyControlled()) return;
+
+	// 다음으로 들 무기가 있을 때에도 Widget Animation을 위해, AmmoVisibility false로 일괄 처리
+	UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility(false);
 	
 	/* 무기를 바꾸는 도중에 SlotWeapon 장착 해제 예외 처리 -> Sheath 처리를 진행 중이던 무기가 Slot에서 빠졌을 때 */
 	// 이 예외처리는 추후 좀비가 Player총기를 뺏을 수 있는 상황을 고려해서 넣어둠
@@ -496,6 +433,9 @@ void UC_EquippedComponent::OnDrawEnd()
 	m_CurWeaponTypeIdx  = m_NextWeaponTypeIdx;
 	m_NextWeaponTypeIdx = NoneSlotIdx;
 	Server_SetCurWeaponIdx(m_CurWeaponTypeIdx);
+
+	// 바뀐 무기로 AmmoInfo 정보 업데이트 처리
+	if (GetCurWeapon()) GetCurWeapon()->UpdateAmmoInfoHUDForDrawEnd();
 }
 
 void UC_EquippedComponent::UpdateAmmoWidget()

@@ -20,12 +20,9 @@ public:
 	UC_EquippedComponent();
 
 protected:
+
 	virtual void BeginPlay() override;
 
-public:
-	
-	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-	
 public:
 
 	UFUNCTION(BlueprintCallable)
@@ -53,20 +50,6 @@ private:
 	/// <param name="WeaponToEquip"> : 해당 slot에 장착할 무기 객체 / 장착 해제는 nullptr </param>
 	void SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* WeaponToEquip);
 
-private:
-	
-	/*/// <summary>
-	/// 서버에서의 SetSlotWeapon을 통해 m_Weapons 업데이트가 되면, 그에 따른 클라이언트에서의 상호작용 처리 (UI 처리 등)  
-	/// </summary>
-	UFUNCTION()
-	void OnRep_Weapons();
-
-	/// <summary>
-	/// CurWeaponTypeIdx Rep 처리 시, UI 관련 처리
-	/// </summary>
-	UFUNCTION()
-	void OnRep_CurWeaponTypeIdx();*/
-	
 public: // TODO : 이 Test block 지우기
 
 	UFUNCTION(Server, Reliable, WithValidation)
@@ -77,25 +60,17 @@ public:
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_RequestSpawnEquippedActor(int32 SlotIndex, const FInventoryEntry& ItemData);
 
+public:
+	
 	/// <summary>
-	/// 현재 손에 든 무기 바꾸기 (LOCAL 환경에서 바로 실행되는 함수)
+	/// 현재 손에 든 무기 바꾸기 (LOCAL 환경에서 자기 player는 바로 처리할 것)
 	/// </summary>
 	/// <param name="_ChangeTo"> : 새로이 바꿔서 들려고 하는 무기 슬롯 종류 </param>
 	/// <returns> 바꾸기 성공했다면 return true </returns>
 	bool ChangeCurWeapon(EWeaponSlot _ChangeTo);
-	
-public:
 
-	UFUNCTION(Server, Reliable, WithValidation)
-	void Server_ToggleArmed();
-
-private:
-	
-	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_ToggleArmed();
-	
 	/// <summary>
-	/// X키를 통한 무기 집어넣기 및 직전 무기 꺼내기
+	/// X키를 통한 무기 집어넣기 및 직전 무기 꺼내기 (LOCAL에서 자기 player는 바로 처리할 것)
 	/// </summary>
 	/// <returns> : 실패 시 return false </returns>
 	bool ToggleArmed();
@@ -152,6 +127,8 @@ private:
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_PlaySheathMontage(AC_WeaponBase* _TargetWeapon);
 
+private:
+	
 	/// <summary>
 	/// 서버 쪽 무기 AttachToHolster 처리 요청 처리
 	/// </summary>

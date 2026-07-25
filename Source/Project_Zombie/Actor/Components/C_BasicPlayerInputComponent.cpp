@@ -365,7 +365,7 @@ void UC_BasicPlayerInputComponent::ToggleArmed()
 {
 	// TODO : 여기 지울 것 For testing (피 회복 처리)
 	Player->GetStatComponent()->IncreaseCurHP(25.f);
-	Player->GetEquippedComponent()->Server_ToggleArmed();
+	Player->GetEquippedComponent()->ToggleArmed();
 }
 
 void UC_BasicPlayerInputComponent::FreeLookHolStart()
