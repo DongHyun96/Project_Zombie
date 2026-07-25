@@ -67,6 +67,8 @@ void AC_WeaponBase::OnRep_WeaponRowName()
 	{
 		LoadAsyncAssets(WeaponData);
 	}
+	
+	
 }
 
 void AC_WeaponBase::CancelAsyncLoad()
