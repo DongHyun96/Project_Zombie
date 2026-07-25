@@ -106,7 +106,6 @@ public:
 	UAnimMontage* GetDrawMontage() const { return m_DrawMontage; }
 	UAnimMontage* GetSheathMontage() const { return m_SheathMontage; }
 
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 public:
 	
 	AC_BasicPlayer* GetOwnerPlayer() const { return m_OwnerPlayer; }
@@ -127,7 +126,7 @@ private:
 	UFUNCTION()
 	void OnRep_OwnerPlayer();
 	
-protected:
+public:
 	
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	

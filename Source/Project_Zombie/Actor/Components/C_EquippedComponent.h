@@ -78,14 +78,6 @@ public:
 	void Server_RequestSpawnEquippedActor(int32 SlotIndex, const FInventoryEntry& ItemData);
 
 	/// <summary>
-	/// 무기 바꾸기 server 쪽으로 요청 
-	/// </summary>
-	/// <param name="_ChangeTo"> : 바꿔들 무기 슬롯 종류 </param>
-	UFUNCTION(Server, Reliable, WithValidation)
-	void Server_ChangeCurWeapon(EWeaponSlot _ChangeTo);
-
-
-	/// <summary>
 	/// 현재 손에 든 무기 바꾸기 (LOCAL 환경에서 바로 실행되는 함수)
 	/// </summary>
 	/// <param name="_ChangeTo"> : 새로이 바꿔서 들려고 하는 무기 슬롯 종류 </param>
@@ -175,7 +167,7 @@ private:
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_SetCurWeaponIdx(uint8 _NewIdx);
 	
-protected:
+public:
 	
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	
