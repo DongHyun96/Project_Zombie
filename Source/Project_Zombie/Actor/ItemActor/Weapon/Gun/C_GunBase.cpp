@@ -51,7 +51,7 @@ AC_GunBase::AC_GunBase()
 	m_WeaponMesh->SetLinearDamping(1.f);
 	m_WeaponMesh->SetAngularDamping(1.f);
 	
-	m_DataCom = CreateDefaultSubobject<UC_GunDataTableComponent>(TEXT("DataComponent"));
+	//m_DataCom = CreateDefaultSubobject<UC_GunDataTableComponent>(TEXT("DataComponent"));
 	
 	m_AIGunUsageComponent = CreateDefaultSubobject<UC_AIGunUsageComponent>(TEXT("AIGunUsageComponent"));
 	
@@ -208,7 +208,7 @@ void AC_GunBase::LoadAsyncAssets(const FWeaponData* InRawData)
 	}
 }
 
-void AC_GunBase::Gun_init()
+/*void AC_GunBase::Gun_init()
 {
 	if (ItemEntry.ItemRowName.IsNone()) return;
 
@@ -266,7 +266,7 @@ void AC_GunBase::Gun_init()
 		m_MaxAmmo = BaseMaxAmmo;
 		m_CurrentAmmo = m_MaxAmmo;
 	}
-}
+}*/
 
 bool AC_GunBase::ConsumeAmmo()
 {

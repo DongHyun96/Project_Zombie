@@ -18,11 +18,12 @@ private:
 
 protected:
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon|Components", meta = (DisplayName = "DataComponent"))
-	class UC_MeleeDataTableComponent* m_DataCom;
+	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon|Components", meta = (DisplayName = "DataComponent"))
+	//class UC_MeleeDataTableComponent* m_DataCom;
 
 protected:
 
+	
 	float						m_Damage;
 
 	// 현재 공격 버튼을 누르고 있는 상태인지 확인

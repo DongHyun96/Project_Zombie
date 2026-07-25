@@ -37,8 +37,8 @@ protected:
 	class USkeletalMeshComponent* m_WeaponMesh;		// 정적정보 - 상연, 데이터 테이블에서 가져와서 초기화 해주기.
 
 	// TODO : Lagacy로 삭제 예정
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon|Components", meta = (DisplayName = "DataComponent"))
-	class UC_GunDataTableComponent* m_DataCom;
+	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon|Components", meta = (DisplayName = "DataComponent"))
+	//class UC_GunDataTableComponent* m_DataCom;
 
 	// AI Enemy가 Gun을 사용하는 처리 기능 담당
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI", meta = (DisplayName = "AIGunUsageComponent"))

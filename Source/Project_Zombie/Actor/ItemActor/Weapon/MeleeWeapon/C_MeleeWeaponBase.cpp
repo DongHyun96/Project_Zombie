@@ -20,7 +20,7 @@ AC_MeleeWeaponBase::AC_MeleeWeaponBase()
 	m_WeaponMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WeaponMesh"));
 	RootComponent = m_WeaponMesh;
 
-	m_DataCom = CreateDefaultSubobject<UC_MeleeDataTableComponent>(TEXT("DataComponent"));
+	//m_DataCom = CreateDefaultSubobject<UC_MeleeDataTableComponent>(TEXT("DataComponent"));
 }
 
 void AC_MeleeWeaponBase::BeginPlay()
@@ -195,7 +195,7 @@ bool AC_MeleeWeaponBase::AttachToHand(USceneComponent* _ParentMesh)
 	return bIsAttached;
 }
 
-void AC_MeleeWeaponBase::Melee_init()
+/*void AC_MeleeWeaponBase::Melee_init()
 {
 	if (!m_DataCom) return;
 
@@ -225,7 +225,7 @@ void AC_MeleeWeaponBase::Melee_init()
 	m_PlayerAttackAnimation = Cast<UAnimMontage>(m_DataCom->GetAssetData("PlayerAttackAnimation").LoadSynchronous());
 
 	if (!m_PlayerAttackAnimation) { UE_LOG(LogTemp, Warning, TEXT("PlayerAttackAnimation 로드 실패")); }
-}
+}*/
 
 void AC_MeleeWeaponBase::Attack(AC_BasicPlayer* _WeaponUser)
 {
