@@ -23,9 +23,11 @@
 
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
+#include "Engine/AssetManager.h"
 
 #include "GameModeAndManager/C_UIManager.h"
 #include "Kismet/GameplayStatics.h"
+#include "Net/UnrealNetwork.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
 #include "Utility/C_Util.h"
 
@@ -35,7 +37,9 @@ const FName AC_GunBase::s_HandSocketName = TEXT("HandGrip_R");
 AC_GunBase::AC_GunBase()
 {
 	PrimaryActorTick.bCanEverTick = true;
-
+	
+	SetReplicates(true);
+	
 	m_Collision = CreateDefaultSubobject<USphereComponent>(TEXT("Collision"));
 	RootComponent = m_Collision;
 
@@ -50,6 +54,8 @@ AC_GunBase::AC_GunBase()
 	m_DataCom = CreateDefaultSubobject<UC_GunDataTableComponent>(TEXT("DataComponent"));
 	
 	m_AIGunUsageComponent = CreateDefaultSubobject<UC_AIGunUsageComponent>(TEXT("AIGunUsageComponent"));
+	
+
 }
 
 void AC_GunBase::BeginPlay()
@@ -78,6 +84,8 @@ bool AC_GunBase::InitializeItemActor(const FWeaponData* InRawData)
 {
 	//return Super::InitializeItemActor(InRawData);
 	
+	PRINT_LOCAL(GetWorld(), "InitializeItemActor", FColor::Red, 5.0f);
+	
 	const FGunData* GunData = static_cast<const FGunData*>(InRawData);
 	
 	if (!GunData)
@@ -86,26 +94,12 @@ bool AC_GunBase::InitializeItemActor(const FWeaponData* InRawData)
 		return false;
 	}
 	
-	if (GunData->WeaponSkeletalMesh.IsValid() || !GunData->WeaponSkeletalMesh.IsNull())
-	{
-		USkeletalMesh* MeshAsset = GunData->WeaponSkeletalMesh.LoadSynchronous();
-		if (m_WeaponMesh && MeshAsset)
-		{
-			m_WeaponMesh->SetSkeletalMesh(MeshAsset);
-		}
-	}
-	else
-	{
-		UC_Util::Print("GunData->WeaponSkeletalMesh Is Not Valid", FColor::Red, 10.f);
-		return false;
-	}
-	
 	// 에셋 캐싱
-	m_FireAnimation = GunData->FireAnimation.LoadSynchronous();
-	m_ReloadAnimation = GunData->ReloadAnimation.LoadSynchronous();
-	m_ShellMesh = GunData->ShellMesh.LoadSynchronous();
-	m_PlayerReloadAnimation = GunData->PlayerReloadAnimation.LoadSynchronous();
-	m_PlayerFireAnimation = GunData->PlayerFireAnimation.LoadSynchronous();
+	//m_FireAnimation = GunData->FireAnimation.LoadSynchronous();
+	//m_ReloadAnimation = GunData->ReloadAnimation.LoadSynchronous();
+	//m_ShellMesh = GunData->ShellMesh.LoadSynchronous();
+	//m_PlayerReloadAnimation = GunData->PlayerReloadAnimation.LoadSynchronous();
+	//m_PlayerFireAnimation = GunData->PlayerFireAnimation.LoadSynchronous();
 	
 	// Base Stats 적용
 	float BaseDamage = GunData->BaseDamage;
@@ -144,22 +138,74 @@ bool AC_GunBase::InitializeItemActor(const FWeaponData* InRawData)
 		m_CurrentAmmo = m_MaxAmmo;
 	}
 	
-	//// 동적 데이터 임시 처리.
-	//if (const FGunCustomData* GunCustomData = ItemLinkComp->GetItemEntryPtr()->CustomData.GetPtr<FGunCustomData>())
-	//{
-	//	m_Damage = BaseDamage + (GunCustomData->Upgrade_Damage * 5.0f);
-	//	m_MaxAmmo = BaseMaxAmmo + (GunCustomData->Upgrade_MaxAmmo * 5);
-	//	m_CurrentAmmo = GunCustomData->CurAmmo;
-	//}
-	//else
-	//{
-	//	// CustomData가 없는 초기 아이템 상태
-	//	m_Damage = BaseDamage;
-	//	m_MaxAmmo = BaseMaxAmmo;
-	//	m_CurrentAmmo = m_MaxAmmo;
-	//}
+	LoadAsyncAssets(GunData);
+	
 	
 	return true;
+}
+
+void AC_GunBase::LoadAsyncAssets(const FWeaponData* InRawData)
+{
+	//Super::LoadAsyncAssets(InRawData);
+	
+	PRINT_LOCAL(GetWorld(), "Start LoadAsyncAssets", FColor::Red, 10.f);
+	
+	const FGunData* GunData = static_cast<const FGunData*>(InRawData);
+	
+	if (!GunData)
+	{
+		UC_Util::Print("Failed Cast to const FGunData*", FColor::Red, 10.f);
+		return;
+	}
+	
+	PRINT_LOCAL(GetWorld(), "Playing LoadAsyncAssets", FColor::Red, 10.f);
+	// 기존에 요청 중이던 이 객체의 비동기 로드 취소.
+	CancelAsyncLoad();
+	
+	// TODO : 비동기 로드의 특성상 무기를 들고 있는 상태에서 아이템이 바뀌게 된다면 IDLE 상태로 전환하고 총을 다시 꺼내는 방식으로 가는게 안전해 보임.
+	// TODO : 만약 이것도 상황이 여의치 않다면 그냥 장비 슬롯이 아니라 인벤에 들어 올 때 해당 장비의 에셋들을 비동기로드를 미리 처리하는 방법도 있음.
+	// 비동기로 로드할 SoftObjectPath 목록 수집
+	TArray<FSoftObjectPath> AssetsToLoad;
+
+	if (!GunData->WeaponSkeletalMesh.IsNull()) AssetsToLoad.Add(GunData->WeaponSkeletalMesh.ToSoftObjectPath());
+	if (!GunData->FireAnimation.IsNull()) AssetsToLoad.Add(GunData->FireAnimation.ToSoftObjectPath());
+	if (!GunData->ReloadAnimation.IsNull()) AssetsToLoad.Add(GunData->ReloadAnimation.ToSoftObjectPath());
+	if (!GunData->ShellMesh.IsNull()) AssetsToLoad.Add(GunData->ShellMesh.ToSoftObjectPath());
+	if (!GunData->PlayerReloadAnimation.IsNull()) AssetsToLoad.Add(GunData->PlayerReloadAnimation.ToSoftObjectPath());
+	if (!GunData->PlayerFireAnimation.IsNull()) AssetsToLoad.Add(GunData->PlayerFireAnimation.ToSoftObjectPath());
+	PRINT_LOCAL(GetWorld(), "Success LoadAsyncAssets", FColor::Red, 10.f);
+	// AssetManager를 통한 비동기 로딩 요청
+	if (AssetsToLoad.Num() > 0)
+	{
+		FStreamableManager& Streamable = UAssetManager::GetStreamableManager();
+		
+		// 캡처용 변수 복사
+		TSoftObjectPtr<USkeletalMesh> SoftMesh = GunData->WeaponSkeletalMesh;
+		TSoftObjectPtr<UAnimSequence> SoftFireAnim = GunData->FireAnimation;
+		TSoftObjectPtr<UAnimSequence> SoftReloadAnim = GunData->ReloadAnimation;
+		TSoftObjectPtr<UStaticMesh> SoftShellMesh = GunData->ShellMesh;
+		TSoftObjectPtr<UAnimMontage> SoftPlayerReloadAnim = GunData->PlayerReloadAnimation;
+		TSoftObjectPtr<UAnimMontage> SoftPlayerFireAnim = GunData->PlayerFireAnimation;
+
+		// 람다(Lambda)를 이용해 로딩이 완료된 시점에 포인터 캐싱 및 메시 적용
+		Streamable.RequestAsyncLoad(AssetsToLoad, FStreamableDelegate::CreateLambda([this, SoftMesh, SoftFireAnim, SoftReloadAnim, SoftShellMesh, SoftPlayerReloadAnim, SoftPlayerFireAnim]()
+		{
+			if (!IsValid(this)) return;
+
+			if (SoftMesh.IsValid() && m_WeaponMesh)
+			{
+				m_WeaponMesh->SetSkeletalMesh(SoftMesh.Get());
+			}
+
+			m_FireAnimation = SoftFireAnim.Get();
+			m_ReloadAnimation = SoftReloadAnim.Get();
+			m_ShellMesh = SoftShellMesh.Get();
+			m_PlayerReloadAnimation = SoftPlayerReloadAnim.Get();
+			m_PlayerFireAnimation = SoftPlayerFireAnim.Get();
+
+			UC_Util::Print("Weapon Assets Async Loaded Successfully!", FColor::Green, 5.f);
+		}));
+	}
 }
 
 void AC_GunBase::Gun_init()
@@ -302,6 +348,16 @@ FInventoryEntry AC_GunBase::GetUpdatedInventoryEntry()
 	}
 
 	return ItemEntry;
+}
+
+void AC_GunBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	
+	DOREPLIFETIME(AC_GunBase, m_Damage);
+	DOREPLIFETIME(AC_GunBase, m_CurrentAmmo);
+	DOREPLIFETIME(AC_GunBase, m_MaxAmmo);
+	DOREPLIFETIME(AC_GunBase, m_FireRate);
 }
 
 bool AC_GunBase::AttachToHand(USceneComponent* _ParentMesh)
