@@ -119,7 +119,7 @@ public:
 	/// 멤버변수 초기화,
 	/// TODO : 삭제하거나 아이템 매니저에서 데이터 테이블 받아와서 처리해야함. 개인적으로는 지우는게 나을 듯. 
 	/// </summary>
-	void Gun_init();
+	//void Gun_init();
 
 	/// <summary>
 	/// 탄약 체크 및 UI 업데이트 (사격 가능하면 true 반환)

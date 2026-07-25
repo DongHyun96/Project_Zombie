@@ -69,7 +69,7 @@ public:
 	/// <summary>
 	/// 멤버변수 초기화
 	/// </summary>
-	void Melee_init();
+	//void Melee_init();
 
 	/// <summary>
 	/// 마우스 왼쪽 버튼 클릭 (공격 시작)

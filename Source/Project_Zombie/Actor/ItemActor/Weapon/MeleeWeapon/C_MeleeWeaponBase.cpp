@@ -27,7 +27,7 @@ void AC_MeleeWeaponBase::BeginPlay()
 {
 	Super::BeginPlay();
 
-	Melee_init();
+	//Melee_init();
 }
 
 void AC_MeleeWeaponBase::Tick(float DeltaTime)
@@ -39,7 +39,7 @@ void AC_MeleeWeaponBase::PostEditChangeProperty(FPropertyChangedEvent& PropertyC
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 
-	Melee_init();
+	//Melee_init();
 }
 
 bool AC_MeleeWeaponBase::InitializeItemActor(const FWeaponData* InRawData)

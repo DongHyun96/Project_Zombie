@@ -62,7 +62,7 @@ void AC_GunBase::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	Gun_init();
+	//Gun_init();
 	m_Collision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	m_Collision->OnComponentBeginOverlap.AddDynamic(this, &AC_GunBase::OnMainColliderBeginOverlap);
 }
@@ -77,7 +77,7 @@ void AC_GunBase::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEv
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 
-	Gun_init();
+	//Gun_init();
 }
 
 bool AC_GunBase::InitializeItemActor(const FWeaponData* InRawData)
@@ -325,7 +325,7 @@ void AC_GunBase::SpawnShellEject()
 void AC_GunBase::InitFromInventoryEntry(const FInventoryEntry& InEntry)
 {
 	ItemEntry = InEntry;
-	Gun_init();
+	//Gun_init();
 }
 
 FInventoryEntry AC_GunBase::GetUpdatedInventoryEntry()
