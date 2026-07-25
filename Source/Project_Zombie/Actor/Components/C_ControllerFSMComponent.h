@@ -47,7 +47,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void OnTurnInPlaceFin();
 	
-	
 private:
 	
 	/// <summary>
@@ -55,11 +54,25 @@ private:
 	/// </summary>
 	void HandleFSMTransition();
 
-	/// <summary>
-	/// 각 State에 알맞은 Controller 값 setting
-	/// </summary>
-	void HandleFSMStates();
+private:
+	
+	void SetControllerRotState(EPlayerControllerRotState _NewRotState);
 
+	UFUNCTION(Server, Reliable)
+	void Server_SetControllerRotState(EPlayerControllerRotState _NewRotState);
+	
+	/// <summary>
+	/// 현재 State에 따라 각 캐릭터 Rotation 값 set 
+	/// </summary>
+	void SetEachRotValueByCurState();
+
+	UFUNCTION()
+	void OnRep_PlayerControllerRotState();
+
+public:
+	
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+	
 private:
 	
 	class AC_BasicPlayer*				m_OwnerPlayer{};
@@ -67,14 +80,7 @@ private:
 
 protected:
 	
-	UPROPERTY(VisibleAnywhere)
-	EPlayerControllerRotState			m_PlayerControllerRotState{};
-
-protected:
-
-	float m_DeltaYaw{};
-
-public:
-	float GetDeltaYaw() const { return m_DeltaYaw; }
+	UPROPERTY(ReplicatedUsing = "OnRep_PlayerControllerRotState", VisibleAnywhere, BlueprintReadOnly)
+	EPlayerControllerRotState m_PlayerControllerRotState{};
 
 };

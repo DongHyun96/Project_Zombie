@@ -8,12 +8,15 @@
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Net/UnrealNetwork.h"
 #include "Utility/C_Util.h"
 
 
 UC_ControllerFSMComponent::UC_ControllerFSMComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
+	
+	SetIsReplicatedByDefault(true);
 }
 
 
@@ -39,27 +42,23 @@ void UC_ControllerFSMComponent::TickComponent(float DeltaTime, ELevelTick TickTy
 	if (!m_OwnerPlayer->IsLocallyControlled()) return;
 	
 	HandleFSMTransition();
-	HandleFSMStates();
 }
 
 void UC_ControllerFSMComponent::OnTurnInPlaceFin()
 {
-	m_PlayerControllerRotState = EPlayerControllerRotState::IdleStopState;
+	if (m_OwnerPlayer->IsLocallyControlled())
+		SetControllerRotState(EPlayerControllerRotState::IdleStopState);
 }
 
 void UC_ControllerFSMComponent::HandleFSMTransition()
 {
 	if (m_OwnerPlayer->IsFreeLook())
 	{
-		m_PlayerControllerRotState = EPlayerControllerRotState::FreeLookState;
+		SetControllerRotState(EPlayerControllerRotState::FreeLookState);
 		return;
 	}
 
 	const bool bIsMovingOrFalling = m_PlayerMovement->Velocity.SizeSquared() > 0.f; 
-	
-	// Idle -> Turn in place state
-	// 0 360
-	m_DeltaYaw = UKismetMathLibrary::NormalizedDeltaRotator(m_OwnerPlayer->GetControlRotation(), m_OwnerPlayer->GetActorRotation()).Yaw;
 
 	switch (m_PlayerControllerRotState)
 	{
@@ -68,17 +67,21 @@ void UC_ControllerFSMComponent::HandleFSMTransition()
 		/* IdleStopState -> Moving State Transition */
 		if (bIsMovingOrFalling)
 		{
-			m_PlayerControllerRotState = EPlayerControllerRotState::MovingState;
+			SetControllerRotState(EPlayerControllerRotState::MovingState);
 			return;
 		}
 		
+		// Idle -> Turn in place state
+		// 0 360
+		const float DeltaYaw = UKismetMathLibrary::NormalizedDeltaRotator(m_OwnerPlayer->GetControlRotation(), m_OwnerPlayer->GetActorRotation()).Yaw;
+		
 		// TurnInPlace 처리 불가 각도
-		if (FMath::Abs(m_DeltaYaw) <= 90.f) return;
+		if (FMath::Abs(DeltaYaw) <= 90.f) return;
 
 		/* IdleStopState -> TurnInPlaceState Transition*/
 		{
-			m_PlayerControllerRotState = EPlayerControllerRotState::TurnInPlaceState;
-			m_OwnerPlayer->GetTurnInPlaceComponent()->StartTurnInPlaceMotion(m_DeltaYaw > 90.f);
+			SetControllerRotState(EPlayerControllerRotState::TurnInPlaceState);
+			m_OwnerPlayer->GetTurnInPlaceComponent()->StartTurnInPlaceMotion(DeltaYaw > 90.f);
 		}
 	}
 		return;
@@ -90,7 +93,7 @@ void UC_ControllerFSMComponent::HandleFSMTransition()
 		if (bIsMovingOrFalling)
 		{
 			m_OwnerPlayer->GetTurnInPlaceComponent()->CancelTurnInPlaceMotionIfNecessary();
-			m_PlayerControllerRotState = EPlayerControllerRotState::MovingState;
+			SetControllerRotState(EPlayerControllerRotState::MovingState);
 		}
 	}
 		return;
@@ -98,31 +101,41 @@ void UC_ControllerFSMComponent::HandleFSMTransition()
 	{
 		/* MovingState -> IdleStopState */
 		if (!bIsMovingOrFalling)
-			m_PlayerControllerRotState = EPlayerControllerRotState::IdleStopState;
+			SetControllerRotState(EPlayerControllerRotState::IdleStopState);
 	}
 		return;
 	case EPlayerControllerRotState::FreeLookState:
 	{
 		// 맨 위의 AnyState to FreeLook 처리가 들어오지 않은 상황이면, FreeLook 상태가 최초 해제된 상황
 		// Idle Stop State로 우선 Default State로 처리
-		m_PlayerControllerRotState = EPlayerControllerRotState::IdleStopState;
+		SetControllerRotState(EPlayerControllerRotState::IdleStopState);
 	}
 		return;
 	}
 }
 
-void UC_ControllerFSMComponent::HandleFSMStates()
+void UC_ControllerFSMComponent::SetControllerRotState(EPlayerControllerRotState _NewRotState)
 {
+	if (m_PlayerControllerRotState == _NewRotState) return;
+	
+	m_PlayerControllerRotState = _NewRotState;
 
-	//// 현재 플레이어가 조준(견착) 중이라면, 어떤 상태든 관계없이 컨트롤러 회전 동기화
-	//if (m_OwnerPlayer->GetAimComponent() && m_OwnerPlayer->GetAimComponent()->IsAiming())
-	//{
-	//	m_OwnerPlayer->bUseControllerRotationYaw = true;  // 캐릭터가 카메라 방향을 정면으로 바라봄
-	//	m_PlayerMovement->bUseControllerDesiredRotation = false;
-	//	m_PlayerMovement->bOrientRotationToMovement = false; // 이동 방향으로 캐릭터가 돌지 않음
-	//	return; // 조준 중일 때는 아래 일반 상태 설정을 무시하고 리턴
-	//}
+	// 새로 반영된 RotValue에 따른 각 Rot 값 수정
+	SetEachRotValueByCurState();
 
+	// 서버 환경에서의 로컬 플레이어를 제외한 나머지 플레이어들은 동기화 요청을 보내주어야 한다 (서버 쪽 로컬 플레이어는 알아서 replicate 처리가 됨)
+	if (m_OwnerPlayer->IsLocallyControlled() && !m_OwnerPlayer->HasAuthority())
+		Server_SetControllerRotState(_NewRotState);
+}
+
+void UC_ControllerFSMComponent::Server_SetControllerRotState_Implementation(EPlayerControllerRotState _NewRotState)
+{
+	m_PlayerControllerRotState = _NewRotState;
+	SetEachRotValueByCurState(); // 서버도 클라이언트와 똑같은 Rotation 플래그 설정값을 가지게끔 처리
+}
+
+void UC_ControllerFSMComponent::SetEachRotValueByCurState()
+{
 	switch (m_PlayerControllerRotState)
 	{
 	case EPlayerControllerRotState::IdleStopState:
@@ -154,5 +167,17 @@ void UC_ControllerFSMComponent::HandleFSMStates()
 	}
 		return;
 	}
+}
+
+void UC_ControllerFSMComponent::OnRep_PlayerControllerRotState()
+{
+	SetEachRotValueByCurState(); // Rotation 값 동기화 처리
+}
+
+void UC_ControllerFSMComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	
+	DOREPLIFETIME(UC_ControllerFSMComponent, m_PlayerControllerRotState);
 }
 

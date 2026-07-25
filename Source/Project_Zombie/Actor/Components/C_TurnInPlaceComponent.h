@@ -58,6 +58,17 @@ public:
 	/// <param name="_RequestToServer"> : 재생 성공 시 서버에 해당 모션 동기화 요청을 넣을 건지 </param>
 	/// <returns> : 처리할 수 없다면 return false </returns>
 	bool StartTurnInPlaceMotion(bool _IsRight, bool _RequestToServer = true);
+
+private:
+	
+	/// <summary>
+	/// Local 환경에서 TurnInPlace를 끊어야 하는 상황이라면, 해당 상황 서버에 동기화 처리 요청 
+	/// </summary>
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_RequestCancelTurnInPlaceMotion();
+	
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_CancelTurnInPlaceMotion();
 	
 private:
 	
@@ -67,7 +78,7 @@ private:
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_RequestTurnInPlaceMotion(bool _IsRight);
 
-	UFUNCTION(Server, Reliable)
+	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_StartTurnInPlaceMotion(bool _IsRight);
 
 private:
