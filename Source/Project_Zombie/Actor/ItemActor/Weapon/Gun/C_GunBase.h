@@ -79,8 +79,8 @@ protected:
 
 	// 이 무기의 원본 데이터 및 동적 데이터(CustomData)를 보유하는 통합 Entry
 	// TODO : Lagacy로 지워질 예정
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Data")
-	FInventoryEntry			ItemEntry;
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Data")
+	//FInventoryEntry			ItemEntry;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Effects|Shell")
 	TObjectPtr<class UNiagaraSystem> m_ShellEjectNiagaraSystem;
@@ -103,7 +103,7 @@ private:
 
 protected:
 #if WITH_EDITOR
-	// 에디터에서 프로퍼티(속성)가 변경될 때마다 호출되는 엔진 함수.
+	// 에디터에서 프로퍼티(속성)가 변경될 때마다 호출되는 엔진 함수. TODO : 이제 init함수가 바뀌어서 사용하지 않음.
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
 
@@ -134,10 +134,10 @@ public:
 	// 리팩토링중....
 public:
 	// 인벤토리나 Pickup에서 Spawn/Attach 시 호출하여 데이터를 주입, TODO : ItemActor를 상속받게 하고 ItemActor에서 선언하기.
-	virtual void InitFromInventoryEntry(const FInventoryEntry& InEntry);
+	//virtual void InitFromInventoryEntry(const FInventoryEntry& InEntry);
 
 	// 액터에서 수정된 동적 정보(남은 탄약, 업그레이드 등)를 반영한 최신 Entry 반환, TODO : ItemActor를 상속받게 하고 ItemActor에서 선언하기.
-	virtual FInventoryEntry GetUpdatedInventoryEntry();
+	//virtual FInventoryEntry GetUpdatedInventoryEntry();
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	

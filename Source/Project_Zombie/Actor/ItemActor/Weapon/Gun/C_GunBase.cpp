@@ -206,6 +206,39 @@ void AC_GunBase::LoadAsyncAssets(const FWeaponData* InRawData)
 			UC_Util::Print("Weapon Assets Async Loaded Successfully!", FColor::Green, 5.f);
 		}));
 	}
+	
+	/*// 1. OwnerPlayer 유효성 검사
+	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled())
+	{
+		return;
+	}
+
+	// 2. PlayerController 가져오기 및 검사
+	APlayerController* PC = Cast<APlayerController>(m_OwnerPlayer->GetController());
+	if (!PC)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[%s] PlayerController가 유효하지 않습니다."), *GetName());
+		return;
+	}
+
+	// 3. HUD(AC_UIManager) 가져오기 및 검사
+	AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD());
+	if (!UIManager)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[%s] UIManager(HUD)를 찾을 수 없거나 형변환에 실패했습니다."), *GetName());
+		return;
+	}
+
+	// 4. MainHUDWidget 가져오기 및 검사
+	UC_GameMainHUD* MainWidget = UIManager->GetMainHUDWidget(); // 실제 반환 타입 클래스로 맞춰주세요
+	if (!MainWidget)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[%s] MainHUDWidget이 아직 생성되지 않았습니다."), *GetName());
+		return;
+	}
+
+	// 5. 모든 포인터가 유효할 때만 안전하게 실행
+	MainWidget->ToggleAmmoInfoVisibility(true, EFireMode::FullAuto, m_CurrentAmmo, m_MaxAmmo);*/
 }
 
 /*void AC_GunBase::Gun_init()
@@ -322,13 +355,15 @@ void AC_GunBase::SpawnShellEject()
 	}
 }
 
+/*
 void AC_GunBase::InitFromInventoryEntry(const FInventoryEntry& InEntry)
 {
 	ItemEntry = InEntry;
 	//Gun_init();
 }
+*/
 
-FInventoryEntry AC_GunBase::GetUpdatedInventoryEntry()
+/*FInventoryEntry AC_GunBase::GetUpdatedInventoryEntry()
 {
 	// 실시간으로 변한 수치(예: CurAmmo)를 CustomData에 다시 구겨넣어서 최신화
 	FGunCustomData* GunCustomData = ItemEntry.CustomData.GetMutablePtr<FGunCustomData>();
@@ -348,7 +383,7 @@ FInventoryEntry AC_GunBase::GetUpdatedInventoryEntry()
 	}
 
 	return ItemEntry;
-}
+}*/
 
 void AC_GunBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
