@@ -264,7 +264,7 @@ struct FThrowableData : public FWeaponData
     GENERATED_BODY()
     
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    UAnimMontage* m_ThrowMontage{};
+    TSoftObjectPtr<UAnimMontage> m_ThrowMontage{};
     
     // 핀 제거 가능 여부 
     // 핀 제거 동작 몽타주를 넣을 것인가?
@@ -292,13 +292,13 @@ struct FThrowableData : public FWeaponData
     
     // 전략 패턴 : 폭발 기능 클래스
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Throwable|Launch")
-    TSubclassOf<class UObject> m_ExplodeStrategyClass{};
+    TSoftClassPtr<UObject> m_ExplodeStrategyClass{};
     
     // 장판 데미지 영역 클래스
     // 일단 화염병 전용으로 AC_FireDamageArea를 사용하지만, 나중에 다른 장판 데미지 영역이 생기면 수정 예정	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Throwable|Fire Damage Area")
     // TODO : 전방선언으로 우선 사용하는데 문제가 생기면 그냥 빼버리기
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Throwable|Damage Area")
-    TSubclassOf<class AC_FireDamageArea> m_FireDamageAreaClass{};
+    TSoftClassPtr<class AC_FireDamageArea> m_FireDamageAreaClass{};
     
     // 폭발 반경
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Throwable|Explosion")
@@ -314,7 +314,7 @@ struct FThrowableData : public FWeaponData
     
     // 폭발 이펙트 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Throwable|Effect")
-    TObjectPtr<UParticleSystem> m_ExplosionEffect{};
+    TSoftObjectPtr<UParticleSystem> m_ExplosionEffect{};
 
     // 폭발 이펙트 크기 (1.0 = 기본 크기)
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Throwable|Effect")

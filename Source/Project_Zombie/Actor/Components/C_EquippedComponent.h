@@ -73,6 +73,9 @@ public: // TODO : 이 Test block 지우기
 	void Server_TestSpawnAllWeapons();
 
 public:
+	
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_RequestSpawnEquippedActor(int32 SlotIndex, const FInventoryEntry& ItemData);
 
 	/// <summary>
 	/// 현재 손에 든 무기 바꾸기 (LOCAL 환경에서 바로 실행되는 함수)
@@ -164,7 +167,7 @@ private:
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_SetCurWeaponIdx(uint8 _NewIdx);
 	
-protected:
+public:
 	
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	

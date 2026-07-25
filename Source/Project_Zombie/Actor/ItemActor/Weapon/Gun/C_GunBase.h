@@ -36,8 +36,9 @@ protected:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Mesh", meta = (AllowPrivateAccess = "true"))
 	class USkeletalMeshComponent* m_WeaponMesh;		// 정적정보 - 상연, 데이터 테이블에서 가져와서 초기화 해주기.
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon|Components", meta = (DisplayName = "DataComponent"))
-	class UC_GunDataTableComponent* m_DataCom;
+	// TODO : Lagacy로 삭제 예정
+	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon|Components", meta = (DisplayName = "DataComponent"))
+	//class UC_GunDataTableComponent* m_DataCom;
 
 	// AI Enemy가 Gun을 사용하는 처리 기능 담당
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI", meta = (DisplayName = "AIGunUsageComponent"))
@@ -45,15 +46,19 @@ protected:
 	
 protected:
 	// 총이 갖는 최종 데미지
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Weapon|Stats")
 	float					m_Damage;
 
 	// 현재 남아있는 총알 수
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Weapon|Stats")
 	int32					m_CurrentAmmo;
 
 	// 총이 갖는 최종 MaxAmmo
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Weapon|Stats")
 	int32					m_MaxAmmo;
 
 	// 총이 갖는 최종 FireRate
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Weapon|Stats")
 	float					m_FireRate;
 
 	// 총이 갖는 최종 ShellEjectImpulse(탄피 배출에 가하는 힘), TODO : 아마 나중에 Actor로 만든게 아니라 나이아가라등으로 바꾸면서 사라질 수 도? 
@@ -73,8 +78,9 @@ protected:
 	TObjectPtr<class UStaticMesh> m_ShellMesh;				// 정적정보. - 상연, 데이터 테이블에서 가져와서 초기화 해주기.
 
 	// 이 무기의 원본 데이터 및 동적 데이터(CustomData)를 보유하는 통합 Entry
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Data")
-	FInventoryEntry			ItemEntry;
+	// TODO : Lagacy로 지워질 예정
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Data")
+	//FInventoryEntry			ItemEntry;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Effects|Shell")
 	TObjectPtr<class UNiagaraSystem> m_ShellEjectNiagaraSystem;
@@ -102,7 +108,7 @@ private:
 
 protected:
 #if WITH_EDITOR
-	// 에디터에서 프로퍼티(속성)가 변경될 때마다 호출되는 엔진 함수.
+	// 에디터에서 프로퍼티(속성)가 변경될 때마다 호출되는 엔진 함수. TODO : 이제 init함수가 바뀌어서 사용하지 않음.
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
 
@@ -114,12 +120,11 @@ protected:
 
 public:
 	
-	virtual bool InitializeItemActor(const FWeaponData* InRawData) override;
-	
 	/// <summary>
-	/// 멤버변수 초기화
+	/// 멤버변수 초기화,
+	/// TODO : 삭제하거나 아이템 매니저에서 데이터 테이블 받아와서 처리해야함. 개인적으로는 지우는게 나을 듯. 
 	/// </summary>
-	void Gun_init();
+	//void Gun_init();
 
 	/// <summary>
 	/// 탄약 체크 및 UI 업데이트 (사격 가능하면 true 반환)
@@ -134,11 +139,18 @@ public:
 	// 리팩토링중....
 public:
 	// 인벤토리나 Pickup에서 Spawn/Attach 시 호출하여 데이터를 주입, TODO : ItemActor를 상속받게 하고 ItemActor에서 선언하기.
-	virtual void InitFromInventoryEntry(const FInventoryEntry& InEntry);
+	//virtual void InitFromInventoryEntry(const FInventoryEntry& InEntry);
 
 	// 액터에서 수정된 동적 정보(남은 탄약, 업그레이드 등)를 반영한 최신 Entry 반환, TODO : ItemActor를 상속받게 하고 ItemActor에서 선언하기.
-	virtual FInventoryEntry GetUpdatedInventoryEntry();
+	//virtual FInventoryEntry GetUpdatedInventoryEntry();
 
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	
+	virtual bool InitializeItemActor(const FWeaponData* InRawData) override;
+	
+protected:
+	virtual void LoadAsyncAssets(const FWeaponData* InRawData) override;
+	
 public:
 	USkeletalMeshComponent* GetWeaponMesh() const { return m_WeaponMesh; }
 
