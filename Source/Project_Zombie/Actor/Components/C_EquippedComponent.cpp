@@ -26,8 +26,9 @@ void UC_EquippedComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	
+	// 이게 왜 리슨서버에서 클라이언트는 nullptr가 나오는거지?
 	m_OwnerPlayer = Cast<AC_BasicPlayer>(GetOwner());
+	
 	if (!m_OwnerPlayer)
 	{
 		UC_Util::Print("From UC_EquippedComponent::BeginPlay : OwnerPlayer init failed!", FColor::Red, 10.f);
