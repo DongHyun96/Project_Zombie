@@ -19,7 +19,7 @@
 
 AC_GrenadeLauncher::AC_GrenadeLauncher()
 {
-
+	m_FireMode = EFireMode::Single;
 }
 
 bool AC_GrenadeLauncher::OnStartFire(AC_BasicPlayer* _WeaponUser)

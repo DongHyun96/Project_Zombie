@@ -81,7 +81,10 @@ public:
 	/// <summary>
 	// void PlayAttackEffects();
 
-
+public:
+	
+	virtual void UpdateAmmoInfoHUDForDrawEnd() override;
+	
 protected:
 
 	// Hand Socket Name (각 MeleeWeapon 블루프린트에서 Name 초기화 해줄 것)

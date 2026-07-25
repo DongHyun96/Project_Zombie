@@ -16,6 +16,9 @@ AC_ShotGun::AC_ShotGun()
 	m_PelletCount = 8;				// 총알 갯수
 	m_SpreadAngle = 6.0f;			// 집탄률
 	m_SingleShellInsertTime = 0.6f; // 1발당 0.6초
+
+	// 실질적으로 점사는 아니지만, UI 표기 상 Burst 이미지 느낌이 ShotGun과 비슷해서 Burst로 넣어둠
+	m_FireMode = EFireMode::Burst;
 }
 
 bool AC_ShotGun::OnStartFire(AC_BasicPlayer* _WeaponUser)

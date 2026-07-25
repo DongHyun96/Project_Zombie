@@ -12,6 +12,7 @@
 UC_TurnInPlaceComponent::UC_TurnInPlaceComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
+	SetIsReplicatedByDefault(true);
 }
 
 void UC_TurnInPlaceComponent::BeginPlay()
@@ -26,44 +27,6 @@ void UC_TurnInPlaceComponent::BeginPlay()
 	}
 	
 	InitTurnInPlaceMontages();
-}
-
-bool UC_TurnInPlaceComponent::StartTurnInPlaceMotion(float _YawRotDelta)
-{
-	// PoseState, HandState 및 Yaw Delta 값에 따른 Turn in place 몽타주 Animation 고르기
-	TMap<EHandState, FTurnInPlaceMontages>& PoseTargetMap	= m_OwnerPlayer->IsCrouching() ? m_CrouchTurnInPlaceMontages : m_StandTurnInPlaceMontages;
-	FTurnInPlaceMontages* TargetTurnInPlaceMontages			= PoseTargetMap.Find(m_OwnerPlayer->GetHandState());
-	
-	if (!TargetTurnInPlaceMontages)
-	{
-		UC_Util::Print("From TurinInPlaceComponent::StartTurnInPlaceMotion : Some HandState TurnInPlace montage is missing", FColor::Red, 10.f);
-		return false;
-	}
-	 
-	const TArray<UAnimMontage*>& TurnInPlaceMontagesToPlay = (_YawRotDelta > 90.f) ? TargetTurnInPlaceMontages->TurnRightMontages : TargetTurnInPlaceMontages->TurnLeftMontages;
-
-	if (TurnInPlaceMontagesToPlay.IsEmpty())
-	{
-		UC_Util::Print("From TurinInPlaceComponent::StartTurnInPlaceMotion : Some TurnInPlace montage is missing", FColor::Red, 10.f);
-		return false;
-	}
-	
-	// 이미 해당 Animation 을 재생중인 상황 (Addit group으로 체크함)
-	if (m_OwnerPlayer->GetMesh()->GetAnimInstance()->Montage_IsPlaying(TurnInPlaceMontagesToPlay[1])) return false;
-
-	// Default full body + Addit Lower body TurnInPlace 재생 처리
-	if (m_OwnerPlayer->GetAimComponent()->IsAiming() || m_OwnerPlayer->GetAimComponent()->IsADS())
-	{
-		//UC_Util::Print("TurnInPlace Lower", FColor::MakeRandomColor(), 10.f);
-		m_OwnerPlayer->PlayAnimMontage(TurnInPlaceMontagesToPlay[1]);
-	}
-	else
-	{
-		for (UAnimMontage* Montage : TurnInPlaceMontagesToPlay)
-			m_OwnerPlayer->PlayAnimMontage(Montage);
-	}
-	
-	return true;
 }
 
 void UC_TurnInPlaceComponent::CancelTurnInPlaceMotionIfNecessary()
@@ -88,6 +51,65 @@ void UC_TurnInPlaceComponent::CancelTurnInPlaceMotionIfNecessary()
 		if (PlayerAnimInstance->Montage_IsPlaying(TurnLeftMontage))
 			PlayerAnimInstance->Montage_Stop(0.2f, TurnLeftMontage);
 	}
+}
+
+void UC_TurnInPlaceComponent::Server_RequestTurnInPlaceMotion_Implementation(bool _IsRight)
+{
+	// 해당 Player의 TurnInPlace 모션을 전역적으로 뿌려줌 (해당 당사자는 자신의 화면에서 이미 TurnInPlace 처리를 했음 -> 이미 TurnInPlace 중이라면 씹는 것으로 처리할 것)
+	Multicast_StartTurnInPlaceMotion(_IsRight);
+}
+
+bool UC_TurnInPlaceComponent::Server_RequestTurnInPlaceMotion_Validate(bool _IsRight)
+{
+	return true;
+}
+
+void UC_TurnInPlaceComponent::Multicast_StartTurnInPlaceMotion_Implementation(bool _IsRight)
+{
+	if (m_OwnerPlayer->IsLocallyControlled()) return; // 자기자신이 플레이 중인 Player는 요청을 보내기 전에 선으로 이미 해당 모션을 취한 상황
+	StartTurnInPlaceMotion(_IsRight, false); // Server에 해당 모션이 성공했을 때 재요청 x
+}
+
+bool UC_TurnInPlaceComponent::StartTurnInPlaceMotion(bool _IsRight, bool _RequestToServer)
+{
+	// PoseState, HandState 및 Yaw Delta 값에 따른 Turn in place 몽타주 Animation 고르기
+	TMap<EHandState, FTurnInPlaceMontages>& PoseTargetMap	= m_OwnerPlayer->IsCrouching() ? m_CrouchTurnInPlaceMontages : m_StandTurnInPlaceMontages;
+	FTurnInPlaceMontages* TargetTurnInPlaceMontages			= PoseTargetMap.Find(m_OwnerPlayer->GetHandState());
+	
+	if (!TargetTurnInPlaceMontages)
+	{
+		UC_Util::Print("From TurinInPlaceComponent::StartTurnInPlaceMotion : Some HandState TurnInPlace montage is missing", FColor::Red, 10.f);
+		return false;
+	}
+	
+	const TArray<UAnimMontage*>& TurnInPlaceMontagesToPlay = _IsRight ? TargetTurnInPlaceMontages->TurnRightMontages : TargetTurnInPlaceMontages->TurnLeftMontages;
+
+	if (TurnInPlaceMontagesToPlay.IsEmpty())
+	{
+		UC_Util::Print("From TurinInPlaceComponent::StartTurnInPlaceMotion : Some TurnInPlace montage is missing", FColor::Red, 10.f);
+		return false;
+	}
+	
+	// 이미 해당 Animation 을 재생중인 상황 (Addit group으로 체크함)
+	if (m_OwnerPlayer->GetMesh()->GetAnimInstance()->Montage_IsPlaying(TurnInPlaceMontagesToPlay[1])) return false;
+
+	// Default full body + Addit Lower body TurnInPlace 재생 처리
+	if (m_OwnerPlayer->GetAimComponent()->IsAiming() || m_OwnerPlayer->GetAimComponent()->IsADS())
+	{
+		//UC_Util::Print("TurnInPlace Lower", FColor::MakeRandomColor(), 10.f);
+		m_OwnerPlayer->PlayAnimMontage(TurnInPlaceMontagesToPlay[1]);
+	}
+	else
+	{
+		for (UAnimMontage* Montage : TurnInPlaceMontagesToPlay)
+			m_OwnerPlayer->PlayAnimMontage(Montage);
+	}
+
+	// 자신의 Local Player -> TurnInPlace 처리 완료
+	// TurnInPlace 일어났다고 나머지 사람들에게 뿌리기
+	if (_RequestToServer) Server_RequestTurnInPlaceMotion(_IsRight);
+	
+	return true;
 }
 
 void UC_TurnInPlaceComponent::InitTurnInPlaceMontages()

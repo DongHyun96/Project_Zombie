@@ -47,16 +47,28 @@ protected:
 public:
 	
 	/// <summary>
-	/// Turn in place 모션 재생 처리 시작 
-	/// </summary>
-	/// <param name="_YawRotDelta"> : Controller Rot와 Player Actor Row의 Delta값 중 Yaw 값</param>
-	/// <returns> : 처리할 수 없다면 return false </returns>
-	bool StartTurnInPlaceMotion(float _YawRotDelta);
-	
-	/// <summary>
 	/// 움직임이 시작되는 등의 행동이 이루어질 때, TurnInPlace 모션이 이미 재생중이었다면 해당 재생을 끊어주는 처리를 해야한다
 	/// </summary>
 	void CancelTurnInPlaceMotionIfNecessary();
+
+	/// <summary>
+	/// Turn in place 모션 재생 처리 시작 (Local)
+	/// </summary>
+	/// <param name="_IsRight"> : TurnInPlace 방향 </param>
+	/// <param name="_RequestToServer"> : 재생 성공 시 서버에 해당 모션 동기화 요청을 넣을 건지 </param>
+	/// <returns> : 처리할 수 없다면 return false </returns>
+	bool StartTurnInPlaceMotion(bool _IsRight, bool _RequestToServer = true);
+	
+private:
+	
+	/// <summary>
+	/// Server 쪽 TurnInPlace 모션 request (로컬 플레이어는 자기자신의 캐릭터 미리 turnInPlace 동작 처리)
+	/// </summary>
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_RequestTurnInPlaceMotion(bool _IsRight);
+
+	UFUNCTION(Server, Reliable)
+	void Multicast_StartTurnInPlaceMotion(bool _IsRight);
 
 private:
 	

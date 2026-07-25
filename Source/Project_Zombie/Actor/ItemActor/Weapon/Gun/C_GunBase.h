@@ -89,6 +89,11 @@ protected:
 	// 연사 타이머를 관리하기 위한 핸들
 	FTimerHandle m_FireTimerHandle;
 
+protected:
+	
+	// 이 총기의 FireMode 종류 (한 종류로만 설정되도록 정해짐)
+	EFireMode m_FireMode{};
+	
 private:
 
 	// 이거 희민님이 지정한 오른손 소켓 그냥 써도 되면 그냥 쓰기
@@ -169,6 +174,8 @@ public:
 	/// <param name="_WeaponUser"> : 이 Weapon을 사용하는 Player 객체 </param>
 	/// <returns> : R키에 대한 처리가 필요없거나 실패했을 경우 return false </returns>
 	virtual bool Reload(AC_BasicPlayer* _WeaponUser) override;
+	
+	virtual void UpdateAmmoInfoHUDForDrawEnd() override;
 
 public:
 	
