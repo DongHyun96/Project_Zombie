@@ -58,7 +58,7 @@ public:
 
 protected:
 #if WITH_EDITOR
-	// 에디터에서 프로퍼티(속성)가 변경될 때마다 호출되는 엔진 함수입니다.
+	// 에디터에서 프로퍼티(속성)가 변경될 때마다 호출되는 엔진 함수입니다. TODO : 이제 init함수가 바뀌어서 사용하지 않음.
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
 
