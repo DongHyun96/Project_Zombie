@@ -202,6 +202,10 @@ private: // 예상 경로 표시 관련
 	void ClearPredictedPath();
 
 
+public:
+	
+	virtual void UpdateAmmoInfoHUDForDrawEnd() override;
+	
 	/* Socket Name 관련 */
 protected: 
 

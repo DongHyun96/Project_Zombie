@@ -19,6 +19,9 @@ enum class EPlayerControllerRotState : uint8
 	FreeLookState		// 시점 고정 상태
 };
 
+/// <summary>
+/// Player 각 상황 별 Rotation 상태 전이 처리 담당 component
+/// </summary>
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class PROJECT_ZOMBIE_API UC_ControllerFSMComponent : public UActorComponent
 {

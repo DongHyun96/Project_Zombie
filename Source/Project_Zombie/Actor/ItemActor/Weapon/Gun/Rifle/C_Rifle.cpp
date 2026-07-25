@@ -16,7 +16,7 @@
 
 AC_Rifle::AC_Rifle()
 {
-
+	m_FireMode = EFireMode::FullAuto;
 }
 
 bool AC_Rifle::OnStartFire(AC_BasicPlayer* _WeaponUser)

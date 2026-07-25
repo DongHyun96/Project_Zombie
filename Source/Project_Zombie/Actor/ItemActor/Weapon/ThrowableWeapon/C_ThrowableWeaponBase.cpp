@@ -262,6 +262,8 @@ bool AC_ThrowableWeaponBase::AttachToHand(USceneComponent* _ParentMesh)
 	if (!_ParentMesh) return false;
 	AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(_ParentMesh->GetOwner());
 	if (!Player) return false; // 장착 시도하는 Owner Character가 Player형이 아닌 경우, return false
+
+	PRINT_LOCAL(GetWorld(), "Gun - AttachingToHand", FColor::Red, 10.f);
 	
 	// 투척류를 장착하는 경우, 투척류 상태 초기화
 	ResetThrowableState();
@@ -277,10 +279,6 @@ bool AC_ThrowableWeaponBase::AttachToHand(USceneComponent* _ParentMesh)
 	// bIsCharging       = false;
 	// bIsOnThrowProcess = false;
 
-	// Main HUD Throwable 종류로 초기화
-	if (m_OwnerPlayer && m_OwnerPlayer->IsLocallyControlled())
-		UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility(true, EFireMode::Single, 1, 1);
-
 	// 이 처리는 왜 해줬는지 잘 기억은 안남 (아마 Attach 하기전에 처리를 해주어야 똑바로 위치처리가 되어서 해주었던 것 같음)
 	// TODO : 필요하다면 그때가서 풀기 (아마 딱히 필요 없어보임)
 	// SetActorRelativeLocation(FVector::ZeroVector);
@@ -293,7 +291,10 @@ bool AC_ThrowableWeaponBase::AttachToHand(USceneComponent* _ParentMesh)
 	);
 	
 	if (bIsAttached)
+	{
 		Player->SetHandState(EHandState::WeaponThrowable);
+		UpdateAmmoInfoHUDForDrawEnd();
+	}
 	
 	return bIsAttached;
 }
@@ -319,6 +320,10 @@ bool AC_ThrowableWeaponBase::AttachToHolster(USceneComponent* _ParentMesh)
 		FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true),
 		s_HolsterSocketName
 	);
+	
+	if (bIsAttached)
+		m_OwnerPlayer = Cast<AC_BasicPlayer>(_ParentMesh->GetOwner());
+	
 	return bIsAttached;
 }
 
@@ -1043,4 +1048,10 @@ void AC_ThrowableWeaponBase::ClearPredictedPath()
 		// 점 제거 끝난 후 Spline 한번만 갱신
 		m_PathSpline->UpdateSpline();
 	}
+}
+
+void AC_ThrowableWeaponBase::UpdateAmmoInfoHUDForDrawEnd()
+{
+	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled()) return;
+	UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility(true, EFireMode::Single, 1, 1);
 }

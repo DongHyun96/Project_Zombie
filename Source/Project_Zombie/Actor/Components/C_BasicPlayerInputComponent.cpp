@@ -348,17 +348,17 @@ void UC_BasicPlayerInputComponent::ToggleInventoryWidget()
 
 void UC_BasicPlayerInputComponent::EquipMainWeapon()
 {
-	Player->GetEquippedComponent()->Server_ChangeCurWeapon(EWeaponSlot::MainWeapon);
+	Player->GetEquippedComponent()->ChangeCurWeapon(EWeaponSlot::MainWeapon);
 }
 
 void UC_BasicPlayerInputComponent::EquipMeleeWeapon()
 {
-	Player->GetEquippedComponent()->Server_ChangeCurWeapon(EWeaponSlot::MeleeWeapon);
+	Player->GetEquippedComponent()->ChangeCurWeapon(EWeaponSlot::MeleeWeapon);
 }
 
 void UC_BasicPlayerInputComponent::EquipThrowable()
 {
-	Player->GetEquippedComponent()->Server_ChangeCurWeapon(EWeaponSlot::ThrowableWeapon);
+	Player->GetEquippedComponent()->ChangeCurWeapon(EWeaponSlot::ThrowableWeapon);
 }
 
 void UC_BasicPlayerInputComponent::ToggleArmed()

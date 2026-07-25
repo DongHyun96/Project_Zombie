@@ -10,7 +10,7 @@
 
 AC_Sniper::AC_Sniper()
 {
-
+	m_FireMode = EFireMode::Single;
 }
 
 bool AC_Sniper::OnStartFire(AC_BasicPlayer* _WeaponUser)

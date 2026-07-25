@@ -93,6 +93,16 @@ public:
 
 public:
 	
+	/// <summary>
+	/// <para> DrawEnd 시, 각 무기에 맞는 표기할 무기 정보 띄우기 처리 (Local Player에 한해 처리) </para>
+	/// <para> 이 무기의 주인이 Locally Controlled 되는 중인지 체킹하여 valid하면 띄움 </para>
+	/// <para> 실질적인 DrawEnd 시에 호출 및 리슨서버 환경에서 EquippedCom에서 현재 들고 있는 무기가 바뀌는 Rep 처리 시, </para>
+	/// <para> 해당 함수를 이용할 예정 </para>
+	/// </summary>
+	virtual void UpdateAmmoInfoHUDForDrawEnd() PURE_VIRTUAL(AC_WeaponBase::UpdateAmmoInformUIOnDrawEnd, );
+
+public:
+	
 	UAnimMontage* GetDrawMontage() const { return m_DrawMontage; }
 	UAnimMontage* GetSheathMontage() const { return m_SheathMontage; }
 
@@ -103,17 +113,29 @@ public:
 	void SetOwnerPlayer(AC_BasicPlayer* _OwnerPlayer) { m_OwnerPlayer = _OwnerPlayer; }
 	
 	UC_ItemLinkComponent* GetLinkComp() {return ItemLinkComp;}
-	
+
 	void SetItemRowName(FName InRowName) { m_WeaponRowName = InRowName; }
+
 protected:
 
-	// 이 Weapon을 자신의 Slot에 장착중인 OwnerPlayer
-	UPROPERTY(Replicated, BlueprintReadOnly)
-	AC_BasicPlayer* m_OwnerPlayer{};
-	
 	// 무기의 고유 RowName (서버에서 설정되면 클라이언트로 복제됨)
 	UPROPERTY(ReplicatedUsing = OnRep_WeaponRowName, Transient)
 	FName m_WeaponRowName{};
+
+private:
+	
+	UFUNCTION()
+	void OnRep_OwnerPlayer();
+	
+protected:
+	
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+	
+protected:
+
+	// 이 Weapon을 자신의 Slot에 장착중인 OwnerPlayer
+	UPROPERTY(ReplicatedUsing = OnRep_OwnerPlayer)
+	AC_BasicPlayer* m_OwnerPlayer{};
 	
 protected:
 	// TODO : 이 두 애니메이션도 데이터 테이블에 넣어주는게 나을 것 같긴한데.

@@ -39,33 +39,39 @@ void UC_EquippedComponent::BeginPlay()
 	//EquipInvenComp->SetMaxSlots(static_cast<int32>(EWeaponSlot::Max));
 }
 
-void UC_EquippedComponent::Multicast_SetSlotWeapon_Implementation(EWeaponSlot _TargetSlot, AC_WeaponBase* _WeaponToEquip)
+void UC_EquippedComponent::TickComponent(float DeltaTime, enum ELevelTick TickType,
+	FActorComponentTickFunction* ThisTickFunction)
 {
-	// 서버 쪽 환경이면 x (Player로 따지면 안됨)
-	if (GetWorld()->GetNetMode() != NM_Client)
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	
+	/*
+	if (!m_OwnerPlayer)
 	{
-		PRINT_LOCAL(GetWorld(), "From Multi_ :: Server checked!", FColor::MakeRandomColor(), 20.f);
-		return;
+		PRINT_LOCAL(GetWorld(), "No OwnerPlayer", FColor::Red, 1.f);
 	}
-	
-	PRINT_LOCAL(GetWorld(), "From Multi_ :: Client checked!", FColor::MakeRandomColor(), 20.f);
-	
-	
-	// 서버 쪽 먼저 업데이트 자기 알아서 처리, 클라이언트단만 SetSlotWeapon 처리를 해주면 됨
-	// if (m_OwnerPlayer->HasAuthority()) return;
-	
-	// 클라이언트단 SetSlotWeapon으로 맞추기
-	SetSlotWeapon(_TargetSlot, _WeaponToEquip);
+	else PRINT_LOCAL(GetWorld(), "Yes OwnerPlayer", FColor::Red, 1.f);*/
 }
 
-void UC_EquippedComponent::OnRep_Weapons()
+/*void UC_EquippedComponent::OnRep_Weapons()
 {
 	PRINT_LOCAL(GetWorld(), "OnRep_Weapons", FColor::MakeRandomColor(), 10.f);
+
+	// OwnerPlayer 한번 더 초기화 (안정성 때문에 초기화 처리 한번 더 넣어줌)
+	for (AC_WeaponBase* Weapon : m_Weapons)
+		if (Weapon) Weapon->SetOwnerPlayer(m_OwnerPlayer);
+	
+	UpdateAmmoWidget();
 }
+
+void UC_EquippedComponent::OnRep_CurWeaponTypeIdx()
+{
+	PRINT_LOCAL(GetWorld(), "OnRep_CurWeaponTypeIdx : Current WeaponTypeIdx -> " + FString::FromInt(m_CurWeaponTypeIdx), FColor::MakeRandomColor(), 10.f);
+	UpdateAmmoWidget();
+}*/
 
 void UC_EquippedComponent::SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* WeaponToEquip)
 {
-	switch (TargetSlot)
+	/*switch (TargetSlot)
 	{
 	case EWeaponSlot::MainWeapon: PRINT_LOCAL(GetWorld(), "MainWeapon SetSlot", FColor::MakeRandomColor(), 10.f);
 		break;
@@ -77,7 +83,7 @@ void UC_EquippedComponent::SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* 
 		break;
 	case EWeaponSlot::Max:
 		break;
-	}
+	}*/
 	
 	if (TargetSlot == EWeaponSlot::None || TargetSlot == EWeaponSlot::Max)
 	{
@@ -103,9 +109,6 @@ void UC_EquippedComponent::SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* 
             m_NextWeaponTypeIdx  = static_cast<uint8>(EWeaponSlot::None);
             m_CurWeaponTypeIdx   = static_cast<uint8>(EWeaponSlot::None);
         	m_OwnerPlayer->SetHandState(EHandState::UnArmed);
-
-        	if (m_OwnerPlayer->IsLocallyControlled())
-        		UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility(false);
         }
 
         return;
@@ -165,8 +168,6 @@ void UC_EquippedComponent::Server_RequestSpawnEquippedActor_Implementation(int32
 
 void UC_EquippedComponent::Server_TestSpawnAllWeapons_Implementation()
 {
-	PRINT_LOCAL(GetWorld(), "Server_TestSpawnAllWeapons_Implementation", FColor::MakeRandomColor(), 10.f);
-
 	// Test용으로 무기 미리 스폰 (서버 환경에서만 -> 나머지 클라이언트들은 알아서 업데이트 처리를 할 예정)
 	for (const TTuple<EWeaponSlot, TSubclassOf<AC_WeaponBase>>& WeaponClassPair : m_WeaponClassToSpawn)
 	{
@@ -187,6 +188,8 @@ void UC_EquippedComponent::Server_SetSlotWeapon_Implementation(EWeaponSlot _Targ
 	PRINT_LOCAL(GetWorld(), "Server_SetSlotWeapon_Implementation", FColor::MakeRandomColor(), 10.f);
 
 	SetSlotWeapon(_TargetSlot, _WeaponToEquip); // 서버 환경에서의 SetSlotWeapon 처리
+	UpdateAmmoWidget(); // 서버 환경 자기자신일 때의 UI 업데이트
+	
 	// Multicast_SetSlotWeapon(_TargetSlot, _WeaponToEquip); // 클라이언트단의 SetSlotWeapon도 호출해줌으로써 동기화 처리
 }
 
@@ -195,35 +198,8 @@ bool UC_EquippedComponent::Server_SetSlotWeapon_Validate(EWeaponSlot _TargetSlot
 	return true;
 }
 
-void UC_EquippedComponent::Server_ChangeCurWeapon_Implementation(EWeaponSlot _ChangeTo)
-{
-	ChangeCurWeapon(_ChangeTo); // 서버 환경에서의 ChangeCurWeapon 처리
-	Multicast_ChangeCurWeapon(_ChangeTo);
-}
-
-bool UC_EquippedComponent::Server_ChangeCurWeapon_Validate(EWeaponSlot _ChangeTo)
-{
-	return true;
-}
-
-void UC_EquippedComponent::Multicast_ChangeCurWeapon_Implementation(EWeaponSlot _ChangeTo)
-{
-	UWorld* World = GetWorld();
-	
-	if (World->GetNetMode() != NM_Client)
-	{
-		PRINT_LOCAL(World, "From Multi_ :: Server checked!", FColor::Red, 10.f);
-		return;
-	}
-	
-	PRINT_LOCAL(World, "From Multi_ :: Client checked!", FColor::Red, 10.f);
-	ChangeCurWeapon(_ChangeTo);
-}
-
 bool UC_EquippedComponent::ChangeCurWeapon(EWeaponSlot _ChangeTo)
 {
-	PRINT_LOCAL(GetWorld(), "ChangeCurWeapon", FColor::MakeRandomColor(), 20.f);
-	
 	const uint8 ChangeToIdx = static_cast<uint8>(_ChangeTo);
 	const uint8 NoneSlotIdx = static_cast<uint8>(EWeaponSlot::None);
 
@@ -278,6 +254,7 @@ bool UC_EquippedComponent::ChangeCurWeapon(EWeaponSlot _ChangeTo)
 		if (_ChangeTo == EWeaponSlot::None || !m_Weapons[m_NextWeaponTypeIdx])
 		{
 			m_CurWeaponTypeIdx  = NoneSlotIdx;
+			Server_SetCurWeaponIdx(m_CurWeaponTypeIdx);
 			m_NextWeaponTypeIdx = NoneSlotIdx;
 			m_OwnerPlayer->SetHandState(EHandState::UnArmed);
 			
@@ -286,7 +263,10 @@ bool UC_EquippedComponent::ChangeCurWeapon(EWeaponSlot _ChangeTo)
 		
 		// 다음 무기가 있을 때
 		m_OwnerPlayer->PlayAnimMontage(m_Weapons[m_NextWeaponTypeIdx]->GetDrawMontage());
+		Server_PlayDrawMontage(m_Weapons[m_NextWeaponTypeIdx]); // 서버 쪽 DrawMontage play 요청 ( 나 재생함)
 		m_bIsCurrentlyChangingWeapon = true;
+
+		
 		return true;
 	}
 	
@@ -296,7 +276,8 @@ bool UC_EquippedComponent::ChangeCurWeapon(EWeaponSlot _ChangeTo)
 	// TODO : 총을 들고 Aiming 상태였을 경우, 카메라 위치 원상복구 처리를 해주었음
 
 	// 현재 무기 집어넣는 동작에 Notify 함수를 걸어둠 -> 다음 무기 Draw로 무기전환 처리가 이루어짐
-	m_OwnerPlayer->PlayAnimMontage(m_Weapons[m_CurWeaponTypeIdx]->GetSheathMontage());
+	m_OwnerPlayer->PlayAnimMontage(GetCurWeapon()->GetSheathMontage());
+	Server_PlaySheathMontage(GetCurWeapon());
 	m_bIsCurrentlyChangingWeapon = true;
 	
 	return true;
@@ -305,6 +286,7 @@ bool UC_EquippedComponent::ChangeCurWeapon(EWeaponSlot _ChangeTo)
 void UC_EquippedComponent::Server_ToggleArmed_Implementation()
 {
 	ToggleArmed();
+	UpdateAmmoWidget(); // 서버 환경 자기자신일 때의 UI 업데이트
 	Multicast_ToggleArmed();
 }
 
@@ -439,20 +421,20 @@ void UC_EquippedComponent::OnInventorySlotChanged(int32 SlotIndex, const FInvent
 
 void UC_EquippedComponent::OnSheathEnd()
 {
-	// Player HUD 업데이트
-	if (m_OwnerPlayer->IsLocallyControlled())
-		UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility(false);
-
+	if (!m_OwnerPlayer->IsLocallyControlled()) return;
+	
 	/* 무기를 바꾸는 도중에 SlotWeapon 장착 해제 예외 처리 -> Sheath 처리를 진행 중이던 무기가 Slot에서 빠졌을 때 */
 	// 이 예외처리는 추후 좀비가 Player총기를 뺏을 수 있는 상황을 고려해서 넣어둠
 	if (!GetCurWeapon())
 	{
 		m_CurWeaponTypeIdx = m_NextWeaponTypeIdx;
-
+		Server_SetCurWeaponIdx(m_CurWeaponTypeIdx);
+		
 		// Swap할 다음 무기가 Valid하면, 다음 무기로 그대로 Swap 처리
 		if (GetCurWeapon())
 		{
 			m_OwnerPlayer->PlayAnimMontage(GetCurWeapon()->GetDrawMontage());
+			Server_PlayDrawMontage(GetCurWeapon());
 			return;
 		}
 
@@ -461,6 +443,7 @@ void UC_EquippedComponent::OnSheathEnd()
 		m_CurWeaponTypeIdx           = static_cast<uint8>(EWeaponSlot::None);
 		m_NextWeaponTypeIdx          = static_cast<uint8>(EWeaponSlot::None);
 		m_bIsCurrentlyChangingWeapon = false;
+		Server_SetCurWeaponIdx(m_CurWeaponTypeIdx);
 		return;
 	}
 	
@@ -468,10 +451,12 @@ void UC_EquippedComponent::OnSheathEnd()
 	
 	// 현재 무기 무기집에 붙이기
 	GetCurWeapon()->AttachToHolster(m_OwnerPlayer->GetMesh());
+	Server_AttachToHolster(GetCurWeapon()); // 서버 쪽 환경에서도 Attaching 처리 (자동적으로 나머지 환경에서도 Attach 처리가 이루어진다)
 	
 	// TODO : 여기에 총기류 예외처리를 넣어놨었음 (AimPress bool값 변경하는 처리가 들어가는 처리)
 	
 	m_CurWeaponTypeIdx = m_NextWeaponTypeIdx;
+	Server_SetCurWeaponIdx(m_CurWeaponTypeIdx);
 	
 	if (!GetCurWeapon()) // 다음 무기 종류가 Valid하지 않은 상황(UnArmed 처리)
 	{
@@ -482,10 +467,13 @@ void UC_EquippedComponent::OnSheathEnd()
 
 	// 다음 무기가 Valid한 경우, 다음 무기 Draw (가장 Trivial한 case)
 	m_OwnerPlayer->PlayAnimMontage(GetCurWeapon()->GetDrawMontage());
+	Server_PlayDrawMontage(GetCurWeapon());
 }
 
 void UC_EquippedComponent::OnDrawEnd()
 {
+	if (!m_OwnerPlayer->IsLocallyControlled()) return;
+	
 	m_bIsCurrentlyChangingWeapon = false;
 
 	const uint8 NoneSlotIdx = static_cast<uint8>(EWeaponSlot::None);
@@ -497,13 +485,101 @@ void UC_EquippedComponent::OnDrawEnd()
 	{
 		m_NextWeaponTypeIdx = NoneSlotIdx;
 		m_CurWeaponTypeIdx  = NoneSlotIdx;
+		Server_SetCurWeaponIdx(m_CurWeaponTypeIdx);
 		m_OwnerPlayer->SetHandState(EHandState::UnArmed);
 		return;
 	}
 	
 	m_Weapons[m_NextWeaponTypeIdx]->AttachToHand(m_OwnerPlayer->GetMesh());
+	Server_AttachToHand(m_Weapons[m_NextWeaponTypeIdx]); // 서버 쪽 무기도 Attach 처리 (Replicate 처리로 알아서 나머지 환경에서도 Attaching처리 된다)
+	
 	m_CurWeaponTypeIdx  = m_NextWeaponTypeIdx;
 	m_NextWeaponTypeIdx = NoneSlotIdx;
+	Server_SetCurWeaponIdx(m_CurWeaponTypeIdx);
+}
+
+void UC_EquippedComponent::UpdateAmmoWidget()
+{
+	// 이 플레이어가 내가 플레이 중인 플레이어일 때, Ammo Info 관련 업데이트 처리
+	if (!m_OwnerPlayer->IsLocallyControlled()) return;
+
+	// 현재 들고 있는 무기가 없을 때
+	if (!GetCurWeapon())
+	{
+		UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility(false);
+		return;
+	}
+	
+	// 현재 들고 있는 무기가 존재할 때, 해당 무기의 HUD 초기화 함수 사용
+	GetCurWeapon()->UpdateAmmoInfoHUDForDrawEnd();
+}
+
+void UC_EquippedComponent::Server_PlayDrawMontage_Implementation(AC_WeaponBase* _TargetWeapon)
+{
+	Multicast_PlayDrawMontage(_TargetWeapon);
+}
+
+bool UC_EquippedComponent::Server_PlayDrawMontage_Validate(AC_WeaponBase* _TargetWeapon)
+{
+	return true;
+}
+
+void UC_EquippedComponent::Multicast_PlayDrawMontage_Implementation(AC_WeaponBase* _TargetWeapon)
+{
+	// LocalPlayer인 경우, 이미 Local 환경에서 모든 처리를 끝낸 상황
+	if (m_OwnerPlayer->IsLocallyControlled()) return;
+	
+	if (!_TargetWeapon) return;
+	m_OwnerPlayer->PlayAnimMontage(_TargetWeapon->GetDrawMontage());
+}
+
+void UC_EquippedComponent::Server_PlaySheathMontage_Implementation(AC_WeaponBase* _TargetWeapon)
+{
+	Multicast_PlaySheathMontage(_TargetWeapon);
+}
+
+void UC_EquippedComponent::Multicast_PlaySheathMontage_Implementation(AC_WeaponBase* _TargetWeapon)
+{
+	// LocalPlayer인 경우, 이미 Local 환경에서 모든 처리를 끝낸 상황
+	if (m_OwnerPlayer->IsLocallyControlled()) return;
+	
+	if (!_TargetWeapon) return;
+	m_OwnerPlayer->PlayAnimMontage(_TargetWeapon->GetSheathMontage());
+}
+
+bool UC_EquippedComponent::Server_PlaySheathMontage_Validate(AC_WeaponBase* _TargetWeapon)
+{
+	return true;
+}
+
+void UC_EquippedComponent::Server_AttachToHolster_Implementation(AC_WeaponBase* _TargetWeapon)
+{
+	if (_TargetWeapon) _TargetWeapon->AttachToHolster(m_OwnerPlayer->GetMesh());
+}
+
+bool UC_EquippedComponent::Server_AttachToHolster_Validate(AC_WeaponBase* _TargetWeapon)
+{
+	return true;
+}
+
+void UC_EquippedComponent::Server_AttachToHand_Implementation(AC_WeaponBase* _TargetWeapon)
+{
+	if (_TargetWeapon) _TargetWeapon->AttachToHand(m_OwnerPlayer->GetMesh());
+}
+
+bool UC_EquippedComponent::Server_AttachToHand_Validate(AC_WeaponBase* _TargetWeapon)
+{
+	return true;
+}
+
+void UC_EquippedComponent::Server_SetCurWeaponIdx_Implementation(uint8 _NewIdx)
+{
+	m_CurWeaponTypeIdx = _NewIdx;
+}
+
+bool UC_EquippedComponent::Server_SetCurWeaponIdx_Validate(uint8 _NewIdx)
+{
+	return true;
 }
 
 void UC_EquippedComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
@@ -513,4 +589,6 @@ void UC_EquippedComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProp
 	// 리플리케이트 하고싶은 멤버를 등록 여기서
 	DOREPLIFETIME(UC_EquippedComponent, m_Weapons);
 	DOREPLIFETIME(UC_EquippedComponent, m_CurWeaponTypeIdx);
+	
+	// DOREPLIFETIME(UC_EquippedComponent, m_bIsCurrentlyChangingWeapon);
 }

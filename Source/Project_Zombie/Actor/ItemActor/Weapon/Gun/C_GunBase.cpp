@@ -70,7 +70,7 @@ void AC_GunBase::BeginPlay()
 void AC_GunBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
+	
 }
 
 void AC_GunBase::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
@@ -397,15 +397,12 @@ void AC_GunBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifeti
 
 bool AC_GunBase::AttachToHand(USceneComponent* _ParentMesh)
 {
+	PRINT_LOCAL(GetWorld(), "Gun - AttachingToHand", FColor::Red, 10.f);
+	
 	if (!_ParentMesh) return false;
 	AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(_ParentMesh->GetOwner());
 	if (!Player) return false; // 손에 장착 시도하는 Owner Character가 Player형이 아닌 경우, return false
 	if (Player != m_OwnerPlayer) return false; // 손에 장착 시도하는 Player가 무기주인인 경우가 아닌 경우 
-
-	
-	// TODO : 각 MeleeWeapon에 맞는 이미지 아이콘(?) 표시해주면 좋을 듯 (일단은 AmmoInfo쪽 정보 감추는 처리로 함)
-	if (m_OwnerPlayer->IsLocallyControlled())
-		UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility(true, EFireMode::FullAuto, m_CurrentAmmo, m_MaxAmmo); // TODO : FireMode 현재 FireMode로 넣어줄 것
 
 	const bool bIsAttached = AttachToComponent
 	(
@@ -415,7 +412,10 @@ bool AC_GunBase::AttachToHand(USceneComponent* _ParentMesh)
 	);
 	
 	if (bIsAttached)
+	{
 		Player->SetHandState(EHandState::WeaponGun);
+		UpdateAmmoInfoHUDForDrawEnd();
+	}
 	
 	return bIsAttached;
 }
@@ -432,6 +432,8 @@ bool AC_GunBase::AttachToHolster(USceneComponent* _ParentMesh)
 		FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true),
 		m_HolsterSocketName
 	);
+	
+	if (bIsAttached) m_OwnerPlayer = Player;
 	
 	return bIsAttached;
 }
@@ -454,6 +456,13 @@ bool AC_GunBase::OnFireEnd(AC_BasicPlayer* _WeaponUser)
 bool AC_GunBase::Reload(AC_BasicPlayer* _WeaponUser)
 {
 	return false;
+}
+
+void AC_GunBase::UpdateAmmoInfoHUDForDrawEnd()
+{
+	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled()) return;
+	
+	UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility(true, m_FireMode, m_CurrentAmmo, m_MaxAmmo);
 }
 
 void AC_GunBase::OnMainColliderBeginOverlap

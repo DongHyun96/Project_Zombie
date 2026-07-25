@@ -166,6 +166,8 @@ bool AC_MeleeWeaponBase::AttachToHolster(USceneComponent* _ParentMesh)
 		m_HolsterSocketName
 	);
 	
+	if (bIsAttached) m_OwnerPlayer = Player;
+	
 	return bIsAttached;
 }
 
@@ -175,12 +177,9 @@ bool AC_MeleeWeaponBase::AttachToHand(USceneComponent* _ParentMesh)
 	AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(_ParentMesh->GetOwner());
 	if (!Player) return false; // 장착 시도하는 Owner Character가 Player형이 아닌 경우, return false
 
+	PRINT_LOCAL(GetWorld(), "Melee - AttachingToHand", FColor::Red, 10.f);
+	
 	m_OwnerPlayer = Player;
-
-	// Main HUD MeleeWeapon 종류로 초기화
-	// TODO : 각 MeleeWeapon에 맞는 이미지 아이콘(?) 표시해주면 좋을 듯 (일단은 AmmoInfo쪽 정보 감추는 처리로 함)
-	if (Player->IsLocallyControlled()) // OwnerPlayer가 자기자신인 경우에만 UI 업데이트
-		UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility(false);
 
 	const bool bIsAttached = AttachToComponent
 	(
@@ -190,7 +189,10 @@ bool AC_MeleeWeaponBase::AttachToHand(USceneComponent* _ParentMesh)
 	);
 	
 	if (bIsAttached)
-    		Player->SetHandState(EHandState::WeaponMelee);
+	{
+    	Player->SetHandState(EHandState::WeaponMelee);
+		UpdateAmmoInfoHUDForDrawEnd();
+	}
 	
 	return bIsAttached;
 }
@@ -235,4 +237,12 @@ void AC_MeleeWeaponBase::Attack(AC_BasicPlayer* _WeaponUser)
 
 	_WeaponUser->PlayAnimMontage(m_PlayerAttackAnimation);
 
+}
+
+void AC_MeleeWeaponBase::UpdateAmmoInfoHUDForDrawEnd()
+{
+	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled()) return;
+	
+	// MeleeWeapon의 경우 띄워줄 AmmoInfo 정보 필요 없음
+	UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility(false);
 }

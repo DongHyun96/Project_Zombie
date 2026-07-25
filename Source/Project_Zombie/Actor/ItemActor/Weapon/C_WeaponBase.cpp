@@ -3,10 +3,16 @@
 
 #include "C_WeaponBase.h"
 
+#include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/Components/ItemLinkComponent/C_ItemLinkComponent.h"
+
 #include "Engine/StreamableManager.h"
 #include "GameModeAndManager/C_ItemManager.h"
+
+#include "GameModeAndManager/C_UIManager.h"
 #include "Net/UnrealNetwork.h"
+#include "UI/MainHUD/C_GameMainHUD.h"
+
 
 AC_WeaponBase::AC_WeaponBase()
 {
@@ -82,11 +88,16 @@ void AC_WeaponBase::CancelAsyncLoad()
 	}
 }
 
-void AC_WeaponBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+void AC_WeaponBase::OnRep_OwnerPlayer()
+{
+}
+
+void AC_WeaponBase::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	
+	// 리플리케이트 하고싶은 멤버를 등록 여기서
 	DOREPLIFETIME(AC_WeaponBase, m_OwnerPlayer);
 	DOREPLIFETIME(AC_WeaponBase, m_WeaponRowName);
-	
 }
 
