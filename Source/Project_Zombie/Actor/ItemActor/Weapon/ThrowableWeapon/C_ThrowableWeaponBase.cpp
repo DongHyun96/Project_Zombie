@@ -366,6 +366,37 @@ bool AC_ThrowableWeaponBase::Reload(AC_BasicPlayer* _WeaponUser)
 	return OnStartCookInput();
 }
 
+bool AC_ThrowableWeaponBase::Server_DecreaseCurCount_Validate()
+{
+	return true;
+}
+
+void AC_ThrowableWeaponBase::Server_DecreaseCurCount_Implementation()
+{
+	if (ItemLinkComp)
+	{
+		if (FInventoryEntry* SlotEntry = ItemLinkComp->GetItemEntryPtr())
+		{
+			--SlotEntry->CurCount;
+			int32 Idx = ItemLinkComp->GetSlotIndex();
+			if (SlotEntry->CurCount <= 0)
+			{
+				SlotEntry->Clear();
+				SlotEntry->SlotIndex = Idx;
+			}
+			// TODO : 직후에 인벤토리를 업데이트 해주어야 함.
+
+			
+			// 서버에서 사용하면 이걸 써야 할 걸?
+			
+			ItemLinkComp->GetOwningInvenComp()->MarkSlotDirty(Idx);		
+			
+			
+			ItemLinkComp->GetOwningInvenComp()->OnInventorySlotChanged.Broadcast(Idx, *SlotEntry);
+		}
+	}
+}
+
 bool AC_ThrowableWeaponBase::OnFireOnGoing(AC_BasicPlayer* _WeaponUser)
 {
 	if (!_WeaponUser)
@@ -481,24 +512,10 @@ void AC_ThrowableWeaponBase::OnThrowThrowable()
 	// TODO : 멀티 환경에 맞게 조정해야 할 수 있음.
 	// 투척류는 아이템 갯수가 Ammo라고 보면된다.
 	// 투척하면 하나씩 줄여주고 0이 되면 해당 슬롯의 Entry를 비워준다.
-	if (ItemLinkComp)
-	{
-		if (FInventoryEntry* SlotEntry = ItemLinkComp->GetItemEntryPtr())
-		{
-			--SlotEntry->CurCount;
-			if (SlotEntry->CurCount == 0) SlotEntry->Clear();	
-			// TODO : 직후에 인벤토리를 업데이트 해주어야 함.
-
-			int32 Idx = ItemLinkComp->GetSlotIndex();
-			
-			// 서버에서 사용하면 이걸 써야 할 걸?
-			//ItemLinkComp->GetOwningInvenComp()->MarkSlotDirty(Idx);		
-			
-			
-			ItemLinkComp->GetOwningInvenComp()->OnInventorySlotChanged.Broadcast(Idx, *SlotEntry);
-		}
-	}
+	// 이 작업을 서버에서 처리하면 될 듯?
+	Server_DecreaseCurCount();
 	
+	// TODO : 던지고 Count 남아있으면 새로 스폰해주던지, 던질 때 가짜를 던지던지 해야함.
 }
 
 // ----------------- 쿠킹 관련 처리 -----------------

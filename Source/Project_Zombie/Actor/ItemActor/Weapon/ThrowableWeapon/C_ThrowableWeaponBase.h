@@ -52,6 +52,10 @@ public:
 	virtual bool OnFireEnd(AC_BasicPlayer* _WeaponUser) override;
 	virtual bool Reload(AC_BasicPlayer* _WeaponUser) override;
 	
+protected:
+	UFUNCTION(Server, Reliable, WithValidation)
+	virtual void Server_DecreaseCurCount();
+	
 public: // 애님 노티파이 관련
 
 	// Blueprint에서 사용 가능하도록 UFUNCTION으로 선언
