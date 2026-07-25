@@ -7,6 +7,7 @@
 
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/Components/ItemLinkComponent/C_ItemLinkComponent.h"
+#include "Engine/AssetManager.h"
 #include "GameModeAndManager/C_UIManager.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
 #include "Utility/C_Util.h"
@@ -19,14 +20,14 @@ AC_MeleeWeaponBase::AC_MeleeWeaponBase()
 	m_WeaponMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WeaponMesh"));
 	RootComponent = m_WeaponMesh;
 
-	m_DataCom = CreateDefaultSubobject<UC_MeleeDataTableComponent>(TEXT("DataComponent"));
+	//m_DataCom = CreateDefaultSubobject<UC_MeleeDataTableComponent>(TEXT("DataComponent"));
 }
 
 void AC_MeleeWeaponBase::BeginPlay()
 {
 	Super::BeginPlay();
 
-	Melee_init();
+	//Melee_init();
 }
 
 void AC_MeleeWeaponBase::Tick(float DeltaTime)
@@ -38,7 +39,7 @@ void AC_MeleeWeaponBase::PostEditChangeProperty(FPropertyChangedEvent& PropertyC
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 
-	Melee_init();
+	//Melee_init();
 }
 
 bool AC_MeleeWeaponBase::InitializeItemActor(const FWeaponData* InRawData)
@@ -47,27 +48,7 @@ bool AC_MeleeWeaponBase::InitializeItemActor(const FWeaponData* InRawData)
 	
 	const FMeleeData* MeleeData = static_cast<const FMeleeData*>(InRawData);
 	
-	if (!MeleeData)
-	{
-		UC_Util::Print("Failed Cast to const FMeleeData*", FColor::Red, 10.f);
-		return false;
-	}
-	
-	if (UStaticMesh* WeaponMeshAsset = (MeleeData->WeaponStaticMesh.LoadSynchronous()))
-	{
-		if (m_WeaponMesh)
-		{
-			m_WeaponMesh->SetStaticMesh(WeaponMeshAsset);
-		}
-	}
-	else
-	{
-		// 테이블에 에셋이 없을 때만 경고
-		UE_LOG(LogTemp, Warning, TEXT("데이터 테이블에 WeaponStaticMesh가 없음!"));
-	}
-	
-	// 에셋 캐싱
-	m_PlayerAttackAnimation = MeleeData->PlayerAttackAnimation.LoadSynchronous();
+
 	
 	// Base Stats 적용
 	float BaseDamage = MeleeData->BaseDamage;
@@ -95,6 +76,67 @@ bool AC_MeleeWeaponBase::InitializeItemActor(const FWeaponData* InRawData)
 	}
 	
 	return true;
+}
+
+
+void AC_MeleeWeaponBase::LoadAsyncAssets(const FWeaponData* InRawData)
+{
+	const FMeleeData* MeleeData = static_cast<const FMeleeData*>(InRawData);
+	if (!MeleeData)
+	{
+		UC_Util::Print("Failed Cast to const FMeleeData*", FColor::Red, 10.f);
+		return;
+	}
+
+	// 기존 로딩 핸들 취소 및 정리
+	CancelAsyncLoad();
+
+	// 비동기로 로드할 SoftObjectPath 목록 수집
+	TArray<FSoftObjectPath> AssetsToLoad;
+
+	if (!MeleeData->WeaponStaticMesh.IsNull())        AssetsToLoad.Add(MeleeData->WeaponStaticMesh.ToSoftObjectPath());
+	if (!MeleeData->PlayerAttackAnimation.IsNull())  AssetsToLoad.Add(MeleeData->PlayerAttackAnimation.ToSoftObjectPath());
+
+	if (AssetsToLoad.Num() > 0)
+	{
+		FStreamableManager& Streamable = UAssetManager::GetStreamableManager();
+
+		// 람다 안전 캡처용 SoftPointer 복사
+		TSoftObjectPtr<UStaticMesh>  SoftMesh       = MeleeData->WeaponStaticMesh;
+		TSoftObjectPtr<UAnimMontage> SoftAttackAnim = MeleeData->PlayerAttackAnimation; // 타입에 맞게 UAnimSequence/UAnimMontage 지정
+
+		AsyncLoadHandle = Streamable.RequestAsyncLoad(AssetsToLoad, FStreamableDelegate::CreateLambda([
+			this,
+			SoftMesh,
+			SoftAttackAnim
+		]()
+		{
+			if (!IsValid(this)) return;
+
+			// 1. 스태틱 메쉬 설정
+			if (SoftMesh.IsValid())
+			{
+				if (UStaticMeshComponent* StaticMeshComp = Cast<UStaticMeshComponent>(m_WeaponMesh))
+				{
+					StaticMeshComp->SetStaticMesh(SoftMesh.Get());
+				}
+			}
+
+			// 2. 애니메이션 에셋 캐싱
+			if (SoftAttackAnim.IsValid())
+			{
+				m_PlayerAttackAnimation = SoftAttackAnim.Get();
+			}
+
+			UC_Util::Print("Melee Weapon Assets Async Loaded Successfully!", FColor::Green, 5.f);
+
+			// 로딩 완료 후 핸들 정리
+			if (AsyncLoadHandle.IsValid())
+			{
+				AsyncLoadHandle.Reset();
+			}
+		}));
+	}
 }
 
 bool AC_MeleeWeaponBase::OnStartFire(AC_BasicPlayer* _WeaponUser)
@@ -153,7 +195,7 @@ bool AC_MeleeWeaponBase::AttachToHand(USceneComponent* _ParentMesh)
 	return bIsAttached;
 }
 
-void AC_MeleeWeaponBase::Melee_init()
+/*void AC_MeleeWeaponBase::Melee_init()
 {
 	if (!m_DataCom) return;
 
@@ -183,7 +225,7 @@ void AC_MeleeWeaponBase::Melee_init()
 	m_PlayerAttackAnimation = Cast<UAnimMontage>(m_DataCom->GetAssetData("PlayerAttackAnimation").LoadSynchronous());
 
 	if (!m_PlayerAttackAnimation) { UE_LOG(LogTemp, Warning, TEXT("PlayerAttackAnimation 로드 실패")); }
-}
+}*/
 
 void AC_MeleeWeaponBase::Attack(AC_BasicPlayer* _WeaponUser)
 {

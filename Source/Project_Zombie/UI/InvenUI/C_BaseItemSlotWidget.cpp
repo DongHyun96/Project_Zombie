@@ -9,6 +9,7 @@
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/Components/C_InvenComponent.h"
 #include "DragDropOperation/C_DragDropOperation.h"
+#include "GameModeAndManager/C_UIManager.h"
 #include "Utility/C_Util.h"
 
 void UC_BaseItemSlotWidget::UpdateSlot(const FInventoryEntry& ItemData, const FItemData* CoreData)
@@ -60,18 +61,27 @@ FReply UC_BaseItemSlotWidget::NativeOnMouseButtonDown(const FGeometry& InGeometr
 
 void UC_BaseItemSlotWidget::NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& OutOperation)
 {
+    PRINT_LOCAL(GetWorld(), "Try AssociatedInvenComp", FColor::Red, 5.f);
+    
     if (!AssociatedInvenComp) return;
 
     AC_BasicPlayer* Owner = Cast<AC_BasicPlayer>(GetOwningPlayerPawn());
+    PRINT_LOCAL(GetWorld(), "Try Owner", FColor::Red, 5.f);
     if (!Owner) return;
+    
+    const TArray<FInventoryEntry>& ItemArr = AssociatedInvenComp->GetInventoryItems();
+    PRINT_LOCAL(GetWorld(), "Try IsValidIndex", FColor::Red, 5.f);
+    
+    FString Msg = ItemArr[curSlotIdx].ItemRowName.ToString();
+    PRINT_LOCAL(GetWorld(), Msg, FColor::Red, 5.f);
+    if (!ItemArr.IsValidIndex(curSlotIdx) || ItemArr[curSlotIdx].ItemRowName == NAME_None) return;
 
     Owner->Server_RequestDragItemSlot(curSlotIdx, AssociatedInvenComp);
 
-    const TArray<FInventoryEntry>& ItemArr = AssociatedInvenComp->GetInventoryItems();
-    if (!ItemArr.IsValidIndex(curSlotIdx)) return;
-
     FInventoryEntry entry = ItemArr[curSlotIdx];
+    PRINT_LOCAL(GetWorld(), "Try SetCurDraggedItem", FColor::Red, 5.f);
     if (!Owner->SetCurDraggedItem(entry, AssociatedInvenComp, curSlotIdx)) return;
+    PRINT_LOCAL(GetWorld(), "Success SetCurDraggedItem", FColor::Red, 5.f);
 
     UC_DragDropOperation* DragOperation = NewObject<UC_DragDropOperation>();
     InitDragVisual(DragOperation);

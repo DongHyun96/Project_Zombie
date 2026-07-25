@@ -18,11 +18,12 @@ private:
 
 protected:
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon|Components", meta = (DisplayName = "DataComponent"))
-	class UC_MeleeDataTableComponent* m_DataCom;
+	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon|Components", meta = (DisplayName = "DataComponent"))
+	//class UC_MeleeDataTableComponent* m_DataCom;
 
 protected:
 
+	
 	float						m_Damage;
 
 	// 현재 공격 버튼을 누르고 있는 상태인지 확인
@@ -57,7 +58,7 @@ public:
 
 protected:
 #if WITH_EDITOR
-	// 에디터에서 프로퍼티(속성)가 변경될 때마다 호출되는 엔진 함수입니다.
+	// 에디터에서 프로퍼티(속성)가 변경될 때마다 호출되는 엔진 함수입니다. TODO : 이제 init함수가 바뀌어서 사용하지 않음.
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
 
@@ -68,7 +69,7 @@ public:
 	/// <summary>
 	/// 멤버변수 초기화
 	/// </summary>
-	void Melee_init();
+	//void Melee_init();
 
 	/// <summary>
 	/// 마우스 왼쪽 버튼 클릭 (공격 시작)
@@ -80,7 +81,9 @@ public:
 	/// 공격 시 캐릭터 애니메이션 재생 함수(도입예정?)
 	/// <summary>
 	// void PlayAttackEffects();
-
+protected:
+	// 데이터 테이블의 에셋들을 비동기 로드하기 위한 함수, 무기마다 다를 수 있기 때문에 순수 가상 함수로 선언. return 값을 bool 처리 할까?
+	virtual void LoadAsyncAssets(const FWeaponData* InRawData) override;
 
 protected:
 

@@ -65,6 +65,9 @@ public: // TODO : 이 Test block 지우기
 
 public:
 	
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_RequestSpawnEquippedActor(int32 SlotIndex, const FInventoryEntry& ItemData);
+
 	/// <summary>
 	/// 무기 바꾸기 server 쪽으로 요청 
 	/// </summary>
