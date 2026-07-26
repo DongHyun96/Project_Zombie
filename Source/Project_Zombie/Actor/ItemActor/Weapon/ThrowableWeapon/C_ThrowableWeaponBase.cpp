@@ -7,6 +7,7 @@
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/Components/C_InvenComponent.h"
 #include "Actor/Components/ItemLinkComponent/C_ItemLinkComponent.h"
+#include "Actor/Components/C_EquippedComponent.h"
 #include "Area/C_FireDamageArea.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
@@ -14,6 +15,7 @@
 #include "Components/SplineComponent.h"
 #include "Components/SplineMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
+
 #include "Engine/AssetManager.h"
 #include "Engine/StaticMesh.h"
 
@@ -396,7 +398,6 @@ void AC_ThrowableWeaponBase::Server_DecreaseCurCount_Implementation()
 			
 			ItemLinkComp->GetOwningInvenComp()->MarkSlotDirty(Idx);		
 			
-			
 			ItemLinkComp->GetOwningInvenComp()->OnInventorySlotChanged.Broadcast(Idx, *SlotEntry);
 		}
 	}
@@ -521,6 +522,10 @@ void AC_ThrowableWeaponBase::OnThrowThrowable()
 	Server_DecreaseCurCount();
 	
 	// TODO : 던지고 Count 남아있으면 새로 스폰해주던지, 던질 때 가짜를 던지던지 해야함.
+
+	// int32 Idx = ItemLinkComp->GetSlotIndex();
+
+	// m_OwnerPlayer->GetEquippedComponent()->Server_RequestSpawnEquippedActor(static_cast<int32>(EWeaponSlot::ThrowableWeapon), )
 }
 
 // ----------------- 쿠킹 관련 처리 -----------------

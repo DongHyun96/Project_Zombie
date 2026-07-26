@@ -74,6 +74,7 @@ public: // TODO : 이 Test block 지우기
 
 public:
 	
+
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_RequestSpawnEquippedActor(int32 SlotIndex, const FInventoryEntry& ItemData);
 
