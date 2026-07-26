@@ -101,6 +101,8 @@ private:
 	void LookAction(const FInputActionValue& Value);
 	void JumpAction();
 	void CrouchAction();
+
+	void InteractionAction();
 	
 	
 	void FireStarted();

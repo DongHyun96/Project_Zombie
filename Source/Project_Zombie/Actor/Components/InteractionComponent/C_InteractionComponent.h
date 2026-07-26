@@ -27,8 +27,6 @@ public:
 	/// <summary>
 	/// 이 Actor 가 사용할 Collision과 Strategy 를 설정
 	/// </summary>
-	/// <param name="_InteractionSphere"></param>
-	/// <param name="_StrategyClass"></param>
 	UFUNCTION(BlueprintCallable, Category = "Interaction")
 	void SetupInteraction(UPrimitiveComponent* _InteractionCollision, TSubclassOf<UC_InteractionStrategyBase> _StrategyClass);
 	
@@ -45,16 +43,43 @@ public:
 	/// </summary>
 	bool CanBeInteractedBy(AC_BasicPlayer* _Interactor) const;
 
-private:
+public:
 
-	/// =============================
-	///		 Overlap 이벤트 처리 
-	/// =============================
+	/// <summary>
+	/// 상호작용 시도 (상호작용 시도한 플레이어의 InteractionComponent 에서 호출)
+	/// </summary>
+	void TryInteract();
+
+	/// <summary>
+	/// 상호작용 시도 (상호작용 Actor 의 InteractionComponent 에서 호출)
+	/// </summary>
+	bool ExecuteInteract(AC_BasicPlayer* _Interactor);
+
+	/// <summary>
+	///	상호작용 Actor
+	/// </summary>
+	AActor* GetFocusedTarget() const { return m_FocusedTarget.Get(); }
+	
+
+private: // Overlap 이벤트 처리
+
 	UFUNCTION()
 	void OnInteractionBeginOverlap(UPrimitiveComponent* _OverlappedComponent, AActor* _OtherActor, UPrimitiveComponent* _OtherComp, int32 _OtherBodyIndex, bool _bFromSweep, const FHitResult& _SweepResult);
 
 	UFUNCTION()
 	void OnInteractionEndOverlap(UPrimitiveComponent* _OverlappedComponent, AActor* _OtherActor, UPrimitiveComponent* _OtherComp, int32 _OtherBodyIndex);
+
+
+private: // 타이머 설정
+
+	/// <summary>
+	/// FoucesdTarget 를 업데이트
+	/// </summary>
+	void UpdateFocusedTarget();
+
+	void StartFocusUpdateTimer();
+
+	void StopFocusUpdateTimer();
 
 private:
 
@@ -96,9 +121,14 @@ private:
 	/// =====================================
 	/// 			상호작용 Actor
 	/// =====================================
+	// TWeakObjectPtr 를 사용하여 Actor 가 사라졌을 때 안전하게 처리
 	//	현재 InteractionSphere  와 겹쳐있는 상호작용 Actor 목록
 	UPROPERTY(Transient)
 	TArray<TWeakObjectPtr<AActor>> m_InteractionCandidates;
+
+	// 현재 가장 적합한 상호작용 Actor
+	UPROPERTY(transient)
+	TWeakObjectPtr<AActor> m_FocusedTarget;
 
 	// InteractionComponent 를 소유한 플레이어
 	// 아이템의 InteractionComponent 라면 nullptr
@@ -114,10 +144,10 @@ private:
 private:
 
 	UPROPERTY(EditAnywhere, Category = "Interaction")
-	float m_InteractionCheckInterval;
+	float m_FocusUpdateInterval;
 
 private:
 
 	/// 상호작용 완료 Timer
-	FTimerHandle m_InteractionTimerHandle;
+	FTimerHandle m_FocusUpdateTimerHandle;
 };

@@ -134,7 +134,7 @@ AC_BasicPlayer::AC_BasicPlayer()
 	m_PoseColliderHandlerComponent = CreateDefaultSubobject<UC_PoseColliderHandlerComponent>(TEXT("PoseColliderHandlerComponent"));
 
 	// Interaction Component
-	//m_InteractionComponent = CreateDefaultSubobject<UC_InteractionComponent>(TEXT("InteractionComponent"));
+	m_InteractionComponent = CreateDefaultSubobject<UC_InteractionComponent>(TEXT("InteractionComponent"));
 }
 
 
@@ -272,6 +272,11 @@ void AC_BasicPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	{
 		m_PlayerInputComponent->InitializePlayerInput(PlayerInputComponent, this);
 	}
+}
+
+UC_InteractionComponent* AC_BasicPlayer::GetInteractionComponent() const
+{
+	return m_InteractionComponent;
 }
 
 float AC_BasicPlayer::TakeDamage(float _Damage, FDamageEvent const& _DamageEvent, AController* _InstigatorController, AActor* _InstigatorActor)

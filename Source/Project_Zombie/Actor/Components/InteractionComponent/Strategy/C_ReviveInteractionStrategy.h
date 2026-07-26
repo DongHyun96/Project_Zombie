@@ -21,9 +21,7 @@ public:
 
 	virtual bool CanStartInteraction(AC_BasicPlayer* _Interactor, AActor* _TargetActor) const override;
 
-	virtual bool CanContinueInteraction(AC_BasicPlayer* _Interactor, AActor* _TargetActor) const override;
-
-	virtual void StartInteraction(AC_BasicPlayer* _Interactor, AActor* _TargetActor) override;
+	virtual bool StartInteraction(AC_BasicPlayer* _Interactor, AActor* _TargetActor) override;
 
 	virtual void CancleInteraction(AC_BasicPlayer* _Interactor, AActor* _TargetActor) override;
 

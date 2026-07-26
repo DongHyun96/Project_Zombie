@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Actor/Character/C_BasicCharacter.h"
+#include "Actor/Components/InteractionComponent/Interface/I_Interactable.h"
 #include "GenericTeamAgentInterface.h"
 #include "GlobalData.h" // TODO : FCursorItem curDraggedItem 때문에 넣었는데 문제 생기면 구조 바꿔야함.
 #include "C_BasicPlayer.generated.h"
@@ -64,7 +65,7 @@ class USphereComponent;
 struct FInputActionValue;
 
 UCLASS()
-class PROJECT_ZOMBIE_API AC_BasicPlayer : public AC_BasicCharacter, public IGenericTeamAgentInterface
+class PROJECT_ZOMBIE_API AC_BasicPlayer : public AC_BasicCharacter, public IGenericTeamAgentInterface, public II_Interactable
 {
 	GENERATED_BODY()
 
@@ -116,8 +117,8 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Components", meta = (DisplayName = "PoseColliderHandlerComponent"))
 	class UC_PoseColliderHandlerComponent* m_PoseColliderHandlerComponent{};
 	
-	//UPROPERTY(VisibleAnywhere, Category = "Components", meta = (DisplayName = "InteractionComponent"))
-	//class UC_InteractionComponent* m_InteractionComponent{};
+	UPROPERTY(VisibleAnywhere, Category = "Components", meta = (DisplayName = "InteractionComponent"))
+	class UC_InteractionComponent* m_InteractionComponent{};
 
 // [Status]
 protected:
@@ -476,6 +477,10 @@ public:
 
 	// Cotroller가 빙의할 때 실행되는 함수.
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+public:
+	// II_Interactable
+	virtual UC_InteractionComponent* GetInteractionComponent() const override;
 
 public:
 	// 데미지 처리 함수 
