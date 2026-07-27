@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Actor/Character/C_BasicCharacter.h"
+#include "Actor/Components/InteractionComponent/Interface/I_Interactable.h"
 #include "GenericTeamAgentInterface.h"
 #include "GlobalData.h" // TODO : FCursorItem curDraggedItem 때문에 넣었는데 문제 생기면 구조 바꿔야함.
 #include "C_BasicPlayer.generated.h"
@@ -15,16 +16,8 @@ UENUM(BlueprintType)
 enum class EPlayerState : uint8
 {
 	Idle,
-	Dead,
-};
-
-// 캐릭터 생명 상태
-UENUM(BlueprintType)
-enum class EPlayerLifeState : uint8
-{
-	Alive,
-	Downed,
 	GettingUp,
+	Dead,
 };
 
 // 이동 속도 결정 상태
@@ -64,7 +57,7 @@ class USphereComponent;
 struct FInputActionValue;
 
 UCLASS()
-class PROJECT_ZOMBIE_API AC_BasicPlayer : public AC_BasicCharacter, public IGenericTeamAgentInterface
+class PROJECT_ZOMBIE_API AC_BasicPlayer : public AC_BasicCharacter, public IGenericTeamAgentInterface, public II_Interactable
 {
 	GENERATED_BODY()
 
@@ -110,19 +103,16 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Components", meta = (DisplayName = "PoseColliderHandlerComponent"))
 	class UC_PoseColliderHandlerComponent* m_PoseColliderHandlerComponent{};
 	
-	//UPROPERTY(VisibleAnywhere, Category = "Components", meta = (DisplayName = "InteractionComponent"))
-	//class UC_InteractionComponent* m_InteractionComponent{};
+	UPROPERTY(VisibleAnywhere, Category = "Components", meta = (DisplayName = "InteractionComponent"))
+	class UC_InteractionComponent* m_InteractionComponent{};
 
 	UPROPERTY(VisibleAnywhere, Category = "Components", meta = (DisplayName = "PlayerProfileComponent"))
 	class UC_PlayerProfileComponent* m_PlayerProfileComponent{};
 	
 // [Status]
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Status")
+	UPROPERTY(ReplicatedUsing = OnRep_PlayerState, VisibleAnywhere, BlueprintReadOnly, Category = "Status")
 	EPlayerState		m_PlayerState;
-
-	UPROPERTY(ReplicatedUsing = OnRep_PlayerLifeState, VisibleAnywhere, BlueprintReadOnly, Category = "Status")
-	EPlayerLifeState 	m_PlayerLifeState;
 	
 	UPROPERTY(ReplicatedUsing = OnRep_PlayerPoseState, VisibleAnywhere, BlueprintReadOnly, Category = "Status")
 	EPlayerPoseState	m_PlayerPoseState;
@@ -242,7 +232,7 @@ protected:
 
 	// 구조 중인 플레이어를 참조하는 포인터
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Revive")
-	AC_BasicPlayer* m_RevivingPlayer;
+	AC_BasicPlayer* m_RevivingTarget;
 
 	// Strategy 로 뺌
 	// 부활 후 플레이어가 일어나기까지 걸리는 시간 
@@ -281,7 +271,7 @@ private:
 public:
 	
 	EPlayerState GetPlayerState() const { return m_PlayerState; }
-	void SetPlayerState(EPlayerState _NewState) { m_PlayerState = _NewState; }
+	//void SetPlayerState(EPlayerState _NewState) { m_PlayerState = _NewState; }
 	
 	EPlayerPoseState GetPlayerMoveState() const { return m_PlayerPoseState; }
 	void SetPlayerMoveState(EPlayerPoseState _MoveSpeedState) { m_PlayerPoseState = _MoveSpeedState; }
@@ -299,9 +289,11 @@ public:
 
 	UC_BasicPlayerAimComponent* GetAimComponent() const { return m_BasicPlayerAimComponent; }
 
-	//UC_InteractionComponent* GetInteractionComponent() const { return m_InteractionComponent; }
 	
 	UC_PlayerProfileComponent* GetPlayerProfileComponent() const { return m_PlayerProfileComponent; }
+
+	// interface II_Interactable 구현
+	virtual UC_InteractionComponent* GetInteractionComponent() const override;
 
 	FCursorItem GetCurDraggedItem() {return curDraggedItem;}
 	
@@ -312,7 +304,11 @@ public:
 	void ClearCurDraggedItem();
 public:
 
+	bool IsAlive() const { return m_PlayerState == EPlayerState::Idle; }
+	bool IsGettingUp() const { return m_PlayerState == EPlayerState::GettingUp; }
 	bool IsDead() const { return m_PlayerState == EPlayerState::Dead; }
+
+	bool IsRevivingPlayer() const { return m_IsRevivingPlayer; }
 
 	bool IsJumpInput() const { return m_IsJumpInput; }
 	void SetIsJumpInput(bool _IsJumpInput) { m_IsJumpInput = _IsJumpInput; }
@@ -327,6 +323,7 @@ public:
 
 	bool IsSprinting() const { return m_PlayerPoseState == EPlayerPoseState::Sprint; }
 	bool IsCrouching() const { return m_PlayerPoseState == EPlayerPoseState::Crouch; }
+
 
 public:
 	/// <summary>
@@ -372,25 +369,34 @@ public:
 
 private: // 캐릭터 그로기 처리
 
-	/// 실제 죽음 처리 함수
-	void Die();
+	// 체력이 0이 되어 Downed 상태로 변경
+	void EnterDownedState();
+
+	// 플레이어를 GettingUp 상태로 변경
+	void StartGettingUp(float _GetUpDuration);
+
+	// 구조 완료 후 GettingUp 상탤를 Idle 상태로 변경
+	void FinishGettingUp();
+
+	// 플레이어 상태 변경 시, 캐릭터에 적용
+	void ApplyPlayerState();
 
 	// Server함수 (생명 상태 변경)
 protected:
-	// 서버에서 플레이어 생명 상태 변경 처리 후 클라이언트에 리플리케이트
-	UFUNCTION()
-	void OnRep_PlayerLifeState();
+
+	//UFUNCTION()
+	void OnRep_PlayerState();
 
 	// 현재 플레이어를 구출 중인지 서버에서 처리 후 클라이언트에 리플리케이트
 	UFUNCTION()
 	void OnRep_IsRevivingPlayer();
 
-	// 플레이어를 GettingUp 상태로 변경하고 서버에서 처리
-	void StartGettingUpOnServer(float _GetUpDuration);
-
+	// 서버에 플레이어 상태 변경 요청
+	void SetPlayerStateOnServer(EPlayerState _NewState);
 
 	// Server함수 (자세 변경)
 protected:
+
 	
 	// 서버에서 자세 변경 처리 후 클라이언트에 리플리케이트
 	UFUNCTION()
@@ -459,6 +465,8 @@ public:
 	void SetCameraFOV(float _FOV);
 
 	USphereComponent* GetInteractionSphere() { return m_InteractionSphere; }
+
+	AC_BasicPlayer* GetRevivingTarget() const { return m_RevivingTarget; }
 
 private:
 	EPlayerPoseState DetermineMoveSpeedState() const;

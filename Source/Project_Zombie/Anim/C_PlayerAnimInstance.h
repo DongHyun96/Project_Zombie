@@ -24,7 +24,7 @@ protected:
 	class AC_BasicPlayer* m_Character;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player Basic State")
-	bool m_bIsDead;
+	EPlayerState m_PlayerState;
 
 	// HandState
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player Basic State")
@@ -54,6 +54,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
 	bool	m_IsCrouch;
 
+	// 플레이어 부활 중인지 여부
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Revive")
+	bool	m_IsRevivingPlayer;
+
 	// 에임 오프셋용 피치 값
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AimOffset")
 	float	m_Pitch;
@@ -76,6 +80,9 @@ protected:
 	// ADS시 오른손 애니메이션 알파
 	UPROPERTY(BlueprintReadOnly, Category = "IK")
 	float HandIKAlpha;
+
+	
+
 public:
 	virtual void NativeInitializeAnimation() override;
 	virtual void NativeBeginPlay() override;

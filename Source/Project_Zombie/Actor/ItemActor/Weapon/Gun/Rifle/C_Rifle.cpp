@@ -72,19 +72,43 @@ bool AC_Rifle::Reload(AC_BasicPlayer* _WeaponUser)
 
 void AC_Rifle::PullTrigger()
 {
-
-	if (m_bIsFiring || m_bIsReloading) return; // 이미 쏘고 있거나 재장전 중이면 중복 실행 방지
+	if (m_bIsFiring || m_bIsReloading) return;
 	m_bIsFiring = true;
 
-	// 누르자마자 딜레이 없이 즉시 한 발 발사
+	// 첫 발 발사
 	PlayFireEffects();
 
-	// m_FireRate(연사 속도) 간격으로 PlayFireEffects 함수를 무한 반복 호출
-	// 마지막 인자인 true가 반복
-	if (m_bIsFiring)
+	// 사격 모드가 연사일 때만 타이머를 실행
+	if (m_FireMode == EFireMode::FullAuto)
 	{
 		GetWorldTimerManager().SetTimer(m_FireTimerHandle, this, &AC_Rifle::PlayFireEffects, m_FireRate, true);
 	}
+	else if (m_FireMode == EFireMode::Single)
+	{
+		m_bIsFiring = false;
+	}
+}
+
+void AC_Rifle::SwitchFireMode()
+{
+	// 1. 발사 중이거나 재장전 중일 때는 모드 변경 방지
+	if (m_bIsFiring || m_bIsReloading) return;
+
+	// 2. 사격모드 토글 (연사 <-> 단발)
+	if (m_FireMode == EFireMode::FullAuto)
+	{
+		m_FireMode = EFireMode::Single;
+	}
+	else if (m_FireMode == EFireMode::Single)
+	{
+		m_FireMode = EFireMode::FullAuto;
+	}
+
+	// 3. 변경된 사격모드로 HUD UI 업데이트 (부모 함수 호출)
+	Super::SwitchFireMode();
+
+	// 디버그 출력 또는 사운드 재생 (선택)
+	UC_Util::Print(FString::Printf(TEXT("FireMode Switched: %d"), (int32)m_FireMode), FColor::Yellow, 2.0f);
 }
 
 void AC_Rifle::ReleaseTrigger()
@@ -166,13 +190,10 @@ void AC_Rifle::RifleLineTraceDamage(float DamageVal, float SpreadAngleDegree)
 	if (!PC || !PC->PlayerCameraManager)
 		return;
 
-	// =========================================================================
-	// [1단계] 카메라 중앙에서 1차 라인트레이스를 쏴서 '크로스헤어가 가리키는 타겟' 찾기
-	// =========================================================================
 	FVector CameraStart = PC->PlayerCameraManager->GetCameraLocation();
 	FVector CameraForward = PC->PlayerCameraManager->GetCameraRotation().Vector();
 
-	// 사거리 설정 (기존 코드의 3500.f 사용)
+	// 사거리 설정
 	float TraceRange = 3500.0f;
 	FVector CameraEnd = CameraStart + (CameraForward * TraceRange);
 
@@ -189,18 +210,12 @@ void AC_Rifle::RifleLineTraceDamage(float DamageVal, float SpreadAngleDegree)
 		QueryParams
 	);
 
-	// 카메라 레이저가 맞은 진짜 목표 지점 (안 맞았으면 사거리 끝 지점)
 	FVector TargetPoint = bCameraHit ? CameraHitResult.ImpactPoint : CameraEnd;
 
-	// =========================================================================
-	// [2단계] 실제 총구(MuzzleFlash)에서 타겟 지점(TargetPoint)을 향해 사격
-	// =========================================================================
 	FVector MuzzleStart = m_WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
 
-	// 총구 ➔ TargetPoint 로 향하는 사격 방향 벡터 계산
 	FVector ShootDirection = (TargetPoint - MuzzleStart).GetSafeNormal();
 
-	// 탄돌림(탄착군 오차) 적용
 	if (SpreadAngleDegree > 0.0f)
 	{
 		float ConeHalfAngleRad = FMath::DegreesToRadians(SpreadAngleDegree);
@@ -221,12 +236,8 @@ void AC_Rifle::RifleLineTraceDamage(float DamageVal, float SpreadAngleDegree)
 
 	FVector ActualEndLocation = bMuzzleHit ? MuzzleHitResult.ImpactPoint : FinalMuzzleEnd;
 
-	// Debug 그린 선 (총구 ➔ 실제 타격 지점)
 	DrawDebugLine(GetWorld(), MuzzleStart, ActualEndLocation, FColor::Green, false, 0.5f, 0, 1.5f);
 
-	// =========================================================================
-	// [3단계] 데미지 적용
-	// =========================================================================
 	if (bMuzzleHit)
 	{
 		DrawDebugSphere(GetWorld(), ActualEndLocation, 7.0f, 12, FColor::Red, false, 0.5f, 0, 1.5f);

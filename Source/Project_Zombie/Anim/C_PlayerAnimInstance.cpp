@@ -14,8 +14,6 @@
 void UC_PlayerAnimInstance::NativeInitializeAnimation()
 {
 	Super::NativeInitializeAnimation();
-
-	m_bIsDead = false;
 }
 
 void UC_PlayerAnimInstance::NativeBeginPlay()
@@ -38,7 +36,7 @@ void UC_PlayerAnimInstance::NativeUpdateAnimation(float _DT)
 		return;
 
 	// PlayerState 갱신
-	m_bIsDead = m_Character->IsDead();
+	m_PlayerState = m_Character->GetPlayerState();
 
 	// HandState 갱신
 	m_HandState = m_Character->GetHandState();
@@ -63,6 +61,9 @@ void UC_PlayerAnimInstance::NativeUpdateAnimation(float _DT)
 	// 점프 입력 여부 갱신
 	m_IsJumpInput = m_Character->IsJumpInput();
 
+	// 플레이어 부활 중인지 여부 갱신
+	m_IsRevivingPlayer = m_Character->IsRevivingPlayer();
+
 	// 에디터 화면일 때는 아래 로직을 아예 실행하지 않고 리턴.
 	if (GetWorld() && GetWorld()->WorldType == EWorldType::EditorPreview)
 		return;
@@ -74,13 +75,6 @@ void UC_PlayerAnimInstance::NativeUpdateAnimation(float _DT)
 		if (USkeletalMeshComponent* WeaponMesh = CurrentGun->GetWeaponMesh())
 		{
 			m_LeftHandIKTransform = WeaponMesh->GetSocketTransform(TEXT("IK_Socket_LeftHand"), RTS_World).GetLocation();
-
-			// 조준중일때만
-			if (m_Character->GetAimComponent()->IsADS())
-			{
-				m_RightHandIKTransform = WeaponMesh->GetSocketTransform(TEXT("HandGrip_R"), RTS_World).GetLocation();
-				HandIKAlpha = m_Character->GetAimComponent()->GetHandIKAlpha();
-			}
 		}
 	}
 

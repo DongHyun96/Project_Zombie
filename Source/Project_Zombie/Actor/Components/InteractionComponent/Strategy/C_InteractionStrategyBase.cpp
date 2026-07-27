@@ -21,14 +21,10 @@ bool UC_InteractionStrategyBase::CanStartInteraction(AC_BasicPlayer* _Interactor
 	return true;
 }
 
-bool UC_InteractionStrategyBase::CanContinueInteraction(AC_BasicPlayer* _Interactor, AActor* _TargetActor) const
+
+bool UC_InteractionStrategyBase::StartInteraction(AC_BasicPlayer* _Interactor, AActor* _TargetActor)
 {
 	return CanStartInteraction(_Interactor, _TargetActor);
-}
-
-
-void UC_InteractionStrategyBase::StartInteraction(AC_BasicPlayer* _Interactor, AActor* _TargetActor)
-{
 }
 
 void UC_InteractionStrategyBase::CancleInteraction(AC_BasicPlayer* _Interactor, AActor* _TargetActor)

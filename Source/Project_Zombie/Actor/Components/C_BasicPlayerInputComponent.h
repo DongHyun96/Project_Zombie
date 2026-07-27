@@ -62,14 +62,6 @@ private:
 	class UCharacterMovementComponent* PlayerMovement;
 
 protected:
-	float	AimPressStartTime = 0.f;
-	float	HoldThreshold = 0.1f;       // 꾹 누르기 판정 기준 시간 (0.1초)
-	bool	bIsShoulderToggled = false; // 견착 토글 상태 추적
-	bool	bIsHoldFired = false;       // 꾹 누르기가 이미 발동했는지 여부
-
-	FTimerHandle AimHoldTimerHandle;
-
-protected:
 	//TODO : 알아보고 필요하면쓰고 아니면 지우기
 	//UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	//TMap<EInputAction, UInputAction*> InputActionMap{};
@@ -101,15 +93,16 @@ private:
 	void LookAction(const FInputActionValue& Value);
 	void JumpAction();
 	void CrouchAction();
+
+	void InteractionAction();
 	
 	
 	void FireStarted();
-	void FireOnGoing();
 	void FireEnd();
 	void ReloadAction();
+	void SwitchFireModeAction();
 	
 	void KeepAimActionStart();
-	void KeepAimActionOngoing();
 	void KeepAimActionEnd();
 	
 	// 인벤토리를 여닫는 함수

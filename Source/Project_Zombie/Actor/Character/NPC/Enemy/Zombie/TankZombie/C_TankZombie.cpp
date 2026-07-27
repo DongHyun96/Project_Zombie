@@ -8,12 +8,16 @@
 
 #include "AIController.h"
 
+#include "Components/SkeletalMeshComponent.h"
+#include "Animation/AnimInstance.h"
+
 #include "Actor/Character/NPC/Enemy/Zombie/Skill/C_EnemySkillData.h"
 #include "Actor/Character/NPC/Enemy/C_BasicEnemy.h"
 
 #include "Actor/Character/Player/C_BasicPlayer.h"
 
 #include "Kismet/GameplayStatics.h"
+
 
 AC_TankZombie::AC_TankZombie()
 {
@@ -22,6 +26,7 @@ AC_TankZombie::AC_TankZombie()
 	m_bCharging = false;
 	m_Skill = nullptr;
 	m_ChargeSpeed = 0.f;
+	m_ChargeTarget = nullptr;
 
 	m_ChargeCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("ChargeCollision"));
 
@@ -58,10 +63,10 @@ void AC_TankZombie::Tick(float DeltaTime)
 	if (!m_bCharging)
 		return;
 
-	UpdateCharge(DeltaTime);
+	UpdateCharge();
 }
 
-void AC_TankZombie::UpdateCharge(float _DeltaTime)
+void AC_TankZombie::UpdateCharge()
 {
 	if (!m_bCharging)
 		return;
@@ -132,6 +137,61 @@ void AC_TankZombie::OnChargeBeginOverlap(UPrimitiveComponent* OverlappedComponen
 
 }
 
+bool AC_TankZombie::PrepareCharge(AActor* _Target, UC_EnemySkillData* _Data)
+{
+	if (!HasAuthority())
+		return false;
+
+	if (m_bCharging)
+		return false;
+
+	if (!IsValid(_Target) || !IsValid(_Data))
+		return false;
+
+
+	// 타겟 방향 바라보게 하기
+	FVector Direction = _Target->GetActorLocation() - GetActorLocation();
+
+	Direction.Z = 0.f;
+	Direction = Direction.GetSafeNormal();
+
+	if (Direction.IsNearlyZero())
+		return false;
+
+	m_ChargeTarget = _Target;
+	m_Skill = _Data;
+
+	// Roar 동안 BT의 Move To가 움직이지 않게 정지
+	if (AAIController* pController = Cast<AAIController>(GetController()))
+	{
+		pController->StopMovement();
+	}
+
+	SetActorRotation(Direction.Rotation());
+
+	// SkillData의 FireSound를 돌진 시작 시 포효음으로 사용
+	//if (IsValid(m_Skill->FireSound))
+	//{
+	//	UGameplayStatics::PlaySoundAtLocation(this, m_Skill->FireSound, GetActorLocation());
+	//}
+
+	return true;
+}
+
+void AC_TankZombie::BeginPreparedCharge()
+{
+	if (!HasAuthority())
+		return;
+
+	if (m_bCharging)
+		return;
+
+	if (!IsValid(m_ChargeTarget) || !IsValid(m_Skill))
+		return;
+
+	StartCharge(m_ChargeTarget, m_Skill);
+}
+
 void AC_TankZombie::StartCharge(AActor* _Target, UC_EnemySkillData* _SkillData)
 {
 	if (!HasAuthority())
@@ -140,10 +200,7 @@ void AC_TankZombie::StartCharge(AActor* _Target, UC_EnemySkillData* _SkillData)
 	if (m_bCharging)
 		return;
 
-	if (!IsValid(_Target))
-		return;
-
-	if (!IsValid(_SkillData))
+	if (!IsValid(_Target) || !IsValid(_SkillData))
 		return;
 
 	UCharacterMovementComponent* MoveCom = GetCharacterMovement();
@@ -161,7 +218,8 @@ void AC_TankZombie::StartCharge(AActor* _Target, UC_EnemySkillData* _SkillData)
 		return;
 
 	// 돌진에 사용되는 SkillData 저장
-	m_Skill = _SkillData;
+	//m_ChargeTarget = _Target;
+	//m_Skill = _SkillData;
 
 	m_ChargeDirection = Direction;
 	m_ChargeStartLocation = GetActorLocation();
@@ -188,13 +246,6 @@ void AC_TankZombie::StartCharge(AActor* _Target, UC_EnemySkillData* _SkillData)
 	{
 		m_ChargeCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	}
-
-	// SkillData의 FireSound를 돌진 시작 시 포효음으로 사용
-	if (IsValid(m_Skill->FireSound))
-	{
-		UGameplayStatics::PlaySoundAtLocation(this, m_Skill->FireSound, GetActorLocation());
-	}
-
 
 }
 
@@ -225,6 +276,18 @@ void AC_TankZombie::StopCharge()
 		MoveCom->Velocity = CurrentVelocity;
 	}
 
+	// Run 몽타주 섹션 루프에서 End 섹션으로 이동
+	if (IsValid(m_Skill) && IsValid(m_Skill->Montage))
+	{
+		if (USkeletalMeshComponent* pMesh = GetMesh())
+		{
+			if (UAnimInstance* AnimInst = pMesh->GetAnimInstance())
+			{
+				AnimInst->Montage_JumpToSection(TEXT("End"), m_Skill->Montage);
+			}
+		}
+	}
+
 	// 위치, 속도, 방향값 초기화
 	m_ChargeDirection = FVector::ZeroVector;
 	m_ChargeStartLocation = FVector::ZeroVector;
@@ -233,8 +296,7 @@ void AC_TankZombie::StopCharge()
 	// 등록한 충돌타겟들 초기화
 	m_ChargeHitTarget.Reset();
 
-	// 모든 정리가 끝난 후 스킬 데이터 참조 비우기
-	m_Skill = nullptr;
+	m_ChargeTarget = nullptr;
 }
 
 
@@ -285,4 +347,23 @@ void AC_TankZombie::HandleEnemyHit(AC_BasicEnemy* _Enemy)
 	// Enemy에게는 데미지 없이 넉백만 적용
 	_Enemy->LaunchCharacter(KnockbackVelocity, true, true);
 
+}
+
+void AC_TankZombie::CancelPrepareCharge()
+{
+	if (!HasAuthority())
+		return;
+
+	// 실제 돌진이 시작됏다면 취소하지 않음
+	if (m_bCharging)
+		return;
+
+	m_ChargeTarget = nullptr;
+	m_Skill = nullptr;
+}
+
+void AC_TankZombie::FinishChargeSkill()
+{
+	m_ChargeTarget = nullptr;
+	m_Skill = nullptr;
 }

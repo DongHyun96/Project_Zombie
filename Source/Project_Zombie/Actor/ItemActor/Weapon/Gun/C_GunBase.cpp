@@ -144,6 +144,14 @@ bool AC_GunBase::InitializeItemActor(const FWeaponData* InRawData)
 	return true;
 }
 
+void AC_GunBase::SwitchFireMode()
+{
+	if (m_OwnerPlayer && m_OwnerPlayer->IsLocallyControlled())
+	{
+		UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility(true, m_FireMode, m_CurrentAmmo, m_MaxAmmo);
+	}
+}
+
 void AC_GunBase::LoadAsyncAssets(const FWeaponData* InRawData)
 {
 	//Super::LoadAsyncAssets(InRawData);

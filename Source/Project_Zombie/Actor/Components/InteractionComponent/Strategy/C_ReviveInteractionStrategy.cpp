@@ -3,10 +3,10 @@
 
 #include "C_ReviveInteractionStrategy.h"
 
-#include "../../../Character/Player/C_BasicPlayer.h"
+#include "Actor/Character/Player/C_BasicPlayer.h"
 #include "../C_InteractionComponent.h"
 
-
+#include "Utility/C_Util.h"
 
 UC_ReviveInteractionStrategy::UC_ReviveInteractionStrategy()
 {
@@ -15,16 +15,22 @@ UC_ReviveInteractionStrategy::UC_ReviveInteractionStrategy()
 
 bool UC_ReviveInteractionStrategy::CanStartInteraction(AC_BasicPlayer* _Interactor, AActor* _TargetActor) const
 {
-	return false;
+	AC_BasicPlayer* TargetPlayer = Cast<AC_BasicPlayer>(_TargetActor);
+
+	if (!_Interactor || !TargetPlayer)
+		return false;
+
+	// 다운되어 있어야지 상호작용 가능
+	//return TargetPlayer->IsDead();
+
+	return true;
 }
 
-bool UC_ReviveInteractionStrategy::CanContinueInteraction(AC_BasicPlayer* _Interactor, AActor* _TargetActor) const
+bool UC_ReviveInteractionStrategy::StartInteraction(AC_BasicPlayer* _Interactor, AActor* _TargetActor)
 {
-	return false;
-}
+	UC_Util::Print("----------->StartInteraction", FColor::Red, 10.f);
 
-void UC_ReviveInteractionStrategy::StartInteraction(AC_BasicPlayer* _Interactor, AActor* _TargetActor)
-{
+	return false;
 }
 
 void UC_ReviveInteractionStrategy::CancleInteraction(AC_BasicPlayer* _Interactor, AActor* _TargetActor)

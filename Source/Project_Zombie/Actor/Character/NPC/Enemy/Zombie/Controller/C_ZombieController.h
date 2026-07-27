@@ -14,7 +14,7 @@ struct FSensedTargetInfo
 	GENERATED_BODY();
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	TWeakObjectPtr<AActor>	Target;
+	TWeakObjectPtr<AActor>	Target{};
 
 	// 어그로 수치
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
@@ -22,15 +22,15 @@ public:
 
 	// 인지 유무
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	bool					bSensed;
+	bool					bSensed{};
 
 	// 마지막으로 확인된 위치
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	FVector					LosePos;
+	FVector					LosePos{};
 
 	// 인지를 놓친 시간
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	float					LoseTime;
+	float					LoseTime{};
 };
 
 UCLASS()
@@ -41,31 +41,31 @@ class PROJECT_ZOMBIE_API AC_ZombieController : public AAIController
 protected:
 	// 인지기능
 	UPROPERTY(VisibleAnywhere, Category = "AI")
-	class UAIPerceptionComponent*	m_PerceptionCom; 
+	class UAIPerceptionComponent*	m_PerceptionCom{}; 
 
 	// 시야, 시각정보
 	UPROPERTY(VisibleAnywhere, Category = "AI")
-	class UAISenseConfig_Sight*		m_SightConfig;
+	class UAISenseConfig_Sight*		m_SightConfig{};
 
 	// 데미지 정보
 	UPROPERTY(VisibleAnywhere, Category = "AI")
-	class UAISenseConfig_Damage*	m_DamageConfig;
+	class UAISenseConfig_Damage*	m_DamageConfig{};
 
 	// 청각 정보
 	UPROPERTY(VisibleAnywhere, Category = "AI")
-	class UAISenseConfig_Hearing*	m_HearingConfig;
+	class UAISenseConfig_Hearing*	m_HearingConfig{};
 
 	// 비헤이비어트리
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
-	class UBehaviorTree*			m_BTAsset;
+	class UBehaviorTree*			m_BTAsset{};
 
 	// 블랙보드
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
-	class UBlackboardData*			m_BBAsset;
+	class UBlackboardData*			m_BBAsset{};
 
 	// 감지된 타겟들
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
-	TArray<FSensedTargetInfo>		m_SensedTargets;
+	TArray<FSensedTargetInfo>		m_SensedTargets{};
 
 
 public:

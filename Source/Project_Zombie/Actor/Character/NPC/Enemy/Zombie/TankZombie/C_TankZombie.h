@@ -40,12 +40,16 @@ protected:
 	// 중복으로 충돌하는 것을 방지
 	TSet<TWeakObjectPtr<AActor>>	m_ChargeHitTarget;
 
+	// 몽타주 재생 후 실제 돌진에 사용할 대상
+	UPROPERTY()
+	TObjectPtr<AActor>				m_ChargeTarget;
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 
 protected:
-	void UpdateCharge(float _DeltaTime);
+	void UpdateCharge();
 
 	/// <summary>
 	/// 플레이어 충돌처리(데미지 + 넉백)
@@ -66,15 +70,32 @@ protected:
 							bool bFromSweep,
 							const FHitResult& SweepResult);
 
-public:
 	UFUNCTION(BlueprintCallable, Category = "Charge")
 	void StartCharge(AActor* _Target, class UC_EnemySkillData* _SkillData);
 
 	UFUNCTION(BlueprintCallable, Category = "Charge")
 	void StopCharge();
 
+public:
+	/// <summary>
+	/// 돌진 시작 전 호출되는함수
+	/// </summary>
+	UFUNCTION(BlueprintCallable, Category = "Charge")
+	bool PrepareCharge(AActor* _Target, class UC_EnemySkillData* _Data);
+
+	/// <summary>
+	/// 몽타주 notify에서 호출
+	/// </summary>
+	UFUNCTION(BlueprintCallable, Category = "Charge")
+	void BeginPreparedCharge();
+
 	UFUNCTION(BlueprintPure, Category = "Charge")
 	bool IsCharging() const { return m_bCharging; }
+
+	UFUNCTION(BlueprintCallable, Category = "Charge")
+	void CancelPrepareCharge();
+
+	void FinishChargeSkill();
 
 public:
 	AC_TankZombie();

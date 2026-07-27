@@ -26,12 +26,6 @@ public:
 	/// </summary>
 	virtual bool CanStartInteraction(AC_BasicPlayer* _Interactor, AActor* _TargetActor) const;
 
-
-	/// <summary>
-	/// 상호작용을 계속할 수 있는지 검사
-	/// </summary>
-	virtual bool CanContinueInteraction(AC_BasicPlayer* _Interactor, AActor* _TargetActor) const;
-
 	/// <summary>
 	/// 화면에 표시할 상호작용 문구
 	/// </summary>
@@ -44,7 +38,7 @@ public:
 	/// <summary>
 	///	서버에서 상호작용을 시작할 때 호출	
 	/// </summary>
-	virtual void StartInteraction(AC_BasicPlayer* _Interactor, AActor* _TargetActor);
+	virtual bool StartInteraction(AC_BasicPlayer* _Interactor, AActor* _TargetActor);
 
 	/// <summary>
 	/// 상호작용이 취소됐을 때 호출

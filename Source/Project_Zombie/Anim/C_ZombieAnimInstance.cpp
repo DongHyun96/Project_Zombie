@@ -3,8 +3,12 @@
 #include "C_ZombieAnimInstance.h"
 
 #include "../Actor/Character/NPC/Enemy/Zombie/C_Zombie.h"
+
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Actor/Character/NPC/Enemy/Components/SkillComponent/C_EnemySkillComponent.h"
+
+#include "Actor/Character/NPC/Enemy/Zombie/TankZombie/C_TankZombie.h"
+
 #include "Utility/C_Util.h"
 
 void UC_ZombieAnimInstance::NativeInitializeAnimation()
@@ -39,11 +43,19 @@ void UC_ZombieAnimInstance::NativeUpdateAnimation(float _DT)
 
 void UC_ZombieAnimInstance::AnimNotify_SkillEnd()
 {
-	//UE_LOG(LogTemp, Warning, TEXT("AN_SkillEnd"));
+	//UC_Util::Print("AnimNotify_SkillEnd");
+	
+	if (!IsValid(m_Zombie))
+		return;
 
-	if (m_Zombie)
+	if (AC_TankZombie* TankZombie = Cast<AC_TankZombie>(m_Zombie))
 	{
-		m_Zombie->GetSkillComponent()->OnAN_EndSkill();
+		TankZombie->FinishChargeSkill();
+	}
+
+	if (UC_EnemySkillComponent* SkillCom = m_Zombie->GetSkillComponent())
+	{
+		SkillCom->OnAN_EndSkill();
 	}
 }
 
@@ -53,4 +65,14 @@ void UC_ZombieAnimInstance::AnimNotify_Fire()
 	{
 		m_Zombie->GetSkillComponent()->Fire();
 	}
+}
+
+void UC_ZombieAnimInstance::AnimNotify_ChargeStart()
+{
+	AC_TankZombie* Tank = Cast<AC_TankZombie>(TryGetPawnOwner());
+
+	if (!IsValid(Tank))
+		return;
+
+	Tank->BeginPreparedCharge();
 }

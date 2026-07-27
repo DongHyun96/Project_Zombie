@@ -11,6 +11,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/ItemActor/Weapon/C_WeaponBase.h"
+#include "Actor/Components/InteractionComponent/C_InteractionComponent.h"
 #include "GameModeAndManager/C_UIManager.h"
 #include "StatComponent/C_StatComponentBase.h"
 #include "UI/InvenUI/C_InventoryWidget.h"
@@ -96,6 +97,7 @@ void UC_BasicPlayerInputComponent::InitializePlayerInput(UInputComponent* Player
 	if (const UInputAction* IA = FindIAByName(TEXT("IA_EquipMeleeWeapon"))) EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::EquipMeleeWeapon);
 	if (const UInputAction* IA = FindIAByName(TEXT("IA_EquipThrowable")))   EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::EquipThrowable);
 		
+	if (const UInputAction* IA = FindIAByName(TEXT("IA_PlayerInteract")))     EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::InteractionAction);
 	
 	if (const UInputAction* IA = FindIAByName(TEXT("IA_ToggleArmed")))     EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::ToggleArmed);
 	if (const UInputAction* IA = FindIAByName(TEXT("IA_ToggleInventory"))) EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::ToggleInventoryWidget);
@@ -111,10 +113,13 @@ void UC_BasicPlayerInputComponent::InitializePlayerInput(UInputComponent* Player
 	if (const UInputAction* IA = FindIAByName(TEXT("IA_PlayerFire")))
 	{
 		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::FireStarted);
-		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Ongoing, this, &UC_BasicPlayerInputComponent::FireOnGoing);
 		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Completed, this, &UC_BasicPlayerInputComponent::FireEnd);
 	}
 	
+	if (const UInputAction* IA = FindIAByName(TEXT("IA_FireMode")))
+	{
+		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::SwitchFireModeAction);
+	}
 	
 	if (const UInputAction* IA = FindIAByName(TEXT("IA_FreeLook")))
 	{
@@ -125,11 +130,8 @@ void UC_BasicPlayerInputComponent::InitializePlayerInput(UInputComponent* Player
 	if (const UInputAction* IA = FindIAByName(TEXT("IA_PlayerAim")))
 	{
 		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::KeepAimActionStart);
-		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Ongoing, this, &UC_BasicPlayerInputComponent::KeepAimActionOngoing);
 		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Completed, this, &UC_BasicPlayerInputComponent::KeepAimActionEnd);
 	}
-	
-		
 
 }
 
@@ -218,16 +220,22 @@ void UC_BasicPlayerInputComponent::CrouchAction()
 	Player->ToggleCrouch();
 }
 
+void UC_BasicPlayerInputComponent::InteractionAction()
+{
+	if (!Player || !Player->IsLocallyControlled())
+		return;
+
+	UC_InteractionComponent* InteractionComponent = Player->GetInteractionComponent();
+	if (!InteractionComponent)
+		return;
+
+	InteractionComponent->TryInteract();
+}
+
 void UC_BasicPlayerInputComponent::FireStarted()
 {
 	if (AC_WeaponBase* CurWeapon = Player->GetEquippedComponent()->GetCurWeapon())
 		CurWeapon->OnStartFire(Player);
-}
-
-void UC_BasicPlayerInputComponent::FireOnGoing()
-{
-	if (AC_WeaponBase* CurWeapon = Player->GetEquippedComponent()->GetCurWeapon())
-		CurWeapon->OnFireOnGoing(Player);
 }
 
 void UC_BasicPlayerInputComponent::FireEnd()
@@ -243,63 +251,24 @@ void UC_BasicPlayerInputComponent::ReloadAction()
 		CurWeapon->Reload(Player);
 }
 
+void UC_BasicPlayerInputComponent::SwitchFireModeAction()
+{
+	if (AC_WeaponBase* CurWeapon = Player->GetEquippedComponent()->GetCurWeapon())
+		CurWeapon->SwitchFireMode();
+}
+
 void UC_BasicPlayerInputComponent::KeepAimActionStart()
 {
 	if (!Player) return;
 
-	AimPressStartTime = Player->GetWorld()->GetTimeSeconds();
-	bIsHoldFired = false;
-
-	Player->GetWorldTimerManager().SetTimer(
-		AimHoldTimerHandle,
-		this,
-		&UC_BasicPlayerInputComponent::KeepAimActionOngoing,
-		0.01f,
-		true
-	);
-}
-
-void UC_BasicPlayerInputComponent::KeepAimActionOngoing()
-{
-	if (!Player) return;
-
-	float PressDuration = Player->GetWorld()->GetTimeSeconds() - AimPressStartTime;
-
-	if (PressDuration >= HoldThreshold && !bIsHoldFired)
-	{
-		bIsShoulderToggled = false;
-
-		Player->GetAimComponent()->OnAimPressed(EAimState::Shoulder);
-		bIsHoldFired = true;
-
-		Player->GetWorldTimerManager().ClearTimer(AimHoldTimerHandle);
-	}
+	Player->GetAimComponent()->OnAimPressed();
 }
 
 void UC_BasicPlayerInputComponent::KeepAimActionEnd()
 {
 	if (!Player) return;
 
-	Player->GetWorldTimerManager().ClearTimer(AimHoldTimerHandle);
-
-	if (bIsHoldFired)
-	{
-		Player->GetAimComponent()->OnAimReleased();
-		bIsHoldFired = false;
-	}
-	else
-	{
-		if (bIsShoulderToggled)
-		{
-			Player->GetAimComponent()->OnAimReleased();
-			bIsShoulderToggled = false;
-		}
-		else
-		{
-			Player->GetAimComponent()->OnAimPressed(EAimState::ADS);
-			bIsShoulderToggled = true;
-		}
-	}
+	Player->GetAimComponent()->OnAimReleased();
 }
 
 void UC_BasicPlayerInputComponent::ToggleInventoryWidget()
