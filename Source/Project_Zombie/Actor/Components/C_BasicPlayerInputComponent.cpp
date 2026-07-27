@@ -118,7 +118,7 @@ void UC_BasicPlayerInputComponent::InitializePlayerInput(UInputComponent* Player
 	
 	if (const UInputAction* IA = FindIAByName(TEXT("IA_FreeLook")))
 	{
-		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::FreeLookHolStart);
+		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::FreeLookHoldStart);
 		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Completed, this, &UC_BasicPlayerInputComponent::FreeLookHoldEnd);
 	}
 	
@@ -368,12 +368,15 @@ void UC_BasicPlayerInputComponent::ToggleArmed()
 	Player->GetEquippedComponent()->ToggleArmed();
 }
 
-void UC_BasicPlayerInputComponent::FreeLookHolStart()
+void UC_BasicPlayerInputComponent::FreeLookHoldStart()
 {
 	Player->SetIsFreeLook(true);
 	
 	/*// TODO : 여기 지울 것 For testing
 	Player->GetEquippedComponent()->Server_SetSlotWeapon(EWeaponSlot::MainWeapon, nullptr);*/
+	
+	// TODO : 이 Test 코드 지우기
+	Player->GetEquippedComponent()->Server_TestSpawnAllWeapons();
 }
 
 void UC_BasicPlayerInputComponent::FreeLookHoldEnd()
@@ -384,8 +387,5 @@ void UC_BasicPlayerInputComponent::FreeLookHoldEnd()
 void UC_BasicPlayerInputComponent::MarkPing()
 {
 	Player->GetPingSystemComponent()->TrySpawnPing();
-	
-	// TODO : 이 Test 코드 지우기
-	Player->GetEquippedComponent()->Server_TestSpawnAllWeapons();
 }
 

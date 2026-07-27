@@ -31,6 +31,10 @@ public:
 
 	bool IsActive() const { return m_bIsActive; }
 
+public:
+	
+	void SetPingMarkerColor(const FColor& _Color);
+	
 private:
 	
 	void InitDynamicMtrls();

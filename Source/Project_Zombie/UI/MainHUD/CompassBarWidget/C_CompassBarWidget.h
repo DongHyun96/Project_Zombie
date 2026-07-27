@@ -28,7 +28,11 @@ private:
 	
 public:
 	
-	class UC_CompassMarkerWidget* GetCompassMarkerWidget() const { return CompassPingMarker; } // TODO : 추후 해당 인원에 맞는 CompassMarkerWidget을 return 시켜주어야 함
+	/// <summary>
+	/// 해당 Player의 CompassPingMarker 등록 
+	/// </summary>
+	/// <returns> : 대응되는 CompassMarkerWidget </returns> 
+	class UC_CompassMarkerWidget* RegisterPlayerCompassPingMarker(class AC_BasicPlayer* _Player);
 
 protected:
 
@@ -44,8 +48,17 @@ protected: // CompassBar 이미지 및 Material 관련
 
 	/* Compass Marker */
 	
-	UPROPERTY(meta = (BindWidget))
-	UC_CompassMarkerWidget* CompassPingMarker{}; // TODO : 추후, 최대 인원수만큼 늘려놔야하는 구조로 수정해야 함
+	// UPROPERTY(meta = (BindWidget))
+	// UC_CompassMarkerWidget* CompassPingMarker{}; // TODO : 추후, 최대 인원수만큼 늘려놔야하는 구조로 수정해야 함
+	
+private:
+
+	// 여기서 CompassPingMarker를 등록하는 Player에 맞게끔 하나씩 빼어서 TMap으로 옮겨담을 것임
+	UPROPERTY()
+	TArray<UC_CompassMarkerWidget*> m_CompassPingMarkerPool{};
+	
+	UPROPERTY()
+	TMap<class AC_BasicPlayer*, UC_CompassMarkerWidget*> m_mapCompassPingMarkers{};
 	
 private:
 	

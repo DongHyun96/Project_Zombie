@@ -53,8 +53,8 @@ void AC_BasicEnemy::BeginPlay()
 	m_HealedEffectNGComponent->SetRelativeLocation(FVector(0.f, 0.f, -GetCapsuleComponent()->GetScaledCapsuleHalfHeight()));
 	
 	m_ZombieController = GetController<AC_ZombieController>();
-	if (!m_ZombieController)
-		UC_Util::Print("From AC_BasicEnemy::BeginPlay : Use ZombieController instead of other controller!", FColor::Red, 10.f);
+	/*if (!m_ZombieController)
+		UC_Util::Print("From AC_BasicEnemy::BeginPlay : Use ZombieController instead of other controller!", FColor::Red, 10.f);*/
 	
 }
 

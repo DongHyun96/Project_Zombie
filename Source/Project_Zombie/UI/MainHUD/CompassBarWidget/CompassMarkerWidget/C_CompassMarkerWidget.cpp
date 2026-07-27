@@ -96,6 +96,11 @@ void UC_CompassMarkerWidget::TogglePingMarker(bool _Visible, EGamePingType _Ping
 	}
 }
 
+void UC_CompassMarkerWidget::SetPingMarkerColor(const FColor& _Color)
+{
+	CompassMarkerImage->SetColorAndOpacity(_Color);
+}
+
 void UC_CompassMarkerWidget::InitDynamicMtrls()
 {
 	m_CreatedDynamicMtrls.Empty();

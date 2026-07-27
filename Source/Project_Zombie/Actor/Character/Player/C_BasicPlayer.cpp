@@ -43,6 +43,7 @@
 #include "Components/CapsuleComponent.h"
 
 #include "TimerManager.h"
+#include "Actor/Components/PlayerProfileComponent/C_PlayerProfileComponent.h"
 
 #include "Net/UnrealNetwork.h"
 
@@ -134,6 +135,8 @@ AC_BasicPlayer::AC_BasicPlayer()
 
 	// Interaction Component
 	//m_InteractionComponent = CreateDefaultSubobject<UC_InteractionComponent>(TEXT("InteractionComponent"));
+	
+	m_PlayerProfileComponent = CreateDefaultSubobject<UC_PlayerProfileComponent>(TEXT("PlayerProfileComponent"));
 }
 
 

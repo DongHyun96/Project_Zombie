@@ -7,6 +7,7 @@
 #include "C_PingSystemComponent.generated.h"
 
 
+enum class EPingShapeType : uint8;
 enum class EGamePingType : uint8;
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
@@ -41,9 +42,41 @@ public:
 
 	void HidePing();
 
+private:
+	
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_SpawnPing
+	(
+		const FVector&	_SpawnedLocation,
+		EGamePingType	_GamePingType,
+		EPingShapeType	_PingShapeType
+	);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_SpawnPing
+	(
+		const FVector&	_SpawnedLocation,
+		EGamePingType	_GamePingType,
+		EPingShapeType	_PingShapeType
+	);
+	
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_HidePing();	
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_HidePing();
+	
+public:
+	
+	// void SetPingColor(const FColor& _PingColor);
+
 public:
 	
 	UObject* GetLastInstigator() const { return m_LastInstigator; }
+
+private:
+	
+	class AC_BasicPlayer* m_OwnerPlayer{};
 	
 private:
 	

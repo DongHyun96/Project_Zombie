@@ -14,6 +14,14 @@ enum class EGamePingType : uint8
 	End UMETA(Hidden)
 };
 
+UENUM(BlueprintType)
+enum class EPingShapeType : uint8
+{
+	FullPing,			// 다리까지 모두 표시하는 Ping 종류
+	IconPing,			// Icon 모양만 표기하는 Ping 종류
+	End UMETA(Hidden)
+};
+
 /// <summary>
 /// World에 배치되는 Ping marker actor
 /// </summary>
@@ -37,28 +45,27 @@ public:
 public:
 	
 	/// <summary>
-	/// Ping 정보 World에 스폰처리 
-	/// </summary>
-	/// <param name="_TraceHitResult"> : 스폰용 LineTrace 검사결과 </param>
-	/// <param name="_PingType"> : 핑 종류 </param>
-	void SpawnPingActorToWorld
-	(
-		const FHitResult&	_TraceHitResult,
-		EGamePingType		_PingType   = EGamePingType::DefaultMarker
-	);
-
-	/// <summary>
-	/// Ping 정보 World에 스폰처리 (무조건 FullPing 모습으로 스폰처리)
+	/// Ping 정보 World에 스폰처리
 	/// </summary>
 	/// <param name="_SpawnLocation"> : Spawn 위치 </param>
 	/// <param name="_PingType"> : 핑 종류 </param>
-	void SpawnFullPingActorToWorld
+	/// <param name="_PingShapeType"> : 핑 모양 Type </param>
+	void SpawnPingActorToWorld
 	(
 		const FVector&	_SpawnLocation,
-		EGamePingType	_PingType
+		EGamePingType	_PingType,
+		EPingShapeType	_PingShapeType
 	);
 	
+	
 	void HidePing();
+	
+	void SetPingColor(const FColor& _Color);
+
+private:
+	
+	UPROPERTY()
+	class AC_BasicPlayer* m_OwnerPlayer{};
 	
 protected:
 

@@ -198,6 +198,8 @@ void UC_AIGunUsageComponent::HandleGunMeshPhysicsStopped()
 		return;
 	}
 
+	// TODO : 이거 Server 쪽으로 request 처리하여 일괄 스폰처리되게 수정할 것
+	
 	m_PrevOwnerPlayer->GetPingSystemComponent()->SpawnFullPing
 	(
 		m_OwnerGun->GetActorLocation(),

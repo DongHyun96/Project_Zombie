@@ -5,6 +5,7 @@
 
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
+#include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Components/SplineMeshComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -28,6 +29,11 @@ void AC_WorldPingActor::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// SpawnActor Param을 BasicPlayer로 지정해줌
+	m_OwnerPlayer = Cast<AC_BasicPlayer>(GetOwner());
+	if (!m_OwnerPlayer)
+		UC_Util::Print("From AC_WorldPingActor::BeginPlay : OwnerPlayer casting failed", FColor::Red, 10.f);
+	
 	// PingWidget의 경우, NativeConstruct에서 안보이게끔 처리함
 	m_PingWidget = Cast<UC_PingWidget>(m_PingWidgetComponent->GetWidget());
 	
@@ -36,11 +42,12 @@ void AC_WorldPingActor::BeginPlay()
 		UC_Util::Print("From AC_WorldPingActor::BeginPlay : PingWidget casting failed", FColor::Red, 10.f);
 		return;
 	}
+	
+	m_PingWidget->SetOwnerPlayer(m_OwnerPlayer); 
 
 	m_SplineMeshComponent->SetHiddenInGame(true);
 	
 	// Effect의 경우, 직접적인 Spawn 처리가 들어가야 실질적으로 Spawn 처리됨(처음에는 어차피 보이지 않음)
-		
 }
 
 void AC_WorldPingActor::Tick(float DeltaTime)
@@ -48,50 +55,24 @@ void AC_WorldPingActor::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
-void AC_WorldPingActor::SpawnPingActorToWorld(const FHitResult& _TraceHitResult, EGamePingType _PingType)
+void AC_WorldPingActor::SpawnPingActorToWorld
+(
+	const FVector&	_SpawnLocation,
+	EGamePingType	_PingType,
+	EPingShapeType	_PingShapeType
+)
 {
 	HidePing(); // 이전 핑 지우기용 처리
 
-	// DefaultMarker에 대해서만 바닥면을 따짐 (다른 Ping 종류의 경우 무조건 FullPingActor 모습으로 스폰 처리)
-	if (_PingType == EGamePingType::DefaultMarker)
+	// IconPing인 경우, 다리 없이 Icon 모양만 보이기
+	if (_PingShapeType == EPingShapeType::IconPing)
 	{
-		// 대략 경사도 45도까지는 바닥면으로 간주
-		if (_TraceHitResult.ImpactNormal.Z < 0.7f)
-		{
-			m_PingWidgetComponent->SetWorldLocation(_TraceHitResult.ImpactPoint);
-			m_PingWidget->ShowPingWidget(_TraceHitResult.ImpactPoint);
-			return;
-		}
+		m_PingWidgetComponent->SetWorldLocation(_SpawnLocation);
+		m_PingWidget->ShowPingWidget(_SpawnLocation, _PingType);
+		return;
 	}
 	
-	// 바닥면이나 DefaultMarker가 아닌 경우, 해당 위치에 전체 Actor 보이게끔 처리
-
-	// Adjust spline position & show
-	m_SplineMeshComponent->SetHiddenInGame(false);
-	m_SplineMeshComponent->SetStartPosition(_TraceHitResult.ImpactPoint);
-	const FVector SplineEndPos = _TraceHitResult.ImpactPoint + FVector::UnitZ() * 175.f;
-	m_SplineMeshComponent->SetEndPosition(SplineEndPos);
-
-	// Spawn Ping Effect
-	m_PingEffectComp = UNiagaraFunctionLibrary::SpawnSystemAtLocation
-	(
-		GetWorld(),
-		m_PingEffect,
-		_TraceHitResult.ImpactPoint,             // 스폰할 위치 (FVector)
-		GetActorRotation(),             		 // 스폰할 회전 (FRotator)
-		FVector(1.0f),                  		 // 스케일 (FVector)
-		false,                          		 // AutoDestroy (재생 완료 후 자동 소멸 여부)
-		true									 // AutoActivate (스폰 즉시 재생 여부)
-	);
-
-	// Adjusting WidgetComponent Location
-	m_PingWidgetComponent->SetWorldLocation(SplineEndPos + FVector::UnitZ() * 25.f);
-	m_PingWidget->ShowPingWidget((_TraceHitResult.ImpactPoint + SplineEndPos) * 0.5f, _PingType);
-}
-
-void AC_WorldPingActor::SpawnFullPingActorToWorld(const FVector& _SpawnLocation, EGamePingType _PingType)
-{
-	HidePing(); // 이전 핑 지우기용 처리
+	// FullPing인 경우
 	
 	// Adjust spline position & show
 	m_SplineMeshComponent->SetHiddenInGame(false);
@@ -127,5 +108,16 @@ void AC_WorldPingActor::HidePing()
 	
 	// Hide Ping Widget
 	m_PingWidget->HidePingWidget();
+}
+
+void AC_WorldPingActor::SetPingColor(const FColor& _Color)
+{
+	if (!m_PingWidget)
+	{
+		UC_Util::Print("From AC_WorldPingActor::SetPingColor : PingWidget not created", FColor::Red, 10.f);
+		return;
+	}
+	
+	m_PingWidget->SetPingMarkerColor(_Color);
 }
 

@@ -11,6 +11,20 @@
 void UC_CompassBarWidget::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
+	
+	// Init CompassPingMarkers
+	for (int i = 0; i < 4; ++i)
+	{
+		const FString CompassPingMarkerName = FString::Printf(TEXT("CompassPingMarker_%d"), i);
+		const FName WidgetName(*CompassPingMarkerName);
+		UC_CompassMarkerWidget* CompassPingMarker = Cast<UC_CompassMarkerWidget>(GetWidgetFromName(WidgetName));
+		if (!CompassPingMarker)
+		{
+			UC_Util::Print("From UC_CompassBarWidget::NativeOnInitialized : CompassPingMarker init failed!", FColor::Red, 10.f);
+			return;
+		}
+		m_CompassPingMarkerPool.Add(CompassPingMarker);
+	}
 }
 
 void UC_CompassBarWidget::NativeConstruct()
@@ -55,4 +69,25 @@ void UC_CompassBarWidget::SetDisplayDegreeText(float _RotationYaw)
 	(
 		FSlateColor( DegreeValue == 0 ? m_ZeroDegColor : FLinearColor::White)
 	);
+}
+
+UC_CompassMarkerWidget* UC_CompassBarWidget::RegisterPlayerCompassPingMarker(AC_BasicPlayer* _Player)
+{
+	if (!_Player) return nullptr;
+	
+	if (m_CompassPingMarkerPool.IsEmpty())
+	{
+		UC_Util::Print("From UC_CompassBarWidget::RegisterPlayerCompassPingMarker : Pool count 0", FColor::Red, 10.f);
+		return nullptr;
+	}
+
+	UC_CompassMarkerWidget* TargetMarker = m_CompassPingMarkerPool.Pop();
+	if (!TargetMarker)
+	{
+		UC_Util::Print("From UC_CompassBarWidget::RegisterPlayerCompassPingMarker : TargetMarker nullptr", FColor::Red, 10.f);
+		return nullptr;
+	}
+
+	m_mapCompassPingMarkers.Add(_Player, TargetMarker);
+	return TargetMarker;
 }

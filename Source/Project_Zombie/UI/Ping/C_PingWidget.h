@@ -26,15 +26,29 @@ public:
 
 public:
 	
+	void SetOwnerPlayer(AC_BasicPlayer* _OwnerPlayer) { m_OwnerPlayer = _OwnerPlayer; }
+	
+public:
+	
 	/// <summary>
-	/// TODO : Owner Character의 색상에 맞는 Color로 지정해주기  
+	/// Owner Character의 색상에 맞는 Color로 지정해주기  
 	/// </summary>
-	void SetPingMarkerColor(const FLinearColor& _Color) { PingMarkerImage->SetColorAndOpacity(_Color); }
+	void SetPingMarkerColor(const FColor& _Color) const;
 
-	void ShowPingWidget(const FVector& _WorldPingSpawnedLocation, EGamePingType _PingType = EGamePingType::DefaultMarker);
+	void ShowPingWidget(const FVector& _WorldPingSpawnedLocation, EGamePingType _PingType);
 	void HidePingWidget();
 	
 	void SetSpawnedLocation(const FVector& _SpawnedLocation) { m_SpawnedLocation = _SpawnedLocation; }
+
+private:
+
+	// 이 PingWidget의 실질적인 OwnerPlayer
+	UPROPERTY()
+	AC_BasicPlayer* m_OwnerPlayer{};
+	
+	// 현재 플레이 중인 플레이어 (이 핑을 스폰시킨 플레이어가 아닌, 직접 조작중인 플레이어와의 거리를 재야한다)
+	UPROPERTY()
+	AC_BasicPlayer* m_MyPlayer{};
 	
 protected:
 
@@ -52,8 +66,6 @@ private:
 	// 현재 Ping 상태가 보여주는 상태인지
 	bool m_bCurrentShowingPingMarker{};
 
-	// 현재 플레이 중인 플레이어 (이 핑을 스폰시킨 플레이어가 아닌, 직접 조작중인 플레이어와의 거리를 재야한다)
-	class AC_BasicPlayer* m_MyPlayer{};
 
 	// MyPlayer와의 거리를 잴 때, 자신이 spawn된 World 위치를 저장, 거리를 잴 때 사용
 	FVector m_SpawnedLocation{};

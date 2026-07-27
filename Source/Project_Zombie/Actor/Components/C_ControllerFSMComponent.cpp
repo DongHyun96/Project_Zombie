@@ -136,6 +136,8 @@ void UC_ControllerFSMComponent::Server_SetControllerRotState_Implementation(EPla
 
 void UC_ControllerFSMComponent::SetEachRotValueByCurState()
 {
+	if (!m_OwnerPlayer) return;
+	
 	switch (m_PlayerControllerRotState)
 	{
 	case EPlayerControllerRotState::IdleStopState:

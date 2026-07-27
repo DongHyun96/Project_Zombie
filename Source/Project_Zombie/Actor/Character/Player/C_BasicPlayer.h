@@ -68,12 +68,6 @@ class PROJECT_ZOMBIE_API AC_BasicPlayer : public AC_BasicCharacter, public IGene
 {
 	GENERATED_BODY()
 
-protected:
-
-	// 게임 시작 시, 플레이어가 지정한 이름 (TODO : Dongman 지우기)
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PlayerName", meta = (DisplayName = "PlayerName"))
-	FString m_PlayerName = "Dongman";
-	
 // [Component]
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (DisplayName = "SpringArm"))
@@ -119,6 +113,9 @@ protected:
 	//UPROPERTY(VisibleAnywhere, Category = "Components", meta = (DisplayName = "InteractionComponent"))
 	//class UC_InteractionComponent* m_InteractionComponent{};
 
+	UPROPERTY(VisibleAnywhere, Category = "Components", meta = (DisplayName = "PlayerProfileComponent"))
+	class UC_PlayerProfileComponent* m_PlayerProfileComponent{};
+	
 // [Status]
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Status")
@@ -303,6 +300,8 @@ public:
 	UC_BasicPlayerAimComponent* GetAimComponent() const { return m_BasicPlayerAimComponent; }
 
 	//UC_InteractionComponent* GetInteractionComponent() const { return m_InteractionComponent; }
+	
+	UC_PlayerProfileComponent* GetPlayerProfileComponent() const { return m_PlayerProfileComponent; }
 
 	FCursorItem GetCurDraggedItem() {return curDraggedItem;}
 	
