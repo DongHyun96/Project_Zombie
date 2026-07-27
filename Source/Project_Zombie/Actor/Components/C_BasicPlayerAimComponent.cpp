@@ -42,11 +42,10 @@ void UC_BasicPlayerAimComponent::BeginPlay()
 
 }
 
-void UC_BasicPlayerAimComponent::OnAimPressed(EAimState TargetState)
+void UC_BasicPlayerAimComponent::OnAimPressed()
 {
 	bIsAiming = true;
 	bIsTransitioningCamera = true;
-	m_CurAimState = TargetState;
 
 	if (AC_UIManager* UIManager = Cast<AC_UIManager>(GetWorld()->GetFirstPlayerController()->GetHUD()))
 		UIManager->GetMainHUDWidget()->GetCrosshairWidget()->ZoomIn();
@@ -57,7 +56,6 @@ void UC_BasicPlayerAimComponent::OnAimReleased()
 {
 	bIsAiming = false;
 	bIsTransitioningCamera = true;
-	m_CurAimState = EAimState::None;
 
 	if (AC_UIManager* UIManager = Cast<AC_UIManager>(GetWorld()->GetFirstPlayerController()->GetHUD()))
 		UIManager->GetMainHUDWidget()->GetCrosshairWidget()->ZoomOut();
@@ -68,7 +66,7 @@ void UC_BasicPlayerAimComponent::UpdateCameraInterpolation(float DeltaTime)
 	if (!m_CurPlayer) return;
 
 	// 조준 중 이면 1.0, 해제 상태면 0.0
-	float TargetAlpha = (bIsAiming && m_CurAimState != EAimState::None) ? 1.0f : 0.0f;
+	float TargetAlpha = bIsAiming ? 1.0f : 0.0f;
 
 	m_HandIKAlpha = FMath::FInterpTo(m_HandIKAlpha, TargetAlpha, DeltaTime, m_AimSpeed);
 
@@ -83,11 +81,9 @@ void UC_BasicPlayerAimComponent::UpdateCameraInterpolation(float DeltaTime)
 
 	if (!GunBase)
 	{
-		if (m_CurAimState != EAimState::None)
-		{
-			PC->SetViewTargetWithBlend(m_CurPlayer, 0.15f);
-			m_CurAimState = EAimState::None;
-		}
+		
+		PC->SetViewTargetWithBlend(m_CurPlayer, 0.15f);
+		
 		bIsTransitioningCamera = false;
 		return;
 	}
@@ -99,21 +95,12 @@ void UC_BasicPlayerAimComponent::UpdateCameraInterpolation(float DeltaTime)
 	{
 		if (bIsAiming)
 		{
-			if (m_CurAimState == EAimState::ADS)
+			if (PC->GetViewTarget() != m_CurPlayer)
 			{
-				PC->SetViewTargetWithBlend(GunBase, BlendInTime, EViewTargetBlendFunction::VTBlend_Cubic);
-				bIsTransitioningCamera = false;
-				return;
+				PC->SetViewTargetWithBlend(m_CurPlayer, BlendInTime, EViewTargetBlendFunction::VTBlend_Cubic);
 			}
-			else if (m_CurAimState == EAimState::Shoulder)
-			{
-				if (PC->GetViewTarget() != m_CurPlayer)
-				{
-					PC->SetViewTargetWithBlend(m_CurPlayer, BlendInTime, EViewTargetBlendFunction::VTBlend_Cubic);
-				}
-				m_RuntimeTargetFOV = m_AimFOV;
-				m_RuntimeTargetOffset = m_AimOffset;
-			}
+			m_RuntimeTargetFOV = m_AimFOV;
+			m_RuntimeTargetOffset = m_AimOffset;
 		}
 		else
 		{
@@ -127,13 +114,6 @@ void UC_BasicPlayerAimComponent::UpdateCameraInterpolation(float DeltaTime)
 		}
 	}
 
-	// ADS 상태로 조준 중일 때는 메인 카메라 보간 연산을 아예 수행하지 않음
-	if (m_CurAimState == EAimState::ADS && bIsAiming)
-	{
-		return;
-	}
-
-	// [2] 원래 잘 작동하던 부드러운 카메라 보간 및 도달 체크 (처음 올려주신 순정 로직)
 	UCameraComponent* PlayerCam = m_CurPlayer->GetCamera();
 	USpringArmComponent* SpringArm = m_CurPlayer->GetSpringArm();
 
