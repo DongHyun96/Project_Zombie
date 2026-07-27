@@ -362,18 +362,18 @@ struct FEnemyStatData : public FCharacterStatData
     GENERATED_BODY()
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stat")
-    float	MoveSpeed;
+    float	MoveSpeed{};
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stat")
-    float	DetectRange;
+    float	DetectRange{};
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stat")
-    float	LoseDetectRange;
+    float	LoseDetectRange{};
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stat")
-    float	Att;
+    float	Att{};
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stat")
-    float	Def;
+    float	Def{};
 	
 };
