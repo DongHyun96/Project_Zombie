@@ -119,9 +119,6 @@ void AC_ShotGun::ProcessShotgunPellets(float BaseDamagePerPellet)
 	if (!PC || !PC->PlayerCameraManager)
 		return;
 
-	// =========================================================================
-	// [1단계] 카메라 정중앙(크로스헤어)에서 1차 라인트레이스를 쏴서 주 타겟점 구하기
-	// =========================================================================
 	FVector CameraStart = PC->PlayerCameraManager->GetCameraLocation();
 	FVector CameraForward = PC->PlayerCameraManager->GetCameraRotation().Vector();
 
@@ -141,21 +138,13 @@ void AC_ShotGun::ProcessShotgunPellets(float BaseDamagePerPellet)
 		QueryParams
 	);
 
-	// 카메라가 가리키는 정중앙 목표 위치 (벽/적의 충돌 지점)
 	FVector TargetPoint = bCameraHit ? CameraHitResult.ImpactPoint : CameraEnd;
 
-	// =========================================================================
-	// [2단계] 총구(MuzzleFlash)에서 타겟점을 향하는 '기본 메인 방향' 계산
-	// =========================================================================
 	FVector MuzzleStart = m_WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
 	FVector MainDirection = (TargetPoint - MuzzleStart).GetSafeNormal();
 
-	// =========================================================================
-	// [3단계] 메인 방향을 기준으로 펠릿(m_PelletCount)만큼 퍼뜨려서 2차 발사
-	// =========================================================================
 	for (int32 i = 0; i < m_PelletCount; ++i)
 	{
-		// 총구->타겟 메인 방향을 중심으로 산탄 각도(m_SpreadAngle)만큼 무작위 분산
 		FVector SpreadDir = MainDirection;
 		if (m_SpreadAngle > 0.0f)
 		{

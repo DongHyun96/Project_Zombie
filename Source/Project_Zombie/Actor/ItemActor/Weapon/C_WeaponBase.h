@@ -70,12 +70,17 @@ public:
 	virtual bool OnFireEnd(AC_BasicPlayer* _WeaponUser) { return false; }
 
 	/// <summary>
+	/// 사격 모드 전환 처리 (기본 키 : B키 기능 )
+	/// </summary>
+	virtual void SwitchFireMode() { return ; };
+
+	/// <summary>
 	/// Reload 키 동작 처리 (기본 키 R키 기능) 
 	/// </summary>
 	/// <param name="_WeaponUser"> : 이 Weapon을 사용하는 Player 객체 </param>
 	/// <returns> : R키에 대한 처리가 필요없거나 실패했을 경우 return false </returns>
 	virtual bool Reload(AC_BasicPlayer* _WeaponUser) { return false; }
-	
+
 	/*virtual void StartAttack(class AC_BasicPlayer* _WeaponUser) PURE_VIRTUAL(AC_WeaponBase::StartAttack, );
 	virtual void StopAttack(AC_BasicPlayer* _WeaponUser) PURE_VIRTUAL(AC_WeaponBase::StopAttack, );*/
 
