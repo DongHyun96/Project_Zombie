@@ -42,4 +42,7 @@ public:
 	UFUNCTION()
 	void AnimNotify_Fire();
 
+	UFUNCTION()
+	void AnimNotify_ChargeStart();
+
 };
