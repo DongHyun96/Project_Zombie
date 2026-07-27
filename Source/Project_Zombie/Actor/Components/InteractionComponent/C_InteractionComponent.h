@@ -28,7 +28,7 @@ public:
 	/// 이 Actor 가 사용할 Collision과 Strategy 를 설정
 	/// </summary>
 	UFUNCTION(BlueprintCallable, Category = "Interaction")
-	void SetupInteraction(UPrimitiveComponent* _InteractionCollision, TSubclassOf<UC_InteractionStrategyBase> _StrategyClass);
+	void SetupInteraction(UPrimitiveComponent* _InteractionCollision);
 	
 	/// <summary>
 	/// 로컬 플레이어의 Collision에 Overlap 이벤트 연결

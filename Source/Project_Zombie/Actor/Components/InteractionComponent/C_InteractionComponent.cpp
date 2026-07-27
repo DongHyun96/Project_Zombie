@@ -26,9 +26,6 @@ void UC_InteractionComponent::BeginPlay()
 
 	// 소유한 Actor 가 Player 인지 확인
 	m_OwnerPlayer = Cast<AC_BasicPlayer>(GetOwner());
-
-	// 상호작용 전략 객체 생성
-	CreateInteractionStrategy();
 }
 
 void UC_InteractionComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -53,7 +50,7 @@ void UC_InteractionComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Super::EndPlay(EndPlayReason);
 }
 
-void UC_InteractionComponent::SetupInteraction(UPrimitiveComponent* _InteractionCollision, TSubclassOf<UC_InteractionStrategyBase> _StrategyClass)
+void UC_InteractionComponent::SetupInteraction(UPrimitiveComponent* _InteractionCollision)
 {
 	if (!_InteractionCollision)
 	{
@@ -62,13 +59,11 @@ void UC_InteractionComponent::SetupInteraction(UPrimitiveComponent* _Interaction
 	}
 
 	m_InteractionCollision = _InteractionCollision;
-	m_InteractionStrategyClass = _StrategyClass;
 
-	// BP BeginPlay 에서 호출된 경우 컴포넌트 BeginPlay() 가 이미 호출되었을 수 있으므로 여기서 전략 객체를 생성
-	if (HasBegunPlay())
-	{
-		CreateInteractionStrategy();
-	}
+	// 상호작용 전략 객체 생성
+	CreateInteractionStrategy();
+
+	EnableInteractionDetection();
 }
 
 void UC_InteractionComponent::CreateInteractionStrategy()
@@ -81,7 +76,7 @@ void UC_InteractionComponent::CreateInteractionStrategy()
 	m_InteractionStrategyObject = NewObject<UC_InteractionStrategyBase>(this, m_InteractionStrategyClass);
 	if (!m_InteractionStrategyObject)
 	{
-		// 전략 객체 생성 실패
+		UC_Util::Print("Fail CreateInteractionStrategy", FColor::Red, 10.f);
 	}
 }
 
@@ -232,11 +227,14 @@ void UC_InteractionComponent::TryInteract()
 
 bool UC_InteractionComponent::ExecuteInteract(AC_BasicPlayer* _Interactor)
 {
+	UC_Util::Print("ExecuteInteract", FColor::Red, 10.f);
+
 	if (!_Interactor || !m_InteractionStrategyObject)
 		return false;
 
 	if (!m_InteractionStrategyObject->CanStartInteraction(_Interactor, GetOwner()))
 		return false;
+
 
 	return m_InteractionStrategyObject->StartInteraction(_Interactor, GetOwner());
 }
@@ -255,7 +253,7 @@ AActor* UC_InteractionComponent::FindBestInteractionTarget() const
 	ViewForward.Z = 0.0f; // 수평 방향만 고려
 	ViewForward.Normalize();
 
-	const FVector SourceLocation = m_InteractionCollision->GetComponentLocation();
+	const FVector SourceLocation = m_OwnerPlayer->GetActorLocation();
 
 	// 후보 목록에서 가장 적합한 상호작용 대상 찾기
 	for (const TWeakObjectPtr<AActor>& Candidate : m_InteractionCandidates)
@@ -266,8 +264,9 @@ AActor* UC_InteractionComponent::FindBestInteractionTarget() const
 
 		// 상호작용 대상의 InteractionComponent 가져오기
 		UC_InteractionComponent* TargetComponent = GetTargetInteractionComponent(CandidateActor);
-		if (!TargetComponent || !TargetComponent->m_InteractionCollision)
+		if (!TargetComponent)
 			continue;
+
 
 		// 상호작용 대상이 현재 플레이어와 상호작용 가능한지 검사
 		if (!TargetComponent->CanBeInteractedBy(m_OwnerPlayer))
@@ -278,7 +277,7 @@ AActor* UC_InteractionComponent::FindBestInteractionTarget() const
 			continue;
 
 
-		FVector DirectionToTarget = TargetComponent->m_InteractionCollision->GetComponentLocation() - SourceLocation;
+		FVector DirectionToTarget = CandidateActor->GetActorLocation() - SourceLocation;
 		DirectionToTarget.Z = 0.0f; // 수평 방향만 고려
 
 		if (!DirectionToTarget.Normalize())
@@ -296,8 +295,6 @@ AActor* UC_InteractionComponent::FindBestInteractionTarget() const
 			BestDot = Dot;
 			BestTarget = CandidateActor;
 		}
-
-		UC_Util::Print("Find BestTarget", FColor::Red, 10.f);
 	}
 
 

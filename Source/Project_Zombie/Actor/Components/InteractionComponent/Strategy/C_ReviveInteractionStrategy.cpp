@@ -6,7 +6,7 @@
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "../C_InteractionComponent.h"
 
-
+#include "Utility/C_Util.h"
 
 UC_ReviveInteractionStrategy::UC_ReviveInteractionStrategy()
 {
@@ -21,12 +21,15 @@ bool UC_ReviveInteractionStrategy::CanStartInteraction(AC_BasicPlayer* _Interact
 		return false;
 
 	// 다운되어 있어야지 상호작용 가능
-	//return TargetPlayer->IsDowned();
+	//return TargetPlayer->IsDead();
+
 	return true;
 }
 
 bool UC_ReviveInteractionStrategy::StartInteraction(AC_BasicPlayer* _Interactor, AActor* _TargetActor)
 {
+	UC_Util::Print("----------->StartInteraction", FColor::Red, 10.f);
+
 	return false;
 }
 
