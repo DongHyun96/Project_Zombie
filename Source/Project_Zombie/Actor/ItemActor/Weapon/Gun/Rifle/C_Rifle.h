@@ -26,6 +26,11 @@ public:
 	virtual void PullTrigger() override;
 
 	/// <summary>
+	/// B키 입력 (사격모드 변경)
+	/// </summary>
+	virtual void SwitchFireMode() override;
+
+	/// <summary>
 	/// 마우스 왼쪽 버튼 클릭 뗌 (사격 중지)
 	/// <summary>
 	virtual void ReleaseTrigger() override;

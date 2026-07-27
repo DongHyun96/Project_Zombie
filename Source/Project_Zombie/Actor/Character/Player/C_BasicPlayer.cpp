@@ -464,7 +464,7 @@ void AC_BasicPlayer::ApplyMovementSpeed()
 		GetCharacterMovement()->MaxWalkSpeedCrouched = m_CrouchSpeed;
 		break;
 	case EPlayerPoseState::Aim:
-		//GetCharacterMovement()->MaxWalkSpeed = m_AimSpeed;
+		GetCharacterMovement()->MaxWalkSpeed = m_WalkSpeed;
 		break;
 	default:
 		GetCharacterMovement()->MaxWalkSpeed = m_WalkSpeed;

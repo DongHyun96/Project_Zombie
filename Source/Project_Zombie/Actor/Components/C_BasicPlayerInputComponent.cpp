@@ -111,10 +111,13 @@ void UC_BasicPlayerInputComponent::InitializePlayerInput(UInputComponent* Player
 	if (const UInputAction* IA = FindIAByName(TEXT("IA_PlayerFire")))
 	{
 		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::FireStarted);
-		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Ongoing, this, &UC_BasicPlayerInputComponent::FireOnGoing);
 		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Completed, this, &UC_BasicPlayerInputComponent::FireEnd);
 	}
 	
+	if (const UInputAction* IA = FindIAByName(TEXT("IA_FireMode")))
+	{
+		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::SwitchFireModeAction);
+	}
 	
 	if (const UInputAction* IA = FindIAByName(TEXT("IA_FreeLook")))
 	{
@@ -127,8 +130,6 @@ void UC_BasicPlayerInputComponent::InitializePlayerInput(UInputComponent* Player
 		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::KeepAimActionStart);
 		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Completed, this, &UC_BasicPlayerInputComponent::KeepAimActionEnd);
 	}
-	
-		
 
 }
 
@@ -223,12 +224,6 @@ void UC_BasicPlayerInputComponent::FireStarted()
 		CurWeapon->OnStartFire(Player);
 }
 
-void UC_BasicPlayerInputComponent::FireOnGoing()
-{
-	if (AC_WeaponBase* CurWeapon = Player->GetEquippedComponent()->GetCurWeapon())
-		CurWeapon->OnFireOnGoing(Player);
-}
-
 void UC_BasicPlayerInputComponent::FireEnd()
 {
 	if (AC_WeaponBase* CurWeapon = Player->GetEquippedComponent()->GetCurWeapon())
@@ -240,6 +235,12 @@ void UC_BasicPlayerInputComponent::ReloadAction()
 {
 	if (AC_WeaponBase* CurWeapon = Player->GetEquippedComponent()->GetCurWeapon())
 		CurWeapon->Reload(Player);
+}
+
+void UC_BasicPlayerInputComponent::SwitchFireModeAction()
+{
+	if (AC_WeaponBase* CurWeapon = Player->GetEquippedComponent()->GetCurWeapon())
+		CurWeapon->SwitchFireMode();
 }
 
 void UC_BasicPlayerInputComponent::KeepAimActionStart()

@@ -148,6 +148,8 @@ public:
 	
 	virtual bool InitializeItemActor(const FWeaponData* InRawData) override;
 	
+	virtual void SwitchFireMode();
+
 protected:
 	virtual void LoadAsyncAssets(const FWeaponData* InRawData) override;
 	

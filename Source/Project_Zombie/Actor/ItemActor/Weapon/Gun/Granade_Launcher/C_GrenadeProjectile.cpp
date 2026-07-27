@@ -67,9 +67,6 @@ void AC_GrenadeProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActo
 			);
 		}
 
-		// -------------------------------------------------------------
-		// 🔴 2. 폭발 범위 디버그 스피어 (부모의 m_ExplosionRadius 사용)
-		// -------------------------------------------------------------
 		DrawDebugSphere(
 			GetWorld(),
 			ExplosionLocation,
@@ -80,9 +77,6 @@ void AC_GrenadeProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActo
 			2.0f
 		);
 
-		// -------------------------------------------------------------
-		// 🎯 3. 폭발 반경 내 폰(Pawn) 검사 및 데미지 전달
-		// -------------------------------------------------------------
 		FCollisionObjectQueryParams ObjectQueryParams;
 		ObjectQueryParams.AddObjectTypesToQuery(ECC_Pawn);
 
