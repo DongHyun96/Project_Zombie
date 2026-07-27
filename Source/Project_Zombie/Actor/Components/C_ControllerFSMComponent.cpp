@@ -34,6 +34,10 @@ void UC_ControllerFSMComponent::BeginPlay()
 void UC_ControllerFSMComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	// ControllerFSM 주최는 오로지 LocallyControlled Player 자신
+	if (!m_OwnerPlayer->IsLocallyControlled()) return;
+	
 	HandleFSMTransition();
 	HandleFSMStates();
 }
@@ -74,7 +78,7 @@ void UC_ControllerFSMComponent::HandleFSMTransition()
 		/* IdleStopState -> TurnInPlaceState Transition*/
 		{
 			m_PlayerControllerRotState = EPlayerControllerRotState::TurnInPlaceState;
-			m_OwnerPlayer->GetTurnInPlaceComponent()->StartTurnInPlaceMotion(m_DeltaYaw);
+			m_OwnerPlayer->GetTurnInPlaceComponent()->StartTurnInPlaceMotion(m_DeltaYaw > 90.f);
 		}
 	}
 		return;

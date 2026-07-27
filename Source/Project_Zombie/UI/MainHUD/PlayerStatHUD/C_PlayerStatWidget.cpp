@@ -5,6 +5,7 @@
 
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
+#include "GameModeAndManager/C_UIManager.h"
 #include "Utility/C_Util.h"
 
 void UC_PlayerStatWidget::NativeOnInitialized()
@@ -113,6 +114,11 @@ bool UC_PlayerStatWidget::ToggleAmmoInfoVisibility
 	int32 	 	_LeftAmmoTotalCount
 )
 {
+	if (!_Visible)
+		PRINT_LOCAL(GetWorld(), "AmmoVisible False", FColor::Red, 10.f);
+	else
+		PRINT_LOCAL(GetWorld(), "AmmoVisible True", FColor::Red, 10.f);
+
 	if (!_Visible)
 	{
 		if (!m_bAmmoInfoPlayedReverseFlag) // 역재생 Animation 처리로 마지막에 호출하지 않았을 때 역재생 새로이 재생

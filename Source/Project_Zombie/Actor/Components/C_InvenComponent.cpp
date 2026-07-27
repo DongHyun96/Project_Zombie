@@ -272,7 +272,7 @@ bool UC_InvenComponent::SwapInvenEntry(int32 MySlotIdx, UC_InvenComponent* Targe
 	// 4. 고유 식별 정보인 슬롯 인덱스는 원래대로 복구
 	MyEntry.SlotIndex = MySlotIdx;
 	TargetEntry.SlotIndex = TargetSlotIdx;
-
+	
 	// 5. 잠금 해제 (이 내부에서 MarkItemDirty와 Broadcast가 수행됨)
 	SetSlotLockState(MySlotIdx, INDEX_NONE);
 	TargetComp->SetSlotLockState(TargetSlotIdx, INDEX_NONE);
@@ -470,6 +470,7 @@ bool UC_InvenComponent::SetSlotLockState(int32 SlotIdx, int32 InPlayerID)
 
 	// 3. FastArraySerializer 동기화 마크 및 로컬 UI 브로드캐스트
 	InventoryContainer.MarkItemDirty(Entry);
+	// TODO : 여기서 클라이언트에게 cursorItem의 초기화가 필요해 보임.
 	
 	OnInventorySlotChanged.Broadcast(SlotIdx, Entry);
 
@@ -501,4 +502,5 @@ void UC_InvenComponent::CancelDragItemSlot(int32 SlotIndex, int32 InPlayerId)
 void UC_InvenComponent::OnRep_InventoryContainer()
 {
 	InventoryContainer.OwnerComponent = this;
+	//InventoryContainer.MarkArrayDirty();
 }
