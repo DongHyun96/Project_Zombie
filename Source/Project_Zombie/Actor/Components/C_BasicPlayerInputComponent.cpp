@@ -113,6 +113,7 @@ void UC_BasicPlayerInputComponent::InitializePlayerInput(UInputComponent* Player
 	if (const UInputAction* IA = FindIAByName(TEXT("IA_PlayerFire")))
 	{
 		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::FireStarted);
+		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Ongoing, this, &UC_BasicPlayerInputComponent::FireOnGoing);
 		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Completed, this, &UC_BasicPlayerInputComponent::FireEnd);
 	}
 	
@@ -236,6 +237,12 @@ void UC_BasicPlayerInputComponent::FireStarted()
 {
 	if (AC_WeaponBase* CurWeapon = Player->GetEquippedComponent()->GetCurWeapon())
 		CurWeapon->OnStartFire(Player);
+}
+
+void UC_BasicPlayerInputComponent::FireOnGoing()
+{
+	if (AC_WeaponBase* CurWeapon = Player->GetEquippedComponent()->GetCurWeapon())
+		CurWeapon->OnFireOnGoing(Player);
 }
 
 void UC_BasicPlayerInputComponent::FireEnd()

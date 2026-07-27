@@ -98,6 +98,7 @@ private:
 	
 	
 	void FireStarted();
+	void FireOnGoing();
 	void FireEnd();
 	void ReloadAction();
 	void SwitchFireModeAction();

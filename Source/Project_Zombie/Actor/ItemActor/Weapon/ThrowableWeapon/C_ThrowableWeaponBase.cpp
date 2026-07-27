@@ -522,10 +522,16 @@ void AC_ThrowableWeaponBase::OnThrowThrowable()
 	Server_DecreaseCurCount();
 	
 	// TODO : 던지고 Count 남아있으면 새로 스폰해주던지, 던질 때 가짜를 던지던지 해야함.
+	
 
 	// int32 Idx = ItemLinkComp->GetSlotIndex();
 
 	// m_OwnerPlayer->GetEquippedComponent()->Server_RequestSpawnEquippedActor(static_cast<int32>(EWeaponSlot::ThrowableWeapon), )
+
+	
+
+	// 
+	//m_OwnerPlayer->GetEquippedComponent()->ChangeCurWeapon(EWeaponSlot::ThrowableWeapon);
 }
 
 // ----------------- 쿠킹 관련 처리 -----------------
