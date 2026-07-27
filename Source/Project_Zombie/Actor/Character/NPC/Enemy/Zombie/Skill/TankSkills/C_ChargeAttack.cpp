@@ -38,7 +38,34 @@ bool UC_ChargeAttack::Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data)
 	if (!IsValid(Tank))
 		return false;
 
-	Tank->StartCharge(Target, _Data);
+	if (!IsValid(_Data->Montage))
+		return false;
+
+	USkeletalMeshComponent* Mesh = Tank->GetMesh();
+	if (!IsValid(Mesh))
+		return false;
+
+	UAnimInstance* AnimInst = Mesh->GetAnimInstance();
+	if (!IsValid(AnimInst))
+		return false;
+
+	// 이미 돌진중이면 다시 실행하지않음
+	if (Tank->IsCharging())
+		return false;
+
+	// Notify가 실행될 때 사용할 타겟과 스킬데이터 저장
+	if (!Tank->PrepareCharge(Target, _Data))
+		return false;
+
+	// 몽타주 재생
+	const float MontageLength = AnimInst->Montage_Play(_Data->Montage);
+
+	if (MontageLength <= 0.f)
+	{
+		Tank->CancelPrepareCharge();
+		return false;
+	}
+
 
 	return true;
 }
