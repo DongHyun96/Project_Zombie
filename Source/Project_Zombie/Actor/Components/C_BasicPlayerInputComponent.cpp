@@ -11,6 +11,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/ItemActor/Weapon/C_WeaponBase.h"
+#include "Actor/Components/InteractionComponent/C_InteractionComponent.h"
 #include "GameModeAndManager/C_UIManager.h"
 #include "StatComponent/C_StatComponentBase.h"
 #include "UI/InvenUI/C_InventoryWidget.h"
@@ -96,6 +97,7 @@ void UC_BasicPlayerInputComponent::InitializePlayerInput(UInputComponent* Player
 	if (const UInputAction* IA = FindIAByName(TEXT("IA_EquipMeleeWeapon"))) EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::EquipMeleeWeapon);
 	if (const UInputAction* IA = FindIAByName(TEXT("IA_EquipThrowable")))   EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::EquipThrowable);
 		
+	if (const UInputAction* IA = FindIAByName(TEXT("IA_PlayerInteract")))     EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::InteractionAction);
 	
 	if (const UInputAction* IA = FindIAByName(TEXT("IA_ToggleArmed")))     EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::ToggleArmed);
 	if (const UInputAction* IA = FindIAByName(TEXT("IA_ToggleInventory"))) EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::ToggleInventoryWidget);
@@ -216,6 +218,18 @@ void UC_BasicPlayerInputComponent::CrouchAction()
 		return;
 
 	Player->ToggleCrouch();
+}
+
+void UC_BasicPlayerInputComponent::InteractionAction()
+{
+	if (!Player || !Player->IsLocallyControlled())
+		return;
+
+	UC_InteractionComponent* InteractionComponent = Player->GetInteractionComponent();
+	if (!InteractionComponent)
+		return;
+
+	InteractionComponent->TryInteract();
 }
 
 void UC_BasicPlayerInputComponent::FireStarted()
