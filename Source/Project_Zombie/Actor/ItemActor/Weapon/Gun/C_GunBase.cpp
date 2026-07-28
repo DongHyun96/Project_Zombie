@@ -311,37 +311,62 @@ void AC_GunBase::LoadAsyncAssets(const FWeaponData* InRawData)
 
 bool AC_GunBase::ConsumeAmmo()
 {
-	// 총알이 없다면 사격 중지
-	if (m_CurrentAmmo <= 0)
+	if (m_CurrentAmmo > 0)
 	{
-		if (m_OwnerPlayer && m_OwnerPlayer->IsLocallyControlled())
-			UI_MANAGER(GetWorld())->GetMainHUDWidget()->AddPlayerWarningLog("OUT OF AMMO");
+		m_CurrentAmmo--;
 
-		ReleaseTrigger();
-		return false;
-	}
-
-	m_CurrentAmmo--;
-	
-	if (FInventoryEntry* EntryPtr = ItemLinkComp->GetItemEntryPtr())
-	{
-		if (FGunCustomData* GunCustomData = EntryPtr->CustomData.GetMutablePtr<FGunCustomData>())
+		if (HasAuthority() && m_OwnerPlayer && m_OwnerPlayer->IsLocallyControlled())
 		{
-			GunCustomData->CurAmmo = m_CurrentAmmo;
-			UC_Util::Print(GunCustomData->CurAmmo);
+			OnRep_CurrentAmmo();
 		}
+
+		return true;
+	}
+	return false;
+}
+
+void AC_GunBase::PlayFireEffects_Local()
+{
+	if (m_OwnerPlayer && m_PlayerFireAnimation)
+	{
+		m_OwnerPlayer->PlayAnimMontage(m_PlayerFireAnimation);
 	}
 
-	// 현재 남은 장탄수 UI 업데이트
-	if (m_OwnerPlayer && m_OwnerPlayer->IsLocallyControlled())
-		UI_MANAGER(GetWorld())->GetMainHUDWidget()->UpdateMagazineAmmoCount(m_CurrentAmmo);
+	if (m_WeaponMesh && m_FireAnimation)
+	{
+		m_WeaponMesh->PlayAnimation(m_FireAnimation, false);
+	}
+}
 
-	return true;
+void AC_GunBase::Client_PlayFireEffects_Implementation()
+{
+	if (m_OwnerPlayer && m_OwnerPlayer->IsLocallyControlled()) return;
+	PlayFireEffects_Local();
+}
+
+void AC_GunBase::Multicast_PlayReloadEffects_Implementation()
+{
+	if (m_WeaponMesh && m_ReloadAnimation)
+	{
+		m_WeaponMesh->PlayAnimation(m_ReloadAnimation, false);
+	}
+
+	if (m_OwnerPlayer && m_PlayerReloadAnimation)
+	{
+		m_OwnerPlayer->PlayAnimMontage(m_PlayerReloadAnimation);
+	}
+}
+
+void AC_GunBase::OnRep_CurrentAmmo()
+{
+	if (m_OwnerPlayer && m_OwnerPlayer->IsLocallyControlled())
+	{
+		UI_MANAGER(GetWorld())->GetMainHUDWidget()->UpdateMagazineAmmoCount(m_CurrentAmmo);
+	}
 }
 
 void AC_GunBase::SpawnShellEject()
 {
-	// 나이아가라 시스템, 탄피 메시, 무기 메시가 모두 유효할 때만 실행
 	if (!m_ShellEjectNiagaraSystem || !m_ShellMesh || !m_WeaponMesh || !GetWorld()) return;
 
 	FTransform EjectTransform = m_WeaponMesh->GetSocketTransform(TEXT("AmmoEject"), RTS_World);
@@ -355,14 +380,100 @@ void AC_GunBase::SpawnShellEject()
 
 	if (NiagaraComp)
 	{
-		// Gun_init()에서 데이터 테이블로 로드해둔 m_ShellMesh를 나이아가라 변수로 넘김
 		NiagaraComp->SetVariableStaticMesh(FName("ShellMesh"), m_ShellMesh);
-
-		// 일반 총기는 1발
 		NiagaraComp->SetIntParameter(FName("ShellCount"), 1);
 	}
 }
 
+void AC_GunBase::Multicast_PlayFireEffects_Implementation(const FVector_NetQuantize& ImpactPoint)
+{
+	if (m_OwnerPlayer && m_PlayerFireAnimation)
+	{
+		m_OwnerPlayer->PlayAnimMontage(m_PlayerFireAnimation);
+	}
+
+	if (m_WeaponMesh && m_FireAnimation)
+	{
+		m_WeaponMesh->PlayAnimation(m_FireAnimation, false);
+	}
+
+	if (m_OwnerPlayer && !m_OwnerPlayer->IsLocallyControlled())
+	{
+		PlayFireEffects_Local();
+	}
+
+	SpawnShellEject();
+
+	if (m_WeaponMesh && GetWorld())
+	{
+		FVector MuzzleStart = m_WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
+		FVector ExplicitImpactPoint = FVector(ImpactPoint);
+		FVector ShootDir = (ExplicitImpactPoint - MuzzleStart).GetSafeNormal();
+		FRotator MuzzleRotation = ShootDir.Rotation();
+
+		if (m_TracerFX)
+		{
+			UParticleSystemComponent* TracerComp = UGameplayStatics::SpawnEmitterAtLocation(
+				GetWorld(),
+				m_TracerFX,
+				MuzzleStart,
+				MuzzleRotation,
+				FVector(1.0f),
+				false
+			);
+
+			if (TracerComp)
+			{
+				float Distance = FVector::Distance(MuzzleStart, ExplicitImpactPoint);
+				float Speed = 20000.0f;
+				float FlyTime = Distance / Speed;
+
+				TSharedPtr<float> ElapsedTime = MakeShared<float>(0.0f);
+				TSharedPtr<FTimerHandle> TracerTimerHandle = MakeShared<FTimerHandle>();
+
+				GetWorld()->GetTimerManager().SetTimer(
+					*TracerTimerHandle,
+					[TracerComp, MuzzleStart, ExplicitImpactPoint, ShootDir, FlyTime, ElapsedTime, TracerTimerHandle, this]() mutable
+					{
+						if (!TracerComp || !TracerComp->IsValidLowLevel()) return;
+
+						*ElapsedTime += 0.01f;
+						float Alpha = FMath::Clamp(*ElapsedTime / FlyTime, 0.0f, 1.0f);
+
+						FVector CurrentLoc = FMath::Lerp(MuzzleStart, ExplicitImpactPoint, Alpha);
+						TracerComp->SetWorldLocation(CurrentLoc);
+
+						if (Alpha >= 1.0f)
+						{
+							TracerComp->DeactivateSystem();
+							TracerComp->DestroyComponent();
+
+							if (m_ImpactFX && GetWorld())
+							{
+								FRotator ImpactRotation = (-ShootDir).Rotation();
+								UGameplayStatics::SpawnEmitterAtLocation(
+									GetWorld(),
+									m_ImpactFX,
+									ExplicitImpactPoint,
+									ImpactRotation,
+									FVector(1.0f),
+									true
+								);
+							}
+
+							if (GetWorld() && TracerTimerHandle.IsValid())
+							{
+								GetWorld()->GetTimerManager().ClearTimer(*TracerTimerHandle);
+							}
+						}
+					},
+					0.01f,
+					true
+				);
+			}
+		}
+	}
+}
 /*
 void AC_GunBase::InitFromInventoryEntry(const FInventoryEntry& InEntry)
 {
@@ -401,6 +512,7 @@ void AC_GunBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifeti
 	DOREPLIFETIME(AC_GunBase, m_CurrentAmmo);
 	DOREPLIFETIME(AC_GunBase, m_MaxAmmo);
 	DOREPLIFETIME(AC_GunBase, m_FireRate);
+	DOREPLIFETIME(AC_GunBase, m_bIsReloading);
 }
 
 bool AC_GunBase::AttachToHand(USceneComponent* _ParentMesh)
@@ -411,6 +523,8 @@ bool AC_GunBase::AttachToHand(USceneComponent* _ParentMesh)
 	AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(_ParentMesh->GetOwner());
 	if (!Player) return false; // 손에 장착 시도하는 Owner Character가 Player형이 아닌 경우, return false
 	if (Player != m_OwnerPlayer) return false; // 손에 장착 시도하는 Player가 무기주인인 경우가 아닌 경우 
+
+	SetOwner(Player);
 
 	const bool bIsAttached = AttachToComponent
 	(
@@ -448,7 +562,13 @@ bool AC_GunBase::AttachToHolster(USceneComponent* _ParentMesh)
 
 bool AC_GunBase::OnStartFire(AC_BasicPlayer* _WeaponUser)
 {
-	return false;
+	if (!_WeaponUser) return false;
+	m_OwnerPlayer = _WeaponUser;
+
+	if (m_bIsReloading) return false;
+
+	PullTrigger();
+	return true;
 }
 
 bool AC_GunBase::OnFireOnGoing(AC_BasicPlayer* _WeaponUser)
@@ -458,19 +578,161 @@ bool AC_GunBase::OnFireOnGoing(AC_BasicPlayer* _WeaponUser)
 
 bool AC_GunBase::OnFireEnd(AC_BasicPlayer* _WeaponUser)
 {
-	return false;
+	if (!_WeaponUser) return false;
+	ReleaseTrigger();
+	return true;
 }
 
 bool AC_GunBase::Reload(AC_BasicPlayer* _WeaponUser)
 {
-	return false;
+	if (!_WeaponUser) return false;
+	m_OwnerPlayer = _WeaponUser;
+
+	if (m_CurrentAmmo >= m_MaxAmmo || m_bIsReloading) return false;
+
+	Server_StartReload();
+	return true;
 }
 
 void AC_GunBase::UpdateAmmoInfoHUDForDrawEnd()
 {
 	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled()) return;
-	
+
 	UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility(true, m_FireMode, m_CurrentAmmo, m_MaxAmmo);
+}
+
+void AC_GunBase::PullTrigger()
+{
+	// 재장전 중(m_bIsReloading)이거나 탄약이 없으면 발사 불가
+	if (m_bIsFiring || m_bIsReloading || m_CurrentAmmo <= 0) return;
+
+	m_bIsFiring = true;
+	PlayFireEffects_Local();
+	Server_PullTrigger();
+}
+
+void AC_GunBase::ReleaseTrigger()
+{
+	m_bIsFiring = false;
+	Server_ReleaseTrigger();
+}
+
+FVector AC_GunBase::LineTraceDamage(const FVector& CameraStart, const FRotator& CameraRot, float DamageVal, float SpreadAngleDegree)
+{
+	if (!m_WeaponMesh || !GetWorld() || !m_OwnerPlayer)
+		return FVector::ZeroVector;
+
+	FVector CameraForward = CameraRot.Vector();
+	float TraceRange = 10000.0f;
+
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+	QueryParams.AddIgnoredActor(m_OwnerPlayer);
+
+	FVector CameraEnd = CameraStart + (CameraForward * TraceRange);
+	FHitResult CameraHitResult;
+
+	bool bCameraHit = GetWorld()->LineTraceSingleByChannel(
+		CameraHitResult,
+		CameraStart,
+		CameraEnd,
+		ECC_Visibility,
+		QueryParams
+	);
+
+	FVector TargetPoint = bCameraHit ? CameraHitResult.ImpactPoint : CameraEnd;
+	FVector MuzzleStart = m_WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
+	FVector ShootDirection = (TargetPoint - MuzzleStart).GetSafeNormal();
+
+	if (SpreadAngleDegree > 0.0f)
+	{
+		float ConeHalfAngleRad = FMath::DegreesToRadians(SpreadAngleDegree);
+		ShootDirection = FMath::VRandCone(ShootDirection, ConeHalfAngleRad);
+	}
+
+	FVector FinalMuzzleEnd = MuzzleStart + (ShootDirection * TraceRange);
+	FHitResult MuzzleHitResult;
+
+	bool bMuzzleHit = GetWorld()->LineTraceSingleByChannel(
+		MuzzleHitResult,
+		MuzzleStart,
+		FinalMuzzleEnd,
+		ECC_Visibility,
+		QueryParams
+	);
+
+	FVector ActualEndLocation = bMuzzleHit ? MuzzleHitResult.ImpactPoint : FinalMuzzleEnd;
+
+	if (bMuzzleHit)
+	{
+		if (AC_BasicEnemy* Enemy = Cast<AC_BasicEnemy>(MuzzleHitResult.GetActor()))
+		{
+			AController* InstigatorController = m_OwnerPlayer->GetController();
+			UGameplayStatics::ApplyDamage(Enemy, DamageVal, InstigatorController, this, nullptr);
+		}
+	}
+
+	return ActualEndLocation;
+}
+
+void AC_GunBase::Server_PullTrigger_Implementation()
+{
+	if (m_bIsReloading || m_CurrentAmmo <= 0) return;
+
+	if (ConsumeAmmo())
+	{
+		Server_ExecuteFire();
+	}
+}
+
+void AC_GunBase::Server_ReleaseTrigger_Implementation()
+{
+	m_bIsFiring = false;
+}
+
+void AC_GunBase::Server_ExecuteFire()
+{
+	if (!m_OwnerPlayer) return;
+
+	FVector CameraLoc;
+	FRotator CameraRot;
+	m_OwnerPlayer->GetActorEyesViewPoint(CameraLoc, CameraRot);
+
+	FVector ImpactPoint = LineTraceDamage(CameraLoc, CameraRot, m_Damage, 0.0f);
+
+	Multicast_PlayFireEffects(ImpactPoint);
+}
+
+void AC_GunBase::Server_StartReload_Implementation()
+{
+	if (m_CurrentAmmo >= m_MaxAmmo || m_bIsReloading) return;
+
+	m_bIsReloading = true;
+	ReleaseTrigger();
+
+	Multicast_PlayReloadEffects();
+
+	float ReloadDuration = 0.0f;
+	if (m_PlayerReloadAnimation)
+	{
+		ReloadDuration = m_PlayerReloadAnimation->GetPlayLength();
+	}
+
+	GetWorld()->GetTimerManager().SetTimer(
+		m_ReloadTimerHandle,
+		this,
+		&AC_GunBase::Server_ExecuteReload,
+		ReloadDuration,
+		false
+	);
+}
+
+void AC_GunBase::Server_ExecuteReload()
+{
+	m_CurrentAmmo = m_MaxAmmo;
+	m_bIsReloading = false; 
+
+	OnRep_CurrentAmmo();
 }
 
 void AC_GunBase::OnMainColliderBeginOverlap

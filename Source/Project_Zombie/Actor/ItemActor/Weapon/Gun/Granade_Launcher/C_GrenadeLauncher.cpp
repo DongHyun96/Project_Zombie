@@ -1,33 +1,53 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "C_GrenadeLauncher.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "C_GrenadeProjectile.h"
-
 #include "GameModeAndManager/C_UIManager.h"
-
 #include "UI/MainHUD/C_GameMainHUD.h"
-
 #include "GameFramework/ProjectileMovementComponent.h"
-
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
-
 #include "Kismet/GameplayStatics.h"
 #include "DrawDebugHelpers.h"
 
 AC_GrenadeLauncher::AC_GrenadeLauncher()
 {
 	m_FireMode = EFireMode::Single;
+
+	// 서버에서 스폰된 액터를 클라이언트들에게 네트워크 복제
+	bReplicates = true;
+
+	// ProjectileMovement의 위치/속도 이동을 네트워크 동기화
+	SetReplicateMovement(true);
+
+}
+
+void AC_GrenadeLauncher::Multicast_EjectAllSpentShells_Implementation(int32 SpentShellCount)
+{
+	if (SpentShellCount <= 0 || !m_ShellEjectNiagaraSystem || !m_ShellMesh || !m_WeaponMesh || !GetWorld())
+		return;
+
+	FTransform EjectTransform = m_WeaponMesh->GetSocketTransform(TEXT("AmmoEject"), RTS_World);
+
+	UNiagaraComponent* NiagaraComp = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+		GetWorld(),
+		m_ShellEjectNiagaraSystem,
+		EjectTransform.GetLocation(),
+		EjectTransform.GetRotation().Rotator()
+	);
+
+	if (NiagaraComp)
+	{
+		NiagaraComp->SetVariableStaticMesh(FName("ShellMesh"), m_ShellMesh);
+		NiagaraComp->SetIntParameter(FName("ShellCount"), SpentShellCount);
+	}
 }
 
 bool AC_GrenadeLauncher::OnStartFire(AC_BasicPlayer* _WeaponUser)
 {
 	if (nullptr == _WeaponUser)
 		return false;
-
-	// m_OwnerPlayer = _WeaponUser;
 
 	if (m_bIsReloading)
 		return false;
@@ -55,27 +75,37 @@ bool AC_GrenadeLauncher::Reload(AC_BasicPlayer* _WeaponUser)
 	if (nullptr == _WeaponUser)
 		return false;
 
-	// m_OwnerPlayer = _WeaponUser;
 	StartReload();
-
 	return true;
 }
 
 void AC_GrenadeLauncher::PullTrigger()
 {
-	if (m_bIsFiring || m_bIsReloading || !m_bCanFire) return;
+	// 탄약이 없거나, 이미 발사 중이거나, 재장전 중이거나, 쿨타임 중이면 리턴
+	if (m_bIsFiring || m_bIsReloading || !m_bCanFire || m_CurrentAmmo <= 0)
+		return;
 
 	m_bIsFiring = true;
 	m_bCanFire = false;
 
-	PlayFireEffects();
+	// 1. 로컬 플레이어 사격 연출 (부모의 애니메이션 재생)
+	PlayFireEffects_Local();
 
+	// 2. 서버에 사격 요청
+	Server_PullTrigger();
+
+	// 3. 발사 쿨타임 타이머 설정
 	GetWorldTimerManager().SetTimer(m_ShotCooldownTimer, this, &AC_GrenadeLauncher::ResetFireCooldown, m_FireRate, false);
 }
 
 void AC_GrenadeLauncher::ReleaseTrigger()
 {
 	m_bIsFiring = false;
+
+	if (!HasAuthority())
+	{
+		Server_ReleaseTrigger();
+	}
 }
 
 void AC_GrenadeLauncher::ResetFireCooldown()
@@ -84,86 +114,37 @@ void AC_GrenadeLauncher::ResetFireCooldown()
 	m_bIsFiring = false;
 }
 
-void AC_GrenadeLauncher::PlayFireEffects()
+// [서버] 부모(AC_GunBase)의 Server_PullTrigger_Implementation 내부에서 호출되는 함수
+void AC_GrenadeLauncher::Server_ExecuteFire()
 {
-	if (!ConsumeAmmo())
-	{
-		ReleaseTrigger();
-		m_bCanFire = true;
-		return;
-	}
+	// 1. 조준점(ImpactPoint) 계산
+	FVector TargetPoint = GetCameraTargetPoint();
 
-	if (m_OwnerPlayer && m_PlayerFireAnimation)
-	{
-		m_OwnerPlayer->PlayAnimMontage(m_PlayerFireAnimation);
-	}
+	// 2. 서버에서 유탄 액터 스폰
+	SpawnGrenadeProjectile(TargetPoint);
 
-	if (m_WeaponMesh && m_FireAnimation)
-	{
-		m_WeaponMesh->PlayAnimation(m_FireAnimation, false);
-	}
-
-	// 유탄 액터 스폰
-	SpawnGrenadeProjectile();
+	// 3. 다른 플레이어들에게 발사 이펙트 전파
+	Multicast_PlayFireEffects(TargetPoint);
 }
 
-void AC_GrenadeLauncher::EjectAllSpentShells()
+// 부모(AC_GunBase)의 PlayFireEffects_Local()을 그대로 따름
+void AC_GrenadeLauncher::PlayFireEffects_Local()
 {
-
-	int32 SpentShellCount = m_MaxAmmo - m_CurrentAmmo;
-
-	if (SpentShellCount <= 0 || !m_ShellEjectNiagaraSystem || !m_ShellMesh || !m_WeaponMesh || !GetWorld())
-		return;
-
-	FTransform EjectTransform = m_WeaponMesh->GetSocketTransform(TEXT("AmmoEject"), RTS_World);
-
-	UNiagaraComponent* NiagaraComp = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-		GetWorld(),
-		m_ShellEjectNiagaraSystem,
-		EjectTransform.GetLocation(),
-		EjectTransform.GetRotation().Rotator()
-	);
-
-	if (NiagaraComp)
-	{
-		NiagaraComp->SetVariableStaticMesh(FName("ShellMesh"), m_ShellMesh);
-		NiagaraComp->SetIntParameter(FName("ShellCount"), SpentShellCount);
-	}
-
+	Super::PlayFireEffects_Local();
 }
 
-void AC_GrenadeLauncher::SpawnGrenadeProjectile()
+void AC_GrenadeLauncher::SpawnShellEject()
 {
-	if (!m_WeaponMesh || !GetWorld() || !m_GrenadeClass || !m_OwnerPlayer)
+	// 발사 시 탄피 배출 무력화
+}
+
+void AC_GrenadeLauncher::SpawnGrenadeProjectile(const FVector& TargetPoint)
+{
+	// 스폰 로직은 오직 서버에서만 작동
+	if (!HasAuthority() || !m_WeaponMesh || !GetWorld() || !m_GrenadeClass || !m_OwnerPlayer)
 		return;
-
-	APlayerController* PC = Cast<APlayerController>(m_OwnerPlayer->GetController());
-	if (!PC || !PC->PlayerCameraManager)
-		return;
-
-	FVector CameraLocation = PC->PlayerCameraManager->GetCameraLocation();
-	FVector CameraForward = PC->PlayerCameraManager->GetCameraRotation().Vector();
-
-	float AimDistance = 5000.0f;
-	FVector CameraEnd = CameraLocation + (CameraForward * AimDistance);
-
-	FHitResult CameraHitResult;
-	FCollisionQueryParams QueryParams;
-	QueryParams.AddIgnoredActor(this);          // 총 자체 무시
-	QueryParams.AddIgnoredActor(m_OwnerPlayer);   // 플레이어 자신 무시
-
-	bool bCameraHit = GetWorld()->LineTraceSingleByChannel(
-		CameraHitResult,
-		CameraLocation,
-		CameraEnd,
-		ECC_Visibility,
-		QueryParams
-	);
-
-	FVector TargetPoint = bCameraHit ? CameraHitResult.ImpactPoint : CameraEnd;
 
 	FVector StartLocation = m_WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
-
 	FVector LaunchDirection = (TargetPoint - StartLocation).GetSafeNormal();
 
 	float LaunchSpeed = 2500.0f;
@@ -172,6 +153,7 @@ void AC_GrenadeLauncher::SpawnGrenadeProjectile()
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
 	SpawnParams.Instigator = m_OwnerPlayer;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 	FRotator SpawnRotation = LaunchVelocity.Rotation();
 
@@ -188,16 +170,57 @@ void AC_GrenadeLauncher::SpawnGrenadeProjectile()
 	}
 }
 
+FVector AC_GrenadeLauncher::GetCameraTargetPoint() const
+{
+	if (!m_OwnerPlayer)
+		return FVector::ZeroVector;
+
+	APlayerController* PC = Cast<APlayerController>(m_OwnerPlayer->GetController());
+	if (!PC || !PC->PlayerCameraManager)
+	{
+		return m_OwnerPlayer->GetActorLocation() + (m_OwnerPlayer->GetActorForwardVector() * 5000.0f);
+	}
+
+	FVector CameraLocation = PC->PlayerCameraManager->GetCameraLocation();
+	FVector CameraForward = PC->PlayerCameraManager->GetCameraRotation().Vector();
+
+	float AimDistance = 5000.0f;
+	FVector CameraEnd = CameraLocation + (CameraForward * AimDistance);
+
+	FHitResult CameraHitResult;
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+	QueryParams.AddIgnoredActor(m_OwnerPlayer);
+
+	bool bCameraHit = GetWorld()->LineTraceSingleByChannel(
+		CameraHitResult,
+		CameraLocation,
+		CameraEnd,
+		ECC_Visibility,
+		QueryParams
+	);
+
+	return bCameraHit ? CameraHitResult.ImpactPoint : CameraEnd;
+}
+
 void AC_GrenadeLauncher::StartReload()
 {
-	ReleaseTrigger();
-
-	EjectAllSpentShells();
-
 	if (m_CurrentAmmo >= m_MaxAmmo || m_bIsReloading)
 		return;
 
+	ReleaseTrigger();
 	m_bIsReloading = true;
+
+	//  서버라면 직접 탄피 배출 멀티캐스트 호출 / 클라이언트라면 서버 RPC 호출
+	if (HasAuthority())
+	{
+		int32 SpentShellCount = m_MaxAmmo - m_CurrentAmmo;
+		Multicast_EjectAllSpentShells(SpentShellCount);
+	}
+	else
+	{
+		Server_StartReload();
+	}
 
 	if (m_WeaponMesh && m_ReloadAnimation)
 	{
@@ -218,11 +241,31 @@ void AC_GrenadeLauncher::StartReload()
 	GetWorldTimerManager().SetTimer(m_ReloadTimerHandle, this, &AC_GrenadeLauncher::CompleteReload, ReloadDuration, false);
 }
 
+void AC_GrenadeLauncher::Server_StartReload_Implementation()
+{
+	Super::Server_StartReload_Implementation();
+
+	// 서버가 클라이언트의 요청을 받아 모든 플레이어에게 탄피 배출 멀티캐스트 전파
+	int32 SpentShellCount = m_MaxAmmo - m_CurrentAmmo;
+	if (SpentShellCount > 0)
+	{
+		Multicast_EjectAllSpentShells(SpentShellCount);
+	}
+}
+
 void AC_GrenadeLauncher::CompleteReload()
 {
-	m_CurrentAmmo = m_MaxAmmo;
 	m_bIsReloading = false;
 
-	if (m_OwnerPlayer && m_OwnerPlayer->IsLocallyControlled())
-		UI_MANAGER(GetWorld())->GetMainHUDWidget()->UpdateMagazineAmmoCount(m_CurrentAmmo);
+	// 탄약 채우기는 서버에서 처리
+	if (HasAuthority())
+	{
+		m_CurrentAmmo = m_MaxAmmo;
+
+		// 서버(호스트) 본인 화면의 HUD 갱신
+		if (m_OwnerPlayer && m_OwnerPlayer->IsLocallyControlled())
+		{
+			OnRep_CurrentAmmo();
+		}
+	}
 }

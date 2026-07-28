@@ -50,7 +50,7 @@ protected:
 	float					m_Damage;
 
 	// 현재 남아있는 총알 수
-	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Weapon|Stats")
+	UPROPERTY(ReplicatedUsing = OnRep_CurrentAmmo, BlueprintReadOnly, Category = "Weapon|Stats")
 	int32					m_CurrentAmmo;
 
 	// 총이 갖는 최종 MaxAmmo
@@ -60,6 +60,9 @@ protected:
 	// 총이 갖는 최종 FireRate
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Weapon|Stats")
 	float					m_FireRate;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GunStats")
+	float m_SpreadAngle = 0.0f;
 
 	// 총이 갖는 최종 ShellEjectImpulse(탄피 배출에 가하는 힘), TODO : 아마 나중에 Actor로 만든게 아니라 나이아가라등으로 바꾸면서 사라질 수 도? 
 	float					m_ShellEjectImpulse;	// 살짝 애매 - 상연
@@ -82,24 +85,34 @@ protected:
 	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Data")
 	//FInventoryEntry			ItemEntry;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Effects|Shell")
-	TObjectPtr<class UNiagaraSystem> m_ShellEjectNiagaraSystem;
+	UPROPERTY(EditDefaultsOnly, Category = "Effects")
+	class UNiagaraSystem* m_ShellEjectNiagaraSystem;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Effects")
+	class UParticleSystem* m_TracerFX;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Effects")
+	class UParticleSystem* m_ImpactFX;
 
 protected:
 	// 현재 사격 버튼을 누르고 있는 상태인지 확인
 	bool m_bIsFiring = false;
 
 	// 현재 재장전 상태인지 확인
+	UPROPERTY(Replicated)
 	bool m_bIsReloading = false;
 
 	// 연사 타이머를 관리하기 위한 핸들
 	FTimerHandle m_FireTimerHandle;
 
-protected:
-	
-	// 이 총기의 FireMode 종류 (한 종류로만 설정되도록 정해짐)
+	FTimerHandle m_ReloadTimerHandle;
+
 	EFireMode m_FireMode{};
-	
+
+	// 클라이언트에서 전달받은 카메라 위치/회전값 캐싱
+	FVector m_CachedCameraLoc;
+	FRotator m_CachedCameraRot;
+
 private:
 
 	// 이거 희민님이 지정한 오른손 소켓 그냥 써도 되면 그냥 쓰기
@@ -134,8 +147,16 @@ public:
 	/// <summary>
 	/// 공통 탄피 배출 로직
 	/// </summary>
-	void SpawnShellEject();
+	virtual void SpawnShellEject();
 	
+	/// <summary>
+	/// 라인트레이스 파티클 이펙트 출력
+	/// </summary>
+	// 멀티캐스트 이펙트 재생 (원본 로직 그대로)
+	UFUNCTION(NetMulticast, Unreliable)
+	void Multicast_PlayFireEffects(const FVector_NetQuantize& ImpactPoint);
+	void Multicast_PlayFireEffects_Implementation(const FVector_NetQuantize& ImpactPoint);
+
 	// 리팩토링중....
 public:
 	// 인벤토리나 Pickup에서 Spawn/Attach 시 호출하여 데이터를 주입, TODO : ItemActor를 상속받게 하고 ItemActor에서 선언하기.
@@ -191,13 +212,43 @@ public:
 	
 	virtual void UpdateAmmoInfoHUDForDrawEnd() override;
 
+protected:
+	virtual void PullTrigger();
+	virtual void ReleaseTrigger();
+
+	// 자식 클래스가 고유 로직을 구현할 순수 가상 메서드 성격의 인터페이스
+	virtual void Server_ExecuteFire();
+	virtual void Server_ExecuteReload();
+
+	// 로컬/멀티캐스트 사격 이펙트
+	virtual void PlayFireEffects_Local();
+
+	// 클라이언트 HUD 갱신
+	UFUNCTION()
+	virtual void OnRep_CurrentAmmo();
+
+	virtual FVector LineTraceDamage(const FVector& CameraStart, const FRotator& CameraRot, float DamageVal, float SpreadAngleDegree);
+
+protected:
+	UFUNCTION(Server, Reliable)
+	void Server_PullTrigger();
+
+	UFUNCTION(Server, Reliable)
+	void Server_ReleaseTrigger();
+
+	UFUNCTION(Client, Reliable)
+	void Client_PlayFireEffects();
+
+	UFUNCTION(Server, Reliable)
+	void Server_StartReload();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_PlayReloadEffects();
+
 public:
-	
+
 	virtual bool AttachToHand(USceneComponent* _ParentMesh) override;
     virtual bool AttachToHolster(USceneComponent* _ParentMesh) override;
-	
-	virtual void PullTrigger() {}
-	virtual void ReleaseTrigger() {}
 
 private:
 	
