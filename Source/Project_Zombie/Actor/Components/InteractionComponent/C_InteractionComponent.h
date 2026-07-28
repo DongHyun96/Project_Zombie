@@ -23,6 +23,9 @@ protected:
 
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
+	// 리플리케이트 할 변수 등록
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 public:
 	/// <summary>
 	/// 이 Actor 가 사용할 Collision과 Strategy 를 설정
@@ -43,6 +46,16 @@ public:
 	/// </summary>
 	bool CanBeInteractedBy(AC_BasicPlayer* _Interactor) const;
 
+	/// <summary>
+	/// 현재 다른 Actor 와 상호작용 중인지 확인
+	/// </summary>
+	bool HasCurrentInteraction() const { return IsValid(m_CurrentInteractionActor); }
+
+	/// <summary>
+	/// 현재 상호작용 중인 상대 Actor 반환
+	/// </summary>
+	AActor* GetCurrentInterationActor() const { return m_CurrentInteractionActor.Get(); }
+
 public:
 
 	/// <summary>
@@ -50,10 +63,23 @@ public:
 	/// </summary>
 	void TryInteract();
 
+private:
 	/// <summary>
 	/// 상호작용 시도 (상호작용 Actor 의 InteractionComponent 에서 호출)
 	/// </summary>
+	/// <param name="_Interactor">상호작용 하는 Player</param>
 	bool ExecuteInteract(AC_BasicPlayer* _Interactor);
+
+	/// <summary>
+	/// 상호작용 완료 (상호작용 시도한 플레이어의 InteractionComponent 에서 호출)
+	/// </summary>
+	void CompleteInteract();
+
+	/// <summary>
+	/// 상호작용 완료 (상호작용 Actor 의 InteractionComponent 에서 호출)
+	/// </summary>
+	/// <param name="_Interactor">상호작용 하는 Player</param>
+	bool ExecuteCompleteInteract(AC_BasicPlayer* _Interactor);
 
 	/// <summary>
 	///	상호작용 Actor
@@ -81,6 +107,11 @@ private: // 타이머 설정
 
 	void StopFocusUpdateTimer();
 
+	/// <summary>
+	/// Interactable 인터페이스를 구현한 Actor 와 상호작용 Timer 업데이트
+	/// </summary>
+	void StartInteractionTimer(float _Duration);
+
 private:
 
 	/// <summary>
@@ -103,6 +134,11 @@ private:
 	///	플레이어와 대상 사이에 장애물이 없는지 검사
 	/// </summary>
 	bool HasClearLineOfSight(AActor* _TargetActor) const;
+
+	/// <summary>
+	/// Interactable 인터페이스를 구현한 Actor 가 상호작용 가능한지 검사
+	/// </summary>
+	void ClearCurrentInteraction() { m_CurrentInteractionActor = nullptr; }
 
 private:
 
@@ -141,12 +177,23 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UPrimitiveComponent> m_InteractionCollision;
 
+	UPROPERTY(Replicated)
+	TObjectPtr<AActor> m_CurrentInteractionActor;
+
+	// Server
+private:
+	UFUNCTION(Server, Reliable)
+	void Server_TryInteract(AActor* _TargetActor);
+
 private:
 
 	UPROPERTY(EditAnywhere, Category = "Interaction")
 	float m_FocusUpdateInterval;
 
 private:
+
+	// 상호작용 걸리는 시간
+	FTimerHandle m_InteractionTimerHandle;
 
 	/// 상호작용 완료 Timer
 	FTimerHandle m_FocusUpdateTimerHandle;

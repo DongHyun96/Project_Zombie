@@ -73,9 +73,8 @@ AC_BasicPlayer::AC_BasicPlayer()
 	m_PlayerState = EPlayerState::Idle;
 	m_PlayerPoseState = EPlayerPoseState::Walk;
 
-	// 부활 중인지 여부 초기화
-	m_IsRevivingPlayer = false;
-	m_RevivingTarget = nullptr;
+	// 부활 변수 여부 초기화
+	m_IsPendingDead = false;
 
 	// 점프높이 설정
 	GetCharacterMovement()->JumpZVelocity = 600.f;
@@ -232,12 +231,6 @@ void AC_BasicPlayer::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	
 	// 자세 상태 
 	DOREPLIFETIME(AC_BasicPlayer, m_PlayerPoseState);
-
-	// 다른 플레이어 구조 중인지 
-	DOREPLIFETIME(AC_BasicPlayer, m_IsRevivingPlayer);
-
-	// 구조 중인 플레이어
-	DOREPLIFETIME(AC_BasicPlayer, m_RevivingTarget);
 	
 	DOREPLIFETIME(AC_BasicPlayer, m_HandState);
 }
@@ -322,22 +315,22 @@ void AC_BasicPlayer::Landed(const FHitResult& Hit)
 {
 	Super::Landed(Hit);
 
+	if (!HasAuthority())
+		return;
+
+	if (!m_IsPendingDead)
+		return;
+
+	m_IsPendingDead = false;
 	m_IsJumpInput = false;
+
+	SetPlayerStateOnServer(EPlayerState::Dead);
 }
 
 bool AC_BasicPlayer::UseBoost(float _UseAmount)
 {
 	if (_UseAmount <= 0.f || m_MaxBoost <= 0.f || m_CurBoost <= 0.f)
 		return false;
-
-
-	// =================임시용==========================
-	//if (m_CurBoost >= 0.f)
-	//{
-	//	EnterDownedState();
-	//	return false;
-	//}
-	// ================================================
 
 	float PrevBoost = m_CurBoost;
 	bool bHasBoost = (m_CurBoost >= _UseAmount);
@@ -393,43 +386,43 @@ void AC_BasicPlayer::StartSprint()
 
 	m_IsSprintInput = true;
 
-	if (!HasAuthority())
+	if (HasAuthority())
 	{
-		// 클라이언트에서 달리기 시작 시 서버에 요청
-		Server_RequestSetPoseState(EPlayerPoseState::Sprint);
-	}
-	else
-	{
-		// 서버에서 바로 PoseState를 변경
+		// 서버는 서버에서 바로 PoseState를 변경
 		SetPoseStateOnServer(EPlayerPoseState::Sprint);
+		return;
 	}
+
+	// 클라이언트에서 먼저 적용
+	ApplyPoseStateLocally(EPlayerPoseState::Sprint);
+
+	Server_RequestSetPoseState(EPlayerPoseState::Sprint);
 }
 
 void AC_BasicPlayer::StopSprint()
 {
 	m_IsSprintInput = false;
 
-	//// 이미 다른 자세로 변경되었다면 Walk 로 변경하지 않음
-	//if (m_PlayerPoseState != EPlayerPoseState::Sprint)
-	//	return;
-
 	if (HasAuthority())
 	{
 		SetPoseStateOnServer(EPlayerPoseState::Walk);
-	}
-	else
-	{
-		// 로컬에 즉시 적용
-		m_PlayerPoseState =	EPlayerPoseState::Walk;
 
-		ApplyMovementSpeed();
-
-		Server_RequestSetPoseState(EPlayerPoseState::Walk);
+		return;
 	}
+	
+	// 로컬에 즉시 적용
+	ApplyPoseStateLocally(EPlayerPoseState::Walk);
+	
+	Server_RequestSetPoseState(EPlayerPoseState::Walk);
 }
 
 void AC_BasicPlayer::ToggleCrouch()
 {
+	Server_EnterDownedState();
+
+	if (!IsAlive())
+		return;
+
 	if (GetCharacterMovement()->IsFalling())
 		return;
 
@@ -452,12 +445,32 @@ void AC_BasicPlayer::ToggleCrouch()
 		// Replicated 변수이므로 서버에서 변경 시 클라이언트에 자동으로 동기화됨
 		// 그래서 Multicast를 사용하지 않고 바로 서버에서 변경
 		SetPoseStateOnServer(NewPoseState);
+
+		return;
 	}
-	// 클라이언트가 한거면 서버에 요청
-	else
+	
+	// 클라이언트에서 먼저 적용
+	ApplyPoseStateLocally(NewPoseState);
+	
+	Server_RequestSetPoseState(NewPoseState);
+}
+
+void AC_BasicPlayer::ApplyPoseStateLocally(EPlayerPoseState _NewPoseState)
+{
+	const bool bWasCrouched = m_PlayerPoseState == EPlayerPoseState::Crouch;
+	const bool bWantsToCrouch = _NewPoseState == EPlayerPoseState::Crouch;
+
+	// 로컬에서 PoseState를 적용
+	m_PlayerPoseState = _NewPoseState;
+
+	// Crouch 동작 관련일 때 웅크리기 전환
+	if (m_PoseColliderHandlerComponent && bWasCrouched != bWantsToCrouch)
 	{
-		Server_RequestSetPoseState(NewPoseState);
+		m_PoseColliderHandlerComponent->StartCrouchTransition(bWantsToCrouch);
 	}
+
+	// 이동 속도 적용
+	ApplyMovementSpeed();
 }
 
 /// <summary>
@@ -549,10 +562,6 @@ ETeamAttitude::Type AC_BasicPlayer::GetTeamAttitudeTowards(const AActor& _Other)
 	return ETeamAttitude::Neutral;
 }
 
-void AC_BasicPlayer::OnRep_IsRevivingPlayer()
-{
-}
-
 void AC_BasicPlayer::SetPlayerStateOnServer(EPlayerState _NewState)
 {
 	if (!HasAuthority())
@@ -568,16 +577,11 @@ void AC_BasicPlayer::SetPlayerStateOnServer(EPlayerState _NewState)
 	ForceNetUpdate();
 }
 
-void AC_BasicPlayer::EnterDownedState()
+void AC_BasicPlayer::Server_EnterDownedState_Implementation()
 {
-	if (!HasAuthority())
-		return;
-
 	// 이미 사망 상태라면 처리하지 않음
 	if (!IsAlive())
 		return;
-
-	GetStatComponent()->SetCurHP(0.f);
 
 	m_IsSprintInput = false;
 	m_IsJumpInput = false;
@@ -587,8 +591,14 @@ void AC_BasicPlayer::EnterDownedState()
 		World->GetTimerManager().ClearTimer(m_GetUpTimerHandle);
 	}
 
-	// TODO: 몽타주 재생 등 추가적인 처리를 여기에 
+	// 공중에서 죽었을 경우 Dead 를 보류
+	if (GetCharacterMovement()->IsFalling())
+	{
+		m_IsPendingDead = true;
+		return;
+	}
 
+	// TODO: 몽타주 재생 등 추가적인 처리를 여기에 
 	SetPlayerStateOnServer(EPlayerState::Dead); 
 }
 
@@ -628,6 +638,9 @@ void AC_BasicPlayer::FinishGettingUp()
 	
 	// TODO: 몽타주 재생 등 추가적인 처리를 여기에 
 
+	m_StatComponent->SetCurHP(10.0f);
+
+
 	SetPlayerStateOnServer(EPlayerState::Idle);
 }
 
@@ -648,7 +661,16 @@ void AC_BasicPlayer::ApplyPlayerState()
 
 		// 현재 자세에 맞는 이동 속도 적용
 		ApplyMovementSpeed();
-
+		break;
+	}
+	case EPlayerState::Reviving:
+	{
+		if (MovementComponent->MovementMode == MOVE_None)
+		{
+			MovementComponent->SetMovementMode(MOVE_Walking);
+		}
+		// 현재 자세에 맞는 이동 속도 적용
+		ApplyMovementSpeed();
 		break;
 	}
 	case EPlayerState::Dead:
@@ -697,18 +719,15 @@ void AC_BasicPlayer::SetPoseStateOnServer(EPlayerPoseState _NewPoseState)
 		return;
 
 	const bool bWasCrouching = m_PlayerPoseState == EPlayerPoseState::Crouch;
-
 	const bool bWantsToCrouch = _NewPoseState == EPlayerPoseState::Crouch;
 
-
+	// Crouch 상태 전환 시에만 호출
 	if (bWasCrouching != bWantsToCrouch)
 	{
 		bool bStarted = m_PoseColliderHandlerComponent->SetCrouched(bWantsToCrouch);
 
 		if (!bStarted)
-		{
 			return;
-		}
 	}
 
 	m_PlayerPoseState = _NewPoseState;

@@ -10,6 +10,7 @@
 
 #include "Utility/C_Util.h"
 
+#include "Net/UnrealNetwork.h"
 
 
 UC_InteractionComponent::UC_InteractionComponent()
@@ -47,7 +48,18 @@ void UC_InteractionComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	m_FocusedTarget.Reset();
 	m_InteractionStrategyObject = nullptr;
 
+	ClearCurrentInteraction();
+
 	Super::EndPlay(EndPlayReason);
+}
+
+void UC_InteractionComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	// 상호작용 중복 방지하기 위해 m_CurrentInteractionActor 를 들고있는다
+	DOREPLIFETIME
+	(UC_InteractionComponent, m_CurrentInteractionActor);
 }
 
 void UC_InteractionComponent::SetupInteraction(UPrimitiveComponent* _InteractionCollision)
@@ -197,6 +209,25 @@ void UC_InteractionComponent::StopFocusUpdateTimer()
 	m_FocusedTarget.Reset();
 }
 
+void UC_InteractionComponent::StartInteractionTimer(float _Duration)
+{
+	UWorld* World = GetWorld();
+	if (!World)
+		return;
+
+	FTimerManager& TimerManager = World->GetTimerManager();
+
+	TimerManager.ClearTimer(m_InteractionTimerHandle);
+
+	TimerManager.SetTimer(
+		m_InteractionTimerHandle,
+		this,
+		&UC_InteractionComponent::CompleteInteract,
+		_Duration,
+		false
+	);
+}
+
 
 bool UC_InteractionComponent::CanBeInteractedBy(AC_BasicPlayer* _Interactor) const
 {
@@ -214,29 +245,78 @@ void UC_InteractionComponent::TryInteract()
 	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled())
 		return;
 
+	// 이미 다른 Actor 와 상호작용 중이면 상호작용 불가
+	if (IsValid(m_CurrentInteractionActor))
+		return;
+
 	AActor* TargetActor = m_FocusedTarget.Get();
 	if (!TargetActor)
 		return;
 
-	UC_InteractionComponent* TargetComponent = GetTargetInteractionComponent(TargetActor);
-	if (!TargetComponent)
-		return;
-
-	TargetComponent->ExecuteInteract(m_OwnerPlayer);
+	// 서버에 상호작용 시도 요청
+	Server_TryInteract(TargetActor);
 }
 
 bool UC_InteractionComponent::ExecuteInteract(AC_BasicPlayer* _Interactor)
 {
-	UC_Util::Print("ExecuteInteract", FColor::Red, 10.f);
-
 	if (!_Interactor || !m_InteractionStrategyObject)
+		return false;
+
+	// 이미 다른 플레이어와 상호작용 중이면 상호작용 불가
+	if (IsValid(m_CurrentInteractionActor))
 		return false;
 
 	if (!m_InteractionStrategyObject->CanStartInteraction(_Interactor, GetOwner()))
 		return false;
 
+	if (!m_InteractionStrategyObject->StartInteraction(_Interactor, GetOwner()))
+		return false;
 
-	return m_InteractionStrategyObject->StartInteraction(_Interactor, GetOwner());
+	// 상호작용 시작 시도 성공 시 현재 상호작용 중인 플레이어 Actor 저장
+	m_CurrentInteractionActor = _Interactor;
+
+	return true;
+}
+
+void UC_InteractionComponent::CompleteInteract()
+{
+	if (!m_OwnerPlayer)
+		return;
+
+	AActor* TargetActor = m_CurrentInteractionActor.Get();
+	if (!TargetActor)
+	{
+		ClearCurrentInteraction();
+		return;
+	}
+
+	UC_InteractionComponent* TargetComponent = GetTargetInteractionComponent(TargetActor);
+	if (!TargetComponent)
+	{
+		ClearCurrentInteraction();
+		return;
+	}
+
+	TargetComponent->ExecuteCompleteInteract(m_OwnerPlayer);
+
+	ClearCurrentInteraction();
+}
+
+bool UC_InteractionComponent::ExecuteCompleteInteract(AC_BasicPlayer* _Interactor)
+{
+	if (!_Interactor || !m_InteractionStrategyObject)
+		return false;
+
+	if (m_CurrentInteractionActor != _Interactor)
+		return false;
+
+	// 대상 쪽 상호작용 완료 처리
+	m_InteractionStrategyObject->CompleteInteraction(_Interactor, GetOwner());
+
+	// 대상 쪽 상호작용 정보 초기화
+	ClearCurrentInteraction();
+
+	return true;
 }
 
 
@@ -348,4 +428,36 @@ bool UC_InteractionComponent::HasClearLineOfSight(AActor* _TargetActor) const
 	);
 
 	return !bBlocked;
+}
+
+void UC_InteractionComponent::Server_TryInteract_Implementation(AActor* _TargetActor)
+{
+	if (!m_OwnerPlayer || !IsValid(_TargetActor))
+		return;
+
+	if (_TargetActor == m_OwnerPlayer)
+		return;
+
+	// 이미 다른 플레이어와 상호작용 중이면 상호작용 불가
+	if (IsValid(m_CurrentInteractionActor))
+		return;
+
+	UC_InteractionComponent* TargetComponent = GetTargetInteractionComponent(_TargetActor);
+	if (!TargetComponent)
+		return;
+
+	// 실제 상호작용 시도
+	if (!TargetComponent->ExecuteInteract(m_OwnerPlayer))
+		return;
+
+	// 성공적으로 상호작용 시작 시도 성공 시 현재 상호작용 중인 Actor 저장
+	m_CurrentInteractionActor =	_TargetActor;
+
+	const float InteractionDuration = TargetComponent->m_InteractionStrategyObject->GetInteractionDuration();
+
+	UE_LOG(LogTemp, Log, TEXT("Server_TryInteract - Interaction Started with %s for %.2f seconds"), *_TargetActor->GetName(), InteractionDuration);
+
+	// 상호작용 완료 타이머는 서버에서 시작되어
+	// 서버의 TimerManager 에 의해 CompleteInteract() 호출된다
+	StartInteractionTimer(InteractionDuration);
 }

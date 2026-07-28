@@ -16,6 +16,7 @@ UENUM(BlueprintType)
 enum class EPlayerState : uint8
 {
 	Idle,
+	Reviving,
 	GettingUp,
 	Dead,
 };
@@ -192,26 +193,11 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
 	bool m_IsSprintInput;
 
-	/// 우선순위... 따로 enum으로 빼서 관리할까 
-	/// 웅크리기 > 조준 > 달리기 > 일반 이동
-	// 달리기 상태
-	//UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
-	//bool m_IsSprinting;
-
-	//// 조준 상태
-	//UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
-	//bool m_IsAiming;
-
-	//// 웅크리기 상태
-	//UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
-	//bool m_IsCrouching;
-
-
 	// 달리기 중 초당 부스트 소모량
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float m_SprintBoostUseCost;
 
-	// 달리지 않을 때 초당 부스트 회복량
+	// 달리지 않을 때 초당 부스트 회복량F
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float m_BoostRecoverCost;
 
@@ -226,13 +212,8 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction", meta = (AllowPrivateAccess = "true"))
 	USphereComponent* m_InteractionSphere;
 
-	// 플레이어를 부활시키는 중인지 여부
-	UPROPERTY(ReplicatedUsing = OnRep_IsRevivingPlayer, VisibleAnywhere, BlueprintReadOnly, Category = "Revive")
-	bool m_IsRevivingPlayer;
-
-	// 구조 중인 플레이어를 참조하는 포인터
-	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Revive")
-	AC_BasicPlayer* m_RevivingTarget;
+	// 공중에서 죽었을 때 착지 후 사망 처리 여부
+	bool m_IsPendingDead;
 
 	// Strategy 로 뺌
 	// 부활 후 플레이어가 일어나기까지 걸리는 시간 
@@ -305,10 +286,9 @@ public:
 public:
 
 	bool IsAlive() const { return m_PlayerState == EPlayerState::Idle; }
+	bool IsReviving() const { return m_PlayerState == EPlayerState::Reviving; }
 	bool IsGettingUp() const { return m_PlayerState == EPlayerState::GettingUp; }
 	bool IsDead() const { return m_PlayerState == EPlayerState::Dead; }
-
-	bool IsRevivingPlayer() const { return m_IsRevivingPlayer; }
 
 	bool IsJumpInput() const { return m_IsJumpInput; }
 	void SetIsJumpInput(bool _IsJumpInput) { m_IsJumpInput = _IsJumpInput; }
@@ -361,25 +341,17 @@ public:
 	/// </summary>
 	void ToggleCrouch();
 
-	/// <summary>
-	/// 속도 적용(달리기, 걷기, 웅크리기 등)
-	/// </summary>
-	void ApplyMovementSpeed();
 
-
-private: // 캐릭터 그로기 처리
-
-	// 체력이 0이 되어 Downed 상태로 변경
-	void EnterDownedState();
-
+	// 캐릭터 그로기 처리
+public:
 	// 플레이어를 GettingUp 상태로 변경
 	void StartGettingUp(float _GetUpDuration);
 
 	// 구조 완료 후 GettingUp 상탤를 Idle 상태로 변경
 	void FinishGettingUp();
 
-	// 플레이어 상태 변경 시, 캐릭터에 적용
-	void ApplyPlayerState();
+	// 서버에 플레이어 상태 변경 요청
+	void SetPlayerStateOnServer(EPlayerState _NewState);
 
 	// Server함수 (생명 상태 변경)
 protected:
@@ -387,16 +359,12 @@ protected:
 	//UFUNCTION()
 	void OnRep_PlayerState();
 
-	// 현재 플레이어를 구출 중인지 서버에서 처리 후 클라이언트에 리플리케이트
-	UFUNCTION()
-	void OnRep_IsRevivingPlayer();
-
-	// 서버에 플레이어 상태 변경 요청
-	void SetPlayerStateOnServer(EPlayerState _NewState);
+	// 체력이 0이 되어 Downed 상태로 변경
+	UFUNCTION(Server, Reliable)
+	void Server_EnterDownedState();
 
 	// Server함수 (자세 변경)
 protected:
-
 	
 	// 서버에서 자세 변경 처리 후 클라이언트에 리플리케이트
 	UFUNCTION()
@@ -466,8 +434,6 @@ public:
 
 	USphereComponent* GetInteractionSphere() { return m_InteractionSphere; }
 
-	AC_BasicPlayer* GetRevivingTarget() const { return m_RevivingTarget; }
-
 private:
 	EPlayerPoseState DetermineMoveSpeedState() const;
 	float GetMoveSpeedByState(EPlayerPoseState _MoveSpeedState) const;
@@ -477,6 +443,23 @@ private:
 
 	// 웅크리기 상태 전환이 끝났을 때 실행되는 함수
 	void OnPoseTransitionFinished(bool _bIsCrouched);
+
+private:
+	/// <summary>
+	/// 입력 클라이언트가 자세 상태를 즉시 로컬에서 적용
+	/// </summary>
+	void ApplyPoseStateLocally(EPlayerPoseState _NewPoseState);
+
+	/// <summary>
+	/// 상태 적용(기본, 살리기, 그로기, 사망 등)
+	/// </summary>
+	void ApplyPlayerState();
+
+	/// <summary>
+	/// 속도 적용(달리기, 걷기, 웅크리기 등)
+	/// </summary>
+	void ApplyMovementSpeed();
+
 
 public:
 	virtual void Tick(float DeltaTime) override;

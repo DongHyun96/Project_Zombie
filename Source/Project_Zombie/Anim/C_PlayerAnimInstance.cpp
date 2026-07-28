@@ -62,7 +62,7 @@ void UC_PlayerAnimInstance::NativeUpdateAnimation(float _DT)
 	m_IsJumpInput = m_Character->IsJumpInput();
 
 	// 플레이어 부활 중인지 여부 갱신
-	m_IsRevivingPlayer = m_Character->IsRevivingPlayer();
+	m_IsRevivingPlayer = m_Character->IsReviving();
 
 	// 에디터 화면일 때는 아래 로직을 아예 실행하지 않고 리턴.
 	if (GetWorld() && GetWorld()->WorldType == EWorldType::EditorPreview)
