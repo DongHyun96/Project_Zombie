@@ -49,7 +49,7 @@ void UC_EquippedComponent::SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* 
     // 들어온 슬롯의 이전 무기가 존재할 때, 이전 무기 해제 및 OwnerPlayer 초기화
     if (AC_WeaponBase* PrevSlotWeapon = m_Weapons[TargetSlotIdx])
     {
-    	m_Weapons[TargetSlotIdx]->DetachFromActor(FDetachmentTransformRules::KeepRelativeTransform);
+    	PrevSlotWeapon->DetachFromActor(FDetachmentTransformRules::KeepRelativeTransform);
     	PrevSlotWeapon->SetOwnerPlayer(nullptr);
     }
 
@@ -67,15 +67,24 @@ void UC_EquippedComponent::SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* 
         return;
     }
 
+	// 기존에 무기를 들고 있었다면 AttachToHolster 처리
+	
 	// Throwable의 경우 장착된 모습 보이지 않게끔 처리
     if (TargetSlot == EWeaponSlot::ThrowableWeapon)
         m_Weapons[TargetSlotIdx]->SetActorHiddenInGame(true);
 
-	m_Weapons[TargetSlotIdx]->SetRelativeTransformToInitial();
-    m_Weapons[TargetSlotIdx]->AttachToHolster(m_OwnerPlayer->GetMesh());
-
+	// m_Weapons[TargetSlotIdx]->SetRelativeTransformToInitial();
+	
 	// 무기에게 자신의 OwnerPlayer 세팅
 	m_Weapons[TargetSlotIdx]->SetOwnerPlayer(m_OwnerPlayer);
+
+	// 현재 들고 있는 무기의 종류에 따른 처리
+	if (m_CurWeaponTypeIdx == TargetSlotIdx)
+	{
+		PRINT_LOCAL(GetWorld(), "Current holding weapon swapped to new Same SlotWeapon", FColor::Red, 10.f);
+		m_Weapons[TargetSlotIdx]->AttachToHand(m_OwnerPlayer->GetMesh());
+	}
+    else m_Weapons[TargetSlotIdx]->AttachToHolster(m_OwnerPlayer->GetMesh());
 }
 
 bool UC_EquippedComponent::Server_RequestSpawnEquippedActor_Validate(int32 SlotIndex, const FInventoryEntry& ItemData)
@@ -95,11 +104,12 @@ void UC_EquippedComponent::Server_RequestSpawnEquippedActor_Implementation(int32
 
 	PRINT_LOCAL(GetWorld(), "SpawnEquippedActor", FColor::Green, 5.f);
 
-	AC_WeaponBase* SpawnedWeapon = ItemManager->SpawnEquippedActor(ItemData.ItemRowName, m_OwnerPlayer);
+	AC_WeaponBase* SpawnedWeapon = (ItemData.CurCount > 0) ? ItemManager->SpawnEquippedActor(ItemData.ItemRowName, m_OwnerPlayer) : nullptr;
 
 	AC_WeaponBase* PrevWeapon = m_Weapons[SlotIndex];
 
-	SetSlotWeapon(static_cast<EWeaponSlot>(SlotIndex), SpawnedWeapon);
+	// 추가적인 부수처리가 같이 있어서 Server_SetSlotWeapon으로 수정
+	Server_SetSlotWeapon(static_cast<EWeaponSlot>(SlotIndex), SpawnedWeapon);
 
 	if (!PrevWeapon) return;
 
@@ -119,29 +129,25 @@ void UC_EquippedComponent::Server_RequestSpawnEquippedActor_Implementation(int32
 	PrevWeapon->Destroy();
 }
 
-void UC_EquippedComponent::Server_TestSpawnAllWeapons_Implementation()
-{
-	// Test용으로 무기 미리 스폰 (서버 환경에서만 -> 나머지 클라이언트들은 알아서 업데이트 처리를 할 예정)
-	for (const TTuple<EWeaponSlot, TSubclassOf<AC_WeaponBase>>& WeaponClassPair : m_WeaponClassToSpawn)
-	{
-		AC_WeaponBase* SpawnedWeapon = GetWorld()->SpawnActor<AC_WeaponBase>(WeaponClassPair.Value);
-		
-		if (IsValid(SpawnedWeapon))
-			Server_SetSlotWeapon(WeaponClassPair.Key, SpawnedWeapon);
-	}
-}
-
-bool UC_EquippedComponent::Server_TestSpawnAllWeapons_Validate()
-{
-	return true;
-}
-
 void UC_EquippedComponent::Server_SetSlotWeapon_Implementation(EWeaponSlot _TargetSlot, AC_WeaponBase* _WeaponToEquip)
 {
-	PRINT_LOCAL(GetWorld(), "Server_SetSlotWeapon_Implementation", FColor::MakeRandomColor(), 10.f);
+	PRINT_LOCAL(GetWorld(), "Server_SetSlotWeapon_Implementation", FColor::Red, 10.f);
 
 	SetSlotWeapon(_TargetSlot, _WeaponToEquip); // 서버 환경에서의 SetSlotWeapon 처리
-	UpdateAmmoWidget(); // 서버 환경 자기자신일 때의 UI 업데이트
+
+	// 서버 환경 자기자신일 때의 UI 업데이트
+	if (m_OwnerPlayer->IsLocallyControlled())
+		UpdateAmmoWidget();
+	else
+	{
+		if (GetCurWeapon())
+			PRINT_LOCAL(GetWorld(), "SENDING VALID", FColor::MakeRandomColor(), 20.f);
+		else
+			PRINT_LOCAL(GetWorld(), "SENDING IN-VALID", FColor::MakeRandomColor(), 20.f);
+		
+		Client_UpdateAmmoWidget(GetCurWeapon());
+	}
+	
 	
 	// Multicast_SetSlotWeapon(_TargetSlot, _WeaponToEquip); // 클라이언트단의 SetSlotWeapon도 호출해줌으로써 동기화 처리
 }
@@ -220,9 +226,6 @@ bool UC_EquippedComponent::ChangeCurWeapon(EWeaponSlot _ChangeTo)
 	}
 	
 	/* 현재 무기를 착용중인 상황 */
-	
-	// TODO : 투척류 이미 쿠킹이 진행된 상태에서 다른 무기로 Swap시, 땅에 떨구는 예외처리를 해주었었음 (필요하다면 여기서도 처리를 해주어야 함) -> 이건 x
-	// TODO : 총을 들고 Aiming 상태였을 경우, 카메라 위치 원상복구 처리를 해주었음
 	
 
 	// 현재 무기 집어넣는 동작에 Notify 함수를 걸어둠 -> 다음 무기 Draw로 무기전환 처리가 이루어짐
@@ -462,6 +465,12 @@ void UC_EquippedComponent::UpdateAmmoWidget()
 	
 	// 현재 들고 있는 무기가 존재할 때, 해당 무기의 HUD 초기화 함수 사용
 	GetCurWeapon()->UpdateAmmoInfoHUDForDrawEnd();
+}
+
+void UC_EquippedComponent::Client_UpdateAmmoWidget_Implementation(AC_WeaponBase* _ReceivedCurWeapon)
+{
+	if (!_ReceivedCurWeapon) PRINT_LOCAL(GetWorld(), "IN-VALID", FColor::MakeRandomColor(), 20.f);
+	else PRINT_LOCAL(GetWorld(), "VALID", FColor::MakeRandomColor(), 20.f);
 }
 
 void UC_EquippedComponent::Server_PlayDrawMontage_Implementation(AC_WeaponBase* _TargetWeapon)

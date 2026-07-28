@@ -50,11 +50,6 @@ private:
 	/// <param name="WeaponToEquip"> : 해당 slot에 장착할 무기 객체 / 장착 해제는 nullptr </param>
 	void SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* WeaponToEquip);
 
-public: // TODO : 이 Test block 지우기
-
-	UFUNCTION(Server, Reliable, WithValidation)
-	void Server_TestSpawnAllWeapons();
-
 public:
 	
 
@@ -107,10 +102,13 @@ public:
 private:
 	
 	/// <summary>
-	/// 현재 EquippedComponent 상황에 맞추어 AmmoWidget 정보 업데이트 
+	/// 현재 EquippedComponent 상태에 맞추어 AmmoWidget 정보 업데이트 
 	/// </summary>
 	void UpdateAmmoWidget();
 
+	UFUNCTION(Client, Reliable)
+	void Client_UpdateAmmoWidget(AC_WeaponBase* _ReceivedCurWeapon);
+	
 private:
 	
 	/// <summary>

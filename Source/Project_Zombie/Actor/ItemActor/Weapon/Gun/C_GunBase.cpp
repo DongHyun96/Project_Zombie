@@ -407,12 +407,10 @@ void AC_GunBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifeti
 
 bool AC_GunBase::AttachToHand(USceneComponent* _ParentMesh)
 {
-	PRINT_LOCAL(GetWorld(), "Gun - AttachingToHand", FColor::Red, 10.f);
-	
 	if (!_ParentMesh) return false;
 	AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(_ParentMesh->GetOwner());
 	if (!Player) return false; // 손에 장착 시도하는 Owner Character가 Player형이 아닌 경우, return false
-	if (Player != m_OwnerPlayer) return false; // 손에 장착 시도하는 Player가 무기주인인 경우가 아닌 경우 
+	if (Player != m_OwnerPlayer) return false; // 손에 장착 시도하는 Player가 무기주인인 경우가 아닌 경우
 
 	const bool bIsAttached = AttachToComponent
 	(
@@ -426,6 +424,7 @@ bool AC_GunBase::AttachToHand(USceneComponent* _ParentMesh)
 		Player->SetHandState(EHandState::WeaponGun);
 		UpdateAmmoInfoHUDForDrawEnd();
 	}
+	else PRINT_LOCAL(GetWorld(), "AttachToHand Failed", FColor::Red, 10.f);
 	
 	return bIsAttached;
 }

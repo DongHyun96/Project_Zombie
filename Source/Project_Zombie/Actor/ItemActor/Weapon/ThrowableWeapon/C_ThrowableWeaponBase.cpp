@@ -445,6 +445,8 @@ void AC_ThrowableWeaponBase::OnRemovePin()
 
 void AC_ThrowableWeaponBase::OnThrowReadyLoop()
 {
+	// 멀티 환경에서 여기서 터지는 듯?
+	
 	UAnimInstance* AnimInstance = m_OwnerPlayer->GetMesh()->GetAnimInstance();
 	if (!AnimInstance)
 		return;
@@ -509,11 +511,18 @@ void AC_ThrowableWeaponBase::OnThrowThrowable()
 	{
 		StartFuseTimer();
 	}
+}
 
+void AC_ThrowableWeaponBase::OnThrowProcessEnd()
+{
+	PRINT_LOCAL(GetWorld(), "OnThrowProcessEnd", FColor::MakeRandomColor(), 20.f);
+	
 	// TODO 
 	// 수류탄 던짐
 	// EquippedComponent의 CurrentWeapon은 nullptr 또는 다음 수류탄으로 변경
 	// 수류탄 개수 감소
+
+	// 2개 남았을 경우까지만 체킹
 	
 	// TODO : 멀티 환경에 맞게 조정해야 할 수 있음.
 	// 투척류는 아이템 갯수가 Ammo라고 보면된다.
