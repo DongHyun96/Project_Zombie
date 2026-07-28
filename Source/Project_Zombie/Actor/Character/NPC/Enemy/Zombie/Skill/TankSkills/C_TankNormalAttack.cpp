@@ -12,8 +12,13 @@ UC_TankNormalAttack::UC_TankNormalAttack()
 
 bool UC_TankNormalAttack::Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data)
 {
-	_Owner->PlayAnimMontage(_Data->Montage);
+	if (!IsValid(_Owner) || !IsValid(_Data))
+		return false;
 
+	if (!IsValid(_Data->Montage))
+		return false;
 
-	return true;
+	const float Result = _Owner->PlayAnimMontage(_Data->Montage);
+
+	return Result > 0.f;
 }

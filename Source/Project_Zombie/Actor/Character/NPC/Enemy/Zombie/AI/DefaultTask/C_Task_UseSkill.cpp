@@ -26,6 +26,8 @@ UC_Task_UseSkill::UC_Task_UseSkill()
 
 EBTNodeResult::Type UC_Task_UseSkill::ExecuteTask(UBehaviorTreeComponent& _OwnCom, uint8* _NodeMemory)
 {
+	UE_LOG(LogTemp, Warning, TEXT("ExecuteTask Slot = %d"), (int32)m_SkillSlot);
+
 	Super::ExecuteTask(_OwnCom, _NodeMemory);
 
 	// Task 를 실행중인 Controller 를 가져옴

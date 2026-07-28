@@ -113,11 +113,10 @@ void UC_EnemySkillComponent::OnAN_EndSkill()
 {
 	UC_Util::Print("OnAN_EndSkill");
 
-	m_SkillEndDelegate.Broadcast(Cast<AC_BasicEnemy>(GetOwner()));
-
 	bUsingSkill = false;
 	m_CurSkillData = nullptr;
 
+	m_SkillEndDelegate.Broadcast(Cast<AC_BasicEnemy>(GetOwner()));
 }
 
 void UC_EnemySkillComponent::EndSkillManually()

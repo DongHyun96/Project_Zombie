@@ -16,6 +16,13 @@
 
 #include "Actor/Character/Player/C_BasicPlayer.h"
 
+#include "Engine/World.h"
+#include "Engine/OverlapResult.h"
+
+#include "CollisionQueryParams.h"
+#include "CollisionShape.h"
+#include "DrawDebugHelpers.h"
+
 #include "Kismet/GameplayStatics.h"
 
 
@@ -28,12 +35,25 @@ AC_TankZombie::AC_TankZombie()
 	m_ChargeSpeed = 0.f;
 	m_ChargeTarget = nullptr;
 
+	// End 이동
+	m_bEndMoving = false;
+	m_EndMoveDirection = FVector::ZeroVector;
+	m_EndMoveSpeed = 600.f;
+	m_EndMoveMaxTime = 1.5f;
+	m_EndMoveElapsedTime = 0.f;
+
+	// 착지 시 충격파 
+	m_LandingShockRadius = 500.f;
+	m_LandingShockUpPower = 650.f;
+	m_LandingShockOutPower = 200.f;
+
 	m_ChargeCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("ChargeCollision"));
 
 	m_ChargeCollision->SetupAttachment(GetRootComponent());
 
 	// 박스 컴포넌트의 크기와 위치는 블루프린트에서 조절
 
+	// 박스컴포넌트 설정
 	m_ChargeCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	m_ChargeCollision->SetGenerateOverlapEvents(true);
 	m_ChargeCollision->SetCollisionObjectType(ECC_WorldDynamic);
@@ -60,10 +80,17 @@ void AC_TankZombie::Tick(float DeltaTime)
 	if (!HasAuthority())
 		return;
 
-	if (!m_bCharging)
-		return;
+	// 돌진 이동
+	if (m_bCharging)
+	{
+		UpdateCharge();
+	}
 
-	UpdateCharge();
+	// 점프 착지 이동
+	if (m_bEndMoving)
+	{
+		UpdateEndMove(DeltaTime);
+	}
 }
 
 void AC_TankZombie::UpdateCharge()
@@ -178,6 +205,18 @@ bool AC_TankZombie::PrepareCharge(AActor* _Target, UC_EnemySkillData* _Data)
 	return true;
 }
 
+void AC_TankZombie::LandingImpact()
+{
+	if (!HasAuthority())
+		return;
+
+	// 착지 후 End 이동정지
+	StopEndMove();
+
+	// 주변 플레이어와 좀비띄우기
+	ApplyLandingShock();
+}
+
 void AC_TankZombie::BeginPreparedCharge()
 {
 	if (!HasAuthority())
@@ -288,6 +327,8 @@ void AC_TankZombie::StopCharge()
 		}
 	}
 
+	StartEndMove();
+
 	// 위치, 속도, 방향값 초기화
 	m_ChargeDirection = FVector::ZeroVector;
 	m_ChargeStartLocation = FVector::ZeroVector;
@@ -295,7 +336,6 @@ void AC_TankZombie::StopCharge()
 
 	// 등록한 충돌타겟들 초기화
 	m_ChargeHitTarget.Reset();
-
 	m_ChargeTarget = nullptr;
 }
 
@@ -366,4 +406,127 @@ void AC_TankZombie::FinishChargeSkill()
 {
 	m_ChargeTarget = nullptr;
 	m_Skill = nullptr;
+}
+
+
+void AC_TankZombie::StartEndMove()
+{
+	if (!HasAuthority())
+		return;
+
+	if (m_bEndMoving)
+		return;
+
+	// 돌진중 사용하던 방향을 End 이동방향으로 저장
+	m_EndMoveDirection = m_ChargeDirection;
+
+	m_EndMoveDirection.Z = 0.f;
+	m_EndMoveDirection = m_EndMoveDirection.GetSafeNormal();
+
+	if (m_EndMoveDirection.IsNearlyZero())
+		return;
+
+	m_bEndMoving = true;
+	m_EndMoveElapsedTime = 0.f;
+}
+
+void AC_TankZombie::UpdateEndMove(float DeltaTime)
+{
+	if (!m_bEndMoving)
+		return;
+
+	UCharacterMovementComponent* MoveCom = GetCharacterMovement();
+
+	if (!IsValid(MoveCom))
+	{
+		StopEndMove();
+		return;
+	}
+
+	m_EndMoveElapsedTime += DeltaTime;
+
+	// 착지 노티파이가 호출되지 않았을 때를 위한 안전장치
+	if (m_EndMoveElapsedTime >= m_EndMoveMaxTime)
+	{
+		StopEndMove();
+		return;
+	}
+
+	// Z축은 사용하지 않고 수평방향으로만 이동
+	FVector CurVelocity = MoveCom->Velocity;
+
+	CurVelocity.X = m_EndMoveDirection.X * m_EndMoveSpeed;
+	CurVelocity.Y = m_EndMoveDirection.Y * m_EndMoveSpeed;
+
+	MoveCom->Velocity = CurVelocity;
+
+}
+
+void AC_TankZombie::StopEndMove()
+{
+	if (!m_bEndMoving)
+		return;
+
+	m_bEndMoving = false;
+	m_EndMoveElapsedTime = 0.f;
+
+	if (UCharacterMovementComponent* MoveCom = GetCharacterMovement())
+	{
+		FVector CurVeolocity = MoveCom->Velocity;
+
+		// 수평이동만 정지
+		CurVeolocity.X = 0.f;
+		CurVeolocity.Y = 0.f;
+
+		// Z속도 유지
+		MoveCom->Velocity = CurVeolocity;
+	}
+
+	m_EndMoveDirection = FVector::ZeroVector;
+}
+
+void AC_TankZombie::ApplyLandingShock()
+{
+	if (!HasAuthority())
+		return;
+
+	UWorld* World = GetWorld();
+	if (!World)
+		return;
+
+	const FVector ImpactCenter = GetActorLocation();
+
+	TArray<FOverlapResult> OverlapResult;
+
+	// pawn만 검색
+	FCollisionObjectQueryParams ObjectQueryParams;
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_Pawn);
+
+	// 본인은 판정 제외
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+
+	const FCollisionShape SphereShape = FCollisionShape::MakeSphere(m_LandingShockRadius);
+
+	const bool bOverlap = World->OverlapMultiByObjectType(	
+															OverlapResult,
+															ImpactCenter,
+															FQuat::Identity,
+															ObjectQueryParams,
+															SphereShape,
+															QueryParams);
+
+	// 테스트 디버그스피어
+	DrawDebugSphere(World, ImpactCenter, m_LandingShockRadius, 24, FColor::Red, false, 2.f);
+
+	if (!bOverlap)
+		return;
+
+	// 한 액터에 여러 컴포넌트가 겹쳐도 한 번만 처리
+	TSet<TWeakObjectPtr<AActor>> AppliedTargets;
+	
+	for (const FOverlapResult& Result : OverlapResult)
+	{
+		AActor* Target = Result.GetActor();
+	}
 }

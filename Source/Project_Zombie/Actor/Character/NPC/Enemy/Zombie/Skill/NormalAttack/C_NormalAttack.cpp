@@ -3,6 +3,8 @@
 
 #include "C_NormalAttack.h"
 
+#include "Actor/Character/NPC/Enemy/Components/SkillComponent/C_EnemySkillComponent.h"
+
 #include "Actor/Character/NPC/Enemy/C_BasicEnemy.h"
 #include "Actor/Character/NPC/Enemy/Zombie/Skill/C_EnemySkillData.h"
 
@@ -12,6 +14,11 @@ UC_NormalAttack::UC_NormalAttack()
 
 bool UC_NormalAttack::Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data)
 {
+	//UC_EnemySkillComponent* SkillCom = Cast<UC_EnemySkillComponent>(_Owner->GetSkillComponent());
+	//
+	//if (!SkillCom->CanUseSkill(_Data))
+	//	return false;
+
 	// 재생시킬 공격 Motion이 초기화되어있지 않음
 	if (!_Data->Montage) return false;
 
