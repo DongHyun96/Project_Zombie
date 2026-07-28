@@ -128,12 +128,6 @@ protected:
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
 
-	// Holster Socket Name (각 MeleeWeapon 블루프린트에서 Name 초기화 해줄 것)
-	// 이거는 무기마다 Socket Transform 다를 수 있다고 판단됨 
-	// TODO : 블루프린트쪽에서만 넣어주고 있기 때문에 블프에서 빠뜨리거나 블프로 안만든 클래스를 스폰하면 m_HolsterSocketName이 비어있음.
-	UPROPERTY(EditDefaultsOnly, meta = (DisplayName = "HolsterSocketName"))
-	FName m_HolsterSocketName{}; // 그렇다면 DataTable에서 관리해도 될듯? 정적 정보로 판단. - 상연
-
 public:
 	
 	/// <summary>
