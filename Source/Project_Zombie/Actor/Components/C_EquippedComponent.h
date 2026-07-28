@@ -6,7 +6,26 @@
 #include "TaskSyncManager.h"
 #include "C_EquippedComponent.generated.h"
 
+enum class EFireMode : uint8;
 class UC_InvenComponent;
+
+USTRUCT(BlueprintType)
+struct FAmmoUIInfo
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	bool		Visible{};
+	
+	UPROPERTY()
+	EFireMode	FireMode{};
+	
+	UPROPERTY()
+	int32 		MagazineAmmo{};
+	
+	UPROPERTY()
+	int32 		LeftAmmoTotalCount{};
+};
 
 /// <summary>
 /// 장착된 무기 관리 및 무기전환, 현재 손에 들고 있는 무기 관리 처리 Component
@@ -106,8 +125,11 @@ private:
 	/// </summary>
 	void UpdateAmmoWidget();
 
+	/// <summary>
+	/// SetSlotWeapon 처리 시, AmmoWidget 업데이트 이 Client RPC Call을 통해 처리할 것 
+	/// </summary>
 	UFUNCTION(Client, Reliable)
-	void Client_UpdateAmmoWidget(AC_WeaponBase* _ReceivedCurWeapon);
+	void Client_UpdateAmmoWidget(const FAmmoUIInfo& _AmmoUIInfo);
 	
 private:
 	

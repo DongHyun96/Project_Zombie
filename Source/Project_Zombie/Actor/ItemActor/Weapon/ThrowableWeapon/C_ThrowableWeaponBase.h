@@ -212,6 +212,8 @@ public:
 	
 	virtual void UpdateAmmoInfoHUDForDrawEnd() override;
 	
+	virtual void SetAmmoUIInfo(FAmmoUIInfo& _AmmoUIInfo) override;
+	
 	/* Socket Name 관련 */
 protected: 
 

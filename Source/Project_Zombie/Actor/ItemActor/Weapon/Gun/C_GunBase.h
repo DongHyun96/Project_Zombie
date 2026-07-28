@@ -155,6 +155,8 @@ public:
 
 protected:
 	virtual void LoadAsyncAssets(const FWeaponData* InRawData) override;
+
+	virtual void SetAmmoUIInfo(FAmmoUIInfo& _AmmoUIInfo) override;
 	
 public:
 	USkeletalMeshComponent* GetWeaponMesh() const { return m_WeaponMesh; }

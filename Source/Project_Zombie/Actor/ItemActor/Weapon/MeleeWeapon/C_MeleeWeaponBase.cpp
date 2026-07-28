@@ -6,6 +6,7 @@
 #include "../WeaponComponent/MeleeComponent/C_MeleeDataTableComponent.h"
 
 #include "Actor/Character/Player/C_BasicPlayer.h"
+#include "Actor/Components/C_EquippedComponent.h"
 #include "Actor/Components/ItemLinkComponent/C_ItemLinkComponent.h"
 #include "Engine/AssetManager.h"
 #include "GameModeAndManager/C_UIManager.h"
@@ -245,4 +246,9 @@ void AC_MeleeWeaponBase::UpdateAmmoInfoHUDForDrawEnd()
 	
 	// MeleeWeapon의 경우 띄워줄 AmmoInfo 정보 필요 없음
 	UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility(false);
+}
+
+void AC_MeleeWeaponBase::SetAmmoUIInfo(FAmmoUIInfo& _AmmoUIInfo)
+{
+	_AmmoUIInfo.Visible = false;
 }

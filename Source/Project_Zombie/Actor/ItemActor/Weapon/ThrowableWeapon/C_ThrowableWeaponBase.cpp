@@ -1069,3 +1069,12 @@ void AC_ThrowableWeaponBase::UpdateAmmoInfoHUDForDrawEnd()
 	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled()) return;
 	UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility(true, EFireMode::Single, 1, 1);
 }
+
+void AC_ThrowableWeaponBase::SetAmmoUIInfo(FAmmoUIInfo& _AmmoUIInfo)
+{
+	_AmmoUIInfo.Visible            = true;
+	_AmmoUIInfo.FireMode           = EFireMode::Single;
+	_AmmoUIInfo.MagazineAmmo       = 1;
+	_AmmoUIInfo.LeftAmmoTotalCount = 1;
+	
+}

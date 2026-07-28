@@ -137,17 +137,28 @@ void UC_EquippedComponent::Server_SetSlotWeapon_Implementation(EWeaponSlot _Targ
 
 	// 서버 환경 자기자신일 때의 UI 업데이트
 	if (m_OwnerPlayer->IsLocallyControlled())
+	{
 		UpdateAmmoWidget();
+		return;
+	}
+
+	// 서버 플레이어가 아닌 경우, 대응되는 Client의 HUD 화면을 업데이트 처리
+	
+	if (!GetCurWeapon())
+	{
+		Client_UpdateAmmoWidget(FAmmoUIInfo());
+	}
 	else
 	{
-		if (GetCurWeapon())
-			PRINT_LOCAL(GetWorld(), "SENDING VALID", FColor::MakeRandomColor(), 20.f);
-		else
-			PRINT_LOCAL(GetWorld(), "SENDING IN-VALID", FColor::MakeRandomColor(), 20.f);
+		// 현재 들고 있는 무기 상태에 맞게끔 UI 수정
+		FAmmoUIInfo AmmoUIInfo{};
+		GetCurWeapon()->SetAmmoUIInfo(AmmoUIInfo);
+
+		if (AmmoUIInfo.Visible)
+			PRINT_LOCAL(GetWorld(), "VISIBLE", FColor::Cyan, 20.f);
 		
-		Client_UpdateAmmoWidget(GetCurWeapon());
+		Client_UpdateAmmoWidget(AmmoUIInfo);
 	}
-	
 	
 	// Multicast_SetSlotWeapon(_TargetSlot, _WeaponToEquip); // 클라이언트단의 SetSlotWeapon도 호출해줌으로써 동기화 처리
 }
@@ -467,10 +478,19 @@ void UC_EquippedComponent::UpdateAmmoWidget()
 	GetCurWeapon()->UpdateAmmoInfoHUDForDrawEnd();
 }
 
-void UC_EquippedComponent::Client_UpdateAmmoWidget_Implementation(AC_WeaponBase* _ReceivedCurWeapon)
+void UC_EquippedComponent::Client_UpdateAmmoWidget_Implementation(const FAmmoUIInfo& _AmmoUIInfo)
 {
-	if (!_ReceivedCurWeapon) PRINT_LOCAL(GetWorld(), "IN-VALID", FColor::MakeRandomColor(), 20.f);
-	else PRINT_LOCAL(GetWorld(), "VALID", FColor::MakeRandomColor(), 20.f);
+	// if (_AmmoUIInfo.Visible)
+	
+	PRINT_LOCAL(GetWorld(), "RECEIVED CLIENT UPDATE AMMO_WIDGET", FColor::Cyan, 20.f);
+	
+	UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility
+	(
+		_AmmoUIInfo.Visible,
+		_AmmoUIInfo.FireMode,
+		_AmmoUIInfo.MagazineAmmo,
+		_AmmoUIInfo.LeftAmmoTotalCount
+	);
 }
 
 void UC_EquippedComponent::Server_PlayDrawMontage_Implementation(AC_WeaponBase* _TargetWeapon)

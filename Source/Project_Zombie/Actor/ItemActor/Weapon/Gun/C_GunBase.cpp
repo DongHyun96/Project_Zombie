@@ -251,6 +251,14 @@ void AC_GunBase::LoadAsyncAssets(const FWeaponData* InRawData)
 	MainWidget->ToggleAmmoInfoVisibility(true, EFireMode::FullAuto, m_CurrentAmmo, m_MaxAmmo);*/
 }
 
+void AC_GunBase::SetAmmoUIInfo(FAmmoUIInfo& _AmmoUIInfo)
+{
+	_AmmoUIInfo.Visible            = true;
+	_AmmoUIInfo.FireMode           = m_FireMode;
+	_AmmoUIInfo.MagazineAmmo       = m_CurrentAmmo;
+	_AmmoUIInfo.LeftAmmoTotalCount = m_MaxAmmo;
+}
+
 /*void AC_GunBase::Gun_init()
 {
 	if (ItemEntry.ItemRowName.IsNone()) return;
