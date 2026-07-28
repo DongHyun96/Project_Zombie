@@ -48,34 +48,47 @@ bool AC_MeleeWeaponBase::InitializeItemActor(const FWeaponData* InRawData)
 	
 	const FMeleeData* MeleeData = static_cast<const FMeleeData*>(InRawData);
 	
+	InitializeItemData(InRawData);
 
+	LoadAsyncAssets(InRawData);
 	
-	// Base Stats 적용
+	return true;
+}
+
+void AC_MeleeWeaponBase::InitializeItemData(const FWeaponData* InRawData)
+{
+	const FMeleeData* MeleeData = static_cast<const FMeleeData*>(InRawData);
+
 	float BaseDamage = MeleeData->BaseDamage;
-	//int32 BaseMaxAmmo = MeleeData->MaxAmmo;
-	//m_FireRate = GunData->AttackRate;
-	//m_ShellEjectImpulse = GunData->ShellEjectImpulse;
-	
+
 	if (!ItemLinkComp)
 	{
 		UC_Util::Print("MeleeBase : Item Link Component Is Nullptr!", FColor::Red, 10.f);
+		return;
 	}
-	
-	// 동적 데이터 임시 처리.
+
+	// 이 부분을 C_WeaponBase에서 ItemInit함수로 따로 빼서 만들어야 나중에 강화 할 때 이 함수만 불러서 강화된 스탯을 업데이트 할 수 있지 않을까?
 	if (FInventoryEntry* EntryPtr = ItemLinkComp ? ItemLinkComp->GetItemEntryPtr() : nullptr)
 	{
-		if (const FGunCustomData* GunCustomData = EntryPtr->CustomData.GetPtr<FGunCustomData>())
-		{
-			m_Damage = BaseDamage + (GunCustomData->Upgrade_Damage * 5.0f);
-		}
-		else
-		{
-			// CustomData가 없는 초기 아이템 상태
-			m_Damage = BaseDamage;
-		}
+		// 1. 없으면 데이터 안전하게 생성
+		FEquipmentCustomData* CustomData = EntryPtr->GetOrCreateEquipmentData();
+
+		// 2. Grade(단계) 가져오기
+		int32 DamageGrade = CustomData->GetStatGrade(EUpgradableStats::AttackPower);
+
+		// TODO : 나중에 근접 무기의 공격속도 멤버 변수를 추가하면 사용할 것
+		//int32 AttackRatio = CustomData->GetStatGrade(EUpgradableStats::FireRate);
+
+		// 3. 최종 스탯 계산: BaseStat + (Grade * DataAsset의 레벨당 증가량)
+		m_Damage = MeleeData->BaseDamage + (DamageGrade * MeleeData->DamagePerUpgradeLevel);
+
+		// TODO : 나중에 근접 무기의 공격속도 멤버 변수를 추가하면 사용할 것
+		//m_AttackRatio = MeleeData->AttackRate + (DamageGrade * MeleeData->AttackRatePerUpgradeLevel);
 	}
-	
-	return true;
+	else
+	{
+		m_Damage = BaseDamage;
+	}
 }
 
 

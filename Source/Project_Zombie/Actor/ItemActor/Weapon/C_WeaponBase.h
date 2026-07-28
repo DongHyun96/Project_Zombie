@@ -37,11 +37,14 @@ public:
 	// 실제 자신의 클래스까지 내려가서 재정의해야 한다.
 	virtual bool InitializeItemActor(const FWeaponData* InRawData) PURE_VIRTUAL(AC_WeaponBase::InitializeItemActor, return false;);
 
+	virtual void InitializeItemData(const FWeaponData* InRawData) PURE_VIRTUAL(AC_WeaponBase::InitializeItemData, );
+
 	// 클라이언트가 생성된 Weapon의 에셋들을 로드하기 위한 리플리케이션 함수.
 	UFUNCTION()
 	void OnRep_WeaponRowName();
 	
 protected:
+
 	// 데이터 테이블의 에셋들을 비동기 로드하기 위한 함수, 무기마다 다를 수 있기 때문에 순수 가상 함수로 선언. return 값을 bool 처리 할까?
 	virtual void LoadAsyncAssets(const FWeaponData* InRawData) PURE_VIRTUAL(AC_WeaponBase::LoadAsyncAssets, );
 	

@@ -165,25 +165,59 @@ bool AC_ThrowableWeaponBase::InitializeItemActor(const FWeaponData* InRawData)
 		UC_Util::Print("Failed Cast to const FThrowableData*", FColor::Red, 10.f);
 		return false;
 	}
-	
+
+	InitializeItemData(InRawData);
+
+	// 비동기 에셋 로드 호출
+	LoadAsyncAssets(ThrowableData);
+	return true;
+}
+
+void AC_ThrowableWeaponBase::InitializeItemData(const FWeaponData* InRawData)
+{
+	const FThrowableData* ThrowableData = static_cast<const FThrowableData*>(InRawData);
+
+	if (!ThrowableData)
+	{
+		UC_Util::Print("Failed Cast to const FThrowableData*", FColor::Red, 10.f);
+		return;
+	}
+
 	// 기본 수치 및 플래그 설정 (서버 로직)
-	m_bExplodeOnImpact     = ThrowableData->m_bExplodeOnImpact;
-	m_bHasPin              = ThrowableData->m_bHasPin;
-	m_bIsCookable         = ThrowableData->m_bIsCookable;
+	m_bExplodeOnImpact = ThrowableData->m_bExplodeOnImpact;
+	m_bHasPin = ThrowableData->m_bHasPin;
+	m_bIsCookable = ThrowableData->m_bIsCookable;
 	m_ExplosionEffectScale = ThrowableData->m_ExplosionEffectScale;
-	m_ExplosionRadius      = ThrowableData->m_ExplosionRadius;
-	m_FuseTime             = ThrowableData->m_FuseTime;
-	m_MaxDamage           = ThrowableData->m_MaxDamage;
-	m_MinDamage           = ThrowableData->m_MinDamage;
+	m_ExplosionRadius = ThrowableData->m_ExplosionRadius;
+	m_FuseTime = ThrowableData->m_FuseTime;
+	m_MaxDamage = ThrowableData->m_MaxDamage;
+	m_MinDamage = ThrowableData->m_MinDamage;
 
 	if (!ItemLinkComp)
 	{
 		UC_Util::Print("ThrowableBase : Item Link Component Is Nullptr!", FColor::Red, 10.f);
 	}
 
-	// 비동기 에셋 로드 호출
-	LoadAsyncAssets(ThrowableData);
-	return true;
+	if (FInventoryEntry* EntryPtr = ItemLinkComp ? ItemLinkComp->GetItemEntryPtr() : nullptr)
+	{
+		// 1. 없으면 데이터 안전하게 생성
+		FEquipmentCustomData* CustomData = EntryPtr->GetOrCreateEquipmentData();
+
+		// 2. Grade(단계) 가져오기
+		int32 DamageGrade = CustomData->GetStatGrade(EUpgradableStats::AttackPower);
+		int32 ExplosionRadiusGrade = CustomData->GetStatGrade(EUpgradableStats::ExplosionRadius);
+
+		// 3. 최종 스탯 계산: BaseStat + (Grade * DataAsset의 레벨당 증가량)
+		m_MaxDamage = ThrowableData->BaseDamage + (DamageGrade * ThrowableData->DamagePerUpgradeLevel);
+		m_MinDamage = ThrowableData->BaseDamage + (DamageGrade * ThrowableData->DamagePerUpgradeLevel);
+
+		//m_MaxAmmo = ThrowableData->MaxAmmo + (AmmoGrade * GunData->MaxAmmoPerUpgradeLevel);
+		m_ExplosionRadius = ThrowableData->m_ExplosionRadius + (ExplosionRadiusGrade * ThrowableData->ExplosionRadiusPerUpgradeLevel);
+	}
+	else
+	{
+
+	}
 }
 
 void AC_ThrowableWeaponBase::LoadAsyncAssets(const FWeaponData* InRawData)

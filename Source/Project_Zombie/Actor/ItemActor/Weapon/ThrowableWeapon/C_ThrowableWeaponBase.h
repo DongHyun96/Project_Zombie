@@ -36,7 +36,10 @@ public:
 	// 서버에서 호출하는 무기 초기화 함수
 	virtual bool InitializeItemActor(const FWeaponData* InRawData) override;
 	
+	// 
+	virtual void InitializeItemData(const FWeaponData* InRawData) override;
 protected:
+
 	// 데이터 테이블의 에셋들을 비동기 로드하기 위한 함수, 무기마다 다를 수 있기 때문에 순수 가상 함수로 선언. return 값을 bool 처리 할까?
 	virtual void LoadAsyncAssets(const FWeaponData* InRawData) override;
 	

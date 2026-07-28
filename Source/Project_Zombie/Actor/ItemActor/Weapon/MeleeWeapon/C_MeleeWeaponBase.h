@@ -66,6 +66,8 @@ public:
 
 	virtual bool InitializeItemActor(const FWeaponData* InRawData) override;
 	
+	virtual void InitializeItemData(const FWeaponData* InRawData) override;
+
 	/// <summary>
 	/// 멤버변수 초기화
 	/// </summary>
