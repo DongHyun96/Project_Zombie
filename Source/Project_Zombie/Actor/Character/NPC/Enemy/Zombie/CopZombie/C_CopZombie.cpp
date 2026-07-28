@@ -32,6 +32,13 @@ void AC_CopZombie::BeginPlay()
 	m_GrabRangeCollider->OnComponentEndOverlap.AddDynamic(this, &AC_CopZombie::OnGrabRangeColliderEndOverlap);
 	
 	m_NormalAttackCollider->OnComponentBeginOverlap.AddDynamic(this, &AC_CopZombie::OnNormalAttackColliderBeginOverlap);
+	
+	// TODO : 이 Test 라인 삭제할 것
+	if (m_GunClass)
+	{
+		AC_GunBase* SpawnedGun = GetWorld()->SpawnActor<AC_GunBase>(m_GunClass);
+		if (SpawnedGun) EquipWeapon(SpawnedGun);
+	}
 }
 
 void AC_CopZombie::Tick(float DeltaTime)
