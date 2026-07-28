@@ -99,6 +99,13 @@ public:
 public:
 	
 	/// <summary>
+	/// 무기 집어넣기 처리 시 초기화할 부분 초기화 (TODO : 필요하다면 override 처리할 것) 
+	/// </summary>
+	virtual void OnSheathStart() {}
+	
+public:
+	
+	/// <summary>
 	/// <para> DrawEnd 시, 각 무기에 맞는 표기할 무기 정보 띄우기 처리 (Local Player에 한해 처리) </para>
 	/// <para> 이 무기의 주인이 Locally Controlled 되는 중인지 체킹하여 valid하면 띄움 </para>
 	/// <para> 실질적인 DrawEnd 시에 호출 및 리슨서버 환경에서 EquippedCom에서 현재 들고 있는 무기가 바뀌는 Rep 처리 시, </para>

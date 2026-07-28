@@ -115,11 +115,6 @@ bool UC_PlayerStatWidget::ToggleAmmoInfoVisibility
 )
 {
 	if (!_Visible)
-		PRINT_LOCAL(GetWorld(), "AmmoVisible False", FColor::Red, 10.f);
-	else
-		PRINT_LOCAL(GetWorld(), "AmmoVisible True", FColor::Red, 10.f);
-
-	if (!_Visible)
 	{
 		if (!m_bAmmoInfoPlayedReverseFlag) // 역재생 Animation 처리로 마지막에 호출하지 않았을 때 역재생 새로이 재생
 		{
@@ -170,6 +165,9 @@ bool UC_PlayerStatWidget::ToggleAmmoInfoVisibility
 
 void UC_PlayerStatWidget::UpdateMagazineAmmoCount(int32 _AmmoCount)
 {
+	// 현재 Ammo Info를 보여주고 있지 않은 상황
+	if (m_bAmmoInfoPlayedReverseFlag) return;
+	
 	// 다음으로 보여줄 Text로 지속적으로 Swapping
 	m_bCurrentShowingMagTextIdx = !m_bCurrentShowingMagTextIdx;
 
@@ -182,6 +180,9 @@ void UC_PlayerStatWidget::UpdateMagazineAmmoCount(int32 _AmmoCount)
 
 void UC_PlayerStatWidget::UpdateLeftAmmoTotalCount(int32 _LeftAmmoTotalCount)
 {
+	// 현재 Ammo Info를 보여주고 있지 않은 상황
+	if (m_bAmmoInfoPlayedReverseFlag) return;
+	
 	// 다음으로 보여줄 Text로 지속적으로 Swapping
 	m_bCurrentShowingLeftAmmoTextIdx = !m_bCurrentShowingLeftAmmoTextIdx;
 
@@ -190,6 +191,33 @@ void UC_PlayerStatWidget::UpdateLeftAmmoTotalCount(int32 _LeftAmmoTotalCount)
 	
 	// Animation 재생
 	PlayAnimation(m_UpdateTotalLeftAmmoAnimations[static_cast<int32>(m_bCurrentShowingLeftAmmoTextIdx)]);
+}
+
+bool UC_PlayerStatWidget::UpdateFireMode(EFireMode _NewFireMode)
+{
+	// AmmoInfo Visibility 비활성화 상태
+	if (m_bAmmoInfoPlayedReverseFlag) return false;
+	if (m_CurrentShowingFireMode == _NewFireMode) return false;
+	
+	switch (m_CurrentShowingFireMode)
+	{
+	case EFireMode::Single:
+		if (_NewFireMode == EFireMode::Burst)	PlayAnimation(SingleToBurst);
+		else									PlayAnimation(SingleToAuto);
+		break;
+	case EFireMode::Burst:
+		if (_NewFireMode == EFireMode::Single)	PlayAnimation(BurstToSingle);
+		else									PlayAnimation(BurstToAuto);
+		break;
+	case EFireMode::FullAuto:
+		if (_NewFireMode == EFireMode::Single)	PlayAnimation(AutoToSingle);
+		else									PlayAnimation(AutoToBurst);
+		break;
+	case EFireMode::End: return false;
+	}
+
+	m_CurrentShowingFireMode = _NewFireMode;
+	return true;
 }
 
 void UC_PlayerStatWidget::LerpProgressBar(UProgressBar* _TargetProgressBar, float _LerpAlphaSpeed, float _DestRatio, float _DeltaTime)

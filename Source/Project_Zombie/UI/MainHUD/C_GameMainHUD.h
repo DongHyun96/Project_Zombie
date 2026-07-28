@@ -83,6 +83,12 @@ public: // 무기 상태 정보 업데이트 관련
 	/// </summary>
 	/// <param name="_LeftAmmoTotalCount"> : 해당 무기의 사용할 수 있는 총 탄약 수 </param>
 	void UpdateLeftAmmoTotalCount(int32 _LeftAmmoTotalCount);
+	
+	/// <summary>
+	/// FireMode 변경 
+	/// </summary>
+	/// <returns> : 현재 AmmoInfo Visibility false이거나 새로 들어온 FireMode가 이미 보여지는 FireMode인 경우, Update 하지 않음(return false) </returns>
+	bool UpdateFireMode(EFireMode _NewFireMode);
 
 public:
 	

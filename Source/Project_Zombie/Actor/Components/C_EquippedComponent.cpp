@@ -208,8 +208,11 @@ bool UC_EquippedComponent::ChangeCurWeapon(EWeaponSlot _ChangeTo)
 		{
 			m_CurWeaponTypeIdx  = NoneSlotIdx;
 			Server_SetCurWeaponIdx(m_CurWeaponTypeIdx);
+			
 			m_NextWeaponTypeIdx = NoneSlotIdx;
+			
 			m_OwnerPlayer->SetHandState(EHandState::UnArmed);
+			m_bIsCurrentlyChangingWeapon = false;
 			
 			return false;
 		}

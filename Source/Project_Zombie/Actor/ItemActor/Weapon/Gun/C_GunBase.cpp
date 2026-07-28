@@ -147,9 +147,7 @@ bool AC_GunBase::InitializeItemActor(const FWeaponData* InRawData)
 void AC_GunBase::SwitchFireMode()
 {
 	if (m_OwnerPlayer && m_OwnerPlayer->IsLocallyControlled())
-	{
-		UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility(true, m_FireMode, m_CurrentAmmo, m_MaxAmmo);
-	}
+		UI_MANAGER(GetWorld())->GetMainHUDWidget()->UpdateFireMode(m_FireMode);
 }
 
 void AC_GunBase::LoadAsyncAssets(const FWeaponData* InRawData)
@@ -441,7 +439,14 @@ bool AC_GunBase::AttachToHolster(USceneComponent* _ParentMesh)
 		m_HolsterSocketName
 	);
 	
-	if (bIsAttached) m_OwnerPlayer = Player;
+	if (bIsAttached)
+	{
+		m_OwnerPlayer = Player;
+		
+		// Reload 과정 초기화 -> Reload 완수 이전이라면, 완수할 수 없게끔
+		// 카메라 원위치 (견착조준 상태였다면)
+		// FireWeapon -> 사격 도중 끊김 : 연발 사격 시 계속해서 Timer 등록처리됨 -> 이거는 근데 AttachToHolster 시점이 아닌, SheathWeapon 처리 시 바로 들어가줘야 할듯
+	}
 	
 	return bIsAttached;
 }
