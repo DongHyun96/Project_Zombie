@@ -57,7 +57,7 @@ public:
 	/// <summary>
 	/// 서버 쪽에 SetSlotWeapon 알림 도착 -> 해당 Slot의 무기 WeaponToEquip로 갈아끼우기 
 	/// </summary>
-	UFUNCTION(Server, Reliable, WithValidation)
+	UFUNCTION(Server, Reliable)
 	void Server_SetSlotWeapon(EWeaponSlot _TargetSlot, AC_WeaponBase* _WeaponToEquip);
 	
 private:
@@ -72,7 +72,7 @@ private:
 public:
 	
 
-	UFUNCTION(Server, Reliable, WithValidation)
+	UFUNCTION(Server, Reliable)
 	void Server_RequestSpawnEquippedActor(int32 SlotIndex, const FInventoryEntry& ItemData);
 
 public:
@@ -136,13 +136,13 @@ private:
 	/// <summary>
 	/// 로컬 쪽에서 PlayDrawMontage 발생 -> 서버 쪽으로 멀티캐스트 부탁(다른 환경에서도 DrawMontage 재생 처리를 하라고)
 	/// </summary>
-	UFUNCTION(Server, Reliable, WithValidation)
+	UFUNCTION(Server, Reliable)
 	void Server_PlayDrawMontage(AC_WeaponBase* _TargetWeapon);
 
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_PlayDrawMontage(AC_WeaponBase* _TargetWeapon);
 
-	UFUNCTION(Server, Reliable, WithValidation)
+	UFUNCTION(Server, Reliable)
 	void Server_PlaySheathMontage(AC_WeaponBase* _TargetWeapon);
 	
 	UFUNCTION(NetMulticast, Reliable)
@@ -153,16 +153,16 @@ private:
 	/// <summary>
 	/// 서버 쪽 무기 AttachToHolster 처리 요청 처리
 	/// </summary>
-	UFUNCTION(Server, Reliable, WithValidation)
+	UFUNCTION(Server, Reliable)
 	void Server_AttachToHolster(AC_WeaponBase* _TargetWeapon);
 
 	/// <summary>
 	/// 서버 쪽 무기 AttachToHand 처리 요청 처리 
 	/// </summary>
-	UFUNCTION(Server, Reliable, WithValidation)
+	UFUNCTION(Server, Reliable)
 	void Server_AttachToHand(AC_WeaponBase* _TargetWeapon);
 	
-	UFUNCTION(Server, Reliable, WithValidation)
+	UFUNCTION(Server, Reliable)
 	void Server_SetCurWeaponIdx(uint8 _NewIdx);
 	
 public:
