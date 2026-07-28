@@ -12,17 +12,71 @@ AC_Rifle::AC_Rifle()
 
 void AC_Rifle::PullTrigger()
 {
-	if (m_bIsFiring || m_bIsReloading || m_CurrentAmmo <= 0) return;
+	if (m_bInBurstCooldown || m_bIsFiring || m_bIsReloading || m_CurrentAmmo <= 0) return;
 
 	m_bIsFiring = true;
-	HandleAutomaticFire();
 
-	// 연사 타이머 작동
-	GetWorldTimerManager().SetTimer(m_AutoFireTimer, this, &AC_Rifle::HandleAutomaticFire, m_FireRate, true);
+	switch (m_FireMode)
+	{
+	case EFireMode::FullAuto:
+		HandleAutomaticFire();
+		GetWorldTimerManager().SetTimer(m_AutoFireTimer, this, &AC_Rifle::HandleAutomaticFire, m_FireRate, true);
+		break;
+
+	case EFireMode::Burst:
+		m_BurstCount = 0;
+		HandleBurstFire();
+		GetWorldTimerManager().SetTimer(m_AutoFireTimer, this, &AC_Rifle::HandleBurstFire, m_FireRate, true);
+		break;
+
+	case EFireMode::Single:
+		HandleAutomaticFire();
+		break;
+	}
+}
+
+void AC_Rifle::HandleBurstFire()
+{
+	if (m_CurrentAmmo <= 0 || m_bIsReloading || m_BurstCount >= m_MaxBurstCount)
+	{
+		GetWorldTimerManager().ClearTimer(m_AutoFireTimer);
+		m_bIsFiring = false;
+		return;
+	}
+
+	PlayFireEffects_Local();
+	Server_PullTrigger();
+	m_BurstCount++;
+
+	if (m_BurstCount >= m_MaxBurstCount)
+	{
+		GetWorldTimerManager().ClearTimer(m_AutoFireTimer);
+		m_bIsFiring = false;
+
+		m_bInBurstCooldown = true;
+		GetWorldTimerManager().SetTimer(
+			m_BurstCooldownTimer,
+			this,
+			&AC_Rifle::ResetBurstCooldown,
+			m_BurstCooldown,
+			false
+		);
+	}
+}
+
+void AC_Rifle::ResetBurstCooldown()
+{
+	m_bInBurstCooldown = false;
 }
 
 void AC_Rifle::ReleaseTrigger()
 {
+	if (m_FireMode == EFireMode::Burst && m_BurstCount < m_MaxBurstCount && m_CurrentAmmo > 0)
+	{
+		m_bIsFiring = false;
+		return;
+	}
+
 	Super::ReleaseTrigger();
 	GetWorldTimerManager().ClearTimer(m_AutoFireTimer);
 }
@@ -42,6 +96,36 @@ void AC_Rifle::HandleAutomaticFire()
 void AC_Rifle::Server_ExecuteFire()
 {
 	ProcessSingleRifleShot(m_Damage);
+}
+
+void AC_Rifle::SwitchFireMode()
+{
+	if (m_bIsFiring)
+	{
+		ReleaseTrigger();
+	}
+
+	// 모드 변경 시 진행 중이던 쿨타임도 리셋
+	m_bInBurstCooldown = false;
+	GetWorldTimerManager().ClearTimer(m_BurstCooldownTimer);
+
+	switch (m_FireMode)
+	{
+	case EFireMode::Single:
+		m_FireMode = EFireMode::Burst;
+		break;
+	case EFireMode::Burst:
+		m_FireMode = EFireMode::FullAuto;
+		break;
+	case EFireMode::FullAuto:
+		m_FireMode = EFireMode::Single;
+		break;
+	default:
+		m_FireMode = EFireMode::Single;
+		break;
+	}
+
+	Super::SwitchFireMode();
 }
 
 void AC_Rifle::ProcessSingleRifleShot(float DamageVal)
@@ -78,13 +162,10 @@ void AC_Rifle::ProcessSingleRifleShot(float DamageVal)
 
 	bool bHit = GetWorld()->LineTraceSingleByChannel(MuzzleHitResult, MuzzleStart, FinalMuzzleEnd, ECC_Visibility, QueryParams);
 
-	// 1. 탄착 지점 결정 (맞았으면 ImpactPoint, 안 맞았으면 최종 도달 지점)
 	FVector ImpactPoint = bHit ? MuzzleHitResult.ImpactPoint : FinalMuzzleEnd;
 
-	// 2. 이펙트 멀티캐스트 호출 (궤적 LERP 이동 + 탄피 나이아가라 배출 + Impact 이펙트)
 	Multicast_PlayFireEffects(ImpactPoint);
 
-	// 3. 데미지 처리
 	if (bHit)
 	{
 		if (AC_BasicEnemy* Enemy = Cast<AC_BasicEnemy>(MuzzleHitResult.GetActor()))
