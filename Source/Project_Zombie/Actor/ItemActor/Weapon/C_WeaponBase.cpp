@@ -26,6 +26,8 @@ AC_WeaponBase::AC_WeaponBase()
 void AC_WeaponBase::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	m_InitialRelativeTransform = GetRootComponent()->GetRelativeTransform();
 }
 
 void AC_WeaponBase::EndPlay(const EEndPlayReason::Type EndPlayReason)

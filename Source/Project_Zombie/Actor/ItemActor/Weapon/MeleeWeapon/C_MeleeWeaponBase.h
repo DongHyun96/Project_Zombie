@@ -89,6 +89,8 @@ protected:
 public:
 	
 	virtual void UpdateAmmoInfoHUDForDrawEnd() override;
+	
+	virtual void SetAmmoUIInfo(FAmmoUIInfo& _AmmoUIInfo) override;
 
 protected:
 

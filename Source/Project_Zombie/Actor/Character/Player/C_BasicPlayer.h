@@ -277,7 +277,7 @@ public:
 	void SetPlayerMoveState(EPlayerPoseState _MoveSpeedState) { m_PlayerPoseState = _MoveSpeedState; }
 
 	EHandState GetHandState() const { return m_HandState; }
-	void SetHandState(EHandState _HandState) { m_HandState = _HandState; }
+	void SetHandState(EHandState _HandState);
 
 	UC_EquippedComponent* GetEquippedComponent() const { return m_EquippedComponent; }
 	
@@ -299,6 +299,15 @@ public:
 	
 	// 드래그중인 아이템 관련 정보 저장
 	bool SetCurDraggedItem(struct FInventoryEntry InEntry, UC_InvenComponent* SrcInvenComp, int32 SrcSlotIdx);
+
+private:
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_SetHandState(EHandState _HandState);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_SetHandState(EHandState _HandState);
+	
 public:
 	// curDraggedItem 초기화 및 서버에 Drag로 인한 잠금 해제 요청
 	void ClearCurDraggedItem();

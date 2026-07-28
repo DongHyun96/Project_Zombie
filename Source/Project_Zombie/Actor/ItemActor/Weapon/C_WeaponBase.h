@@ -9,6 +9,7 @@
 #include "GameFramework/Actor.h"
 #include "C_WeaponBase.generated.h"
 
+struct FAmmoUIInfo;
 struct FStreamableHandle;
 struct FWeaponData;
 class UC_ItemLinkComponent;
@@ -99,6 +100,19 @@ public:
 public:
 	
 	/// <summary>
+	/// 무기 집어넣기 처리 시 초기화할 부분 초기화 (TODO : 필요하다면 override 처리할 것) 
+	/// </summary>
+	virtual void OnSheathStart() {}
+	
+public:
+	
+	/// <summary>
+	/// 현재 무기 상태에 맞춘 AmmoUIInfo 초기화 처리 
+	/// </summary>
+	/// <param name="_AmmoUIInfo"></param>
+	virtual void SetAmmoUIInfo(FAmmoUIInfo& _AmmoUIInfo) PURE_VIRTUAL(AC_WeaponBase::SetAmmoUIInfo);
+	
+	/// <summary>
 	/// <para> DrawEnd 시, 각 무기에 맞는 표기할 무기 정보 띄우기 처리 (Local Player에 한해 처리) </para>
 	/// <para> 이 무기의 주인이 Locally Controlled 되는 중인지 체킹하여 valid하면 띄움 </para>
 	/// <para> 실질적인 DrawEnd 시에 호출 및 리슨서버 환경에서 EquippedCom에서 현재 들고 있는 무기가 바뀌는 Rep 처리 시, </para>
@@ -106,6 +120,8 @@ public:
 	/// </summary>
 	virtual void UpdateAmmoInfoHUDForDrawEnd() PURE_VIRTUAL(AC_WeaponBase::UpdateAmmoInformUIOnDrawEnd, );
 
+	void SetRelativeTransformToInitial() { SetActorRelativeTransform(m_InitialRelativeTransform); }
+	
 public:
 	
 	UAnimMontage* GetDrawMontage() const { return m_DrawMontage; }
@@ -119,7 +135,7 @@ public:
 	UC_ItemLinkComponent* GetLinkComp() {return ItemLinkComp;}
 
 	void SetItemRowName(FName InRowName) { m_WeaponRowName = InRowName; }
-
+	
 protected:
 
 	// 무기의 고유 RowName (서버에서 설정되면 클라이언트로 복제됨)
@@ -161,4 +177,10 @@ protected:
 protected:
 	// 비동기 로딩 핸들을 관리할 스마트 포인터
 	TSharedPtr<FStreamableHandle> AsyncLoadHandle;
+	
+private:
+
+	// 초기 RelativeTransform 값 (부착 시 해당값으로 초기화 처리가 들어가야 제대로 된 위치가 잡힘)
+	FTransform m_InitialRelativeTransform{};
+	
 };

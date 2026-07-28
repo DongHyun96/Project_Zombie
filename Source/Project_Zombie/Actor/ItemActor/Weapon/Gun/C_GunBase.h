@@ -119,6 +119,9 @@ private:
 	// Hand Socket Name (각 MeleeWeapon 블루프린트에서 Name 초기화 해줄 것)
 	static const FName s_HandSocketName;
 
+	// 모든 무기 RifleHolster 사용처리
+	static const FName s_HolsterSocketName;
+
 protected:
 #if WITH_EDITOR
 	// 에디터에서 프로퍼티(속성)가 변경될 때마다 호출되는 엔진 함수. TODO : 이제 init함수가 바뀌어서 사용하지 않음.
@@ -173,6 +176,8 @@ public:
 
 protected:
 	virtual void LoadAsyncAssets(const FWeaponData* InRawData) override;
+
+	virtual void SetAmmoUIInfo(FAmmoUIInfo& _AmmoUIInfo) override;
 	
 public:
 	USkeletalMeshComponent* GetWeaponMesh() const { return m_WeaponMesh; }
@@ -250,6 +255,14 @@ public:
 	virtual bool AttachToHand(USceneComponent* _ParentMesh) override;
     virtual bool AttachToHolster(USceneComponent* _ParentMesh) override;
 
+public:
+	
+	/// <summary>
+	/// 이 총기가 무기집으로 들어가는 처리 성공 및 들어가는 처리 시작됨
+	/// 원상태 복구 처리 필요한 내역 여기서 처리
+	/// </summary>
+	virtual void OnSheathStart() override;
+	
 private:
 	
 	UFUNCTION()

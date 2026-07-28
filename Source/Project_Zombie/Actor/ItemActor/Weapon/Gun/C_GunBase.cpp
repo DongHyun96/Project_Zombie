@@ -23,6 +23,7 @@
 
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
+#include "Actor/Components/C_BasicPlayerAimComponent.h"
 #include "Engine/AssetManager.h"
 
 #include "GameModeAndManager/C_UIManager.h"
@@ -33,6 +34,9 @@
 
 // 일단은 총기 오른손 부착 위치 Socket과 동일한 Socket으로 둠
 const FName AC_GunBase::s_HandSocketName = TEXT("HandGrip_R");
+
+// 모두 RifleHolster를 사용할 예정
+const FName AC_GunBase::s_HolsterSocketName = TEXT("RifleHolster");
 
 AC_GunBase::AC_GunBase()
 {
@@ -147,9 +151,7 @@ bool AC_GunBase::InitializeItemActor(const FWeaponData* InRawData)
 void AC_GunBase::SwitchFireMode()
 {
 	if (m_OwnerPlayer && m_OwnerPlayer->IsLocallyControlled())
-	{
-		UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility(true, m_FireMode, m_CurrentAmmo, m_MaxAmmo);
-	}
+		UI_MANAGER(GetWorld())->GetMainHUDWidget()->UpdateFireMode(m_FireMode);
 }
 
 void AC_GunBase::LoadAsyncAssets(const FWeaponData* InRawData)
@@ -247,6 +249,14 @@ void AC_GunBase::LoadAsyncAssets(const FWeaponData* InRawData)
 
 	// 5. 모든 포인터가 유효할 때만 안전하게 실행
 	MainWidget->ToggleAmmoInfoVisibility(true, EFireMode::FullAuto, m_CurrentAmmo, m_MaxAmmo);*/
+}
+
+void AC_GunBase::SetAmmoUIInfo(FAmmoUIInfo& _AmmoUIInfo)
+{
+	_AmmoUIInfo.Visible            = true;
+	_AmmoUIInfo.FireMode           = m_FireMode;
+	_AmmoUIInfo.MagazineAmmo       = m_CurrentAmmo;
+	_AmmoUIInfo.LeftAmmoTotalCount = m_MaxAmmo;
 }
 
 /*void AC_GunBase::Gun_init()
@@ -517,12 +527,10 @@ void AC_GunBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifeti
 
 bool AC_GunBase::AttachToHand(USceneComponent* _ParentMesh)
 {
-	PRINT_LOCAL(GetWorld(), "Gun - AttachingToHand", FColor::Red, 10.f);
-	
 	if (!_ParentMesh) return false;
 	AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(_ParentMesh->GetOwner());
 	if (!Player) return false; // 손에 장착 시도하는 Owner Character가 Player형이 아닌 경우, return false
-	if (Player != m_OwnerPlayer) return false; // 손에 장착 시도하는 Player가 무기주인인 경우가 아닌 경우 
+	if (Player != m_OwnerPlayer) return false; // 손에 장착 시도하는 Player가 무기주인인 경우가 아닌 경우
 
 	SetOwner(Player);
 
@@ -538,6 +546,7 @@ bool AC_GunBase::AttachToHand(USceneComponent* _ParentMesh)
 		Player->SetHandState(EHandState::WeaponGun);
 		UpdateAmmoInfoHUDForDrawEnd();
 	}
+	else PRINT_LOCAL(GetWorld(), "AttachToHand Failed", FColor::Red, 10.f);
 	
 	return bIsAttached;
 }
@@ -552,10 +561,17 @@ bool AC_GunBase::AttachToHolster(USceneComponent* _ParentMesh)
 	(
 		_ParentMesh,
 		FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true),
-		m_HolsterSocketName
+		s_HolsterSocketName
 	);
 	
-	if (bIsAttached) m_OwnerPlayer = Player;
+	if (bIsAttached)
+	{
+		m_OwnerPlayer = Player;
+		
+		// Reload 과정 초기화 -> Reload 완수 이전이라면, 완수할 수 없게끔
+		// 카메라 원위치 (견착조준 상태였다면)
+		// FireWeapon -> 사격 도중 끊김 : 연발 사격 시 계속해서 Timer 등록처리됨 -> 이거는 근데 AttachToHolster 시점이 아닌, SheathWeapon 처리 시 바로 들어가줘야 할듯
+	}
 	
 	return bIsAttached;
 }
@@ -730,9 +746,19 @@ void AC_GunBase::Server_StartReload_Implementation()
 void AC_GunBase::Server_ExecuteReload()
 {
 	m_CurrentAmmo = m_MaxAmmo;
-	m_bIsReloading = false; 
+	m_bIsReloading = false;
 
 	OnRep_CurrentAmmo();
+}
+
+void AC_GunBase::OnSheathStart()
+{
+	ReleaseTrigger(); // 사격 중이었다면, 사격 중지 (Timer 등록 해지 등)
+
+	// Aim 카메라, UI 등 원위치
+	if (m_OwnerPlayer) m_OwnerPlayer->GetAimComponent()->OnAimReleased();
+	
+	// TODO : 재장전 중이었던 경우, 필요한 원위치 또는 중단 처리 필요
 }
 
 void AC_GunBase::OnMainColliderBeginOverlap
