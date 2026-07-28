@@ -352,7 +352,7 @@ void UC_BasicPlayerInputComponent::FreeLookHoldStart()
 	Player->GetEquippedComponent()->Server_SetSlotWeapon(EWeaponSlot::MainWeapon, nullptr);*/
 	
 	// TODO : 이 Test 코드 지우기
-	Player->GetEquippedComponent()->Server_TestSpawnAllWeapons();
+	// Player->GetEquippedComponent()->Server_TestSpawnAllWeapons();
 }
 
 void UC_BasicPlayerInputComponent::FreeLookHoldEnd()

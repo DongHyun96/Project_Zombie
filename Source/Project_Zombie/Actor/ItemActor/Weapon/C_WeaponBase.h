@@ -113,6 +113,8 @@ public:
 	/// </summary>
 	virtual void UpdateAmmoInfoHUDForDrawEnd() PURE_VIRTUAL(AC_WeaponBase::UpdateAmmoInformUIOnDrawEnd, );
 
+	void SetRelativeTransformToInitial() { SetActorRelativeTransform(m_InitialRelativeTransform); }
+	
 public:
 	
 	UAnimMontage* GetDrawMontage() const { return m_DrawMontage; }
@@ -168,4 +170,10 @@ protected:
 protected:
 	// 비동기 로딩 핸들을 관리할 스마트 포인터
 	TSharedPtr<FStreamableHandle> AsyncLoadHandle;
+	
+private:
+
+	// 초기 RelativeTransform 값 (부착 시 해당값으로 초기화 처리가 들어가야 제대로 된 위치가 잡힘)
+	FTransform m_InitialRelativeTransform{};
+	
 };

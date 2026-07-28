@@ -141,7 +141,6 @@ void AC_Rifle::Gun_Reload()
 	}
 
 	// 2초 타이머 후 탄창만큼의 탄약 보충
-	// TODO : Reload 모션 방해를 받았다면, 실질적인 재장전 처리를 하면 안됨
 	FTimerHandle ReloadTimerHandle;
 	GetWorldTimerManager().SetTimer(ReloadTimerHandle, this, &AC_Rifle::CompleteReload, ReloadDuration, false);
 }

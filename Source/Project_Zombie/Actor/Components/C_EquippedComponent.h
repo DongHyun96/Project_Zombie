@@ -171,12 +171,6 @@ protected: /* 장착 무기 Slot */
 
 protected:
 
-	// 현재 무기를 바꾸는 과정인지
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	bool m_bIsCurrentlyChangingWeapon{};
-	
-protected:
-
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly)
 	uint8 m_CurWeaponTypeIdx  = static_cast<uint8>(EWeaponSlot::None); // 현재 손에 들고 있는 무기 슬롯 Type Idx
 

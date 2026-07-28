@@ -23,6 +23,7 @@
 
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
+#include "Actor/Components/C_BasicPlayerAimComponent.h"
 #include "Engine/AssetManager.h"
 
 #include "GameModeAndManager/C_UIManager.h"
@@ -33,6 +34,9 @@
 
 // 일단은 총기 오른손 부착 위치 Socket과 동일한 Socket으로 둠
 const FName AC_GunBase::s_HandSocketName = TEXT("HandGrip_R");
+
+// 모두 RifleHolster를 사용할 예정
+const FName AC_GunBase::s_HolsterSocketName = TEXT("RifleHolster");
 
 AC_GunBase::AC_GunBase()
 {
@@ -436,7 +440,7 @@ bool AC_GunBase::AttachToHolster(USceneComponent* _ParentMesh)
 	(
 		_ParentMesh,
 		FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true),
-		m_HolsterSocketName
+		s_HolsterSocketName
 	);
 	
 	if (bIsAttached)
@@ -476,6 +480,16 @@ void AC_GunBase::UpdateAmmoInfoHUDForDrawEnd()
 	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled()) return;
 	
 	UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility(true, m_FireMode, m_CurrentAmmo, m_MaxAmmo);
+}
+
+void AC_GunBase::OnSheathStart()
+{
+	ReleaseTrigger(); // 사격 중이었다면, 사격 중지 (Timer 등록 해지 등)
+
+	// Aim 카메라, UI 등 원위치
+	if (m_OwnerPlayer) m_OwnerPlayer->GetAimComponent()->OnAimReleased();
+	
+	// TODO : 재장전 중이었던 경우, 필요한 원위치 또는 중단 처리 필요
 }
 
 void AC_GunBase::OnMainColliderBeginOverlap

@@ -71,7 +71,7 @@ void UC_EquippedComponent::SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* 
     if (TargetSlot == EWeaponSlot::ThrowableWeapon)
         m_Weapons[TargetSlotIdx]->SetActorHiddenInGame(true);
 
-    // m_Weapons[InSlot]->SetRelativeTransformToInitial(); // TODO : 무기 부착 시 위치 이상해지면, 이 함수처리 고려할 것
+	m_Weapons[TargetSlotIdx]->SetRelativeTransformToInitial();
     m_Weapons[TargetSlotIdx]->AttachToHolster(m_OwnerPlayer->GetMesh());
 
 	// 무기에게 자신의 OwnerPlayer 세팅
@@ -158,9 +158,7 @@ bool UC_EquippedComponent::ChangeCurWeapon(EWeaponSlot _ChangeTo)
 
 	// 현재 들고 있는 무기가 Valid하고, 해당 무기의 교체 모션이 이미 진행중이라면
 	// 새로 들어온 교체 요청 처리 x
-	// m_bIsCurrentlyChangingWeapon으로 확인하지 않은 이유 -> 글쎄다?
-	// TODO : 만약 문제 생긴다면 이 처리로 아래 if 문 처리 대체할 것
-	/*if (m_Weapons[m_CurWeaponTypeIdx])
+	if (m_Weapons[m_CurWeaponTypeIdx])
 	{
 		UAnimMontage* CurWeaponDrawMontage   = m_Weapons[m_CurWeaponTypeIdx]->GetDrawMontage();
 		UAnimMontage* CurWeaponSheathMontage = m_Weapons[m_CurWeaponTypeIdx]->GetSheathMontage();
@@ -168,16 +166,12 @@ bool UC_EquippedComponent::ChangeCurWeapon(EWeaponSlot _ChangeTo)
 
 		if (OwnerAnimInstance->Montage_IsPlaying(CurWeaponDrawMontage) ||
 			OwnerAnimInstance->Montage_IsPlaying(CurWeaponSheathMontage))
+		{
+			PRINT_LOCAL(GetWorld(), "IsCurrentlyChangingWeapon", FColor::MakeRandomColor(), 20.f);
 			return false;
-	}*/
-
-	// 현재 무기교체처리가 이미 진행되고 있는 경우
-	if (m_bIsCurrentlyChangingWeapon)
-	{
-		PRINT_LOCAL(GetWorld(), "IsCurrentlyChangingWeapon", FColor::MakeRandomColor(), 20.f);
-		return false;
+		}
 	}
-	
+
 	// 방어 예외처리 코드에 안정성을 위해 NextWeapon을 None으로 초기화 처리 모두 해둠
 	// 위의 이미 교체처리가 이루어지는 상황에서의 방어코드는 NextWeapon 종류를 바꾸면 안됨 (바꾸는 와중이라...)
 	
@@ -212,29 +206,33 @@ bool UC_EquippedComponent::ChangeCurWeapon(EWeaponSlot _ChangeTo)
 			m_NextWeaponTypeIdx = NoneSlotIdx;
 			
 			m_OwnerPlayer->SetHandState(EHandState::UnArmed);
-			m_bIsCurrentlyChangingWeapon = false;
-			
 			return false;
 		}
 		
 		// 다음 무기가 있을 때
-		m_OwnerPlayer->PlayAnimMontage(m_Weapons[m_NextWeaponTypeIdx]->GetDrawMontage());
-		Server_PlayDrawMontage(m_Weapons[m_NextWeaponTypeIdx]); // 서버 쪽 DrawMontage play 요청 ( 나 재생함)
-		m_bIsCurrentlyChangingWeapon = true;
+		const float Duration = m_OwnerPlayer->PlayAnimMontage(m_Weapons[m_NextWeaponTypeIdx]->GetDrawMontage());
+		if (Duration == 0.f) return false; // MontagePriority에 의해 재생 처리가 제대로 안된 경우
 
+		// 실질적인 Draw 처리 성공
 		
+		Server_PlayDrawMontage(m_Weapons[m_NextWeaponTypeIdx]); // 서버 쪽 DrawMontage play 요청 ( 나 재생함)
 		return true;
 	}
 	
 	/* 현재 무기를 착용중인 상황 */
 	
-	// TODO : 투척류 이미 쿠킹이 진행된 상태에서 다른 무기로 Swap시, 땅에 떨구는 예외처리를 해주었었음 (필요하다면 여기서도 처리를 해주어야 함)
+	// TODO : 투척류 이미 쿠킹이 진행된 상태에서 다른 무기로 Swap시, 땅에 떨구는 예외처리를 해주었었음 (필요하다면 여기서도 처리를 해주어야 함) -> 이건 x
 	// TODO : 총을 들고 Aiming 상태였을 경우, 카메라 위치 원상복구 처리를 해주었음
+	
 
 	// 현재 무기 집어넣는 동작에 Notify 함수를 걸어둠 -> 다음 무기 Draw로 무기전환 처리가 이루어짐
-	m_OwnerPlayer->PlayAnimMontage(GetCurWeapon()->GetSheathMontage());
-	Server_PlaySheathMontage(GetCurWeapon());
-	m_bIsCurrentlyChangingWeapon = true;
+	const float Duration = m_OwnerPlayer->PlayAnimMontage(GetCurWeapon()->GetSheathMontage());
+	if (Duration == 0.f) return false; // Priority에 의한 Sheath 처리 거절
+	
+	Server_PlaySheathMontage(GetCurWeapon()); // 서버에 다른 Player들을 위한 자신의 Sheath 동작 처리되었다고 요청
+
+	// 현재 무기의 Sheath가 시작된 경우, 초기화할 내역이 있다면 처리
+	GetCurWeapon()->OnSheathStart();
 	
 	return true;
 }
@@ -373,7 +371,22 @@ void UC_EquippedComponent::OnSheathEnd()
 		// Swap할 다음 무기가 Valid하면, 다음 무기로 그대로 Swap 처리
 		if (GetCurWeapon())
 		{
-			m_OwnerPlayer->PlayAnimMontage(GetCurWeapon()->GetDrawMontage());
+			const float Duration = m_OwnerPlayer->PlayAnimMontage(GetCurWeapon()->GetDrawMontage());
+
+			// 모종의 이유로(?) 다음 Weapon이 Valid하지만 MontagePriority에 의해 재생 처리가 안된 경우
+			//  -> 이때에는 미아가 되어버림(현재 HandState를 강제 UnArmed 처리로 해주어야 한다)
+			if (Duration == 0.f) 
+			{
+				UC_Util::Print("From UC_EquippedComponent::OnSheathEnd : Next DrawMontage Play failed! Cannot be possible on here!", FColor::Red, 10.f);
+				
+				m_OwnerPlayer->SetHandState(EHandState::UnArmed);
+				m_CurWeaponTypeIdx           = static_cast<uint8>(EWeaponSlot::None);
+				m_NextWeaponTypeIdx          = static_cast<uint8>(EWeaponSlot::None);
+				Server_SetCurWeaponIdx(m_CurWeaponTypeIdx);
+				return;
+			}
+
+			// 제대로 DrawMontage 재생 처리가 되었다면, 해당 Motion 재생
 			Server_PlayDrawMontage(GetCurWeapon());
 			return;
 		}
@@ -382,7 +395,6 @@ void UC_EquippedComponent::OnSheathEnd()
 		m_OwnerPlayer->SetHandState(EHandState::UnArmed);
 		m_CurWeaponTypeIdx           = static_cast<uint8>(EWeaponSlot::None);
 		m_NextWeaponTypeIdx          = static_cast<uint8>(EWeaponSlot::None);
-		m_bIsCurrentlyChangingWeapon = false;
 		Server_SetCurWeaponIdx(m_CurWeaponTypeIdx);
 		return;
 	}
@@ -393,28 +405,23 @@ void UC_EquippedComponent::OnSheathEnd()
 	GetCurWeapon()->AttachToHolster(m_OwnerPlayer->GetMesh());
 	Server_AttachToHolster(GetCurWeapon()); // 서버 쪽 환경에서도 Attaching 처리 (자동적으로 나머지 환경에서도 Attach 처리가 이루어진다)
 	
-	// TODO : 여기에 총기류 예외처리를 넣어놨었음 (AimPress bool값 변경하는 처리가 들어가는 처리)
-	
 	m_CurWeaponTypeIdx = m_NextWeaponTypeIdx;
 	Server_SetCurWeaponIdx(m_CurWeaponTypeIdx);
 	
 	if (!GetCurWeapon()) // 다음 무기 종류가 Valid하지 않은 상황(UnArmed 처리)
 	{
 		m_OwnerPlayer->SetHandState(EHandState::UnArmed);
-		m_bIsCurrentlyChangingWeapon = false;
 		return;
 	}
 
 	// 다음 무기가 Valid한 경우, 다음 무기 Draw (가장 Trivial한 case)
-	m_OwnerPlayer->PlayAnimMontage(GetCurWeapon()->GetDrawMontage());
-	Server_PlayDrawMontage(GetCurWeapon());
+	const float Duration = m_OwnerPlayer->PlayAnimMontage(GetCurWeapon()->GetDrawMontage());
+	if (Duration != 0.f) Server_PlayDrawMontage(GetCurWeapon()); 
 }
 
 void UC_EquippedComponent::OnDrawEnd()
 {
 	if (!m_OwnerPlayer->IsLocallyControlled()) return;
-	
-	m_bIsCurrentlyChangingWeapon = false;
 
 	const uint8 NoneSlotIdx = static_cast<uint8>(EWeaponSlot::None);
 	
