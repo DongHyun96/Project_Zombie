@@ -11,6 +11,11 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnCurHPReachedZero, class AC_BasicCharacter
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnCurHPReachedFull, AC_BasicCharacter*);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnIncreaseCurHP, AC_BasicCharacter*);
 
+/// <summary>
+/// Param - Ratio
+/// </summary>
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnCurHPUpdated, float);
+
 /*USTRUCT(BlueprintType)
 struct FStatInfo
 {
@@ -147,4 +152,7 @@ public:
 	
 	// IncreaseCurHP 정상 처리되었을 시, 호출
 	FOnIncreaseCurHP OnIncreaseCurHPDelegate{};
+
+	// HP 가 업데이트 되었을 시, 호출
+	FOnCurHPUpdated OnCurHPUpdatedDelegate{};
 };

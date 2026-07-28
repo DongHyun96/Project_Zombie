@@ -5,6 +5,8 @@
 
 #include "GlobalData.h"
 #include "Actor/Character/C_BasicCharacter.h"
+#include "GameModeAndManager/C_UIManager.h"
+#include "UI/MainHUD/C_GameMainHUD.h"
 #include "Utility/C_Util.h"
 
 
@@ -147,8 +149,12 @@ bool UC_StatComponentBase::SetStat(const FName& _StatName, float _Value)
 	// CurHP Set인 경우, Delegate 호출 처리
 	if (_StatName == TEXT("CurHP"))
 	{
-		if (*pTargetStatValue == 0.f)						OnCurHPReachedZeroDelegate.Broadcast(m_OwnerCharacter);
-		else if (*pTargetStatValue >= GetStat("CurMaxHP"))	OnCurHPReachedFullDelegate.Broadcast(m_OwnerCharacter);
+		const float CurMaxHP = GetStat(TEXT("CurMaxHP"));
+		
+		if (*pTargetStatValue == 0.f)			OnCurHPReachedZeroDelegate.Broadcast(m_OwnerCharacter);
+		else if (*pTargetStatValue >= CurMaxHP)	OnCurHPReachedFullDelegate.Broadcast(m_OwnerCharacter);
+		
+		OnCurHPUpdatedDelegate.Broadcast(*pTargetStatValue / CurMaxHP);
 	}
 	
 	return true;
@@ -163,9 +169,16 @@ bool UC_StatComponentBase::IncreaseStat(const FName& _StatName, float _IncreaseA
 	
 	*pTargetStatValue += _IncreaseAmount;
 
-	// CurHP Set인 경우, CurHP Full을 찍었으면 Delegate 호출 처리 
-	if (_StatName == TEXT("CurHP") && *pTargetStatValue >= GetStat("CurMaxHP"))
-		OnCurHPReachedFullDelegate.Broadcast(m_OwnerCharacter);
+	// CurHP Set인 경우
+	if (_StatName == TEXT("CurHP"))
+	{
+		// CurHP Full을 찍었으면 해당 Delegate 호출 처리
+		const float CurMaxHP = GetStat(TEXT("CurMaxHP"));
+		if (*pTargetStatValue >= CurMaxHP)
+			OnCurHPReachedFullDelegate.Broadcast(m_OwnerCharacter);
+		
+		OnCurHPUpdatedDelegate.Broadcast(*pTargetStatValue / CurMaxHP);
+	}
 	
 	return true;
 }
@@ -180,8 +193,13 @@ bool UC_StatComponentBase::DecreaseStat(const FName& _StatName, float _DecreaseA
 	*pTargetStatValue = FMath::Max(0.f, *pTargetStatValue - _DecreaseAmount); // 음수값 방지
 
 	// CurHP Set인 경우, CurHP 0을 찍었으면 Delegate 호출 처리
-	if (_StatName == TEXT("CurHP") && *pTargetStatValue <= 0.f)
-		OnCurHPReachedZeroDelegate.Broadcast(m_OwnerCharacter);
+	if (_StatName == TEXT("CurHP"))
+	{
+		if (*pTargetStatValue <= 0.f)
+			OnCurHPReachedZeroDelegate.Broadcast(m_OwnerCharacter);
+		
+		OnCurHPUpdatedDelegate.Broadcast(*pTargetStatValue / GetStat(TEXT("CurMaxHP")));
+	}
 	
 	return true;
 }
@@ -220,6 +238,8 @@ bool UC_StatComponentBase::IncreaseCurHP(float _IncreaseAmount)
 	if (*pCurHP >= GetStat("CurMaxHP")) 
 		OnCurHPReachedFullDelegate.Broadcast(m_OwnerCharacter);
 	
+	OnCurHPUpdatedDelegate.Broadcast(*pCurHP / CurMaxHP);
+	
 	return true;
 }
 
@@ -232,6 +252,8 @@ bool UC_StatComponentBase::DecreaseCurHP(float _DecreaseAmount)
 
 	// CurHP 0을 찍었으면 Delegate 호출 처리
 	if (*pCurHP == 0.f) OnCurHPReachedZeroDelegate.Broadcast(m_OwnerCharacter);
+	
+	OnCurHPUpdatedDelegate.Broadcast(*pCurHP / GetStat(TEXT("CurMaxHP")));
 	
 	return true;
 }

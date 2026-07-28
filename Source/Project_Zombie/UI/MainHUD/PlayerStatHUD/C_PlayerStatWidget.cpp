@@ -60,16 +60,15 @@ bool UC_PlayerStatWidget::UpdateHPBar(float _HP, float _MaxHP)
 	return true;
 }
 
-bool UC_PlayerStatWidget::UpdateHPBar(float _Ratio)
+void UC_PlayerStatWidget::UpdateHPBarRatio(float _Ratio)
 {
 	if (_Ratio < 0.f || _Ratio > 1.f)
 	{
 		UC_Util::Print("From UC_PlayerStatWidget::UpdateHPBar : Invalid Param received!", FColor::Red, 5.f);
-		return false;
+		return;
 	}
 	
 	UpdateHPBarBoilerPlate(_Ratio);
-	return true;
 }
 
 bool UC_PlayerStatWidget::UpdateBoostBar(float _Boost, float _MaxBoost)

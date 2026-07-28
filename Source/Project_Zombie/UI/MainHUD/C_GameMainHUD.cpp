@@ -21,16 +21,6 @@ void UC_GameMainHUD::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 	Super::NativeTick(MyGeometry, InDeltaTime);
 }
 
-bool UC_GameMainHUD::UpdateHPBar(float _HP, float _MaxHP)
-{
-	return PlayerStatWidget->UpdateHPBar(_HP, _MaxHP);
-}
-
-bool UC_GameMainHUD::UpdateHPBarRatio(float _Ratio)
-{
-	return PlayerStatWidget->UpdateHPBar(_Ratio);
-}
-
 bool UC_GameMainHUD::UpdateBoostBar(float _Boost, float _MaxBoost)
 {
 	return PlayerStatWidget->UpdateBoostBar(_Boost, _MaxBoost);

@@ -16,6 +16,8 @@ UCLASS()
 class PROJECT_ZOMBIE_API UC_PlayerStatWidget : public UUserWidget
 {
 	GENERATED_BODY()
+
+	friend class UC_PlayerStatComponent;
 	
 public:
 	
@@ -26,6 +28,16 @@ public:
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 
 public: // HPBar 및 BoostBar 관련
+	
+	/// <summary>
+	/// Boost Bar 업데이트
+	/// </summary>
+	/// <param name="_Boost"> : 현재 Boost 량 </param>
+	/// <param name="_MaxBoost"> : 최대 Boost 량 </param>
+	/// <returns> : 잘못된 값이 들어왔을 경우 return false </returns>
+	bool UpdateBoostBar(float _Boost, float _MaxBoost);
+	
+private:
 	
 	/// <summary>
 	/// HP Bar Percent 업데이트 
@@ -40,17 +52,7 @@ public: // HPBar 및 BoostBar 관련
 	/// </summary>
 	/// <param name="_Ratio"> : HP 비율 </param>
 	/// <returns> : 잘못된 값이 들어왔을 경우 return false </returns>
-	bool UpdateHPBar(float _Ratio);
-	
-	/// <summary>
-	/// Boost Bar 업데이트
-	/// </summary>
-	/// <param name="_Boost"> : 현재 Boost 량 </param>
-	/// <param name="_MaxBoost"> : 최대 Boost 량 </param>
-	/// <returns> : 잘못된 값이 들어왔을 경우 return false </returns>
-	bool UpdateBoostBar(float _Boost, float _MaxBoost);
-
-private:
+	void UpdateHPBarRatio(float _Ratio);
 	
 	void UpdateHPBarBoilerPlate(float _Ratio);
 	
