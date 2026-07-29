@@ -115,6 +115,7 @@ void AC_NurseZombie::OnHealTargetDeadOrReachedFullHP(AC_BasicCharacter* _HealTar
 
 void AC_NurseZombie::OnHealSkillEnd(AC_BasicEnemy* _Enemy)
 {
+	if (!IsLocallyControlled()) return;
 	ToggleHealingAura(false);
 }
 

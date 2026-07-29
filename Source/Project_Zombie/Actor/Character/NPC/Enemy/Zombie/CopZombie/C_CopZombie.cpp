@@ -8,6 +8,7 @@
 #include "Actor/ItemActor/Weapon/Gun/C_GunBase.h"
 #include "Actor/ItemActor/Weapon/WeaponComponent/GunComponent/AIGunUsageComponent/C_AIGunUsageComponent.h"
 #include "Components/BoxComponent.h"
+#include "Net/UnrealNetwork.h"
 #include "Utility/C_Util.h"
 
 
@@ -43,12 +44,16 @@ void AC_CopZombie::Tick(float DeltaTime)
 
 void AC_CopZombie::OnANSGrabStart()
 {
+	if (!IsLocallyControlled()) return;
+	
 	m_GrabRangeEnteredPlayers.Empty();
 	m_GrabRangeCollider->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 }
 
 void AC_CopZombie::OnANSGrabEnd()
 {
+	if (!IsLocallyControlled()) return;
+	
 	m_GrabRangeCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	// ANS가 끊기는 것이 -> Abort Task에 의해 끊길 수도 있음 -> 따라서 자체적으로 BTTask_GrabMainWeapon에서 EndSkill 시, Skill 성공 여부에 따라서 처리해줄 것
 }
@@ -63,6 +68,8 @@ void AC_CopZombie::OnGrabRangeColliderBeginOverlap
 	const FHitResult&	 SweepResult
 )
 {
+	// Client 쪽은 Event 바인딩 처리 자체를 안해서 검사하지 않아도 됨
+	
 	if (AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(OtherActor))
 		m_GrabRangeEnteredPlayers.Add(Player);
 }
@@ -75,6 +82,8 @@ void AC_CopZombie::OnGrabRangeColliderEndOverlap
 	int32				 OtherBodyIndex
 )
 {
+	// Client 쪽은 Event 바인딩 처리 자체를 안해서 검사하지 않아도 됨
+	
 	if (AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(OtherActor))
 		m_GrabRangeEnteredPlayers.Remove(Player);
 }
@@ -113,5 +122,13 @@ void AC_CopZombie::OnNormalAttackColliderBeginOverlap
 	const FHitResult&	 SweepResult
 )
 {
+	// Client 쪽은 Event 바인딩 처리 자체를 안해서 검사하지 않아도 됨
+}
+
+void AC_CopZombie::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
+	DOREPLIFETIME(AC_CopZombie, m_EquippedGun);
+	DOREPLIFETIME(AC_CopZombie, m_CopZombieState);
 }

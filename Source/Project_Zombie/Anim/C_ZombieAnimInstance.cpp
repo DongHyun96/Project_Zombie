@@ -8,6 +8,7 @@
 #include "Actor/Character/NPC/Enemy/Components/SkillComponent/C_EnemySkillComponent.h"
 
 #include "Actor/Character/NPC/Enemy/Zombie/TankZombie/C_TankZombie.h"
+#include "GameModeAndManager/C_UIManager.h"
 
 #include "Utility/C_Util.h"
 
@@ -34,6 +35,8 @@ void UC_ZombieAnimInstance::NativeUpdateAnimation(float _DT)
 	const FVector Velocity = m_Zombie->GetVelocity();
 
 	m_GroundSpeed = Velocity.Size2D();
+	
+	PRINT_LOCAL(GetWorld(), FString::SanitizeFloat(m_GroundSpeed), FColor::Red, 1.f);
 
 	if (10.f < m_GroundSpeed)
 		m_Direction = CalculateDirection(Velocity, m_Zombie->GetActorRotation());
@@ -44,9 +47,10 @@ void UC_ZombieAnimInstance::NativeUpdateAnimation(float _DT)
 void UC_ZombieAnimInstance::AnimNotify_SkillEnd()
 {
 	//UC_Util::Print("AnimNotify_SkillEnd");
-	
-	if (!IsValid(m_Zombie))
-		return;
+	if (!IsValid(m_Zombie)) return;
+
+	// 서버 쪽에서만 Skill 동작의 EndSkill 처리 담당 (Skill 끝 처리 등의 주체는 서버)
+	if (!m_Zombie->IsLocallyControlled()) return;	
 
 	if (AC_TankZombie* TankZombie = Cast<AC_TankZombie>(m_Zombie))
 	{
@@ -61,7 +65,7 @@ void UC_ZombieAnimInstance::AnimNotify_SkillEnd()
 
 void UC_ZombieAnimInstance::AnimNotify_Fire()
 {
-	if(m_Zombie)
+	if(m_Zombie && m_Zombie->IsLocallyControlled())
 	{
 		m_Zombie->GetSkillComponent()->Fire();
 	}
@@ -71,8 +75,7 @@ void UC_ZombieAnimInstance::AnimNotify_ChargeStart()
 {
 	AC_TankZombie* Tank = Cast<AC_TankZombie>(TryGetPawnOwner());
 
-	if (!IsValid(Tank))
-		return;
+	if (!IsValid(Tank) || !Tank->IsLocallyControlled()) return;
 
 	Tank->BeginPreparedCharge();
 }

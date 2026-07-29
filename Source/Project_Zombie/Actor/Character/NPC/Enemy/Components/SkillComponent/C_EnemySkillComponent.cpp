@@ -247,7 +247,7 @@ float UC_EnemySkillComponent::GetSkillRange(ESkillSlot _Slot) const
 void UC_EnemySkillComponent::Multicast_ImitateUseSkill_Implementation(ESkillSlot _ImitatingSkillSlot, int32 _PlayedMontageSection)
 {
 	// 서버 환경의 UseSkill 따라하기 요청처리는 무시 (자기자신이 보낸 요청이고, 자기자신은 이미 UseSkill 동작을 발현한 상태)
-	if (m_OwnerEnemy->IsLocallyControlled()) return;
+	if (!m_OwnerEnemy || m_OwnerEnemy->IsLocallyControlled()) return;
 	
 	// 나머지 쩌리 클라이언트 중생들을 위한 UseSkill 동작 따라하기 요청 처리
 

@@ -95,11 +95,14 @@ private:
 		bool				 bFromSweep,
 		const FHitResult&	 SweepResult
 	);
+
+private:
 	
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	
 protected:
 	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly)
 	ECopZombieState m_CopZombieState{};
 
 	// 주무기를 뺏을 수 있는 영역 Collider
@@ -118,7 +121,7 @@ protected:
 	
 protected: // 빼앗아서 장착한 무기
 	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly)
 	AC_GunBase* m_EquippedGun{};
 	
 private:
