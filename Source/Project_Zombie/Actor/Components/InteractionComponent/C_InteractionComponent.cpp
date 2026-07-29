@@ -273,6 +273,9 @@ void UC_InteractionComponent::TryInteract()
 
 	m_CurrentInteractionActor = TargetActor;
 
+	// 타이머 핸들 안쓰면 리턴.
+	if (!bUseTimer) return;
+
 	const float InteractionDuration = TargetComponent->GetInteractionDuration();
 
 	UC_Util::Print("Client Interact", FColor::Red, 10.f);
@@ -305,6 +308,8 @@ bool UC_InteractionComponent::ExecuteInteract(AC_BasicPlayer* _Interactor)
 	if (!m_InteractionStrategyObject->CanStartInteraction(_Interactor, GetOwner()))
 		return false;
 
+	// 전략 객체를 통해 상호작용 시작 처리
+	// TODO(상연) : 여기서 아이템 강화 전략 객체가 Widget을 띄워 주어야 함.
 	if (!m_InteractionStrategyObject->StartInteraction(_Interactor, GetOwner()))
 		return false;
 
@@ -506,6 +511,9 @@ void UC_InteractionComponent::Server_TryInteract_Implementation(AActor* _TargetA
 	const float InteractionDuration = TargetComponent->GetInteractionDuration();
 
 	UE_LOG(LogTemp, Log, TEXT("Server_TryInteract - Interaction Started with %s for %.2f seconds"), *_TargetActor->GetName(), InteractionDuration);
+
+	// 타이머 안쓰면 리턴
+	if (!bUseTimer) return;
 
 	// 상호작용 완료 타이머는 서버에서 시작되어
 	// 서버의 TimerManager 에 의해 CompleteInteract() 호출된다

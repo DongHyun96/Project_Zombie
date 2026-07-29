@@ -34,6 +34,25 @@ protected:
 	//virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 public:
+
+	/// <summary>
+	/// 동시 사용 가능한 객체인가?
+	/// </summary>
+	/// <param name="_bAllow"></param>
+	void SetAllowMultipleInteractor(bool _bAllow) { m_AllowMultipleInteractor = _bAllow; }
+
+	/// <summary>
+	/// Timer핸들 사용 여부 설정
+	/// </summary>
+	/// <param name="_bUseTimer"></param>
+	void SetUseTimer(bool _bUseTimer) { bUseTimer = _bUseTimer; }
+
+	/// <summary>
+	/// 상호작용	네트워크 처리 방식 설정
+	/// </summary>
+	/// <param name="_NetType"></param>
+	void SetInteractionNetType(EInteractionNetType _NetType) { m_InteractionNetType = _NetType; }
+
 	/// <summary>
 	/// 이 Actor 가 사용할 Collision과 Strategy 를 설정
 	/// </summary>
@@ -225,6 +244,8 @@ private:
 
 
 private:
+
+	bool bUseTimer = true;
 
 	// 상호작용 걸리는 시간
 	FTimerHandle m_InteractionTimerHandle;
