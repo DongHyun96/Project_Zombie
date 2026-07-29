@@ -76,3 +76,13 @@ void UC_ZombieAnimInstance::AnimNotify_ChargeStart()
 
 	Tank->BeginPreparedCharge();
 }
+
+void UC_ZombieAnimInstance::AnimNotify_LandingImpact()
+{
+	AC_TankZombie* Tank = Cast<AC_TankZombie>(TryGetPawnOwner());
+
+	if (!IsValid(Tank))
+		return;
+
+	Tank->LandingImpact();
+}

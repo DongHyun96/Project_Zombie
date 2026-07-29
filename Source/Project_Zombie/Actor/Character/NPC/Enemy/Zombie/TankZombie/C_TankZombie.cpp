@@ -39,7 +39,8 @@ AC_TankZombie::AC_TankZombie()
 	m_bEndMoving = false;
 	m_EndMoveDirection = FVector::ZeroVector;
 	m_EndMoveSpeed = 600.f;
-	m_EndMoveMaxTime = 1.5f;
+	m_EndMoveUpPower = 400.f;
+	m_EndMoveMaxTime = 3.f;
 	m_EndMoveElapsedTime = 0.f;
 
 	// 착지 시 충격파 
@@ -169,7 +170,7 @@ bool AC_TankZombie::PrepareCharge(AActor* _Target, UC_EnemySkillData* _Data)
 	if (!HasAuthority())
 		return false;
 
-	if (m_bCharging)
+	if (m_bCharging || m_bEndMoving)
 		return false;
 
 	if (!IsValid(_Target) || !IsValid(_Data))
@@ -210,6 +211,10 @@ void AC_TankZombie::LandingImpact()
 	if (!HasAuthority())
 		return;
 
+	// 중복 착지 처리 방지
+	if (!m_bEndMoving)
+		return;
+
 	// 착지 후 End 이동정지
 	StopEndMove();
 
@@ -236,7 +241,7 @@ void AC_TankZombie::StartCharge(AActor* _Target, UC_EnemySkillData* _SkillData)
 	if (!HasAuthority())
 		return;
 
-	if (m_bCharging)
+	if (m_bCharging || m_bEndMoving)
 		return;
 
 	if (!IsValid(_Target) || !IsValid(_SkillData))
@@ -264,7 +269,10 @@ void AC_TankZombie::StartCharge(AActor* _Target, UC_EnemySkillData* _SkillData)
 	m_ChargeStartLocation = GetActorLocation();
 
 	// 돌진속도 = 기본 이동속도 * 스킬 이동속도 배율
-	m_ChargeSpeed = MoveCom->MaxWalkSpeed * FMath::Max(m_Skill->MoveSpeedScale, 1.f);
+	m_Skill = _SkillData;
+	m_ChargeTarget = _Target;
+
+	m_ChargeSpeed = MoveCom->MaxWalkSpeed * FMath::Max(_SkillData->MoveSpeedScale, 1.f);
 
 	m_bCharging = true;
 
@@ -322,12 +330,12 @@ void AC_TankZombie::StopCharge()
 		{
 			if (UAnimInstance* AnimInst = pMesh->GetAnimInstance())
 			{
+				StartEndMove();
+
 				AnimInst->Montage_JumpToSection(TEXT("End"), m_Skill->Montage);
 			}
 		}
 	}
-
-	StartEndMove();
 
 	// 위치, 속도, 방향값 초기화
 	m_ChargeDirection = FVector::ZeroVector;
@@ -404,8 +412,29 @@ void AC_TankZombie::CancelPrepareCharge()
 
 void AC_TankZombie::FinishChargeSkill()
 {
+	if (HasAuthority())
+	{
+		m_bCharging = false;
+		StopEndMove();
+
+		if (IsValid(m_ChargeCollision))
+		{
+			m_ChargeCollision->SetCollisionEnabled(
+				ECollisionEnabled::NoCollision);
+		}
+	}
+
+	m_ChargeDirection = FVector::ZeroVector;
+	m_ChargeStartLocation = FVector::ZeroVector;
+	m_ChargeSpeed = 0.f;
+
+	m_EndMoveDirection = FVector::ZeroVector;
+	m_EndMoveElapsedTime = 0.f;
+
 	m_ChargeTarget = nullptr;
 	m_Skill = nullptr;
+
+	m_ChargeHitTarget.Reset();
 }
 
 
@@ -428,6 +457,11 @@ void AC_TankZombie::StartEndMove()
 
 	m_bEndMoving = true;
 	m_EndMoveElapsedTime = 0.f;
+
+	// 탱크의 캡슐을 앞 + 위로 발사
+	const FVector LaunchVelocity = m_EndMoveDirection * m_EndMoveSpeed + FVector::UpVector * m_EndMoveUpPower;
+
+	LaunchCharacter(LaunchVelocity, true, true);
 }
 
 void AC_TankZombie::UpdateEndMove(float DeltaTime)
@@ -435,52 +469,32 @@ void AC_TankZombie::UpdateEndMove(float DeltaTime)
 	if (!m_bEndMoving)
 		return;
 
-	UCharacterMovementComponent* MoveCom = GetCharacterMovement();
-
-	if (!IsValid(MoveCom))
-	{
-		StopEndMove();
-		return;
-	}
-
 	m_EndMoveElapsedTime += DeltaTime;
 
 	// 착지 노티파이가 호출되지 않았을 때를 위한 안전장치
 	if (m_EndMoveElapsedTime >= m_EndMoveMaxTime)
 	{
 		StopEndMove();
-		return;
 	}
-
-	// Z축은 사용하지 않고 수평방향으로만 이동
-	FVector CurVelocity = MoveCom->Velocity;
-
-	CurVelocity.X = m_EndMoveDirection.X * m_EndMoveSpeed;
-	CurVelocity.Y = m_EndMoveDirection.Y * m_EndMoveSpeed;
-
-	MoveCom->Velocity = CurVelocity;
 
 }
 
 void AC_TankZombie::StopEndMove()
 {
-	if (!m_bEndMoving)
-		return;
-
 	m_bEndMoving = false;
 	m_EndMoveElapsedTime = 0.f;
 
-	if (UCharacterMovementComponent* MoveCom = GetCharacterMovement())
-	{
-		FVector CurVeolocity = MoveCom->Velocity;
-
-		// 수평이동만 정지
-		CurVeolocity.X = 0.f;
-		CurVeolocity.Y = 0.f;
-
-		// Z속도 유지
-		MoveCom->Velocity = CurVeolocity;
-	}
+	//if (UCharacterMovementComponent* MoveCom = GetCharacterMovement())
+	//{
+	//	FVector CurVeolocity = MoveCom->Velocity;
+	//
+	//	// 수평이동만 정지
+	//	CurVeolocity.X = 0.f;
+	//	CurVeolocity.Y = 0.f;
+	//
+	//	// Z속도 유지
+	//	MoveCom->Velocity = CurVeolocity;
+	//}
 
 	m_EndMoveDirection = FVector::ZeroVector;
 }
@@ -528,5 +542,46 @@ void AC_TankZombie::ApplyLandingShock()
 	for (const FOverlapResult& Result : OverlapResult)
 	{
 		AActor* Target = Result.GetActor();
+
+		if (!IsValid(Target))
+			continue;
+
+		if (Target == this)
+			continue;
+
+		// 이미 처리한 액터면 무시
+		if (AppliedTargets.Contains(Target))
+			continue;
+
+		ACharacter* TargetCharacter = Cast<ACharacter>(Target);
+		if (!IsValid(TargetCharacter))
+			continue;
+
+		// 플레이어나 좀비만 처리
+		const bool bIsPlayer = Target->IsA<AC_BasicPlayer>();
+		const bool bIsEnemy = Target->IsA<AC_BasicEnemy>();
+
+		if (!bIsPlayer && !bIsEnemy)
+			continue;
+
+		AppliedTargets.Add(Target);
+
+		// 착지 중심에서 대상 방향으로 바깥 방향 계산
+		FVector OutDirection = Target->GetActorLocation() - ImpactCenter;
+
+		OutDirection.Z = 0.f;
+		OutDirection = OutDirection.GetSafeNormal();
+
+		// 위치가 완전히 겹쳐 방향이 없는 경우
+		if (OutDirection.IsNearlyZero())
+		{
+			OutDirection = GetActorForwardVector();
+			OutDirection.Z = 0.f;
+			OutDirection.Normalize();
+		}
+
+		const FVector LaunchVelocity = OutDirection * m_LandingShockOutPower + FVector::UpVector * m_LandingShockUpPower;
+
+		TargetCharacter->LaunchCharacter(LaunchVelocity, true, true);
 	}
 }

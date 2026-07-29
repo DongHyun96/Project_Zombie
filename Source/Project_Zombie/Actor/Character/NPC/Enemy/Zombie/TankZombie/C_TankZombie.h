@@ -36,6 +36,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ChargeEnd")
 	float m_EndMoveSpeed;
 
+	// End 구간 위쪽 점프 힘
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ChargeEnd")
+	float m_EndMoveUpPower;
+
 	// 노티파이가 실행되지 않았을 때를 대비한 이동시간
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "ChargeEnd")
 	float m_EndMoveMaxTime;
