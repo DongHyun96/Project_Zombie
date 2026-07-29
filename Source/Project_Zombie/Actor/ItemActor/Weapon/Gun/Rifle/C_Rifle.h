@@ -21,20 +21,17 @@ private:
 	const int32 m_MaxBurstCount = 3;
 	const float m_BurstCooldown = 0.2f;
 
-	int32 m_BurstCount = 0;              
+	int32 m_BurstCount = 0;
 	bool m_bInBurstCooldown = false;
 
 private:
 	void HandleAutomaticFire();
 	void HandleBurstFire();
 	void ResetBurstCooldown();
-	void ProcessSingleRifleShot(float DamageVal);
 
 protected:
 	virtual void PullTrigger() override;
 	virtual void ReleaseTrigger() override;
-
-	virtual void Server_ExecuteFire() override;
 
 	// 사격 모드 전환 
 	virtual void SwitchFireMode() override;

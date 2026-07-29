@@ -30,16 +30,15 @@ protected:
 	virtual void PullTrigger() override;
 	virtual void ReleaseTrigger() override;
 	virtual void SpawnShellEject() override;
+	virtual void PlayFireEffects_Client() override;
 
-	virtual void Server_ExecuteFire() override;
-
-	virtual void PlayFireEffects_Local() override;
+	// 클라이언트 사격 시 서버에 발사체 스폰 요청
+	virtual void Server_ExecuteFire_Implementation(FVector_NetQuantize ImpactPoint, AActor* HitActor) override;
 
 	virtual void Server_StartReload_Implementation() override;
 
 	UFUNCTION(NetMulticast, Unreliable)
 	void Multicast_EjectAllSpentShells(int32 SpentShellCount);
-	void Multicast_EjectAllSpentShells_Implementation(int32 SpentShellCount);
 
 protected:
 	virtual bool OnStartFire(AC_BasicPlayer* _WeaponUser) override;

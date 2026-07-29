@@ -14,37 +14,46 @@ class PROJECT_ZOMBIE_API AC_ShotGun : public AC_GunBase
 {
 	GENERATED_BODY()
 
-private:
-	UPROPERTY(EditDefaultsOnly, Category = "Shotgun")
-	int32 m_PelletCount = 8;
+public:
+	AC_ShotGun();
 
-	UPROPERTY(EditDefaultsOnly, Category = "Shotgun|Reload")
-	float m_SingleShellInsertTime = 0.6f;
+	virtual bool OnStartFire(AC_BasicPlayer* _WeaponUser) override;
+	virtual bool Reload(AC_BasicPlayer* _WeaponUser) override;
 
-	bool m_bCanFire = true;
-	FTimerHandle m_ShotCooldownTimer;
-	FTimerHandle m_ReloadLoopTimer;
+	virtual void EndReload();
+	virtual void OnSheathStart() override;
 
-private:
-	void ProcessShotgunPellets(float BaseDamagePerPellet);
-	void ResetFireCooldown();
-	void InsertSingleShell();
-	void EndReload();
+protected:
+	virtual void PullTrigger() override;
+	virtual void Client_ExecuteFire() override;
 
-	UFUNCTION(NetMulticast, Unreliable)
+	UFUNCTION(Server, Reliable)
+	void Server_ShotgunFireEffects();
+
+	virtual void Server_StartReload_Implementation() override;
+
+	// 클라이언트 UI 및 탄약 동기화 RPC
+	UFUNCTION(Client, Reliable)
+	void Client_OnSingleShellInserted(int32 NewAmmo);
+
+	// 클라이언트 재장전 종료 동기화 RPC
+	UFUNCTION(Client, Reliable)
+	void Client_EndReload();
+
+	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_PlayShotgunFireEffects(const TArray<FVector_NetQuantize>& ImpactPoints);
 
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_StopReloadAnimation();
 
-protected:
-	virtual void PullTrigger() override;
-	virtual void Server_ExecuteFire() override;
-	virtual void Server_ExecuteReload() override;
+private:
+	void InsertSingleShell();
+	void ResetFireCooldown();
 
-public:
-	virtual bool OnStartFire(AC_BasicPlayer* _WeaponUser) override;
-
-public:
-	AC_ShotGun();
+private:
+	int32 m_PelletCount;
+	float m_SingleShellInsertTime;
+	FTimerHandle m_ReloadLoopTimer;
+	FTimerHandle m_ShotCooldownTimer;
+	bool m_bCanFire = false;
 };
