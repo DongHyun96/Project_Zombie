@@ -36,8 +36,6 @@ void UC_ZombieAnimInstance::NativeUpdateAnimation(float _DT)
 
 	m_GroundSpeed = Velocity.Size2D();
 	
-	PRINT_LOCAL(GetWorld(), FString::SanitizeFloat(m_GroundSpeed), FColor::Red, 1.f);
-
 	if (10.f < m_GroundSpeed)
 		m_Direction = CalculateDirection(Velocity, m_Zombie->GetActorRotation());
 

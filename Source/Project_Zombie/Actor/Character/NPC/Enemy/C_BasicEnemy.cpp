@@ -8,6 +8,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/SkillComponent/C_EnemySkillComponent.h"
 #include "Components/StatComponent/C_EnemyStatComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "GameModeAndManager/C_ZombieManager.h"
 #include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 #include "Utility/C_Util.h"
@@ -19,7 +20,7 @@ const int8 AC_BasicEnemy::s_MaxHealRequestRegisterCount = 2;
 AC_BasicEnemy::AC_BasicEnemy()
 {
 	// Replication 설정
-	SetReplicates(true);
+	// SetReplicates(true); -> 이걸 걸면 오히려 뚝뚝 끊겨보이는데 왜지?
 	
 	// 스탯 컴포넌트 추가
 	m_StatComponent = CreateDefaultSubobject<UC_EnemyStatComponent>(TEXT("StatComponent"));
@@ -36,6 +37,13 @@ AC_BasicEnemy::AC_BasicEnemy()
 	
 	if (HealedEffect.Succeeded())
 		m_HealedEffectNGComponent->SetAsset(HealedEffect.Object.Get());
+	
+	// 회전 관련 처리 설정 (서버 쪽은 Controller가 존재하여, 부드럽게 보임 -> 클라이언트단 화면에서는 Controller가 없기에, Controller Rotation (0, 0, 0) 값을 사용
+	// 따라서 끊겨보이는 버그가 있었음
+	bUseControllerRotationYaw                             = false;
+	GetCharacterMovement()->bOrientRotationToMovement     = true;
+	GetCharacterMovement()->bUseControllerDesiredRotation = false;
+	GetCharacterMovement()->RotationRate                  = FRotator(0.f, 360.f, 0.f);
 }
 
 void AC_BasicEnemy::BeginPlay()

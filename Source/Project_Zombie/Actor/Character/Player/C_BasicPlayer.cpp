@@ -51,8 +51,8 @@ AC_BasicPlayer::AC_BasicPlayer()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	// Replication 설정
-	SetReplicates(true);
+	// Replication 설정 (이거 따로 해줄 필요가 없네..?)
+	// SetReplicates(true);
 
 	
 	m_SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
