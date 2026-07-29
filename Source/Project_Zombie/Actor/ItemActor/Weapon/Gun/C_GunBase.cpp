@@ -14,7 +14,7 @@
 #include "Actor/Components/C_EquippedComponent.h"
 #include "Actor/Components/C_PingSystemComponent.h"
 #include "Actor/Components/ItemLinkComponent/C_ItemLinkComponent.h"
-#include "Actor/ItemActor/Weapon/WeaponComponent/GunComponent/C_AIGunUsageComponent.h"
+#include "Actor/ItemActor/Weapon/WeaponComponent/GunComponent/AIGunUsageComponent/C_AIGunUsageComponent.h"
 
 #include "Components/SphereComponent.h"
 #include "Components/SkeletalMeshComponent.h"

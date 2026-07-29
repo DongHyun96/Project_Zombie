@@ -9,7 +9,7 @@
 #include "Actor/Components/C_EquippedComponent.h"
 #include "Actor/Components/StatComponent/C_StatComponentBase.h"
 #include "Actor/ItemActor/Weapon/Gun/C_GunBase.h"
-#include "Actor/ItemActor/Weapon/WeaponComponent/GunComponent/C_AIGunUsageComponent.h"
+#include "Actor/ItemActor/Weapon/WeaponComponent/GunComponent/AIGunUsageComponent/C_AIGunUsageComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "GameModeAndManager/C_UIManager.h"
 #include "Kismet/GameplayStatics.h"

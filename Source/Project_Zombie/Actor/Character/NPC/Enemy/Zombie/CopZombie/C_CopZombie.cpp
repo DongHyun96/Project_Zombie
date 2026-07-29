@@ -6,7 +6,7 @@
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/ItemActor/Weapon/C_WeaponBase.h"
 #include "Actor/ItemActor/Weapon/Gun/C_GunBase.h"
-#include "Actor/ItemActor/Weapon/WeaponComponent/GunComponent/C_AIGunUsageComponent.h"
+#include "Actor/ItemActor/Weapon/WeaponComponent/GunComponent/AIGunUsageComponent/C_AIGunUsageComponent.h"
 #include "Components/BoxComponent.h"
 #include "Utility/C_Util.h"
 
@@ -15,6 +15,8 @@ AC_CopZombie::AC_CopZombie()
 	: Super(EZombieType::CopZombie)
 {
 	PrimaryActorTick.bCanEverTick = false;
+	
+	
 	
 	m_GrabRangeCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("GrabRangeCollider"));
 	m_GrabRangeCollider->SetupAttachment(GetRootComponent());
@@ -27,18 +29,11 @@ void AC_CopZombie::BeginPlay()
 {
 	Super::BeginPlay();
 	// m_GrabRangeCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	
+
+	if (!IsLocallyControlled()) return; // Server쪽 좀비인 경우에만, CollisionHandling 처리	
 	m_GrabRangeCollider->OnComponentBeginOverlap.AddDynamic(this, &AC_CopZombie::OnGrabRangeColliderBeginOverlap);
 	m_GrabRangeCollider->OnComponentEndOverlap.AddDynamic(this, &AC_CopZombie::OnGrabRangeColliderEndOverlap);
-	
 	m_NormalAttackCollider->OnComponentBeginOverlap.AddDynamic(this, &AC_CopZombie::OnNormalAttackColliderBeginOverlap);
-	
-	// TODO : 이 Test 라인 삭제할 것
-	if (m_GunClass)
-	{
-		AC_GunBase* SpawnedGun = GetWorld()->SpawnActor<AC_GunBase>(m_GunClass);
-		if (SpawnedGun) EquipWeapon(SpawnedGun);
-	}
 }
 
 void AC_CopZombie::Tick(float DeltaTime)

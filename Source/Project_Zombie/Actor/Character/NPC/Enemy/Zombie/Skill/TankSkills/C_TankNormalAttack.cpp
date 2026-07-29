@@ -10,10 +10,10 @@ UC_TankNormalAttack::UC_TankNormalAttack()
 {
 }
 
-bool UC_TankNormalAttack::Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data)
+bool UC_TankNormalAttack::Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data, OUT int32& _PlayedMontageSectionIdx)
 {
 	_Owner->PlayAnimMontage(_Data->Montage);
-
+	_PlayedMontageSectionIdx = 0;
 
 	return true;
 }

@@ -14,12 +14,15 @@
 
 // 키즈멧
 #include "Actor/Character/NPC/Enemy/C_BasicEnemy.h"
+#include "GameModeAndManager/C_UIManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Utility/C_Util.h"
 
 UC_EnemySkillComponent::UC_EnemySkillComponent()
 {
-	PrimaryComponentTick.bCanEverTick = true;
+	PrimaryComponentTick.bCanEverTick = false;
+	
+	SetIsReplicatedByDefault(true);
 
 	for (int32 i = 0; i < (int32)ESkillSlot::END; i++)
 	{
@@ -33,11 +36,11 @@ void UC_EnemySkillComponent::BeginPlay()
 	Super::BeginPlay();
 
 	// 주인 캐릭터 초기화
-	m_OwnerCharacter = Cast<AC_BasicCharacter>(GetOwner());
-	if (!m_OwnerCharacter)
+	m_OwnerEnemy = Cast<AC_BasicEnemy>(GetOwner());
+	if (!m_OwnerEnemy)
 	{
 		// 캐릭터 Base인 객체만 일단 Skill 프레임워크를 사용할 수 있다고 가정
-		UC_Util::Print("From UC_EnemySkillComponent::BeginPlay : Pleash attach SkillComponent to Character based class!", FColor::Red, 10.f);
+		UC_Util::Print("From UC_EnemySkillComponent::BeginPlay : Please attach SkillComponent to Enemy based class!", FColor::Red, 10.f);
 	}
 	
 	InitializeSkills();
@@ -96,7 +99,8 @@ bool UC_EnemySkillComponent::UseSkill(ESkillSlot _Slot)
 		return false;
 
 	// 현재 해당 스킬을 사용할 수 없는 상황
-	if (!Info.SkillInstance->Activate(Owner, Info.LoadedSkillData))
+	int32 PlayedMontageSection{}; // 스킬 사용 성공 시, Montage의 어느 섹션이 재생되었는지 구해줌
+	if (!Info.SkillInstance->Activate(Owner, Info.LoadedSkillData, PlayedMontageSection))
 		return false;
 
 
@@ -105,7 +109,10 @@ bool UC_EnemySkillComponent::UseSkill(ESkillSlot _Slot)
 	bUsingSkill    = true;					// 스킬 사용중으로 설정
 
 	StartCooldown(_Slot);
-
+	
+	// 현재 서버환경에서 실행되는 중, 스킬 정상 발동되었으니 Multicast를 통해 나머지 게스트 환경에서도 스킬 동작 나오도록 RPC 호출 처리
+	Multicast_ImitateUseSkill(_Slot, PlayedMontageSection);
+	
 	return true;
 }
 
@@ -124,8 +131,8 @@ void UC_EnemySkillComponent::EndSkillManually()
 {
 	// AnimNotify를 통해(AnimMontage 종료시점을 통해) 호출된 것이 아니기 때문에 Montage 모션을 직접 Stop 시켜주어야 한다.
 	// 현재 Skill이 Valid하고, 해당 Skill의 모션이 끝나지 않았다면 끊어줌
-	if (m_CurSkillData && m_OwnerCharacter->GetMesh()->GetAnimInstance()->Montage_IsPlaying(m_CurSkillData->Montage))
-		m_OwnerCharacter->StopAnimMontage(m_CurSkillData->Montage);
+	if (m_CurSkillData && m_OwnerEnemy->GetMesh()->GetAnimInstance()->Montage_IsPlaying(m_CurSkillData->Montage))
+		m_OwnerEnemy->StopAnimMontage(m_CurSkillData->Montage);
 
 	// 나머지 처리는 기존의 OnEndSkill 처리와 같음
 	OnAN_EndSkill();
@@ -230,14 +237,31 @@ void UC_EnemySkillComponent::Fire()
 
 float UC_EnemySkillComponent::GetSkillRange(ESkillSlot _Slot) const
 {
-	for (const FSkillSlotInfo& Info : m_SkillSlots)
-	{
-		if (Info.SlotType == _Slot && Info.LoadedSkillData)
-		{
-			return Info.LoadedSkillData->Range;
-		}
-	}
+	const int32 TargetIdx = static_cast<int32>(_Slot);
+	
+	if (!m_SkillSlots.IsValidIndex(TargetIdx) || !m_SkillSlots[TargetIdx].LoadedSkillData) return 0.f;
+	
+	return m_SkillSlots[TargetIdx].LoadedSkillData->Range;
+}
 
-	return 0.f;
+void UC_EnemySkillComponent::Multicast_ImitateUseSkill_Implementation(ESkillSlot _ImitatingSkillSlot, int32 _PlayedMontageSection)
+{
+	// 서버 환경의 UseSkill 따라하기 요청처리는 무시 (자기자신이 보낸 요청이고, 자기자신은 이미 UseSkill 동작을 발현한 상태)
+	if (m_OwnerEnemy->IsLocallyControlled()) return;
+	
+	// 나머지 쩌리 클라이언트 중생들을 위한 UseSkill 동작 따라하기 요청 처리
+
+	const int32 SkillSlotIdx = static_cast<int32>(_ImitatingSkillSlot);
+	
+	if (!m_SkillSlots.IsValidIndex(SkillSlotIdx))
+	{
+		PRINT_LOCAL(GetWorld(), "From UC_EnemySkillComponent::Multicast_ImitateUseSkill_Implementation : Invalid SkillSlot received!", FColor::Red, 10.f);
+		return;
+	}
+	
+	// 스킬 동작 따라하기
+	UAnimMontage* TargetSkillMontage = m_SkillSlots[SkillSlotIdx].LoadedSkillData->Montage;
+	const FName TargetSectionName    = TargetSkillMontage->GetSectionName(_PlayedMontageSection);
+	m_OwnerEnemy->PlayAnimMontage(TargetSkillMontage, 1.f, TargetSectionName);
 }
 

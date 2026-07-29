@@ -185,8 +185,6 @@ bool UC_PlayerStatWidget::ToggleAmmoInfoVisibility
 
 void UC_PlayerStatWidget::UpdateMagazineAmmoCount(int32 _AmmoCount)
 {
-	PRINT_LOCAL(GetWorld(), "UC_PlayerStatWidget::UpdateMagazineAmmoCount : " + FString::FromInt(_AmmoCount), FColor::MakeRandomColor(), 10.f);
-	
 	// 현재 Ammo Info를 보여주고 있지 않은 상황
 	if (m_bAmmoInfoPlayedReverseFlag) return;
 

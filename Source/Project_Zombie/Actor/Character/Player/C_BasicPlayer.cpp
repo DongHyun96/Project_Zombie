@@ -53,7 +53,6 @@ AC_BasicPlayer::AC_BasicPlayer()
 
 	// Replication 설정
 	SetReplicates(true);
-	SetReplicateMovement(true);
 
 	
 	m_SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));

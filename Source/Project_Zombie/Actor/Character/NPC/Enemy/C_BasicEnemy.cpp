@@ -18,6 +18,9 @@ const int8 AC_BasicEnemy::s_MaxHealRequestRegisterCount = 2;
 
 AC_BasicEnemy::AC_BasicEnemy()
 {
+	// Replication 설정
+	SetReplicates(true);
+	
 	// 스탯 컴포넌트 추가
 	m_StatComponent = CreateDefaultSubobject<UC_EnemyStatComponent>(TEXT("StatComponent"));
 

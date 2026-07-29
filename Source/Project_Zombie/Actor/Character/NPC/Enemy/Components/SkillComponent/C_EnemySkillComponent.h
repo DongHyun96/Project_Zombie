@@ -57,7 +57,7 @@ class PROJECT_ZOMBIE_API UC_EnemySkillComponent : public UActorComponent
 private:
 	
 	UPROPERTY()
-	class AC_BasicCharacter* m_OwnerCharacter{}; // 이 SkillComponent의 주인 캐릭터 (일단 캐릭터 종류만 Skill 프레임워크를 사용할 수 있다고 판단)
+	AC_BasicEnemy* m_OwnerEnemy{};
 	
 protected:
 	// 스킬 슬롯
@@ -141,6 +141,16 @@ public:
 
 	float GetSkillRange(ESkillSlot _Slot) const;
 
+private:
+	
+	/// <summary>
+	/// Server환경 Enemy의 UseSkill이 성공한 경우, Client 환경에서 해당하는 Skill의 Montage 따라하기 처리 
+	/// </summary>
+	/// <param name="_ImitatingSkillSlot"> : 따라하려는 Skill의 Slot </param>
+	/// <param name="_PlayedMontageSection"> : 서버 환경에서 재생된 Montage 내의 Section Index </param>
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_ImitateUseSkill(ESkillSlot _ImitatingSkillSlot, int32 _PlayedMontageSection);
+	
 public:
 	UC_EnemySkillComponent();
 

@@ -126,10 +126,4 @@ private:
 	UPROPERTY()
 	TSet<AC_BasicPlayer*> m_NormalAttackColliderEntered{};
 
-	// TODO : 이 테스트 라인 삭제할 것
-protected:
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-	TSubclassOf<AC_GunBase> m_GunClass{};
-	
 };
