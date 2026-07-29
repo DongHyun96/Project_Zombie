@@ -146,7 +146,7 @@ void AC_GunBase::InitializeItemData(const FWeaponData* InRawData)
 		m_MaxAmmo = GunData->MaxAmmo;
 		//m_CurrentAmmo = m_MaxAmmo;
 	}
-	
+	//CurAmmo는 무조건 0으로 초기화 하기.
 	m_CurrentAmmo = 0;
 }
 
