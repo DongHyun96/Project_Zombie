@@ -75,3 +75,19 @@ enum class EThrowableState : uint8
 	Thrown,		// 투척 
 	Exploded,	// 폭발 
 };
+
+UENUM(BlueprintType)
+enum class EUpgradableStats : uint8
+{
+    None = 0        UMETA(DisplayName = "None"),
+    AttackPower     UMETA(DisplayName = "공격력"),
+    Defense         UMETA(DisplayName = "방어력"),
+	MaxAmmo         UMETA(DisplayName = "최대 탄약"),
+	FireRate        UMETA(DisplayName = "연사 속도"),
+	ExplosionRadius  UMETA(DisplayName = "폭발 반경"),
+	//CurAmmo         UMETA(DisplayName = "현재 탄약"), // TODO : 이건 버리는 총의  CurAmmo값을 저장하기 위해 존재. (인벤이나 ItemPickUp에서 사용), 하지만 좀비는 다른 로직으로 사용하고 있고 탄약이 무한이라면 그냥 총을 버리면 무조건 0으로 해도 되는거 아닌가?
+    //CriticalRate    UMETA(DisplayName = "치명타 확률"),
+    //CriticalDamage  UMETA(DisplayName = "치명타 피해량"),
+    MaxHP           UMETA(DisplayName = "최대 체력"),
+    MoveSpeed       UMETA(DisplayName = "이동 속도")
+};

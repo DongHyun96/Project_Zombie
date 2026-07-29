@@ -5,9 +5,86 @@
 #include "Net/Serialization/FastArraySerializer.h"
 //#include "InstancedStruct.h"
 #include "StructUtils/InstancedStruct.h"
-#include "GlobalData.generated.h" // UHT	
+#include "GlobalData.generated.h" // UHT
 
-// 데이터 테이블로 관리할 아이템 정보
+
+// Key-Value 개별 항목
+USTRUCT(BlueprintType)
+struct FCustomKeyVal
+{
+    GENERATED_BODY()
+    
+	// 어떤 스탯을 업그레이드 할 것인지에 대한 키값
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CustomData")
+    EUpgradableStats Key = EUpgradableStats::None;
+
+	// 업그레이드 등급 값
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CustomData")
+    uint8 Grade = 0; 
+};
+
+// FInstancedStruct 내부 데이터
+USTRUCT(BlueprintType)
+struct FEquipmentCustomData
+{
+    GENERATED_BODY()
+
+public:
+    // 고정 장비 강화 정보 // TODO : 무기 티어를 사용한다면 필요하지만 아니라면 없애야 함.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment")
+    int32 EnhanceLevel = 0;
+
+    // 실패 횟수인데 이게 꼭 필요할까? TODO : 강화 천장용인데 확률 강화를 사용할 것 인가?
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment")
+    int32 FailPityCount = 0;
+
+    // 동적 스탯 리스트 (TMap의 TArray 대안)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment")
+    TArray<FCustomKeyVal> StatList{};
+
+public:
+    // ── [TMap 방식처럼 접근하기 위한 헬퍼 함수] ──
+
+    // 1. 스탯 조회
+    uint8 GetStatGrade(EUpgradableStats Key, uint8 DefaultValue = 0.0f) const
+    {
+        for (const FCustomKeyVal& Pair : StatList)
+        {
+            if (Pair.Key == Key)
+            {
+                return Pair.Grade;
+            }
+        }
+        return DefaultValue;
+    }
+
+    // 2. 스탯 설정
+    void SetStatGrade(EUpgradableStats Key, uint8 NewValue)
+    {
+        for (FCustomKeyVal& Pair : StatList)
+        {
+            if (Pair.Key == Key)
+            {
+                Pair.Grade = NewValue;
+                return;
+            }
+        }
+
+        FCustomKeyVal NewPair;
+        NewPair.Key = Key;
+        NewPair.Grade = NewValue;
+        StatList.Add(NewPair);
+    }
+
+    // 3. 스탯 누적
+    void AddStatGrade(EUpgradableStats Key, uint8 AddValue)
+    {
+        uint8 CurrentVal = GetStatGrade(Key, 0.0f);
+        SetStatGrade(Key, CurrentVal + AddValue);
+    }
+};
+
+// 데이터 테이블로 관리할 아이템 정보, 기본적으로는 C_ItemPickUp으로 스폰할 때 많이 사용.
 USTRUCT(BlueprintType)
 struct FItemData : public FTableRowBase
 {
@@ -45,6 +122,10 @@ struct FItemData : public FTableRowBase
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Visual")
     TSoftObjectPtr<UStaticMesh> DropMesh = nullptr;
     
+    // 처음에 세팅해줄 수 있는 업그레이드 데이터를 담은 구조체.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    FEquipmentCustomData CustomData{};
+
     //UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment")
     //TSubclassOf<class AC_WeaponBase> WeaponClass;
     
@@ -86,14 +167,50 @@ public:
     // 초기화의 두가지 방법 : 
     // 1. CustomData.Reset(); : CustomData 자체를 비워버림.
     // 2. CustomData.InitializeAs<구조체 타입>(); : 특정 구조체 타입의 기본값으로 다시 생성할 때 사용.
+	// Memo : 추후 확장성을 위해 FInstancedStruct를 사용하는 구조를 유지 중.
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     FInstancedStruct CustomData{};
 
 public:
+
+    // ── [CustomData 접근 헬퍼 함수] ──
+
+	// CustomData가 FEquipmentCustomData 구조체를 담고 있는지 확인하는 함수.
+    bool HasEquipmentData() const
+    {
+        return CustomData.GetScriptStruct() == FEquipmentCustomData::StaticStruct();
+    }
+
+	// CustomData가 FEquipmentCustomData 구조체를 담고 있다면 해당 구조체의 포인터를 반환하는 함수.
+    const FEquipmentCustomData* GetEquipmentData() const
+    {
+        return CustomData.GetPtr<FEquipmentCustomData>();
+    }
+
+	// CustomData가 FEquipmentCustomData 구조체를 담고 있지 않다면 새로 생성하고 해당 구조체의 포인터를 반환하는 함수.
+    FEquipmentCustomData* GetOrCreateEquipmentData()
+    {
+        if (!HasEquipmentData())
+        {
+            CustomData = FInstancedStruct::Make(FEquipmentCustomData());
+        }
+        return CustomData.GetMutablePtr<FEquipmentCustomData>();
+    }
+
+    int32 GetEnhanceLevel() const
+    {
+        if (const FEquipmentCustomData* Data = GetEquipmentData())
+        {
+            return Data->EnhanceLevel;
+        }
+        return 0;
+    }
+
     // 빈 슬롯인지 확인하는 함수.
     bool IsEmpty() const {return ItemRowName.IsNone() || CurCount == 0;}
     
     // 비우는 함수, 멀티 환경 서버에서 사용시 MarkItemDirty(Entry)를 통해 변경을 알릴 것! 
+    // 그리고 <슬롯도 초기화>되므로 주의하기.
     void Clear()
     {
         ItemRowName = NAME_None;
@@ -150,9 +267,14 @@ struct FCursorItem
     }
 };
 
+
 // ******************************
 // 아이템 CustomData 구조체 선언부
 // ******************************
+
+
+
+// TODO : FEquipmentCustomData로 통합 하면 삭제 예정.
 USTRUCT(BlueprintType)
 struct FGunCustomData
 {
@@ -206,6 +328,13 @@ struct FWeaponData : public FTableRowBase
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual")
     TSoftObjectPtr<UStaticMesh> WeaponStaticMesh{};
+
+    // ── [강화 공식 데이터] ──
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Upgrade Rules")
+    float DamagePerUpgradeLevel = 5.0f; // 레벨당 데미지 증가량
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Upgrade Rules")
+    float AttackRatePerUpgradeLevel = 0.0f;
     
     // ── [무기 클래스 지정] ──
     // 무기일 수도 있고, 나중에 설치형 가짓/특수 장비일 수도 있음 (AActor 상속)
@@ -226,6 +355,10 @@ struct FGunData : public FWeaponData
     // ── [총기 부가 설정] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
     float ShellEjectImpulse = 150.0f; // 탄피 배출에 가하는 힘.
+
+    // ── [강화 공식 데이터] ──
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Upgrade Rules")
+    int32 MaxAmmoPerUpgradeLevel = 5; // 레벨당 최대 탄약 증가량
 
     // ── [총기 관련 매쉬 (Mesh)] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual")
@@ -319,6 +452,17 @@ struct FThrowableData : public FWeaponData
     // 폭발 이펙트 크기 (1.0 = 기본 크기)
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Throwable|Effect")
     float m_ExplosionEffectScale = 1.0f;
+
+
+    // ── [강화 공식 데이터] ──
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Upgrade Rules")
+    float ExplosionRadiusPerUpgradeLevel = 5; // 레벨당 폭발 반경 증가량 // TODO : 폭발 이펙트 크기는 범위랑 어케 연결하지.
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Upgrade Rules")
+    float MaxDamagePerUpgradeLevel = 5.f; // 레벨당 최대 데미지 증가량
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Upgrade Rules")
+    float MinDamagePerUpgradeLevel = 5.f; // 레벨당 최대 데미지 증가량
 };
 
 // ******************************

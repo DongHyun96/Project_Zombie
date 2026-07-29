@@ -98,54 +98,60 @@ bool AC_GunBase::InitializeItemActor(const FWeaponData* InRawData)
 		return false;
 	}
 	
-	// 에셋 캐싱
-	//m_FireAnimation = GunData->FireAnimation.LoadSynchronous();
-	//m_ReloadAnimation = GunData->ReloadAnimation.LoadSynchronous();
-	//m_ShellMesh = GunData->ShellMesh.LoadSynchronous();
-	//m_PlayerReloadAnimation = GunData->PlayerReloadAnimation.LoadSynchronous();
-	//m_PlayerFireAnimation = GunData->PlayerFireAnimation.LoadSynchronous();
+	InitializeItemData(InRawData);
 	
+	LoadAsyncAssets(GunData);
+	
+	return true;
+}
+
+void AC_GunBase::InitializeItemData(const FWeaponData* InRawData)
+{
+	const FGunData* GunData = static_cast<const FGunData*>(InRawData);
+
+	if (!GunData)
+	{
+		UC_Util::Print("Failed Cast to const FGunData*", FColor::Red, 10.f);
+		return;
+	}
+
 	// Base Stats 적용
 	float BaseDamage = GunData->BaseDamage;
 	int32 BaseMaxAmmo = GunData->MaxAmmo;
 	m_FireRate = GunData->AttackRate;
 	m_ShellEjectImpulse = GunData->ShellEjectImpulse;
-	
+
 	if (!ItemLinkComp)
 	{
 		UC_Util::Print("GunBase : Item Link Component Is Nullptr!", FColor::Red, 10.f);
 	}
-	
-	// 동적 데이터 임시 처리.
+
+	// 동적 데이터(CustomData) 처리
 	if (FInventoryEntry* EntryPtr = ItemLinkComp ? ItemLinkComp->GetItemEntryPtr() : nullptr)
 	{
-		const FGunCustomData* GunCustomData = EntryPtr->CustomData.GetPtr<FGunCustomData>();
-		
-		// 동적 데이터가 없으면 만들어서 넣어주기.
-		if (!GunCustomData)
-		{
-			FGunCustomData TempCustomData{};
-			EntryPtr->CustomData = FInstancedStruct::Make(TempCustomData);
-		}
-		
-		GunCustomData = EntryPtr->CustomData.GetPtr<FGunCustomData>();
-		
-		m_Damage = BaseDamage + (GunCustomData->Upgrade_Damage * 5.0f);
-		m_MaxAmmo = BaseMaxAmmo + (GunCustomData->Upgrade_MaxAmmo * 5);
-		m_CurrentAmmo = GunCustomData->CurAmmo;
+		// 1. 없으면 데이터 안전하게 생성
+		FEquipmentCustomData* CustomData = EntryPtr->GetOrCreateEquipmentData();
+
+		// 2. Grade(단계) 가져오기
+		int32 DamageGrade = CustomData->GetStatGrade(EUpgradableStats::AttackPower);
+		int32 AmmoGrade = CustomData->GetStatGrade(EUpgradableStats::MaxAmmo);
+
+		// 3. 최종 스탯 계산: BaseStat + (Grade * DataAsset의 레벨당 증가량)
+		m_Damage = GunData->BaseDamage + (DamageGrade * GunData->DamagePerUpgradeLevel);
+		m_MaxAmmo = GunData->MaxAmmo + (AmmoGrade * GunData->MaxAmmoPerUpgradeLevel);
+		m_FireRate = GunData->AttackRate - (DamageGrade * GunData->AttackRatePerUpgradeLevel);
+		// 4. 현재 탄약 정보 적용 (초기 세팅 상태라면 MaxAmmo로 설정)
+		//m_CurrentAmmo = CustomData->CurAmmo > 0 ? CustomData->CurAmmo : m_MaxAmmo;
 	}
 	else
 	{
-		// Link가 무효한 상태일 때 기본값 처리
-		m_Damage = BaseDamage;
-		m_MaxAmmo = BaseMaxAmmo;
-		m_CurrentAmmo = m_MaxAmmo;
+		// Link가 무효한 상태일 때 Base 수치 적용
+		m_Damage = GunData->BaseDamage;
+		m_MaxAmmo = GunData->MaxAmmo;
+		//m_CurrentAmmo = m_MaxAmmo;
 	}
-	
-	LoadAsyncAssets(GunData);
-	
-	
-	return true;
+	//CurAmmo는 무조건 0으로 초기화 하기.
+	m_CurrentAmmo = 0;
 }
 
 void AC_GunBase::SwitchFireMode()
