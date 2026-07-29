@@ -20,6 +20,7 @@
 
 
 AC_TankZombie::AC_TankZombie()
+	: Super(EZombieType::TankZombie)
 {
 	PrimaryActorTick.bCanEverTick = true;
 

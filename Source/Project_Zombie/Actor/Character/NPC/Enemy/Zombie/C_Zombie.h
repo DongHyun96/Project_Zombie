@@ -12,7 +12,8 @@ enum class EZombieType : uint8
 	NormalZombie,
 	ToxicZombie,
 	NurseZombie,
-	CopZombie
+	CopZombie,
+	TankZombie
 };
 
 UCLASS()
@@ -27,6 +28,20 @@ protected:
 protected:
 	virtual void BeginPlay() override;
 
+public:
+	
+	/// <summary>
+	/// 기본 공격 피격 처리 필요 시, 해당 함수 override 해줄 것 + 해당 공격 모션 Montage에 ANS_OnZombieNormalAttack 걸어둘 것
+	/// </summary>
+	UFUNCTION(BlueprintCallable)
+	virtual void ANS_OnNormalAttackStart() {}
+
+	/// <summary>
+	/// 기본 공격 피격 처리 필요 시, 해당 함수 override 해줄 것 + 해당 공격 모션 Montage에 ANS_OnZombieNormalAttack 걸어둘 것
+	/// </summary>
+	UFUNCTION(BlueprintCallable)
+	virtual void ANS_OnNormalAttackEnd() {}
+	
 public:	
 	virtual void Tick(float DeltaTime) override;
 

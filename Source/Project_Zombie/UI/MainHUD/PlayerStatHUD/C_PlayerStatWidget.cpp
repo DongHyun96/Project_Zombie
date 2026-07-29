@@ -143,22 +143,43 @@ bool UC_PlayerStatWidget::ToggleAmmoInfoVisibility
 		UC_Util::Print("From UC_PlayerStatWidget::ToggleAmmoInfoVisibility : Use valid FireMode param", FColor::Red, 10.f);
 		return false;
 	}
+	
+	if (!m_bAmmoInfoPlayedReverseFlag) // 이미 AmmoInfo가 화면에 보이고 있는 상태에서 재호출된 경우
+	{
+		// FireMode가 달라졌다면 모드 전환 애니메이션 실행
+		if (m_CurrentShowingFireMode != _FireMode)
+			UpdateFireMode(_FireMode);
+
+		// 2. 진행 중이던 Text 스왑 애니메이션이 있다면 즉시 중지 (위치/알파 꼬임 방지)
+		for (UWidgetAnimation* Anim : m_UpdateMagazineTextAnimations)
+			if (Anim && IsAnimationPlaying(Anim)) StopAnimation(Anim);
+		
+		for (UWidgetAnimation* Anim : m_UpdateTotalLeftAmmoAnimations)
+			if (Anim && IsAnimationPlaying(Anim)) StopAnimation(Anim);
+
+		// 인덱스를 0으로 강제 초기화하지 않고, 현재 보여지는 TextBlock에 즉시 값 적용
+		SetCurrentShowingMagazineText(_MagazineAmmo);
+		SetCurrentShowingLeftAmmoText(_LeftAmmoTotalCount);
+
+		// 안 보이는 Hidden Text도 현재 값으로 동일하게 맞춰둠
+		PasteCurrentShowingMagTextToHidden();
+		PasteCurrentShowingLeftAmmoTextToHidden();
+
+		return true;
+	}
+
+	// 최초 AmmoInfo Visible true 
 	m_CurrentShowingFireMode = _FireMode;
 
-	m_bCurrentShowingMagTextIdx   = false; // IDX 0
+	m_bCurrentShowingMagTextIdx      = false; // IDX 0 시작
 	m_bCurrentShowingLeftAmmoTextIdx = false;
 
-	// 들어온 총알 값 세팅
 	SetCurrentShowingMagazineText(_MagazineAmmo);
 	SetCurrentShowingLeftAmmoText(_LeftAmmoTotalCount);
 
-	// 현재의 FireMode에 맞는 ShowingAmmoInfoAnim 재생 (만약 이전에 역방향 재생처리를 했었다면)
-	if (m_bAmmoInfoPlayedReverseFlag)
-	{
-		m_bAmmoInfoPlayedReverseFlag = false;
-		PlayAnimation(m_ShowAmmoInfosAnims[m_CurrentShowingFireMode]);
-	}
-	
+	m_bAmmoInfoPlayedReverseFlag = false;
+	PlayAnimation(m_ShowAmmoInfosAnims[m_CurrentShowingFireMode]);
+    
 	return true;
 }
 
@@ -166,6 +187,14 @@ void UC_PlayerStatWidget::UpdateMagazineAmmoCount(int32 _AmmoCount)
 {
 	// 현재 Ammo Info를 보여주고 있지 않은 상황
 	if (m_bAmmoInfoPlayedReverseFlag) return;
+
+	// UI가 등장하는 애니메이션이 아직 재생 중인지 체크
+	if (IsAnimationPlaying(m_ShowAmmoInfosAnims[m_CurrentShowingFireMode]))
+	{
+		// 애니메이션 없이 값만 즉시 덮어씌움
+		SetCurrentShowingMagazineText(_AmmoCount);
+		return;
+	}
 	
 	// 다음으로 보여줄 Text로 지속적으로 Swapping
 	m_bCurrentShowingMagTextIdx = !m_bCurrentShowingMagTextIdx;

@@ -82,10 +82,27 @@ public:
 	/// 현재 들고있는 무기 내려놓기 
 	/// </summary>
 	void DropWeapon();
+
+private:
+
+	UFUNCTION()
+	void OnNormalAttackColliderBeginOverlap
+	(
+		UPrimitiveComponent* OverlappedComponent,
+		AActor*				 OtherActor,
+		UPrimitiveComponent* OtherComp,
+		int32				 OtherBodyIndex,
+		bool				 bFromSweep,
+		const FHitResult&	 SweepResult
+	);
+
+private:
+	
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	
 protected:
 	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly)
 	ECopZombieState m_CopZombieState{};
 
 	// 주무기를 뺏을 수 있는 영역 Collider
@@ -93,6 +110,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	class UBoxComponent* m_GrabRangeCollider{};
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	UBoxComponent* m_NormalAttackCollider{};
+	
 protected:
 
 	// Grab Range에 들어온 Player들
@@ -101,9 +121,12 @@ protected:
 	
 protected: // 빼앗아서 장착한 무기
 	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly)
 	AC_GunBase* m_EquippedGun{};
 	
+private:
 	
-	
+	UPROPERTY()
+	TSet<AC_BasicPlayer*> m_NormalAttackColliderEntered{};
+
 };

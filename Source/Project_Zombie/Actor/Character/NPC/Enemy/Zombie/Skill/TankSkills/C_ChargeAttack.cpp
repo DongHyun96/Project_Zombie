@@ -17,7 +17,7 @@ UC_ChargeAttack::UC_ChargeAttack()
 {
 }
 
-bool UC_ChargeAttack::Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data)
+bool UC_ChargeAttack::Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data, OUT int32& _PlayedMontageSectionIdx)
 {
 	if (!IsValid(_Owner) || !IsValid(_Data))
 		return false;
@@ -65,7 +65,9 @@ bool UC_ChargeAttack::Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data)
 		Tank->CancelPrepareCharge();
 		return false;
 	}
-
+	
+	// 정상 재생되었을 때
+	_PlayedMontageSectionIdx = 0;
 
 	return true;
 }

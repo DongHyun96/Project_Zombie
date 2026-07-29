@@ -18,6 +18,9 @@ const int8 AC_BasicEnemy::s_MaxHealRequestRegisterCount = 2;
 
 AC_BasicEnemy::AC_BasicEnemy()
 {
+	// Replication 설정
+	SetReplicates(true);
+	
 	// 스탯 컴포넌트 추가
 	m_StatComponent = CreateDefaultSubobject<UC_EnemyStatComponent>(TEXT("StatComponent"));
 
@@ -39,11 +42,17 @@ void AC_BasicEnemy::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// 죽었을 때 처리할 함수 Delegate 구독 처리 (죽은 이후로도 다음에 Spawn 처리가 될 수 있기 때문에 구독 해지는 처리하지 않는다)
-	m_StatComponent->OnCurHPReachedZeroDelegate.AddUObject(this, &AC_BasicEnemy::OnDead);
+	if (IsLocallyControlled())
+	{
+		// 죽었을 때 처리할 함수 Delegate 구독 처리 (죽은 이후로도 다음에 Spawn 처리가 될 수 있기 때문에 구독 해지는 처리하지 않는다)
+		m_StatComponent->OnCurHPReachedZeroDelegate.AddUObject(this, &AC_BasicEnemy::OnDead);
 
-	// IncreaseCurHP 정상 처리 시(힐 받은 처리로 판단) -> 힐 받은 Effect 활성화 함수 Delegate 구독 처리
-	m_StatComponent->OnIncreaseCurHPDelegate.AddUObject(this, &AC_BasicEnemy::OnHPIncreased);
+		// IncreaseCurHP 정상 처리 시(힐 받은 처리로 판단) -> 힐 받은 Effect 활성화 함수 Delegate 구독 처리
+		m_StatComponent->OnIncreaseCurHPDelegate.AddUObject(this, &AC_BasicEnemy::OnHPIncreased);
+		
+		m_ZombieController = GetController<AC_ZombieController>();
+	}
+	
 
 	// HealEffect 재생 속도 조절
 	m_HealedEffectNGComponent->SetCustomTimeDilation(2.f);
@@ -51,11 +60,6 @@ void AC_BasicEnemy::BeginPlay()
 	
 	// 바닥면으로 위치 맞추기
 	m_HealedEffectNGComponent->SetRelativeLocation(FVector(0.f, 0.f, -GetCapsuleComponent()->GetScaledCapsuleHalfHeight()));
-	
-	m_ZombieController = GetController<AC_ZombieController>();
-	/*if (!m_ZombieController)
-		UC_Util::Print("From AC_BasicEnemy::BeginPlay : Use ZombieController instead of other controller!", FColor::Red, 10.f);*/
-	
 }
 
 float AC_BasicEnemy::TakeDamage
@@ -93,6 +97,8 @@ float AC_BasicEnemy::TakeDamage
 
 void AC_BasicEnemy::OnHPIncreased(AC_BasicCharacter* _HPIncreasedCharacter)
 {
+	// 서버 환경의 Enemy인 경우에만 호출처리됨
+	
 	// 이미 HealedEffect 재생중인 경우
 	if (m_HealedEffectNGComponent->IsActive()) return;
 		m_HealedEffectNGComponent->Activate(true);
@@ -100,6 +106,8 @@ void AC_BasicEnemy::OnHPIncreased(AC_BasicCharacter* _HPIncreasedCharacter)
 
 void AC_BasicEnemy::OnDead(AC_BasicCharacter* _DeadCharacter)
 {
+	// 서버 환경의 Enemy인 겨웅에만 호출처리됨
+	
 	m_HealedEffectNGComponent->DeactivateImmediate();
 	// TODO : Dead에 필요한 처리가 더 필요하다면 여기서 이어서 처리해줄 것(ex 랙돌 처리 등)
 	// 아마 죽은 뒤에 죽은 모션이나 랙돌 처리를 보여준 후, 몇 초 뒤에 Pool로 돌아가게끔 처리를 해줄 듯

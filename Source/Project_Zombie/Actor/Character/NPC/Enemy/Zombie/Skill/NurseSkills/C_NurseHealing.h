@@ -16,7 +16,7 @@ class PROJECT_ZOMBIE_API UC_NurseHealing : public UC_EnemySkillBase
 
 public:
 	
-	virtual bool Activate(AC_BasicEnemy* _Owner,UC_EnemySkillData* _Data) override;
+	virtual bool Activate(AC_BasicEnemy* _Owner,UC_EnemySkillData* _Data, OUT int32& _PlayedMontageSectionIdx) override;
 	
 	virtual void Fire(AC_BasicEnemy* _Owner,UC_EnemySkillData* _Data) override;
 };

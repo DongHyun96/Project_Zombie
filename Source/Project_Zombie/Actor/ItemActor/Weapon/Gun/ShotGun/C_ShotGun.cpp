@@ -3,8 +3,10 @@
 #include "C_ShotGun.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/Character/NPC/Enemy/C_BasicEnemy.h"
+#include "GameModeAndManager/C_UIManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystemComponent.h"
+#include "UI/MainHUD/C_GameMainHUD.h"
 
 AC_ShotGun::AC_ShotGun()
 {
@@ -201,6 +203,10 @@ void AC_ShotGun::InsertSingleShell()
 	if (m_CurrentAmmo < m_MaxAmmo)
 	{
 		m_CurrentAmmo++;
+
+		if (m_OwnerPlayer->IsLocallyControlled())
+			UI_MANAGER(GetWorld())->GetMainHUDWidget()->UpdateMagazineAmmoCount(m_CurrentAmmo);
+		
 		Multicast_PlayReloadEffects();
 	}
 

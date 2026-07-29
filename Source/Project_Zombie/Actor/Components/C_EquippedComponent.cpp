@@ -87,11 +87,6 @@ void UC_EquippedComponent::SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* 
     else m_Weapons[TargetSlotIdx]->AttachToHolster(m_OwnerPlayer->GetMesh());
 }
 
-bool UC_EquippedComponent::Server_RequestSpawnEquippedActor_Validate(int32 SlotIndex, const FInventoryEntry& ItemData)
-{
-	return true;
-}
-
 void UC_EquippedComponent::Server_RequestSpawnEquippedActor_Implementation(int32 SlotIndex, const FInventoryEntry& ItemData)
 {
 	if (!GetWorld()) return;
@@ -153,19 +148,11 @@ void UC_EquippedComponent::Server_SetSlotWeapon_Implementation(EWeaponSlot _Targ
 		// 현재 들고 있는 무기 상태에 맞게끔 UI 수정
 		FAmmoUIInfo AmmoUIInfo{};
 		GetCurWeapon()->SetAmmoUIInfo(AmmoUIInfo);
-
-		if (AmmoUIInfo.Visible)
-			PRINT_LOCAL(GetWorld(), "VISIBLE", FColor::Cyan, 20.f);
 		
 		Client_UpdateAmmoWidget(AmmoUIInfo);
 	}
 	
 	// Multicast_SetSlotWeapon(_TargetSlot, _WeaponToEquip); // 클라이언트단의 SetSlotWeapon도 호출해줌으로써 동기화 처리
-}
-
-bool UC_EquippedComponent::Server_SetSlotWeapon_Validate(EWeaponSlot _TargetSlot, AC_WeaponBase* _WeaponToEquip)
-{
-	return true;
 }
 
 bool UC_EquippedComponent::ChangeCurWeapon(EWeaponSlot _ChangeTo)
@@ -498,11 +485,6 @@ void UC_EquippedComponent::Server_PlayDrawMontage_Implementation(AC_WeaponBase* 
 	Multicast_PlayDrawMontage(_TargetWeapon);
 }
 
-bool UC_EquippedComponent::Server_PlayDrawMontage_Validate(AC_WeaponBase* _TargetWeapon)
-{
-	return true;
-}
-
 void UC_EquippedComponent::Multicast_PlayDrawMontage_Implementation(AC_WeaponBase* _TargetWeapon)
 {
 	// LocalPlayer인 경우, 이미 Local 환경에서 모든 처리를 끝낸 상황
@@ -526,19 +508,9 @@ void UC_EquippedComponent::Multicast_PlaySheathMontage_Implementation(AC_WeaponB
 	m_OwnerPlayer->PlayAnimMontage(_TargetWeapon->GetSheathMontage());
 }
 
-bool UC_EquippedComponent::Server_PlaySheathMontage_Validate(AC_WeaponBase* _TargetWeapon)
-{
-	return true;
-}
-
 void UC_EquippedComponent::Server_AttachToHolster_Implementation(AC_WeaponBase* _TargetWeapon)
 {
 	if (_TargetWeapon) _TargetWeapon->AttachToHolster(m_OwnerPlayer->GetMesh());
-}
-
-bool UC_EquippedComponent::Server_AttachToHolster_Validate(AC_WeaponBase* _TargetWeapon)
-{
-	return true;
 }
 
 void UC_EquippedComponent::Server_AttachToHand_Implementation(AC_WeaponBase* _TargetWeapon)
@@ -546,19 +518,9 @@ void UC_EquippedComponent::Server_AttachToHand_Implementation(AC_WeaponBase* _Ta
 	if (_TargetWeapon) _TargetWeapon->AttachToHand(m_OwnerPlayer->GetMesh());
 }
 
-bool UC_EquippedComponent::Server_AttachToHand_Validate(AC_WeaponBase* _TargetWeapon)
-{
-	return true;
-}
-
 void UC_EquippedComponent::Server_SetCurWeaponIdx_Implementation(uint8 _NewIdx)
 {
 	m_CurWeaponTypeIdx = _NewIdx;
-}
-
-bool UC_EquippedComponent::Server_SetCurWeaponIdx_Validate(uint8 _NewIdx)
-{
-	return true;
 }
 
 void UC_EquippedComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
