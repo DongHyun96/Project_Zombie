@@ -94,6 +94,8 @@ bool AC_GunBase::InitializeItemActor(const FWeaponData* InRawData)
 		return false;
 	}
 	
+	InitializeItemData(InRawData);
+	
 	LoadAsyncAssets(GunData);
 	
 	return true;
@@ -144,6 +146,8 @@ void AC_GunBase::InitializeItemData(const FWeaponData* InRawData)
 		m_MaxAmmo = GunData->MaxAmmo;
 		//m_CurrentAmmo = m_MaxAmmo;
 	}
+	
+	m_CurrentAmmo = 0;
 }
 
 void AC_GunBase::SwitchFireMode()
