@@ -53,7 +53,6 @@ AC_BasicPlayer::AC_BasicPlayer()
 
 	// Replication 설정
 	SetReplicates(true);
-	SetReplicateMovement(true);
 
 	
 	m_SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
@@ -274,6 +273,12 @@ void AC_BasicPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	}
 }
 
+void AC_BasicPlayer::SetHandState(EHandState _HandState)
+{
+	m_HandState = _HandState;
+	Server_SetHandState(_HandState);
+}
+
 UC_InteractionComponent* AC_BasicPlayer::GetInteractionComponent() const
 {
 	return m_InteractionComponent;
@@ -296,6 +301,21 @@ bool AC_BasicPlayer::SetCurDraggedItem(struct FInventoryEntry InEntry, UC_InvenC
 	curDraggedItem.Clear();
 	
 	return false;
+}
+
+void AC_BasicPlayer::Server_SetHandState_Implementation(EHandState _HandState)
+{
+	Multicast_SetHandState(_HandState);
+}
+
+bool AC_BasicPlayer::Server_SetHandState_Validate(EHandState _HandState)
+{
+	return true;
+}
+
+void AC_BasicPlayer::Multicast_SetHandState_Implementation(EHandState _HandState)
+{
+	m_HandState = _HandState;
 }
 
 void AC_BasicPlayer::ClearCurDraggedItem()

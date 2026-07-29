@@ -25,23 +25,6 @@ public:
 public: // HP Bar 및 BoostBar 정보 업데이트 관련
 
 	/// <summary>
-	/// HP Bar Percent 업데이트 
-	/// </summary>
-	/// <param name="_HP"> : 현재 체력 </param>
-	/// <param name="_MaxHP"> : 최대 체력 값 </param>
-	/// <returns> : 잘못된 값이 들어왔을 경우 return false </returns>
-	UFUNCTION(BlueprintCallable)
-	bool UpdateHPBar(float _HP, float _MaxHP);
-
-	/// <summary>
-	/// HP Bar Percent 업데이트
-	/// </summary>
-	/// <param name="_Ratio"> : HP 비율 </param>
-	/// <returns> : 잘못된 값이 들어왔을 경우 return false </returns>
-	UFUNCTION(BlueprintCallable)
-	bool UpdateHPBarRatio(float _Ratio);
-	
-	/// <summary>
 	/// Boost Bar 업데이트
 	/// </summary>
 	/// <param name="_Boost"> : 현재 Boost 량 </param>
@@ -83,12 +66,20 @@ public: // 무기 상태 정보 업데이트 관련
 	/// </summary>
 	/// <param name="_LeftAmmoTotalCount"> : 해당 무기의 사용할 수 있는 총 탄약 수 </param>
 	void UpdateLeftAmmoTotalCount(int32 _LeftAmmoTotalCount);
+	
+	/// <summary>
+	/// FireMode 변경 
+	/// </summary>
+	/// <returns> : 현재 AmmoInfo Visibility false이거나 새로 들어온 FireMode가 이미 보여지는 FireMode인 경우, Update 하지 않음(return false) </returns>
+	bool UpdateFireMode(EFireMode _NewFireMode);
 
 public:
 	
 	class UC_CompassBarWidget* GetCompassBarWidget() const { return CompassBarWidget; }
 	
 	class UC_CrosshairWidget* GetCrosshairWidget() const { return CrosshairWidget; }
+	
+	class UC_PlayerStatWidget* GetPlayerStatWidget() const { return PlayerStatWidget; }
 
 public: // Ingame Log 관련
 	
@@ -104,7 +95,7 @@ public: // Ingame Log 관련
 protected:
 
 	UPROPERTY(meta = (BindWidget))
-	class UC_PlayerStatWidget* PlayerStatWidget{};
+	UC_PlayerStatWidget* PlayerStatWidget{};
 	
 	UPROPERTY(meta = (BindWidget))
 	class UC_InformWidget* InformWidget{};

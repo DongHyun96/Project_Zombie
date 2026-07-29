@@ -12,7 +12,7 @@ class PROJECT_ZOMBIE_API UC_NormalAttack : public UC_EnemySkillBase
 	GENERATED_BODY()
 
 public:
-	virtual bool Activate(class AC_BasicEnemy* _Owner, class UC_EnemySkillData* _Data) override;
+	virtual bool Activate(class AC_BasicEnemy* _Owner, class UC_EnemySkillData* _Data, OUT int32& _PlayedMontageSectionIdx) override;
 
 public:
 	UC_NormalAttack();

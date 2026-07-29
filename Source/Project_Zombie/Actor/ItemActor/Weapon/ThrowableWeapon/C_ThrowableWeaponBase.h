@@ -36,7 +36,10 @@ public:
 	// 서버에서 호출하는 무기 초기화 함수
 	virtual bool InitializeItemActor(const FWeaponData* InRawData) override;
 	
+	// 
+	virtual void InitializeItemData(const FWeaponData* InRawData) override;
 protected:
+
 	// 데이터 테이블의 에셋들을 비동기 로드하기 위한 함수, 무기마다 다를 수 있기 때문에 순수 가상 함수로 선언. return 값을 bool 처리 할까?
 	virtual void LoadAsyncAssets(const FWeaponData* InRawData) override;
 	
@@ -77,6 +80,12 @@ public: // 애님 노티파이 관련
 	UFUNCTION(BlueprintCallable, Category = "Throwable|AnimNotify")
 	void OnThrowThrowable();
 
+	/// <summary>
+	/// 실질적인 투척 이후, 모든 동작이 끝난 시점
+	/// </summary>
+	UFUNCTION(BlueprintCallable, Category = "Throwable|AnimNotify")
+	void OnThrowProcessEnd();
+	
 public: // 쿠킹 입력
 
 	/// <summary>
@@ -205,6 +214,8 @@ private: // 예상 경로 표시 관련
 public:
 	
 	virtual void UpdateAmmoInfoHUDForDrawEnd() override;
+	
+	virtual void SetAmmoUIInfo(FAmmoUIInfo& _AmmoUIInfo) override;
 	
 	/* Socket Name 관련 */
 protected: 

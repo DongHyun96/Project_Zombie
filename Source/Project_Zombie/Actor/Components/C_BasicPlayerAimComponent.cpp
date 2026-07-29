@@ -39,7 +39,6 @@ void UC_BasicPlayerAimComponent::BeginPlay()
 			BaseCameraOffset = m_CurPlayer->GetSpringArm()->SocketOffset;
 		}
 	}
-
 }
 
 void UC_BasicPlayerAimComponent::OnAimPressed()

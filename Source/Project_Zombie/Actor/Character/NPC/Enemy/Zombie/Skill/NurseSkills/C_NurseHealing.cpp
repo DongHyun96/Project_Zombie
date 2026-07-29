@@ -10,7 +10,7 @@
 #include "GameModeAndManager/C_ZombieManager.h"
 #include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 
-bool UC_NurseHealing::Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data)
+bool UC_NurseHealing::Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data, OUT int32& _PlayedMontageSectionIdx)
 {
 	if (!_Data->Montage) return false;
 
@@ -24,6 +24,8 @@ bool UC_NurseHealing::Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data)
 	const FName PickedSectionName = _Data->Montage->GetSectionName(PickedIdx);
 
 	_Owner->PlayAnimMontage(_Data->Montage, 1.f, PickedSectionName);
+	
+	_PlayedMontageSectionIdx = PickedIdx;
 	
 	// Skill End Delegate 여기서 구독
 	_Owner->GetSkillComponent()->m_SkillEndDelegate.AddUObject(Nurse, &AC_NurseZombie::OnHealSkillEnd);

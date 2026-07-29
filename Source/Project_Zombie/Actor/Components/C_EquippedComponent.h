@@ -6,7 +6,26 @@
 #include "TaskSyncManager.h"
 #include "C_EquippedComponent.generated.h"
 
+enum class EFireMode : uint8;
 class UC_InvenComponent;
+
+USTRUCT(BlueprintType)
+struct FAmmoUIInfo
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	bool		Visible{};
+	
+	UPROPERTY()
+	EFireMode	FireMode{};
+	
+	UPROPERTY()
+	int32 		MagazineAmmo{};
+	
+	UPROPERTY()
+	int32 		LeftAmmoTotalCount{};
+};
 
 /// <summary>
 /// 장착된 무기 관리 및 무기전환, 현재 손에 들고 있는 무기 관리 처리 Component
@@ -38,7 +57,7 @@ public:
 	/// <summary>
 	/// 서버 쪽에 SetSlotWeapon 알림 도착 -> 해당 Slot의 무기 WeaponToEquip로 갈아끼우기 
 	/// </summary>
-	UFUNCTION(Server, Reliable, WithValidation)
+	UFUNCTION(Server, Reliable)
 	void Server_SetSlotWeapon(EWeaponSlot _TargetSlot, AC_WeaponBase* _WeaponToEquip);
 	
 private:
@@ -50,15 +69,10 @@ private:
 	/// <param name="WeaponToEquip"> : 해당 slot에 장착할 무기 객체 / 장착 해제는 nullptr </param>
 	void SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* WeaponToEquip);
 
-public: // TODO : 이 Test block 지우기
-
-	UFUNCTION(Server, Reliable, WithValidation)
-	void Server_TestSpawnAllWeapons();
-
 public:
 	
 
-	UFUNCTION(Server, Reliable, WithValidation)
+	UFUNCTION(Server, Reliable)
 	void Server_RequestSpawnEquippedActor(int32 SlotIndex, const FInventoryEntry& ItemData);
 
 public:
@@ -107,22 +121,28 @@ public:
 private:
 	
 	/// <summary>
-	/// 현재 EquippedComponent 상황에 맞추어 AmmoWidget 정보 업데이트 
+	/// 현재 EquippedComponent 상태에 맞추어 AmmoWidget 정보 업데이트 
 	/// </summary>
 	void UpdateAmmoWidget();
 
+	/// <summary>
+	/// SetSlotWeapon 처리 시, AmmoWidget 업데이트 이 Client RPC Call을 통해 처리할 것 
+	/// </summary>
+	UFUNCTION(Client, Reliable)
+	void Client_UpdateAmmoWidget(const FAmmoUIInfo& _AmmoUIInfo);
+	
 private:
 	
 	/// <summary>
 	/// 로컬 쪽에서 PlayDrawMontage 발생 -> 서버 쪽으로 멀티캐스트 부탁(다른 환경에서도 DrawMontage 재생 처리를 하라고)
 	/// </summary>
-	UFUNCTION(Server, Reliable, WithValidation)
+	UFUNCTION(Server, Reliable)
 	void Server_PlayDrawMontage(AC_WeaponBase* _TargetWeapon);
 
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_PlayDrawMontage(AC_WeaponBase* _TargetWeapon);
 
-	UFUNCTION(Server, Reliable, WithValidation)
+	UFUNCTION(Server, Reliable)
 	void Server_PlaySheathMontage(AC_WeaponBase* _TargetWeapon);
 	
 	UFUNCTION(NetMulticast, Reliable)
@@ -133,16 +153,16 @@ private:
 	/// <summary>
 	/// 서버 쪽 무기 AttachToHolster 처리 요청 처리
 	/// </summary>
-	UFUNCTION(Server, Reliable, WithValidation)
+	UFUNCTION(Server, Reliable)
 	void Server_AttachToHolster(AC_WeaponBase* _TargetWeapon);
 
 	/// <summary>
 	/// 서버 쪽 무기 AttachToHand 처리 요청 처리 
 	/// </summary>
-	UFUNCTION(Server, Reliable, WithValidation)
+	UFUNCTION(Server, Reliable)
 	void Server_AttachToHand(AC_WeaponBase* _TargetWeapon);
 	
-	UFUNCTION(Server, Reliable, WithValidation)
+	UFUNCTION(Server, Reliable)
 	void Server_SetCurWeaponIdx(uint8 _NewIdx);
 	
 public:
@@ -169,12 +189,6 @@ protected: /* 장착 무기 Slot */
 	// 가비지 컬렉션을 방해하지 않는 약한 참조 (메모리 부담 전혀 없음)
 	TWeakObjectPtr<UC_InvenComponent> BoundInvenComp{};
 
-protected:
-
-	// 현재 무기를 바꾸는 과정인지
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	bool m_bIsCurrentlyChangingWeapon{};
-	
 protected:
 
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly)

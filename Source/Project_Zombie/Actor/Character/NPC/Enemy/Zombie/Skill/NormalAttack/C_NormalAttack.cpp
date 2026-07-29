@@ -10,7 +10,7 @@ UC_NormalAttack::UC_NormalAttack()
 {
 }
 
-bool UC_NormalAttack::Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data)
+bool UC_NormalAttack::Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data, OUT int32& _PlayedMontageSectionIdx)
 {
 	// 재생시킬 공격 Motion이 초기화되어있지 않음
 	if (!_Data->Montage) return false;
@@ -19,10 +19,10 @@ bool UC_NormalAttack::Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data)
 	const int32 PickedIdx         = FMath::RandRange(0, NumSections - 1);
 	const FName PickedSectionName = _Data->Montage->GetSectionName(PickedIdx);
 
-	_Owner->PlayAnimMontage(_Data->Montage);
-	
 	// Attack 모션 중(섹션 중) 랜덤 Pick된 Section으로 이동해서 재생 처리
-	_Owner->GetMesh()->GetAnimInstance()->Montage_JumpToSection(PickedSectionName, _Data->Montage);
+	_Owner->PlayAnimMontage(_Data->Montage, 1.f, PickedSectionName);
+
+	_PlayedMontageSectionIdx = PickedIdx;
 	
 	return true;
 }

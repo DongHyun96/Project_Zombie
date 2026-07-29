@@ -165,25 +165,59 @@ bool AC_ThrowableWeaponBase::InitializeItemActor(const FWeaponData* InRawData)
 		UC_Util::Print("Failed Cast to const FThrowableData*", FColor::Red, 10.f);
 		return false;
 	}
-	
+
+	InitializeItemData(InRawData);
+
+	// 비동기 에셋 로드 호출
+	LoadAsyncAssets(ThrowableData);
+	return true;
+}
+
+void AC_ThrowableWeaponBase::InitializeItemData(const FWeaponData* InRawData)
+{
+	const FThrowableData* ThrowableData = static_cast<const FThrowableData*>(InRawData);
+
+	if (!ThrowableData)
+	{
+		UC_Util::Print("Failed Cast to const FThrowableData*", FColor::Red, 10.f);
+		return;
+	}
+
 	// 기본 수치 및 플래그 설정 (서버 로직)
-	m_bExplodeOnImpact     = ThrowableData->m_bExplodeOnImpact;
-	m_bHasPin              = ThrowableData->m_bHasPin;
-	m_bIsCookable         = ThrowableData->m_bIsCookable;
+	m_bExplodeOnImpact = ThrowableData->m_bExplodeOnImpact;
+	m_bHasPin = ThrowableData->m_bHasPin;
+	m_bIsCookable = ThrowableData->m_bIsCookable;
 	m_ExplosionEffectScale = ThrowableData->m_ExplosionEffectScale;
-	m_ExplosionRadius      = ThrowableData->m_ExplosionRadius;
-	m_FuseTime             = ThrowableData->m_FuseTime;
-	m_MaxDamage           = ThrowableData->m_MaxDamage;
-	m_MinDamage           = ThrowableData->m_MinDamage;
+	m_ExplosionRadius = ThrowableData->m_ExplosionRadius;
+	m_FuseTime = ThrowableData->m_FuseTime;
+	m_MaxDamage = ThrowableData->m_MaxDamage;
+	m_MinDamage = ThrowableData->m_MinDamage;
 
 	if (!ItemLinkComp)
 	{
 		UC_Util::Print("ThrowableBase : Item Link Component Is Nullptr!", FColor::Red, 10.f);
 	}
 
-	// 비동기 에셋 로드 호출
-	LoadAsyncAssets(ThrowableData);
-	return true;
+	if (FInventoryEntry* EntryPtr = ItemLinkComp ? ItemLinkComp->GetItemEntryPtr() : nullptr)
+	{
+		// 1. 없으면 데이터 안전하게 생성
+		FEquipmentCustomData* CustomData = EntryPtr->GetOrCreateEquipmentData();
+
+		// 2. Grade(단계) 가져오기
+		int32 DamageGrade = CustomData->GetStatGrade(EUpgradableStats::AttackPower);
+		int32 ExplosionRadiusGrade = CustomData->GetStatGrade(EUpgradableStats::ExplosionRadius);
+
+		// 3. 최종 스탯 계산: BaseStat + (Grade * DataAsset의 레벨당 증가량)
+		m_MaxDamage = ThrowableData->BaseDamage + (DamageGrade * ThrowableData->DamagePerUpgradeLevel);
+		m_MinDamage = ThrowableData->BaseDamage + (DamageGrade * ThrowableData->DamagePerUpgradeLevel);
+
+		//m_MaxAmmo = ThrowableData->MaxAmmo + (AmmoGrade * GunData->MaxAmmoPerUpgradeLevel);
+		m_ExplosionRadius = ThrowableData->m_ExplosionRadius + (ExplosionRadiusGrade * ThrowableData->ExplosionRadiusPerUpgradeLevel);
+	}
+	else
+	{
+
+	}
 }
 
 void AC_ThrowableWeaponBase::LoadAsyncAssets(const FWeaponData* InRawData)
@@ -445,6 +479,8 @@ void AC_ThrowableWeaponBase::OnRemovePin()
 
 void AC_ThrowableWeaponBase::OnThrowReadyLoop()
 {
+	// 멀티 환경에서 여기서 터지는 듯?
+	
 	UAnimInstance* AnimInstance = m_OwnerPlayer->GetMesh()->GetAnimInstance();
 	if (!AnimInstance)
 		return;
@@ -509,11 +545,18 @@ void AC_ThrowableWeaponBase::OnThrowThrowable()
 	{
 		StartFuseTimer();
 	}
+}
 
+void AC_ThrowableWeaponBase::OnThrowProcessEnd()
+{
+	PRINT_LOCAL(GetWorld(), "OnThrowProcessEnd", FColor::MakeRandomColor(), 20.f);
+	
 	// TODO 
 	// 수류탄 던짐
 	// EquippedComponent의 CurrentWeapon은 nullptr 또는 다음 수류탄으로 변경
 	// 수류탄 개수 감소
+
+	// 2개 남았을 경우까지만 체킹
 	
 	// TODO : 멀티 환경에 맞게 조정해야 할 수 있음.
 	// 투척류는 아이템 갯수가 Ammo라고 보면된다.
@@ -522,10 +565,16 @@ void AC_ThrowableWeaponBase::OnThrowThrowable()
 	Server_DecreaseCurCount();
 	
 	// TODO : 던지고 Count 남아있으면 새로 스폰해주던지, 던질 때 가짜를 던지던지 해야함.
+	
 
 	// int32 Idx = ItemLinkComp->GetSlotIndex();
 
 	// m_OwnerPlayer->GetEquippedComponent()->Server_RequestSpawnEquippedActor(static_cast<int32>(EWeaponSlot::ThrowableWeapon), )
+
+	
+
+	// 
+	//m_OwnerPlayer->GetEquippedComponent()->ChangeCurWeapon(EWeaponSlot::ThrowableWeapon);
 }
 
 // ----------------- 쿠킹 관련 처리 -----------------
@@ -1059,4 +1108,13 @@ void AC_ThrowableWeaponBase::UpdateAmmoInfoHUDForDrawEnd()
 {
 	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled()) return;
 	UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility(true, EFireMode::Single, 1, 1);
+}
+
+void AC_ThrowableWeaponBase::SetAmmoUIInfo(FAmmoUIInfo& _AmmoUIInfo)
+{
+	_AmmoUIInfo.Visible            = true;
+	_AmmoUIInfo.FireMode           = EFireMode::Single;
+	_AmmoUIInfo.MagazineAmmo       = 1;
+	_AmmoUIInfo.LeftAmmoTotalCount = 1;
+	
 }

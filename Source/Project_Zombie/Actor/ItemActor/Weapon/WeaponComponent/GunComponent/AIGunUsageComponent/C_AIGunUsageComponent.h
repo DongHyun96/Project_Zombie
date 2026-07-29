@@ -34,7 +34,7 @@ public:
 	/// <para> Enemy AI 총기 발사 처리 </para>
 	/// <para> (단순 1발 발사 처리로 처리할 것 -> Sniper같은 총기류도 Montage 이어서 재장전 모션 나오게끔 처리예정) </para>
 	/// </summary>
-	bool AIFire();
+	virtual bool AIFire();
 	
 public: /* Attachment 처리 관련 */
 
