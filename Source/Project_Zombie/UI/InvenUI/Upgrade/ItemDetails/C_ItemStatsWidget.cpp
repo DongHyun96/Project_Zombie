@@ -46,3 +46,4 @@ void UC_ItemStatsWidget::UpdateWidget(const FEquipmentCustomData* InCustomData)
 		ItemStatsScrollBox->AddChild(ItemStatRow);
 	}
 }
+
