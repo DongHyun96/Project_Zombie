@@ -5,12 +5,15 @@
 #include "CoreMinimal.h"
 #include "Actor/Components/InteractionComponent/Interface/I_Interactable.h"
 #include "GameFramework/Actor.h"
+#include "GlobalEnum.h"
 #include "C_InteractableBase.generated.h"
 
 
 class UC_InvenComponent;
 class USphereComponent;
 class UC_InteractionComponent;
+class UC_ItemUpgradeComponent;
+class AC_BasicPlayer;
 
 UCLASS()
 class PROJECT_ZOMBIE_API AC_InteractableBase : public AActor, public II_Interactable
@@ -30,6 +33,9 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	virtual UC_InteractionComponent* GetInteractionComponent() const override { return m_InteractionComp; } 
+
+	//UFUNCTION(Server, Reliable)
+	void RequestItemUpgrade(AC_BasicPlayer* InPlayer, int32 InItemIndex, EUpgradableStats TargetStat);
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UStaticMeshComponent* m_MeshComp{};
@@ -40,4 +46,7 @@ protected:
 	// TODO : Sphere가 아니라 Cube로?
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	USphereComponent* m_SphereComp{};
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UC_ItemUpgradeComponent* m_UpgradeComp{};
 };

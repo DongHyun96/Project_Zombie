@@ -4,7 +4,8 @@
 #include "Item/Interact/C_InteractableBase.h"
 #include "Actor/Components/InteractionComponent/C_InteractionComponent.h"
 #include "Components/SphereComponent.h"
-
+#include "Actor/Components/UpgradeComponent/C_ItemUpgradeComponent.h"
+#include "GameModeAndManager/C_UIManager.h"
 
 // Sets default values
 AC_InteractableBase::AC_InteractableBase()
@@ -12,6 +13,8 @@ AC_InteractableBase::AC_InteractableBase()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	
+	SetReplicates(true);
+
 	m_SphereComp = CreateDefaultSubobject<USphereComponent>(TEXT("SphereCollisionComp"));
 	
 	m_SphereComp->SetSphereRadius(100.f);
@@ -22,10 +25,10 @@ AC_InteractableBase::AC_InteractableBase()
 
 	m_MeshComp->SetupAttachment(m_SphereComp);
 
+	m_UpgradeComp = CreateDefaultSubobject<UC_ItemUpgradeComponent>(TEXT("ItemUpgradeComp"));
+
 
 	m_InteractionComp = CreateDefaultSubobject<UC_InteractionComponent>(TEXT("InteractionComp"));
-
-
 
 	// TODO : 여기서 해도 괜찮나? -> ㄱㅊ
 	m_InteractionComp->SetInteractionNetType(EInteractionNetType::Local);
@@ -49,3 +52,11 @@ void AC_InteractableBase::Tick(float DeltaTime)
 
 }
 
+void AC_InteractableBase::RequestItemUpgrade(AC_BasicPlayer* InPlayer, int32 InItemIndex, EUpgradableStats TargetStat)
+{
+	if (!m_UpgradeComp) return;
+
+	PRINT_LOCAL(GetWorld(), "RequestItemUpgrade", FColor::Blue, 5.f);
+
+	m_UpgradeComp->UpgradeItem(InPlayer, InItemIndex, TargetStat);
+}
