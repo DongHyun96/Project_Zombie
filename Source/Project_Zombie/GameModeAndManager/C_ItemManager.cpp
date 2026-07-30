@@ -73,8 +73,16 @@ AC_ItemPickUp* UC_ItemManager::SpawnItemPickUp(const FInventoryEntry& InEntry, c
     AC_ItemPickUp* NewItem = World->SpawnActor<AC_ItemPickUp>(AC_ItemPickUp::StaticClass(), SpawnLocation, FRotator::ZeroRotator, SpawnParams);
     if (NewItem)
     {
-        // InEntry데이터 복사
+        // 1. InEntry 데이터 복사 (여기서 CustomData 포인터/값 및 동적 정보가 통째로 전달됨)
         NewItem->ItemEntry = InEntry; 
+
+        // 2. [핵심] 만약 인벤토리 Entry의 CustomData가 비어있는 상태로 새로 스폰된 아이템이라면?
+        // -> 데이터 테이블(FItemData)에 지정된 기본 CustomData(FEquipmentCustomData)를 넣어준다!
+        if (!NewItem->ItemEntry.CustomData.IsValid())
+        {
+            NewItem->ItemEntry.CustomData = FInstancedStruct::Make(Data->CustomData);
+        }
+
         NewItem->SetMeshRef(Data->DropMesh);
         NewItem->SetPickupMeshAsync(NewItem->GetMeshRef());
     }
