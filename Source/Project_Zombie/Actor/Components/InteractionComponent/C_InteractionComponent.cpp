@@ -132,6 +132,11 @@ void UC_InteractionComponent::OnInteractionEndOverlap(UPrimitiveComponent* _Over
 	if (!_OtherActor)
 		return;
 
+	// EndOverlap되면 실행할 함수. TODO : 현재는 매개변수가 없는 함수만 가능.
+	m_OnEndOverlap.Broadcast();
+	m_OnEndOverlap.Clear();
+	
+	//m_OnEndOverlap.RemoveAll(_OtherActor);
 	// 후보 목록에서 Actor 제거
 	m_InteractionCandidates.Remove(_OtherActor);
 
@@ -274,7 +279,7 @@ void UC_InteractionComponent::TryInteract()
 	m_CurrentInteractionActor = TargetActor;
 
 	// 타이머 핸들 안쓰면 리턴.
-	if (!bUseTimer) return;
+	//if (!bUseTimer) return;
 
 	const float InteractionDuration = TargetComponent->GetInteractionDuration();
 
@@ -513,7 +518,7 @@ void UC_InteractionComponent::Server_TryInteract_Implementation(AActor* _TargetA
 	UE_LOG(LogTemp, Log, TEXT("Server_TryInteract - Interaction Started with %s for %.2f seconds"), *_TargetActor->GetName(), InteractionDuration);
 
 	// 타이머 안쓰면 리턴
-	if (!bUseTimer) return;
+	//if (!bUseTimer) return;
 
 	// 상호작용 완료 타이머는 서버에서 시작되어
 	// 서버의 TimerManager 에 의해 CompleteInteract() 호출된다

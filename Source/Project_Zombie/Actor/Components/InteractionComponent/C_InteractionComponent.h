@@ -9,6 +9,11 @@ class AC_BasicPlayer;
 class UC_InteractionStrategyBase;
 class UPrimitiveComponent;
 
+// TODO : CancelInteract 구현 보고 없애야 할 수 있음.
+DECLARE_MULTICAST_DELEGATE(OnEndOverlap);
+// TODO : CancelInteract 구현 보고 없애야 할 수 있음.
+DECLARE_DELEGATE_OneParam(OnEndOverlapParm1, bool);
+
 UENUM(BlueprintType)
 enum class EInteractionNetType : uint8
 {
@@ -45,7 +50,7 @@ public:
 	/// Timer핸들 사용 여부 설정
 	/// </summary>
 	/// <param name="_bUseTimer"></param>
-	void SetUseTimer(bool _bUseTimer) { bUseTimer = _bUseTimer; }
+	///void SetUseTimer(bool _bUseTimer) { bUseTimer = _bUseTimer; }
 
 	/// <summary>
 	/// 상호작용	네트워크 처리 방식 설정
@@ -245,11 +250,17 @@ private:
 
 private:
 
-	bool bUseTimer = true;
+	//bool bUseTimer = true;
 
 	// 상호작용 걸리는 시간
 	FTimerHandle m_InteractionTimerHandle;
 
 	/// 상호작용 완료 Timer
 	FTimerHandle m_FocusUpdateTimerHandle;
+	
+public:
+	// TODO : CancelInteract 구현 보고 없애야 할 수 있음.
+	OnEndOverlap m_OnEndOverlap;
+	// TODO : CancelInteract 구현 보고 없애야 할 수 있음.
+	OnEndOverlapParm1 m_OnEndOverlapParm1;
 };
