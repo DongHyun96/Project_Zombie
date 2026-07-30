@@ -20,11 +20,12 @@ AC_Storage::AC_Storage()
 	SetReplicates(true);
 	
 	MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComp"));
-	RootComponent = MeshComp;
+	SetRootComponent(MeshComp);
+	
 	
 	SphereComp =  CreateDefaultSubobject<USphereComponent>(TEXT("SphereCollisionComp"));
 	SphereComp->SetSphereRadius(100.f);
-	SphereComp->SetupAttachment(RootComponent);
+	SphereComp->SetupAttachment(MeshComp);
 	
 	InvenComp = CreateDefaultSubobject<UC_InvenComponent>(TEXT("InvenComponent"));
 }

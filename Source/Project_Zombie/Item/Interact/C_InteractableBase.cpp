@@ -11,22 +11,26 @@ AC_InteractableBase::AC_InteractableBase()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-
-	m_MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComp"));
-	RootComponent = m_MeshComp;
-
+	
 	m_SphereComp = CreateDefaultSubobject<USphereComponent>(TEXT("SphereCollisionComp"));
+	
 	m_SphereComp->SetSphereRadius(100.f);
-	m_SphereComp->SetupAttachment(RootComponent);
+	
+	SetRootComponent(m_SphereComp);
+	
+	m_MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComp"));
+
+	m_MeshComp->SetupAttachment(m_SphereComp);
+
 
 	m_InteractionComp = CreateDefaultSubobject<UC_InteractionComponent>(TEXT("InteractionComp"));
 
-	m_InteractionComp->SetupInteraction(m_SphereComp);
 
-	// TODO : 여기서 해도 괜찮나?
+
+	// TODO : 여기서 해도 괜찮나? -> ㄱㅊ
 	m_InteractionComp->SetInteractionNetType(EInteractionNetType::Local);
 
-	m_InteractionComp->SetUseTimer(false);
+	//m_InteractionComp->SetUseTimer(false);
 	m_InteractionComp->SetAllowMultipleInteractor(true);
 
 }
@@ -35,7 +39,7 @@ AC_InteractableBase::AC_InteractableBase()
 void AC_InteractableBase::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	m_InteractionComp->SetupInteraction(m_SphereComp);
 }
 
 // Called every frame

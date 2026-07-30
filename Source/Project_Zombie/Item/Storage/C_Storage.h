@@ -40,6 +40,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	class UC_InvenComponent* InvenComp{}; 
 	
+	// TODO : Sphere가 아니라 큐브로?
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	class USphereComponent* SphereComp{};	
 };
