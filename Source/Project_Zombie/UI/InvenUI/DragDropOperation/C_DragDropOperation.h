@@ -18,6 +18,8 @@ class PROJECT_ZOMBIE_API UC_DragDropOperation : public UDragDropOperation
 public:
 	void SetItemEntry(FInventoryEntry InItemEntry){ItemEntry = InItemEntry;}
 	
+	const FInventoryEntry& GetItemEntry() const { return ItemEntry; }
+
 	void SetSlotIndex(int InSlotIndex){SlotIndex = InSlotIndex;}
 	
 	int32 GetSlotIndex() {return SlotIndex;}
