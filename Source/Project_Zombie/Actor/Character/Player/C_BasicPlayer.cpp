@@ -47,6 +47,7 @@
 
 #include "Net/UnrealNetwork.h"
 #include "UI/InvenUI/DivideWIdget/C_DivideItemWidget.h"
+#include "Item/Interact/C_InteractableBase.h"
 
 AC_BasicPlayer::AC_BasicPlayer()
 {
@@ -139,6 +140,16 @@ AC_BasicPlayer::AC_BasicPlayer()
 
 }
 
+
+void AC_BasicPlayer::Server_RequestItemUpgrade_Implementation(AC_InteractableBase* InInteractableActor, int32 InItemIndex, EUpgradableStats TargetStat)
+{
+	InInteractableActor->RequestItemUpgrade(this, InItemIndex, TargetStat);
+}
+
+bool AC_BasicPlayer::Server_RequestItemUpgrade_Validate(AC_InteractableBase* InInteractableActor, int32 InItemIndex, EUpgradableStats TargetStat)
+{
+	return true;
+}
 
 void AC_BasicPlayer::BeginPlay()
 {

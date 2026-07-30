@@ -51,7 +51,7 @@ enum class EPlayerViewMode : uint8
 };
 
 
-
+class AC_InteractableBase;
 class UInputMappingContext;
 class UInputAction;
 class USphereComponent;
@@ -424,6 +424,9 @@ public:
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_RequestUnlockSlot(UC_InvenComponent* TargetComp, int32 SlotIdx);
 	
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_RequestItemUpgrade(AC_InteractableBase* InInteractableActor, int32 InItemIndex, EUpgradableStats TargetStat);
+
 protected:
 	virtual void BeginPlay() override;
 	
