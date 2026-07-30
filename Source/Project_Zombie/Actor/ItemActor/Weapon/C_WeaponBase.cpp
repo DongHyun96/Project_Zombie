@@ -50,26 +50,9 @@ void AC_WeaponBase::OnRep_WeaponRowName()
 	UC_ItemManager* ItemManager = GetGameInstance()->GetSubsystem<UC_ItemManager>();
 	if (!ItemManager) return;
 
-	// 1차: General 테이블에서 ItemType 확인
-	const FItemData* GeneralData = ItemManager->GetItemData<FItemData>(EItemTableType::General, m_WeaponRowName);
-	if (!GeneralData) return;
-
-	// 2차: ItemType에 맞춰 알맞은 테이블에서 FWeaponData 가져오기
 	const FWeaponData* WeaponData = nullptr;
-	switch (GeneralData->ItemType)
-	{
-	case EItemType::MAINWEAPON:
-		WeaponData = ItemManager->GetItemData<FGunData>(EItemTableType::Gun, m_WeaponRowName);
-		break;
-	case EItemType::MELEEWEAPON:
-		WeaponData = ItemManager->GetItemData<FMeleeData>(EItemTableType::Melee, m_WeaponRowName);
-		break;
-	case EItemType::THROWABLE:
-		WeaponData = ItemManager->GetItemData<FThrowableData>(EItemTableType::Throwable, m_WeaponRowName);
-		break;
-	default:
-		break;
-	}
+	
+	ItemManager->GetWeaponData(m_WeaponRowName);
 
 	if (WeaponData)
 	{
@@ -77,8 +60,6 @@ void AC_WeaponBase::OnRep_WeaponRowName()
 
 		LoadAsyncAssets(WeaponData);
 	}
-	
-	
 }
 
 void AC_WeaponBase::CancelAsyncLoad()

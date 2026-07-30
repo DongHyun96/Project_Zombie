@@ -233,6 +233,32 @@ AC_WeaponBase* UC_ItemManager::SpawnEquippedActor(FName InRowName, AActor* InOwn
     return SpawnedWeapon;
 }
 
+const FWeaponData* UC_ItemManager::GetWeaponData(FName InRowName) const
+{
+    // 1차: General 테이블에서 ItemType 확인
+    const FItemData* GeneralData = GetItemData<FItemData>(EItemTableType::General, InRowName);
+
+    if (!GeneralData) return nullptr;
+
+    // 2차: ItemType에 맞춰 알맞은 테이블에서 FWeaponData 가져오기
+    const FWeaponData* WeaponData = nullptr;
+    switch (GeneralData->ItemType)
+    {
+    case EItemType::MAINWEAPON:
+        WeaponData = GetItemData<FGunData>(EItemTableType::Gun, InRowName);
+        break;
+    case EItemType::MELEEWEAPON:
+        WeaponData = GetItemData<FMeleeData>(EItemTableType::Melee, InRowName);
+        break;
+    case EItemType::THROWABLE:
+        WeaponData = GetItemData<FThrowableData>(EItemTableType::Throwable, InRowName);
+        break;
+    default:
+        break;
+    }
+    return WeaponData;
+}
+
 bool UC_ItemManager::GetItemDataBP(EItemTableType InTableType, FName InRowName, FInstancedStruct& OutData)
 {
     switch (InTableType)

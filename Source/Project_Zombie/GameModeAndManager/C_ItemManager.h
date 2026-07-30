@@ -63,6 +63,8 @@ public:
 	// InRowName   : 가져오고 싶은 데이터의 RowName 
 	template <typename T>
 	const T* GetItemData(EItemTableType InTableType, FName InRowName) const;
+
+	const FWeaponData* GetWeaponData(FName InRowName) const;
 	
 	
 	// [블루프린트 전용] Generic/BlueprintCallable 래퍼 함수
