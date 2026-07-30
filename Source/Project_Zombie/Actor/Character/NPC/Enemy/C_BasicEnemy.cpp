@@ -114,7 +114,7 @@ void AC_BasicEnemy::OnHPIncreased(AC_BasicCharacter* _HPIncreasedCharacter)
 
 void AC_BasicEnemy::OnDead(AC_BasicCharacter* _DeadCharacter)
 {
-	// 서버 환경의 Enemy인 겨웅에만 호출처리됨
+	// 서버 환경의 Enemy인 경우에만 호출처리됨
 	
 	m_HealedEffectNGComponent->DeactivateImmediate();
 	// TODO : Dead에 필요한 처리가 더 필요하다면 여기서 이어서 처리해줄 것(ex 랙돌 처리 등)

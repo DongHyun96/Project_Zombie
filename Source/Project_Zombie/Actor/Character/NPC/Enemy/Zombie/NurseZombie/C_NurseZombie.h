@@ -58,7 +58,8 @@ public:
 	bool TryRegisterAsHealTarget(AC_BasicEnemy* _NewHealTarget);
 
 public:
-	
+
+	// ABP 상태값으로 사용하고 있지 않음 -> 따라서 Replicate 처리할 필요 없음
 	void SetActionState(ENurseZombieActionState _ActionState) { m_ActionState = _ActionState; }
 	ENurseZombieActionState GetActionState() const { return m_ActionState; }
 
