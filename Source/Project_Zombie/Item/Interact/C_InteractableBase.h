@@ -37,6 +37,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UC_InteractionComponent* m_InteractionComp{}; 
 	
+	// TODO : Sphere가 아니라 Cube로?
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	USphereComponent* m_SphereComp{};
 };
