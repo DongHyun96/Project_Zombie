@@ -354,7 +354,7 @@ public:
 	// 캐릭터 그로기 처리
 public:
 	// 플레이어를 GettingUp 상태로 변경
-	void StartGettingUp(float _GetUpDuration);
+	void StartGettingUp();
 
 	// 구조 완료 후 GettingUp 상탤를 Idle 상태로 변경
 	void FinishGettingUp();

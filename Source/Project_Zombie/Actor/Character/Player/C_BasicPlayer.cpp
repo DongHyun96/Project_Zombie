@@ -622,7 +622,7 @@ void AC_BasicPlayer::Server_EnterDownedState_Implementation()
 	SetPlayerStateOnServer(EPlayerState::Dead); 
 }
 
-void AC_BasicPlayer::StartGettingUp(float _GetUpDuration)
+void AC_BasicPlayer::StartGettingUp()
 {
 	// 서버에서만 처리
 	if (!HasAuthority())
@@ -642,7 +642,7 @@ void AC_BasicPlayer::StartGettingUp(float _GetUpDuration)
 			m_GetUpTimerHandle,
 			this,
 			&AC_BasicPlayer::FinishGettingUp,
-			_GetUpDuration,
+			1.4f, // TODO: 하드코딩된 시간, 나중에 몽타주 길이에 맞춰서 변경 필요 // GettingUp 시퀀스 길이와 비슷하게 설정
 			false
 		);
 	}
@@ -685,19 +685,14 @@ void AC_BasicPlayer::ApplyPlayerState()
 	}
 	case EPlayerState::Reviving:
 	{
-		if (MovementComponent->MovementMode == MOVE_None)
-		{
-			MovementComponent->SetMovementMode(MOVE_Walking);
-		}
-		// 현재 자세에 맞는 이동 속도 적용
-		ApplyMovementSpeed();
+		MovementComponent->StopMovementImmediately();
+		MovementComponent->DisableMovement();
 		break;
 	}
 	case EPlayerState::Dead:
 	{
 		MovementComponent->StopMovementImmediately();
 		MovementComponent->DisableMovement();
-
 		break;
 	}
 	case EPlayerState::GettingUp:

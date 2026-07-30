@@ -40,6 +40,10 @@ bool UC_ReviveInteractionStrategy::StartInteraction(AC_BasicPlayer* _Interactor,
 
 void UC_ReviveInteractionStrategy::CancleInteraction(AC_BasicPlayer* _Interactor, AActor* _TargetActor)
 {
+	if (!_Interactor || !_TargetActor)
+		return;
+
+	_Interactor->SetPlayerStateOnServer(EPlayerState::Idle);
 }
 
 void UC_ReviveInteractionStrategy::CompleteInteraction(AC_BasicPlayer* _Interactor, AActor* _TargetActor)
@@ -61,5 +65,5 @@ void UC_ReviveInteractionStrategy::CompleteInteraction(AC_BasicPlayer* _Interact
 	_Interactor->SetPlayerStateOnServer(EPlayerState::Idle);
 
 	// 구조 대상 일으키기 시작
-	TargetPlayer->StartGettingUp(m_InteractionDuration);
+	TargetPlayer->StartGettingUp();
 }

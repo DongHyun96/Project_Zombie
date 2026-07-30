@@ -8,6 +8,7 @@
 class AC_BasicPlayer;
 class UC_InteractionStrategyBase;
 class UPrimitiveComponent;
+class UMaterialInterface;
 
 UENUM(BlueprintType)
 enum class EInteractionNetType : uint8
@@ -165,6 +166,12 @@ private:
 	/// </summary>
 	void ClearCurrentInteraction() { m_CurrentInteractionActor = nullptr; }
 
+	/// <summary>
+	/// 아웃라인 효과
+	/// </summary>
+	/// <param name="_Enable"></param>
+	void SetOutlineEffect(bool _Enable);
+
 private:
 
 	/// =====================================
@@ -210,6 +217,9 @@ private:
 	UFUNCTION(Server, Reliable)
 	void Server_TryInteract(AActor* _TargetActor);
 
+	UFUNCTION(Server, Reliable)
+	void Server_CancleInteract(AActor* _TargetActor);
+
 private:
 
 	// 상호작용 시도 시 서버에 요청할지, 로컬에서 처리할지 결정
@@ -223,6 +233,13 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Interaction")
 	float m_FocusUpdateInterval;
 
+	// 아웃라인을 적용할 Mesh 들을 미리 기억해둠
+	// 처음 한번만 찾고 그 이후에는 캐싱된 Mesh 들을 사용
+	UPROPERTY(EditAnywhere, Category = "Interaction|Outline")
+	TArray<TObjectPtr<UMeshComponent>> m_OutlineMeshComponents;
+
+	UPROPERTY(EditAnywhere, Category = "Interaction|Outline")
+	UMaterialInterface* m_OutlineMaterial;
 
 private:
 
