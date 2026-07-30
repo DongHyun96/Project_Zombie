@@ -81,6 +81,13 @@ public:
 	// 스킬사용후 종료시 호출시켜줄 Delegate 들을 등록받을 수 있는 자료형
 	FOnSkillEnd									m_SkillEndDelegate;
 
+private:
+
+	// 현재 Client단에서 Imitating 처리 중인 SkillSlot 
+	// (서버 쪽 환경의 Enemy가 Loop가 걸린 Skill 모션을 직접 꺼버렸을 때, 클라이언트 환경에서도 직접 꺼야하는 처리가 들어가야한다)
+	// 위의 상황에서 마지막으로 Imitate한 Skill 슬롯을 기억하여, 일치한다면 해당 동작을 꺼버릴 예정
+	ESkillSlot m_CurImitatingSkillSlot{};
+	
 protected:
 	virtual void BeginPlay() override;
 	/// <summary>
@@ -150,6 +157,14 @@ private:
 	/// <param name="_PlayedMontageSection"> : 서버 환경에서 재생된 Montage 내의 Section Index </param>
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_ImitateUseSkill(ESkillSlot _ImitatingSkillSlot, int32 _PlayedMontageSection);
+
+	/// <summary>
+	/// Server환경 Enemy의 동작이 Manual하게 끊긴 상황(ex - Loop가 걸린 동작을 직접 StopMontage 처리)
+	/// Client 환경에서도 직접 끊어주어야 비로소 Loop 동작이 끊기게 됨
+	/// </summary>
+	/// <param name="_TargetSkillSlot"> : 동작을 꺼버릴 TargetSlot 스킬 종류 </param>
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_ImitateEndSkillManually(ESkillSlot _TargetSkillSlot);
 	
 public:
 	UC_EnemySkillComponent();
