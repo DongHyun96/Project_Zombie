@@ -7,6 +7,8 @@
 #include "StructUtils/InstancedStruct.h"
 #include "GlobalData.generated.h" // UHT
 
+// TODO : 강화 테이블 같은게 만들어져서 최대 강화 단계를 지정하면 그걸로 대체 하기. 그전까지는 이걸 사용.
+#define MAX_GRADE 10 
 
 // Key-Value 개별 항목
 USTRUCT(BlueprintType)
@@ -46,7 +48,7 @@ public:
     // ── [TMap 방식처럼 접근하기 위한 헬퍼 함수] ──
 
     // 1. 스탯 조회
-    uint8 GetStatGrade(EUpgradableStats Key, uint8 DefaultValue = 0.0f) const
+    uint8 GetStatGrade(EUpgradableStats Key, uint8 DefaultValue = 0) const
     {
         for (const FCustomKeyVal& Pair : StatList)
         {
@@ -82,6 +84,8 @@ public:
         uint8 CurrentVal = GetStatGrade(Key, 0.0f);
         SetStatGrade(Key, CurrentVal + AddValue);
     }
+    
+    //int32 GetStatList
 };
 
 // 데이터 테이블로 관리할 아이템 정보, 기본적으로는 C_ItemPickUp으로 스폰할 때 많이 사용.
@@ -521,3 +525,13 @@ struct FEnemyStatData : public FCharacterStatData
     float	Def{};
 	
 };
+
+
+namespace Helper
+{
+    inline FText GetStatDisplayName(EUpgradableStats StatType)
+    {
+        const UEnum* EnumPtr = StaticEnum<EUpgradableStats>();
+        return EnumPtr ? EnumPtr->GetDisplayNameTextByValue(static_cast<int64>(StatType)) : FText::GetEmpty();
+    }
+}
