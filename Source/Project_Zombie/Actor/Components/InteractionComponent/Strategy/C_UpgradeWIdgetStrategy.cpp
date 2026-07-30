@@ -54,7 +54,7 @@ bool UC_UpgradeWIdgetStrategy::StartInteraction(AC_BasicPlayer* _Interactor, AAc
 	
 	_Interactor->GetInteractionComponent()->m_OnEndOverlap.AddUObject(InvenWidget, &UC_InventoryWidget::CloseUpgradeWidget);
 	
-	_Interactor->GetInteractionComponent()->m_OnEndOverlap.AddUObject(_Interactor->GetInteractionComponent(), &UC_InteractionComponent::ClearCurrentInteraction, nullptr);
+	//_Interactor->GetInteractionComponent()->m_OnEndOverlap.AddUObject(_Interactor->GetInteractionComponent(), &UC_InteractionComponent::ClearCurrentInteraction, nullptr);
 	// TODO : CancelInteract 구현 보고 없애야 할 수 있음.
 	return true;
 }
