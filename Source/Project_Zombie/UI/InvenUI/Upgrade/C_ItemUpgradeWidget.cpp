@@ -12,6 +12,8 @@
 #include "ItemDetails/C_MattersWidget.h"
 #include "Serialization/MappedName.h"
 #include "UI/InvenUI/DragDropOperation/C_DragDropOperation.h"
+#include "Actor/Components/InteractionComponent/C_InteractionComponent.h"
+#include "Item/Interact/C_InteractableBase.h"
 
 void UC_ItemUpgradeWidget::NativeConstruct()
 {
@@ -23,9 +25,16 @@ bool UC_ItemUpgradeWidget::NativeOnDrop(const FGeometry& InGeometry, const FDrag
 {
 	UC_DragDropOperation* DragOperation = Cast<UC_DragDropOperation>(InOperation);
 	
-	// TODO : 기존에 드랍된 아이템 잠금 풀기.
+	
 	m_UsePlayer->Server_RequestUnlockSlot(m_UsePlayer->GetInvenComponent(), DroppedItemSlotIdx);
 	
+	if (!DragOperation->GetItemEntry().HasEquipmentData())
+	{
+		DroppedItemSlotIdx = -1;
+		UpdateWidget();
+		return false;
+	}
+
 	DroppedItemSlotIdx = DragOperation->GetSlotIndex();
 	
 	UpdateWidget();
@@ -51,7 +60,10 @@ void UC_ItemUpgradeWidget::UpdateWidget()
 	
 	const FInventoryEntry& Entry = m_UsePlayer->GetInvenComponent()->GetItemAt(DroppedItemSlotIdx);
 	
+	if (Entry.IsEmpty() || !Entry.HasEquipmentData()) return;
+
 	UC_ItemManager* ItemManager = GetGameInstance()->GetSubsystem<UC_ItemManager>();
+
     if (!ItemManager) return;
 	
 	const FItemData* Data = ItemManager->GetItemData<FItemData>(EItemTableType::General, Entry.ItemRowName);
@@ -59,10 +71,11 @@ void UC_ItemUpgradeWidget::UpdateWidget()
 	ItemName->SetText(Data->ItemName);
 	
 	ItemIcon->SetBrushFromTexture(Data->IconTexture.Get());
+
 	ItemIcon->SetVisibility(ESlateVisibility::Visible);
 	
 	ItemDesc->SetText(Data->ItemDescription);
-	
+
 	// TODO : 아이템 동적 데이터 가져와서 보여주기
 	const FEquipmentCustomData* EquipCustomData = Entry.CustomData.GetPtr<FEquipmentCustomData>();
 	
@@ -74,4 +87,11 @@ void UC_ItemUpgradeWidget::UpdateWidget()
 
 void UC_ItemUpgradeWidget::RequestItemUpgrade()
 {
+	AC_InteractableBase* Base = Cast<AC_InteractableBase>(m_UsePlayer->GetInteractionComponent()->GetCurrentInterationActor());
+
+	if (!Base) return;
+
+	m_UsePlayer->Server_RequestItemUpgrade(Base, DroppedItemSlotIdx, m_TargetStat);
+
+	UpdateWidget();
 }

@@ -32,12 +32,16 @@ public:
 	void UpdateWidget();
 	
 	// 아이템 강화 요청
+	UFUNCTION(BlueprintCallable)
 	void RequestItemUpgrade();
 	
 	
 public:
 	void SetUsePlayer(AC_BasicPlayer* InUsePlayer) { m_UsePlayer = InUsePlayer; }
 	
+	void SetTargetStat(EUpgradableStats InTargetStat) { m_TargetStat = InTargetStat; }
+
+	EUpgradableStats GetTargetStat() { return m_TargetStat; }
 protected:
 	// 현재 강화하고자 하는 아이템의 이름
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
@@ -82,4 +86,6 @@ protected:
 	
 	// 이건 UsePlayer의 InteractionComponent를 통해 대체 할 수 있다면 사용하지 않을 수 있음.
 	AActor* InteractingActor = nullptr;
+
+	EUpgradableStats m_TargetStat = EUpgradableStats::None;
 };
