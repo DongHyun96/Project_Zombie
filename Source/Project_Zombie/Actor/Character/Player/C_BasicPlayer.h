@@ -476,6 +476,8 @@ public:
 	// Cotroller가 빙의할 때 실행되는 함수.
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	void ToggleInventoryWidget();
+	
 public:
 	// 데미지 처리 함수 
 	virtual float TakeDamage(float _Damage, struct FDamageEvent const& _DamageEvent
