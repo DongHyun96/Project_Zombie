@@ -70,6 +70,11 @@ public:
 	
 private:
 	
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_ToggleHealingAura(bool _Active);
+	
+private:
+	
 	/// <summary>
 	/// Heal Target의 죽음 or 이미 FullHP를 채웠을 경우, HealTargets 컨테이너에서 해당하는 캐릭터 제거 
 	/// </summary>
