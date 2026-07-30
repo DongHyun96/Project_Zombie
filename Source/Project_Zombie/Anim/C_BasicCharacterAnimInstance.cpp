@@ -25,17 +25,43 @@ float UC_BasicCharacterAnimInstance::Montage_PlayInternal
 	// 자신의 Group내의 AnimMontage가 한번도 재생된 적 없을 땐 바로 재생
 	if (!TargetGroupCurMontage)
 	{
-		m_CurPriorityAnimMontage.Add(TargetGroup, MontageToPlay);
-		return Super::Montage_PlayInternal(MontageToPlay, BlendInSettings, InPlayRate, ReturnValueType, InTimeToStartMontageAt, bStopAllMontages);
+		const float Duration =
+		(
+			Super::Montage_PlayInternal
+			(
+				MontageToPlay,
+				BlendInSettings,
+				InPlayRate,
+				ReturnValueType,
+				InTimeToStartMontageAt,
+				bStopAllMontages
+			)
+		);
+
+		// 실제로 Super에서 재생처리가 진짜로 이루어졌는지 확인하여, 부모의 Play 처리가 제대로 이루어졌다면 해당 Montage Priority를 등록 처리함
+		if (Duration > 0.f) m_CurPriorityAnimMontage.Add(TargetGroup, MontageToPlay);
+		return Duration;
 	}
 
 	// 직전의 AnimMontage의 재생이 이미 끝났을 때
 	if (!Montage_IsPlaying(*TargetGroupCurMontage))
 	{
-		m_CurPriorityAnimMontage[TargetGroup] = MontageToPlay;
-		return Super::Montage_PlayInternal(MontageToPlay, BlendInSettings, InPlayRate, ReturnValueType, InTimeToStartMontageAt, bStopAllMontages);
+		const float Duration =
+		(
+			Super::Montage_PlayInternal
+			(
+				MontageToPlay,
+				BlendInSettings,
+				InPlayRate,
+				ReturnValueType,
+				InTimeToStartMontageAt,
+				bStopAllMontages
+			)
+		);
+
+		if (Duration > 0.f) m_CurPriorityAnimMontage[TargetGroup] = MontageToPlay;
+		return Duration;
 	}
-	
 	
 	/* 
 	 * 현재 같은 Group 내에서 재생중인 PriorityAnimMontage가 있을 때
@@ -47,8 +73,22 @@ float UC_BasicCharacterAnimInstance::Montage_PlayInternal
 	UC_MontagePriorityMetaData* IncomingPriorityMetaData = MontageToPlay->FindMetaDataByClass<UC_MontagePriorityMetaData>();
 	if (!IncomingPriorityMetaData) // 현재 들어온 Montage에 Priority 정보가 setting 되어있지 않으면 PriorityMax로 간주 -> 무조건 재생 처리한다.
 	{
-		m_CurPriorityAnimMontage.Add(TargetGroup, MontageToPlay);
-		return Super::Montage_PlayInternal(MontageToPlay, BlendInSettings, InPlayRate, ReturnValueType, InTimeToStartMontageAt, bStopAllMontages);
+		const float Duration =
+		(
+			Super::Montage_PlayInternal
+			(
+				MontageToPlay,
+				BlendInSettings,
+				InPlayRate,
+				ReturnValueType,
+				InTimeToStartMontageAt,
+				bStopAllMontages
+			)
+		);
+		
+		if (Duration > 0.f) m_CurPriorityAnimMontage.Add(TargetGroup, MontageToPlay);
+		
+		return Duration;
 	}
 	
 	UC_MontagePriorityMetaData* CurPlayingMetaData = (*TargetGroupCurMontage)->FindMetaDataByClass<UC_MontagePriorityMetaData>();
@@ -84,10 +124,22 @@ float UC_BasicCharacterAnimInstance::Montage_PlayInternal
 	/* 구한 Priority 값 비교 */
 	if (IncomingPriority >= CurPlayingPriority)
 	{
-		m_CurPriorityAnimMontage[TargetGroup] = MontageToPlay;
-		return Super::Montage_PlayInternal(MontageToPlay, BlendInSettings, InPlayRate, ReturnValueType, InTimeToStartMontageAt, bStopAllMontages);
+		const float Duration =
+		(
+			Super::Montage_PlayInternal
+			(
+				MontageToPlay,
+				BlendInSettings,
+				InPlayRate,
+				ReturnValueType,
+				InTimeToStartMontageAt,
+				bStopAllMontages
+			)
+		);
+		
+		if (Duration > 0.f) m_CurPriorityAnimMontage[TargetGroup] = MontageToPlay;
+		return Duration;
 	}
 	
-	// Priority가 현재 재생중인 Montage가 더 큰 경우, 새로이 재생하지 않고 그냥 return
-	return 0.f;
+	return 0.f; // Priority가 현재 재생중인 Montage가 더 큰 경우, 새로이 재생하지 않고 그냥 return
 }

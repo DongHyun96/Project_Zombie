@@ -27,14 +27,15 @@ public:
 	(
 		UAnimMontage*					MontageToPlay,
 		const FMontageBlendSettings&	BlendInSettings,
-		float							InPlayRate				= 1,
-		EMontagePlayReturnType			ReturnValueType			= EMontagePlayReturnType::MontageLength,
-		float							InTimeToStartMontageAt	= 0,
-		bool							bStopAllMontages		= true
+		float							InPlayRate,
+		EMontagePlayReturnType			ReturnValueType,
+		float							InTimeToStartMontageAt,
+		bool							bStopAllMontages
 	) override;
 
 private:
 
 	// <GroupName, AnimMontage> | 현재 재생 중인, 또는 직전에 재생한 PriorityAnimMontage 정보
+	UPROPERTY()
 	TMap<FName, UAnimMontage*> m_CurPriorityAnimMontage{};
 };
