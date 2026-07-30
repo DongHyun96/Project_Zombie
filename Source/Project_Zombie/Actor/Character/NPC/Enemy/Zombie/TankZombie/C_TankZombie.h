@@ -84,6 +84,15 @@ protected:
 	// 기본 이동속도 * SkillData의 MoveSpeedScale
 	float							m_ChargeSpeed;
 
+	// 돌진 전 캡슐의 Pawn 충돌 설정 저장
+	TEnumAsByte<ECollisionResponse> m_PawnCollision;
+
+	// 무한 돌진 방지
+	float m_ChargeElapsedTime;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Charge");
+	float m_ChargeMaxTime;
+
 	// 이미 충돌한 대상
 	// 중복으로 충돌하는 것을 방지
 	TSet<TWeakObjectPtr<AActor>>	m_ChargeHitTarget;
@@ -97,7 +106,7 @@ protected:
 	virtual void Tick(float DeltaTime) override;
 
 protected:
-	void UpdateCharge();
+	void UpdateCharge(float DeltaTime);
 
 	// ==== End 관련 함수 ====
 
@@ -135,6 +144,9 @@ protected:
 	/// </summary>
 	void HandleEnemyHit(class AC_BasicEnemy* _Enemy);
 
+	/// <summary>
+	/// 대상들과 충돌 시 호출될 함수
+	/// </summary>
 	UFUNCTION()
 	void OnChargeBeginOverlap(
 							UPrimitiveComponent* OverlappedComponent,
@@ -144,6 +156,17 @@ protected:
 							bool bFromSweep,
 							const FHitResult& SweepResult);
 
+	/// <summary>
+	/// 돌진 시 벽에 충돌이 발생하면 호출될 함수
+	/// </summary>
+	UFUNCTION()
+	void OnChargeCapsuleHit(
+		UPrimitiveComponent* HitComponent,
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComp,
+		FVector NormalImpulse,
+		const FHitResult& Hit);
+
 	UFUNCTION(BlueprintCallable, Category = "Charge")
 	void StartCharge(AActor* _Target, class UC_EnemySkillData* _SkillData);
 
@@ -151,6 +174,7 @@ protected:
 	void StopCharge();
 
 public:
+
 	/// <summary>
 	/// 돌진 시작 전 호출되는함수
 	/// </summary>

@@ -4,11 +4,12 @@
 #include "C_TankZombie.h"
 
 #include "Components/BoxComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
 #include "AIController.h"
 
-#include "Components/SkeletalMeshComponent.h"
 #include "Animation/AnimInstance.h"
 
 #include "Actor/Character/NPC/Enemy/Zombie/Skill/C_EnemySkillData.h"
@@ -23,6 +24,8 @@
 #include "CollisionShape.h"
 #include "DrawDebugHelpers.h"
 
+#include "Utility/C_Util.h"
+
 #include "Kismet/GameplayStatics.h"
 
 
@@ -30,11 +33,19 @@ AC_TankZombie::AC_TankZombie()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
+	// 돌진 변수 초기화
 	m_bCharging = false;
 	m_Skill = nullptr;
 	m_ChargeSpeed = 0.f;
 	m_ChargeTarget = nullptr;
 
+	m_PawnCollision = ECR_Block;
+	m_ChargeElapsedTime = 0.f;
+	m_ChargeMaxTime = 5.f;
+
+	m_ChargeDirection = FVector::ZeroVector;
+	m_ChargeStartLocation = FVector::ZeroVector;
+	
 	// End 이동
 	m_bEndMoving = false;
 	m_EndMoveDirection = FVector::ZeroVector;
@@ -71,6 +82,11 @@ void AC_TankZombie::BeginPlay()
 	{
 		m_ChargeCollision->OnComponentBeginOverlap.AddDynamic(this, &AC_TankZombie::OnChargeBeginOverlap);
 	}
+
+	if (IsValid(GetCapsuleComponent()))
+	{
+		GetCapsuleComponent()->OnComponentHit.AddDynamic(this, &AC_TankZombie::OnChargeCapsuleHit);
+	}
 }
 
 void AC_TankZombie::Tick(float DeltaTime)
@@ -84,7 +100,7 @@ void AC_TankZombie::Tick(float DeltaTime)
 	// 돌진 이동
 	if (m_bCharging)
 	{
-		UpdateCharge();
+		UpdateCharge(DeltaTime);
 	}
 
 	// 점프 착지 이동
@@ -94,7 +110,7 @@ void AC_TankZombie::Tick(float DeltaTime)
 	}
 }
 
-void AC_TankZombie::UpdateCharge()
+void AC_TankZombie::UpdateCharge(float DeltaTime)
 {
 	if (!m_bCharging)
 		return;
@@ -113,6 +129,17 @@ void AC_TankZombie::UpdateCharge()
 		return;
 	}
 
+	// 돌진 지속시간 증가
+	m_ChargeElapsedTime += DeltaTime;
+
+	// 거리 계산이 정상적으로 증가하지 않는 상황을 대비한 안전장치
+	// 벽이나 다른 충돌도 막혀도 Run 반복하지않음
+	if (m_ChargeElapsedTime >= m_ChargeMaxTime)
+	{
+		StopCharge();
+		return;
+	}
+
 	// 시작할 때 저장한 방향으로 직선 이동
 	MoveCom->Velocity = m_ChargeDirection * m_ChargeSpeed;
 
@@ -123,6 +150,7 @@ void AC_TankZombie::UpdateCharge()
 	if (TraveledDistance >= m_Skill->Range)
 	{
 		StopCharge();
+		return;
 	}
 }
 
@@ -150,7 +178,11 @@ void AC_TankZombie::OnChargeBeginOverlap(UPrimitiveComponent* OverlappedComponen
 	if (AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(OtherActor))
 	{
 		m_ChargeHitTarget.Add(Player);
+		
 		HandlePlayerHit(Player);
+
+		// 플레이어가 맞았으면 돌진 종료
+		StopCharge();
 		return;
 	}
 
@@ -163,6 +195,51 @@ void AC_TankZombie::OnChargeBeginOverlap(UPrimitiveComponent* OverlappedComponen
 		return;
 	}
 
+}
+
+void AC_TankZombie::OnChargeCapsuleHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+{
+	UC_Util::Print("Wall Hit");
+
+	if (!HasAuthority())
+		return;
+
+	// 돌진 중이 아니면 일반적인 충돌이라 무시
+	if (!m_bCharging)
+		return;
+
+	if (!IsValid(OtherActor) || OtherActor == this)
+		return;
+
+	if (!IsValid(OtherComp))
+		return;
+
+	const ECollisionChannel ObjectType = OtherComp->GetCollisionObjectType();
+
+	// 맵의 벽, 건물, 장애물 등에 충돌한 경우
+	const bool bIsWorldObj = ObjectType == ECC_WorldDynamic || ObjectType == ECC_WorldStatic;
+	if (!bIsWorldObj)
+		return;
+
+	// 바닥도 worldStatic 이기 때문에 정면에 있는 벽만 방향 검사하도록
+
+	// 충돌 표면의 수평 방향
+	FVector Wall = Hit.ImpactNormal;
+	Wall.Z = 0.f;
+	Wall = Wall.GetSafeNormal();
+
+	// 바다이나 경사면같은 수평 노멀을 구할 수 없는 충돌은 무시
+	if (Wall.IsNearlyZero())
+		return;
+
+	// 진행 방향과 벽을 향하는 방향이 얼마나 일치하는지 확인
+	const float FrontDot = FVector::DotProduct(m_ChargeDirection, -Wall);
+
+	// 탱크의 진행 방향 앞쪽에 있는 벽일때만 종료
+	if (FrontDot < 0.5f)
+		return;
+
+	StopCharge();
 }
 
 bool AC_TankZombie::PrepareCharge(AActor* _Target, UC_EnemySkillData* _Data)
@@ -276,6 +353,19 @@ void AC_TankZombie::StartCharge(AActor* _Target, UC_EnemySkillData* _SkillData)
 
 	m_bCharging = true;
 
+	// 돌진 지속 시간 초기화
+	m_ChargeElapsedTime = 0.f;
+
+	// 돌진 중에 플레이어 캡슐에 막히지 않도록 설정
+	if (UCapsuleComponent* Capsule = GetCapsuleComponent())
+	{
+		// 돌진 전 충돌 설정 저장
+		m_PawnCollision = Capsule->GetCollisionResponseToChannel(ECC_Pawn);
+
+		// 실제 충돌은 박스가 담당
+		Capsule->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+	}
+
 	// 이전 돌진에서 기록한 충돌 대상을 초기화
 	m_ChargeHitTarget.Reset();
 
@@ -306,6 +396,12 @@ void AC_TankZombie::StopCharge()
 
 	m_bCharging = false;
 
+	// 돌진이 끝난 후 탱크캡슐 pawn 충돌설정 복구
+	if (UCapsuleComponent* Capsule = GetCapsuleComponent())
+	{
+		Capsule->SetCollisionResponseToChannel(ECC_Pawn, m_PawnCollision);
+	}
+
 	// 충돌박스 비활성화
 	if (IsValid(m_ChargeCollision))
 	{
@@ -323,6 +419,9 @@ void AC_TankZombie::StopCharge()
 		MoveCom->Velocity = CurrentVelocity;
 	}
 
+	// End 구간 실제 점프이동 시작
+	StartEndMove();
+
 	// Run 몽타주 섹션 루프에서 End 섹션으로 이동
 	if (IsValid(m_Skill) && IsValid(m_Skill->Montage))
 	{
@@ -330,8 +429,6 @@ void AC_TankZombie::StopCharge()
 		{
 			if (UAnimInstance* AnimInst = pMesh->GetAnimInstance())
 			{
-				StartEndMove();
-
 				AnimInst->Montage_JumpToSection(TEXT("End"), m_Skill->Montage);
 			}
 		}
@@ -341,6 +438,7 @@ void AC_TankZombie::StopCharge()
 	m_ChargeDirection = FVector::ZeroVector;
 	m_ChargeStartLocation = FVector::ZeroVector;
 	m_ChargeSpeed = 0.f;
+	m_ChargeElapsedTime = 0.f;
 
 	// 등록한 충돌타겟들 초기화
 	m_ChargeHitTarget.Reset();
@@ -417,6 +515,12 @@ void AC_TankZombie::FinishChargeSkill()
 		m_bCharging = false;
 		StopEndMove();
 
+		// 캡슐 pawn 충돌 설정 복구
+		if (UCapsuleComponent* Capsule = GetCapsuleComponent())
+		{
+			Capsule->SetCollisionResponseToChannel(ECC_Pawn, m_PawnCollision);
+		}
+
 		if (IsValid(m_ChargeCollision))
 		{
 			m_ChargeCollision->SetCollisionEnabled(
@@ -427,6 +531,7 @@ void AC_TankZombie::FinishChargeSkill()
 	m_ChargeDirection = FVector::ZeroVector;
 	m_ChargeStartLocation = FVector::ZeroVector;
 	m_ChargeSpeed = 0.f;
+	m_ChargeElapsedTime = 0.f;
 
 	m_EndMoveDirection = FVector::ZeroVector;
 	m_EndMoveElapsedTime = 0.f;
