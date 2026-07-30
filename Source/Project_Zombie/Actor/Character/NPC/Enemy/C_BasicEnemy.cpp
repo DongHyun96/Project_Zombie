@@ -111,7 +111,23 @@ void AC_BasicEnemy::OnHPIncreased(AC_BasicCharacter* _HPIncreasedCharacter)
 	
 	// 이미 HealedEffect 재생중인 경우
 	if (m_HealedEffectNGComponent->IsActive()) return;
+	{
 		m_HealedEffectNGComponent->Activate(true);
+		Multicast_ToggleHealedEffect(true);
+	}
+}
+
+void AC_BasicEnemy::Multicast_ToggleHealedEffect_Implementation(bool _Activate)
+{
+	// 서버 쪽은 이미 해당 처리를 한 상황
+	if (IsLocallyControlled()) return;
+	
+	if (_Activate)
+	{
+		if (m_HealedEffectNGComponent->IsActive()) return;
+			m_HealedEffectNGComponent->Activate(true);
+	}
+	else m_HealedEffectNGComponent->DeactivateImmediate();
 }
 
 void AC_BasicEnemy::OnDead(AC_BasicCharacter* _DeadCharacter)
@@ -119,6 +135,8 @@ void AC_BasicEnemy::OnDead(AC_BasicCharacter* _DeadCharacter)
 	// 서버 환경의 Enemy인 경우에만 호출처리됨
 	
 	m_HealedEffectNGComponent->DeactivateImmediate();
+	Multicast_ToggleHealedEffect(false);
+	
 	// TODO : Dead에 필요한 처리가 더 필요하다면 여기서 이어서 처리해줄 것(ex 랙돌 처리 등)
 	// 아마 죽은 뒤에 죽은 모션이나 랙돌 처리를 보여준 후, 몇 초 뒤에 Pool로 돌아가게끔 처리를 해줄 듯
 }
