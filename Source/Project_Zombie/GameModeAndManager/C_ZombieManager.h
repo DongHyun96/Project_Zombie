@@ -8,7 +8,8 @@
 
 enum class EZombieType : uint8;
 /**
- * Zombie 스폰 및 Zombie 객체 Holder
+ * Zombie 스폰 및 Zombie 객체 Holder (서버 쪽에서만 유효, 애초에 스폰과 풀로 돌아가는 처리는 서버 쪽 기반에서 판단을 함)
+ * Zombie가 날리는 Projectile도 마찬가지
  */
 UCLASS(Blueprintable)
 class PROJECT_ZOMBIE_API UC_ZombieManager : public UObject

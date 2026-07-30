@@ -9,8 +9,10 @@
 #include "Components/SkillComponent/C_EnemySkillComponent.h"
 #include "Components/StatComponent/C_EnemyStatComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameModeAndManager/C_GameMode_GameLv.h"
 #include "GameModeAndManager/C_ZombieManager.h"
 #include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
+#include "Kismet/GameplayStatics.h"
 #include "Utility/C_Util.h"
 #include "Zombie/NurseZombie/C_NurseZombie.h"
 #include "Zombie/Controller/C_ZombieController.h"
@@ -92,7 +94,7 @@ float AC_BasicEnemy::TakeDamage
 	// TODO : 이거 요청 빈도가 너무 높으면 여기서 병목 생길수도 있음 -> 추후 최적화할 때 고려할 것
 	if (m_StatComponent->GetCurHPRatio() < FMath::RandRange(0.5f, 0.7f))
 	{
-		for (AC_NurseZombie* ActiveNurse : ZOMBIE_MANAGER->GetActiveNurseZombies())
+		for (AC_NurseZombie* ActiveNurse : ZOMBIE_MANAGER(this)->GetActiveNurseZombies())
 			if (ActiveNurse->TryRegisterAsHealTarget(this))
 			{
 				++m_HealRequestRegisterCount; // 등록 횟수 하나 올리기

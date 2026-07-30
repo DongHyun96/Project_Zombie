@@ -7,8 +7,10 @@
 #include "Actor/Character/NPC/Enemy/Components/SkillComponent/C_EnemySkillComponent.h"
 #include "Actor/Character/NPC/Enemy/Zombie/NurseZombie/C_NurseZombie.h"
 #include "Actor/Character/NPC/Enemy/Zombie/Skill/C_EnemySkillData.h"
+#include "GameModeAndManager/C_GameMode_GameLv.h"
 #include "GameModeAndManager/C_ZombieManager.h"
 #include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
+#include "Kismet/GameplayStatics.h"
 
 bool UC_NurseHealing::Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data, OUT int32& _PlayedMontageSectionIdx)
 {
@@ -46,7 +48,7 @@ void UC_NurseHealing::Fire(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data)
 
 	for (AC_BasicEnemy* HealTarget : HealTargets)
 	{
-		ZOMBIE_MANAGER->SpawnHealingProjectile
+		ZOMBIE_MANAGER(this)->SpawnHealingProjectile
 		(
 			Nurse->GetActorLocation() + FVector::UnitZ() * 50.f,
 			FVector::UnitZ(),

@@ -3,11 +3,31 @@
 
 #include "C_GameMode_GameLv.h"
 
+#include "C_ZombieManager.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/Components/C_InvenComponent.h"
 #include "GameFramework/PlayerState.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Utility/C_Util.h"
+
+AC_GameMode_GameLv::AC_GameMode_GameLv()
+{
+}
+
+void AC_GameMode_GameLv::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (m_ZombieManagerClass)
+		m_ZombieManager = NewObject<UC_ZombieManager>(this, m_ZombieManagerClass);
+	else
+	{
+		UC_Util::Print("From AC_GameMode_GameLv::BeginPlay : Please Init ZombieManager class in GameMode_GameLv!", FColor::Red, 10.f);
+		m_ZombieManager = NewObject<UC_ZombieManager>(this);
+	}
+
+	if (m_ZombieManager) m_ZombieManager->OnWorldBeginPlay();
+}
 
 void AC_GameMode_GameLv::Logout(AController* Exiting)
 {

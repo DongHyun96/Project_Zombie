@@ -44,7 +44,7 @@ float UC_BasicCharacterAnimInstance::Montage_PlayInternal
 	}
 
 	// 직전의 AnimMontage의 재생이 이미 끝났을 때
-	if (!Montage_IsPlaying(*TargetGroupCurMontage))
+	if (!IsValid(*TargetGroupCurMontage) || !Montage_IsPlaying(*TargetGroupCurMontage))
 	{
 		const float Duration =
 		(

@@ -69,10 +69,28 @@ private:
 		const FHitResult&	 _HitResult
 	);
 	
+
+private:
+	
+	/// <summary>
+	/// 힐 효과 서버에서 재생 성공 시, 클라이언트 환경에서도 동일한 Effect 해당 위치에 스폰시키기 처리 
+	/// </summary>
+	/// <param name="_SpawnLocation"> : 스폰 위치 </param>
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_SpawnHealEffect(FVector_NetQuantize _SpawnLocation);
+	
+private:
+	
+	UFUNCTION()
+	void OnRep_Active();
+	
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	
 private:
 
+	UPROPERTY(ReplicatedUsing = OnRep_Active)
 	bool			m_bActive{};
+	
 	FVector			m_FireDirection{};
 
 	UPROPERTY()
