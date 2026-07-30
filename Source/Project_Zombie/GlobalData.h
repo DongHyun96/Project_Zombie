@@ -190,7 +190,7 @@ public:
     {
         return CustomData.GetPtr<FEquipmentCustomData>();
     }
-
+    //GetOrCreateEquipmentData
 	// CustomData가 FEquipmentCustomData 구조체를 담고 있지 않다면 새로 생성하고 해당 구조체의 포인터를 반환하는 함수.
     FEquipmentCustomData* GetOrCreateEquipmentData()
     {
@@ -198,6 +198,11 @@ public:
         {
             CustomData = FInstancedStruct::Make(FEquipmentCustomData());
         }
+        return CustomData.GetMutablePtr<FEquipmentCustomData>();
+    }
+
+    FEquipmentCustomData* GetEquipmentDataPtr()
+    {
         return CustomData.GetMutablePtr<FEquipmentCustomData>();
     }
 
