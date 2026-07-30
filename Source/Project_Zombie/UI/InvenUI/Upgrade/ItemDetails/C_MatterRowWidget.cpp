@@ -3,3 +3,14 @@
 
 #include "UI/InvenUI/Upgrade/ItemDetails/C_MatterRowWidget.h"
 
+#include "Components/Image.h"
+#include "Components/TextBlock.h"
+
+void UC_MatterRowWidget::UpdateWidget(UTexture2D* InItemIcon, const FText& InItemName, const int32& InItemCount)
+{
+	ItemIcon->SetBrushFromTexture(InItemIcon);
+	
+	ItemName->SetText(InItemName);
+	
+	ItemCount->SetText(FText::AsNumber(InItemCount));
+}

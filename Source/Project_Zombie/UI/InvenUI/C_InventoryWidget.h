@@ -6,6 +6,7 @@
 #include "Blueprint/UserWidget.h"
 #include "C_InventoryWidget.generated.h"
 
+class UC_ItemUpgradeWidget;
 class UC_EquipmentWidget;
 class UC_DivideItemWidget;
 class UC_DragDropOperation;
@@ -15,15 +16,19 @@ class PROJECT_ZOMBIE_API UC_InventoryWidget : public UUserWidget
 {
 	GENERATED_BODY()
 	
-public:
+protected:
 	virtual void NativeConstruct() override;
 	
 	virtual bool NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
 	
+public:
 	void ShowDivideEntryWidget();
 	
 	void ShowDivideItemWidget();
-
+	
+	void ShowUpgradeWidget();
+	
+	void CloseUpgradeWidget();
 
 public:
 	class UC_InventoryGridWidget* GetPlayerGridWidget() { return PlayerGridWidget; }
@@ -33,6 +38,8 @@ public:
 	UC_EquipmentWidget* GetEquipmentWidget() { return EquipmentWidget; }
 	
 	UC_DivideItemWidget* GetDivideItemWidget() { return DivideItemWidget; }
+	
+	UC_ItemUpgradeWidget* GetItemUpgradeWidget() {return UpgradeWidget;}
 	
 	virtual void SetVisibility(ESlateVisibility InVisibility) override;
 	
@@ -45,8 +52,8 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
 	UC_InventoryGridWidget* StorageGridWidget = nullptr;
 	
-	//UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
-	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
+	UC_ItemUpgradeWidget* UpgradeWidget = nullptr;
 	
 	// Equipment(장비창)의 아이템 슬롯을 가지고 있을 그리드 위젯.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))

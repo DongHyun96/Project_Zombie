@@ -9,7 +9,9 @@
 #include "Controller/C_BasicPlayerController.h"
 #include "DivideWIdget/C_DivideItemWidget.h"
 #include "DragDropOperation/C_DragDropOperation.h"
+#include "Equipment/C_EquipmentWidget.h"
 #include "GameModeAndManager/C_ItemManager.h"
+#include "Upgrade/C_ItemUpgradeWidget.h"
 #include "Utility/C_Util.h"
 
 void UC_InventoryWidget::NativeConstruct()
@@ -91,6 +93,16 @@ void UC_InventoryWidget::ShowDivideItemWidget()
 	DivideItemWidget->SetCursorItem(cursorItem);
 	
 	DivideItemWidget->ShowDivideItem();
+}
+
+void UC_InventoryWidget::ShowUpgradeWidget()
+{
+	UpgradeWidget->SetVisibility(ESlateVisibility::Visible);
+}
+
+void UC_InventoryWidget::CloseUpgradeWidget()
+{
+	UpgradeWidget->SetVisibility(ESlateVisibility::Collapsed);
 }
 
 void UC_InventoryWidget::SetVisibility(ESlateVisibility InVisibility)
