@@ -23,6 +23,8 @@ class PROJECT_ZOMBIE_API UC_MattersWidget : public UUserWidget
 public:
 	void UpdateWidget(const FInventoryEntry& InEntry, EUpgradableStats TargetStat);
 	
+	void SetParentWidget(UC_ItemUpgradeWidget* ParentWidget) { ItemUpgradeWidget = ParentWidget; }
+	
 protected:
 	// C_MatterRowWidget을 담아 사용 할 예정.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))

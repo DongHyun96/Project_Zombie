@@ -179,7 +179,9 @@ void AC_GunBase::LoadAsyncAssets(const FWeaponData* InRawData)
 	if (!GunData->ShellMesh.IsNull()) AssetsToLoad.Add(GunData->ShellMesh.ToSoftObjectPath());
 	if (!GunData->PlayerReloadAnimation.IsNull()) AssetsToLoad.Add(GunData->PlayerReloadAnimation.ToSoftObjectPath());
 	if (!GunData->PlayerFireAnimation.IsNull()) AssetsToLoad.Add(GunData->PlayerFireAnimation.ToSoftObjectPath());
+	
 	PRINT_LOCAL(GetWorld(), "Success LoadAsyncAssets", FColor::Red, 10.f);
+	
 	// AssetManager를 통한 비동기 로딩 요청
 	if (AssetsToLoad.Num() > 0)
 	{

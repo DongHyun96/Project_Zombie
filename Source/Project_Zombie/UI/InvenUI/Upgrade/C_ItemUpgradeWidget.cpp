@@ -18,6 +18,7 @@
 #include "ItemDetails/C_ItemStatRowWidget.h"
 #include "ItemDetails/C_SelectedStatWidget.h"
 #include "Tests/ToolMenusTestUtilities.h"
+#include "Utility/C_Util.h"
 
 void UC_ItemUpgradeWidget::NativeConstruct()
 {
@@ -50,6 +51,13 @@ bool UC_ItemUpgradeWidget::NativeOnDrop(const FGeometry& InGeometry, const FDrag
 	//if (DroppedItemSlotIdx == -1) return false;
 	
 	return true;
+}
+
+void UC_ItemUpgradeWidget::NativeOnInitialized()
+{
+	Super::NativeOnInitialized();
+	
+	Matters->SetParentWidget(this);
 }
 
 void UC_ItemUpgradeWidget::UpdateWidget()
@@ -136,7 +144,21 @@ void UC_ItemUpgradeWidget::RequestItemUpgrade()
 {
 	if (bIsUpgrading) return;
 	
+	UC_Util::Print(hasRequiredItems);
+	
 	if (!hasRequiredItems) return; 
+	
+	if (!m_UsePlayer) return;
+	
+	if (!m_UsePlayer->GetInteractionComponent()) return;
+	
+	UC_InteractionComponent* InteractionComp = m_UsePlayer->GetInteractionComponent();
+	
+	if (!InteractionComp) return;
+	
+	AActor* actor = InteractionComp->GetCurrentInteractionTarget();
+	
+	if (!actor) return;
 	
 	AC_InteractableBase* Base = Cast<AC_InteractableBase>(m_UsePlayer->GetInteractionComponent()->GetCurrentInteractionTarget());
 

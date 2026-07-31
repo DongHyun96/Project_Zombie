@@ -27,6 +27,7 @@ protected:
 	
 	virtual bool NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
 	
+	virtual void NativeOnInitialized() override;
 public:
 	// 현재 아이템에 따라 위젯 업데이트
 	void UpdateWidget();

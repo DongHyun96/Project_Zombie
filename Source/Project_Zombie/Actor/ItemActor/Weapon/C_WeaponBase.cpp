@@ -52,7 +52,7 @@ void AC_WeaponBase::OnRep_WeaponRowName()
 
 	const FWeaponData* WeaponData = nullptr;
 	
-	ItemManager->GetWeaponData(m_WeaponRowName);
+	WeaponData = ItemManager->GetWeaponData(m_WeaponRowName);
 
 	if (WeaponData)
 	{

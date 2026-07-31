@@ -5,36 +5,6 @@
 #include "Components/ActorComponent.h"
 #include "C_BasicPlayerInputComponent.generated.h"
 
-// 이전 프로젝트에서 있길래 일단 가져왔는데 어디 쓰던건지 까먹음, TODO : 알아보고 필요하면쓰고 아니면 지우기
-//UENUM(BlueprintType)
-//enum class EInputAction : uint8
-//{
-//	MOVE,
-//	JUMP,
-//	LOOK,
-//	WALK,
-//	SPRINT,
-//	CRAWL, 
-//	CROUCH,
-//	HOLD_DIRECTION,
-//	DRAW_MAIN_WEAPON,
-//	DRAW_SUB_WEAPON,
-//	DRAW_MELEE_WEAPON,
-//	DRAW_THROWABLE_WEAPON,
-//	TOGGLE_ARMED,
-//	CHANGE_SHOOTING_MODE,
-//	RELOAD,
-//	SHOT,
-//	TOGGLE_AIMING,
-//	PING,
-//	INTERACTION,
-//	MINI_MAP,
-//	INVEN_UI,
-//	MAIN_MENU,
-//	THROWABLE_WHEEL,
-//	CONSUMABLE_WHEEL
-//};
-
 class AC_BasicPlayer;
 struct FInputActionValue;
 

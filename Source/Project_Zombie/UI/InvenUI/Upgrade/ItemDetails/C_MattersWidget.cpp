@@ -56,7 +56,8 @@ void UC_MattersWidget::UpdateWidget(const FInventoryEntry& InEntry, EUpgradableS
 		}
 	}
 	
-
+	bool HasRequiredItems = true;
+	
 	for (const FUpgradeMaterialInfo& RequiredCost : CurrentRecipe.RequiredMaterials)
 	{
 		if (RequiredCost.MatterItemID.IsNone() || RequiredCost.RequiredCount <= 0) continue;
@@ -78,7 +79,7 @@ void UC_MattersWidget::UpdateWidget(const FInventoryEntry& InEntry, EUpgradableS
 		
 			if (HasCount < RequiredCost.RequiredCount && ItemUpgradeWidget)
 			{
-				ItemUpgradeWidget->SetHasRequiredItems(false);
+				HasRequiredItems = false;
 			}
 			
 			MatterRow->UpdateWidget(
@@ -93,6 +94,12 @@ void UC_MattersWidget::UpdateWidget(const FInventoryEntry& InEntry, EUpgradableS
 			MattersScrollBox->AddChild(MatterRow);
 			m_MatterRows.Add(MatterRow);
 		}
+		else
+		{
+			HasRequiredItems = false;
+		}
 	}
 	
+	if (ItemUpgradeWidget)
+		ItemUpgradeWidget->SetHasRequiredItems(HasRequiredItems);
 }
