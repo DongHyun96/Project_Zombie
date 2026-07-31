@@ -17,7 +17,8 @@ AC_ItemPickUp::AC_ItemPickUp()
     
     // 물리 구체를 생성하고 루트 컴포넌트로 설정합니다.
     PhysicsSphere = CreateDefaultSubobject<USphereComponent>(TEXT("PhysicsSphere"));
-    RootComponent = PhysicsSphere;
+    SetRootComponent(PhysicsSphere);   
+    
     PhysicsSphere->SetSphereRadius(15.0f); // 아이템 자체 크기에 맞게 작게 설정 (땅에 구르는 용도)
     
     // 물리가 가능하도록 셋팅 (이것이 던지기의 핵심!)

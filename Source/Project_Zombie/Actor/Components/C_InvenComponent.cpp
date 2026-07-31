@@ -68,6 +68,23 @@ void UC_InvenComponent::ProcessItemMove(UC_InvenComponent* SrcComp, int32 SrcIdx
 	SrcComp->SwapInvenEntry(SrcIdx, DstComp, DstIdx, InPlayerID);
 }
 
+int32 UC_InvenComponent::GetTotalItemCount(const FName& InItemRowName)
+{
+	int32 TotalItemCount = 0;
+	FInventoryEntry Entry;
+	for (int i = 0 ; i < InventoryContainer.Items.Num() ; ++i)
+	{
+		 Entry = InventoryContainer.Items[i];
+		
+		if (Entry.ItemRowName == InItemRowName)
+		{
+			TotalItemCount += Entry.CurCount;
+		}
+	}
+	
+	return TotalItemCount;
+}
+
 void UC_InvenComponent::SetEntryCurCount(int32 Idx, int32 InCount)
 {
 	InventoryContainer.Items[Idx].CurCount = InCount;

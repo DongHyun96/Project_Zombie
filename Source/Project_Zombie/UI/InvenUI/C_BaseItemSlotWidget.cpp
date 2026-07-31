@@ -76,9 +76,13 @@ void UC_BaseItemSlotWidget::NativeOnDragDetected(const FGeometry& InGeometry, co
     PRINT_LOCAL(GetWorld(), Msg, FColor::Red, 5.f);
     if (!ItemArr.IsValidIndex(curSlotIdx) || ItemArr[curSlotIdx].ItemRowName == NAME_None) return;
 
-    Owner->Server_RequestDragItemSlot(curSlotIdx, AssociatedInvenComp);
 
     FInventoryEntry entry = ItemArr[curSlotIdx];
+    
+    if (entry.LockedByPlayerID != INDEX_NONE) return;
+    
+    Owner->Server_RequestDragItemSlot(curSlotIdx, AssociatedInvenComp);
+    
     PRINT_LOCAL(GetWorld(), "Try SetCurDraggedItem", FColor::Red, 5.f);
     if (!Owner->SetCurDraggedItem(entry, AssociatedInvenComp, curSlotIdx)) return;
     PRINT_LOCAL(GetWorld(), "Success SetCurDraggedItem", FColor::Red, 5.f);

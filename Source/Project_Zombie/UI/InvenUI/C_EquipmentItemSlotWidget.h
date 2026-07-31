@@ -17,7 +17,8 @@ class PROJECT_ZOMBIE_API UC_EquipmentItemSlotWidget : public UC_BaseItemSlotWidg
 public:
 	void SetAllowedItemType(EItemType InType) { AllowedItemType = InType; }
 	EItemType GetAllowSlotType() const { return AllowedItemType; }
-
+	
+protected:
 	virtual bool NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
 
 protected:

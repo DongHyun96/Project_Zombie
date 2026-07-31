@@ -8,7 +8,9 @@
 #include "GameModeAndManager/C_UIManager.h"
 #include "Net/UnrealNetwork.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
-
+#include "Controller/C_BasicPlayerController.h"
+#include "UI/InvenUI/Upgrade/C_ItemUpgradeWidget.h"
+#include "UI/InvenUI/C_InventoryWidget.h"
 #include "Utility/C_Util.h"
 
 UC_EquippedComponent::UC_EquippedComponent()
@@ -87,6 +89,27 @@ void UC_EquippedComponent::SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* 
     else m_Weapons[TargetSlotIdx]->AttachToHolster(m_OwnerPlayer->GetMesh());
 }
 
+void UC_EquippedComponent::UpdateWeaponData(EWeaponSlot _TargetWeapon, FName InItemRow)
+{
+	const uint8 Idx = static_cast<uint8>(_TargetWeapon);
+	
+	UC_ItemManager* ItemManager = m_OwnerPlayer->GetGameInstance()->GetSubsystem<UC_ItemManager>();
+
+	if (!ItemManager) return;
+
+	m_Weapons[Idx]->InitializeItemData(ItemManager->GetWeaponData(InItemRow));
+	
+	//AC_UIManager* UIManager = Cast<AC_UIManager>(Cast<AC_BasicPlayerController>(m_OwnerPlayer->GetController())->GetHUD());
+	//
+	//if (!UIManager) return;
+	//
+	//UC_InventoryWidget* InventoryWidget = UIManager->GetInventoryWidget();
+	//
+	//InventoryWidget->GetItemUpgradeWidget()->SetIsUpgrading(false);
+	//
+	//InventoryWidget->GetItemUpgradeWidget()->UpdateWidget();
+}
+
 void UC_EquippedComponent::Server_RequestSpawnEquippedActor_Implementation(int32 SlotIndex, const FInventoryEntry& ItemData)
 {
 	if (!GetWorld()) return;
@@ -153,6 +176,11 @@ void UC_EquippedComponent::Server_SetSlotWeapon_Implementation(EWeaponSlot _Targ
 	}
 	
 	// Multicast_SetSlotWeapon(_TargetSlot, _WeaponToEquip); // 클라이언트단의 SetSlotWeapon도 호출해줌으로써 동기화 처리
+}
+
+void UC_EquippedComponent::Client_UpdateWeaponData_Implementation(EWeaponSlot _TargetWeapon, FName InItemRow)
+{
+	UpdateWeaponData(_TargetWeapon, InItemRow);
 }
 
 bool UC_EquippedComponent::ChangeCurWeapon(EWeaponSlot _ChangeTo)

@@ -63,11 +63,29 @@ public:
 	// InRowName   : 가져오고 싶은 데이터의 RowName 
 	template <typename T>
 	const T* GetItemData(EItemTableType InTableType, FName InRowName) const;
+
+	// 무기 종류별 공통 데이터 반환
+	const FWeaponData* GetWeaponData(FName InRowName) const;
 	
+	// 무기 강화 단계별 스탯 수치 데이터 반환
+	const FWeaponUpgradeData* GetWeaponUpgradeData(FName InRowName) const
+	{
+		if (!WeaponUpgradeData) return nullptr;
+		return WeaponUpgradeData->FindRow<FWeaponUpgradeData>(InRowName, TEXT("GetWeaponUpgradeData"));
+	}
+	
+	//무기 강화 단계별 필요 재료 데이터(FItemUpgradeCostRow) 반환 
+	const FItemUpgradeCostRow* GetWeaponUpgradeCostData(FName InRowName) const
+	{
+		if (!ItemUpgradeCostData || InRowName.IsNone()) return nullptr;
+		return ItemUpgradeCostData->FindRow<FItemUpgradeCostRow>(InRowName, TEXT("GetWeaponUpgradeCostData"));
+	}
 	
 	// [블루프린트 전용] Generic/BlueprintCallable 래퍼 함수
 	UFUNCTION(BlueprintCallable, Category = "ItemManager", meta = (DisplayName = "Get Item Data"))
 	bool GetItemDataBP(EItemTableType InTableType, FName InRowName, FInstancedStruct& OutData);
+	
+	
     
 private:
 	// Enum 키값 기반 데이터 테이블 원본 포인터 반환 헬퍼
@@ -76,7 +94,14 @@ private:
 private:
 	// 동기 로드 완료된 데이터 테이블 포인터 맵 (런타임 캐싱)
 	UPROPERTY()
-	TMap<EItemTableType, TObjectPtr<UDataTable>> CachedItemTables;
+	TMap<EItemTableType, TObjectPtr<UDataTable>> CachedItemTables{};
+	
+	UPROPERTY()
+	TObjectPtr<UDataTable> WeaponUpgradeData{};
+	
+	// 강화 비용/재료 데이터 테이블
+	UPROPERTY()
+	TObjectPtr<UDataTable> ItemUpgradeCostData = nullptr;
 };
 
 template <typename T>

@@ -280,46 +280,7 @@ void UC_BasicPlayerInputComponent::KeepAimActionEnd()
 
 void UC_BasicPlayerInputComponent::ToggleInventoryWidget()
 {
-	// 1. 이 컴포넌트가 로컬 플레이어의 캐릭터에 붙어있는지 확인 (멀티플레이어 방어벽)
-	if (!Player || !Player->IsLocallyControlled()) return;
-
-	// 2. 플레이어 컨트롤러 얻어오기
-	APlayerController* PC = Cast<APlayerController>(Player->GetController());
-	if (!PC) return;
-
-	// 3. 컨트롤러를 통해 C_UIManager(HUD) 가져오기
-	AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD());
-	if (!UIManager) return;
-
-	// 4. UIManager에서 인벤토리 위젯 가져오기
-	UC_InventoryWidget* InventoryWidget = UIManager->GetInventoryWidget();
-	if (!InventoryWidget) return;
-
-	// 5. 현재 위젯의 가시성 상태에 따라 토글 처리
-	if (InventoryWidget->GetVisibility() == ESlateVisibility::Visible)
-	{
-		if (InventoryWidget->GetDivideItemWidget()->GetVisibility() == ESlateVisibility::Visible) return;
-		
-		// 열려있으면 닫기
-		InventoryWidget->SetVisibility(ESlateVisibility::Collapsed);
-
-		FInputModeGameOnly InputMode;
-		PC->SetInputMode(InputMode);
-		PC->SetShowMouseCursor(false);
-	}
-	else
-	{
-		// 닫혀있으면 열기
-		InventoryWidget->SetVisibility(ESlateVisibility::Visible);
-
-		FInputModeGameAndUI InputMode;
-		//InputMode.SetWidgetToFocus(InventoryWidget->TakeWidget());
-		InputMode.SetWidgetToFocus(nullptr);
-
-		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-		PC->SetInputMode(InputMode);
-		PC->SetShowMouseCursor(true);
-	}
+	Player->ToggleInventoryWidget();
 }
 
 void UC_BasicPlayerInputComponent::EquipMainWeapon()

@@ -7,6 +7,8 @@
 #include "StructUtils/InstancedStruct.h"
 #include "GlobalData.generated.h" // UHT
 
+// TODO : 강화 테이블 같은게 만들어져서 최대 강화 단계를 지정하면 그걸로 대체 하기. 그전까지는 이걸 사용.
+#define MAX_GRADE 5 
 
 // Key-Value 개별 항목
 USTRUCT(BlueprintType)
@@ -46,7 +48,7 @@ public:
     // ── [TMap 방식처럼 접근하기 위한 헬퍼 함수] ──
 
     // 1. 스탯 조회
-    uint8 GetStatGrade(EUpgradableStats Key, uint8 DefaultValue = 0.0f) const
+    uint8 GetStatGrade(EUpgradableStats Key, uint8 DefaultValue = 0) const
     {
         for (const FCustomKeyVal& Pair : StatList)
         {
@@ -82,6 +84,8 @@ public:
         uint8 CurrentVal = GetStatGrade(Key, 0.0f);
         SetStatGrade(Key, CurrentVal + AddValue);
     }
+    
+    //int32 GetStatList
 };
 
 // 데이터 테이블로 관리할 아이템 정보, 기본적으로는 C_ItemPickUp으로 스폰할 때 많이 사용.
@@ -186,7 +190,7 @@ public:
     {
         return CustomData.GetPtr<FEquipmentCustomData>();
     }
-
+    //GetOrCreateEquipmentData
 	// CustomData가 FEquipmentCustomData 구조체를 담고 있지 않다면 새로 생성하고 해당 구조체의 포인터를 반환하는 함수.
     FEquipmentCustomData* GetOrCreateEquipmentData()
     {
@@ -194,6 +198,11 @@ public:
         {
             CustomData = FInstancedStruct::Make(FEquipmentCustomData());
         }
+        return CustomData.GetMutablePtr<FEquipmentCustomData>();
+    }
+
+    FEquipmentCustomData* GetEquipmentDataPtr()
+    {
         return CustomData.GetMutablePtr<FEquipmentCustomData>();
     }
 
@@ -275,31 +284,109 @@ struct FCursorItem
 
 
 // TODO : FEquipmentCustomData로 통합 하면 삭제 예정.
+//USTRUCT(BlueprintType)
+//struct FGunCustomData
+//{
+//    GENERATED_BODY()
+//    
+//    // 데미지의 업그레이드의 레벨 혹은 추가 데미지
+//    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+//    int32 Upgrade_Damage = 0;
+//    
+//    // MaxAmmo의 업그레이드의 레벨 혹은 추가 MaxAmmo
+//    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+//    int32 Upgrade_MaxAmmo = 0;
+//    
+//    // FireRate의 업그레이드의 레벨 혹은 추가 FireRate
+//    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+//    int32 Upgrade_FireRate = 0;
+//    
+//    // 이건 인벤이나 ItemPickUp에서 총의 CurAmmo값을 저장하기 위해 존재.
+//    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+//    int32 CurAmmo = 0;
+//    
+//    
+//};
+
+// ******************************
+// 아이템 업그레이드 데이터 테이블 
+// ******************************
+
+// 1. 단일 재료 정보 (아이템 ID + 개수)
 USTRUCT(BlueprintType)
-struct FGunCustomData
+struct FUpgradeMaterialInfo
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    FName MatterItemID = NAME_None; // 예: "Item_Gold", "Item_Iron"
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    int32 RequiredCount = 0;
+};
+
+// 2. 특정 '단계(Grade)'로 강화할 때 필요한 재료 목록
+USTRUCT(BlueprintType)
+struct FGradeCostInfo
+{
+    GENERATED_BODY()
+
+    // 예: 1강, 2강, 3강...
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    int32 TargetGrade = 1;
+
+    // 해당 단계 강화 시 필요한 재료 배열
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    TArray<FUpgradeMaterialInfo> RequiredMaterials;
+};
+
+// 3. 특정 '스탯(Stat)'의 강화 비용 목록 (1강~N강까지의 비용)
+USTRUCT(BlueprintType)
+struct FStatUpgradeCostInfo
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    EUpgradableStats StatType = EUpgradableStats::None;
+
+    // 스탯별 강화 단계 데이터 (1강 비용, 2강 비용, 3강 비용...)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    TArray<FGradeCostInfo> GradeCosts;
+};
+
+// 4. 데이터 테이블의 최종 Row (RowName = ItemRowName 예: "AK47", "Pistol_Rare")
+USTRUCT(BlueprintType)
+struct FItemUpgradeCostRow : public FTableRowBase
+{
+    GENERATED_BODY()
+
+    // 해당 아이템이 지원하는 각 스탯별 강화 비용 데이터들
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Upgrade")
+    TArray<FStatUpgradeCostInfo> StatUpgradeCosts;
+    
+    const FStatUpgradeCostInfo* GetTargetStatUpCostInfo(EUpgradableStats TargetStat) const
+    {
+        for (const FStatUpgradeCostInfo& StatUpgradeCost : StatUpgradeCosts)
+        {
+            if (StatUpgradeCost.StatType == TargetStat)
+            {
+                return &StatUpgradeCost;
+            }
+        }
+        return nullptr;
+    }
+};
+
+// 무기의 강화가능 스탯과 Grade당 올라가는 Value
+USTRUCT(BlueprintType)
+struct FWeaponUpgradeData : public FTableRowBase
 {
     GENERATED_BODY()
     
-    // 데미지의 업그레이드의 레벨 혹은 추가 데미지
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    int32 Upgrade_Damage = 0;
-    
-    // MaxAmmo의 업그레이드의 레벨 혹은 추가 MaxAmmo
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    int32 Upgrade_MaxAmmo = 0;
-    
-    // FireRate의 업그레이드의 레벨 혹은 추가 FireRate
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    int32 Upgrade_FireRate = 0;
-    
-    // 이건 인벤이나 ItemPickUp에서 총의 CurAmmo값을 저장하기 위해 존재.
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    int32 CurAmmo = 0;
-    
+    TMap<EUpgradableStats, float> GradePerValue{};
     
 };
-
-
 
 // ******************************
 // 무기 데이터테이블 구조체 선언부
@@ -521,3 +608,13 @@ struct FEnemyStatData : public FCharacterStatData
     float	Def{};
 	
 };
+
+
+namespace Helper
+{
+    inline FText GetStatDisplayName(EUpgradableStats StatType)
+    {
+        const UEnum* EnumPtr = StaticEnum<EUpgradableStats>();
+        return EnumPtr ? EnumPtr->GetDisplayNameTextByValue(static_cast<int64>(StatType)) : FText::GetEmpty();
+    }
+}

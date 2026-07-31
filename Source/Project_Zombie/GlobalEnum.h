@@ -1,5 +1,6 @@
 #pragma once
 #include "CoreMinimal.h"
+#include "GlobalEnum.generated.h"
 
 UENUM(BlueprintType)
 enum class EItemType : uint8
@@ -89,5 +90,6 @@ enum class EUpgradableStats : uint8
     //CriticalRate    UMETA(DisplayName = "치명타 확률"),
     //CriticalDamage  UMETA(DisplayName = "치명타 피해량"),
     MaxHP           UMETA(DisplayName = "최대 체력"),
-    MoveSpeed       UMETA(DisplayName = "이동 속도")
+    MoveSpeed       UMETA(DisplayName = "이동 속도"),
+	//Max
 };

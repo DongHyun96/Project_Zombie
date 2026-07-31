@@ -10,6 +10,7 @@
 
 #include "Utility/C_Util.h"
 
+#include "Net/UnrealNetwork.h"
 
 
 UC_InteractionComponent::UC_InteractionComponent()
@@ -46,6 +47,8 @@ void UC_InteractionComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	m_InteractionCandidates.Empty();
 	m_FocusedTarget.Reset();
 	m_InteractionStrategyObject = nullptr;
+
+	ClearCurrentInteraction();
 
 	Super::EndPlay(EndPlayReason);
 }
@@ -129,6 +132,11 @@ void UC_InteractionComponent::OnInteractionEndOverlap(UPrimitiveComponent* _Over
 	if (!_OtherActor)
 		return;
 
+	// EndOverlap되면 실행할 함수. TODO : 현재는 매개변수가 없는 함수만 가능.
+	m_OnEndOverlap.Broadcast();
+	m_OnEndOverlap.Clear();
+	
+	//m_OnEndOverlap.RemoveAll(_OtherActor);
 	// 후보 목록에서 Actor 제거
 	m_InteractionCandidates.Remove(_OtherActor);
 
@@ -197,6 +205,25 @@ void UC_InteractionComponent::StopFocusUpdateTimer()
 	m_FocusedTarget.Reset();
 }
 
+void UC_InteractionComponent::StartInteractionTimer(float _Duration)
+{
+	UWorld* World = GetWorld();
+	if (!World)
+		return;
+
+	FTimerManager& TimerManager = World->GetTimerManager();
+
+	TimerManager.ClearTimer(m_InteractionTimerHandle);
+
+	TimerManager.SetTimer(
+		m_InteractionTimerHandle,
+		this,
+		&UC_InteractionComponent::CompleteInteract,
+		_Duration,
+		false
+	);
+}
+
 
 bool UC_InteractionComponent::CanBeInteractedBy(AC_BasicPlayer* _Interactor) const
 {
@@ -209,34 +236,147 @@ bool UC_InteractionComponent::CanBeInteractedBy(AC_BasicPlayer* _Interactor) con
 	return m_InteractionStrategyObject->CanStartInteraction(_Interactor, GetOwner());
 }
 
+float UC_InteractionComponent::GetInteractionDuration() const
+{
+	return m_InteractionStrategyObject ? m_InteractionStrategyObject->GetInteractionDuration() : 0.f; 
+}
+
 void UC_InteractionComponent::TryInteract()
 {
 	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled())
+		return;
+
+	// 이미 다른 Actor 와 상호작용 중이면 상호작용 불가
+	if (IsValid(m_CurrentInteractionActor))
 		return;
 
 	AActor* TargetActor = m_FocusedTarget.Get();
 	if (!TargetActor)
 		return;
 
+	if (TargetActor == m_OwnerPlayer)
+		return;
+
 	UC_InteractionComponent* TargetComponent = GetTargetInteractionComponent(TargetActor);
 	if (!TargetComponent)
 		return;
 
-	TargetComponent->ExecuteInteract(m_OwnerPlayer);
+	// 상호작용 대상이 현재 플레이어와 상호작용 가능한지 검사
+	// 서버
+	if (TargetComponent->GetInteractionNetType() == EInteractionNetType::Server)
+	{
+		UC_Util::Print("Server Interact", FColor::Red, 10.f);
+
+		// 서버에서 상호작용 시도 요청
+		Server_TryInteract(TargetActor);
+		return;
+	}
+
+	// 클라이언트
+	if (!TargetComponent->ExecuteInteract(m_OwnerPlayer))
+		return;
+
+	m_CurrentInteractionActor = TargetActor;
+
+	// 타이머 핸들 안쓰면 리턴.
+	//if (!bUseTimer) return;
+
+	const float InteractionDuration = TargetComponent->GetInteractionDuration();
+
+	UC_Util::Print("Client Interact", FColor::Red, 10.f);
+
+	// 상호작용 완료 타이머는 서버에서 시작되어
+	// 서버의 TimerManager 에 의해 CompleteInteract() 호출된다
+	StartInteractionTimer(InteractionDuration);
+}
+
+void UC_InteractionComponent::CancleInteract()
+{
 }
 
 bool UC_InteractionComponent::ExecuteInteract(AC_BasicPlayer* _Interactor)
 {
-	UC_Util::Print("ExecuteInteract", FColor::Red, 10.f);
-
 	if (!_Interactor || !m_InteractionStrategyObject)
 		return false;
+
+	// 이미 다른 플레이어와 상호작용 중이면 상호작용 불가
+	if (!m_AllowMultipleInteractor && IsValid(m_CurrentInteractionActor))
+	{
+		return false;
+	}
+
+	// 이미 다른 플레이어와 상호작용 중이면 상호작용 불가
+	// 강화 테이블은 여러명이서 사용 가능
+	//if (IsValid(m_CurrentInteractionActor))
+	//	return false;
 
 	if (!m_InteractionStrategyObject->CanStartInteraction(_Interactor, GetOwner()))
 		return false;
 
+	// 전략 객체를 통해 상호작용 시작 처리
+	// TODO(상연) : 여기서 아이템 강화 전략 객체가 Widget을 띄워 주어야 함.
+	if (!m_InteractionStrategyObject->StartInteraction(_Interactor, GetOwner()))
+		return false;
 
-	return m_InteractionStrategyObject->StartInteraction(_Interactor, GetOwner());
+	// 단일 사용자만 저장
+	if (!m_AllowMultipleInteractor)
+	{
+		m_CurrentInteractionActor = _Interactor;
+	}
+
+	return true;
+}
+
+bool UC_InteractionComponent::ExecuteCancleInteract(AC_BasicPlayer* _Interactor)
+{
+	return false;
+}
+
+void UC_InteractionComponent::CompleteInteract()
+{
+	if (!m_OwnerPlayer)
+		return;
+
+	AActor* TargetActor = m_CurrentInteractionActor.Get();
+	if (!TargetActor)
+	{
+		ClearCurrentInteraction();
+		return;
+	}
+
+	UC_InteractionComponent* TargetComponent = GetTargetInteractionComponent(TargetActor);
+	if (!TargetComponent)
+	{
+		ClearCurrentInteraction();
+		return;
+	}
+
+	TargetComponent->ExecuteCompleteInteract(m_OwnerPlayer);
+
+	ClearCurrentInteraction();
+}
+
+bool UC_InteractionComponent::ExecuteCompleteInteract(AC_BasicPlayer* _Interactor)
+{
+	if (!_Interactor || !m_InteractionStrategyObject)
+		return false;
+
+	if (!m_AllowMultipleInteractor)
+	{
+		if (m_CurrentInteractionActor != _Interactor)
+			return false;
+	}
+
+	// 대상 쪽 상호작용 완료 처리
+	m_InteractionStrategyObject->CompleteInteraction(_Interactor, GetOwner());
+
+	// 대상 쪽 상호작용 정보 초기화
+	if (!m_AllowMultipleInteractor)
+	{
+		ClearCurrentInteraction();
+	}
+
+	return true;
 }
 
 
@@ -348,4 +488,39 @@ bool UC_InteractionComponent::HasClearLineOfSight(AActor* _TargetActor) const
 	);
 
 	return !bBlocked;
+}
+
+void UC_InteractionComponent::Server_TryInteract_Implementation(AActor* _TargetActor)
+{
+	if (!m_OwnerPlayer || !IsValid(_TargetActor))
+		return;
+
+	if (_TargetActor == m_OwnerPlayer)
+		return;
+
+	// 이미 다른 플레이어와 상호작용 중이면 상호작용 불가
+	if (IsValid(m_CurrentInteractionActor))
+		return;
+
+	UC_InteractionComponent* TargetComponent = GetTargetInteractionComponent(_TargetActor);
+	if (!TargetComponent)
+		return;
+
+	// 실제 상호작용 시도
+	if (!TargetComponent->ExecuteInteract(m_OwnerPlayer))
+		return;
+
+	// 성공적으로 상호작용 시작 시도 성공 시 현재 상호작용 중인 Actor 저장
+	m_CurrentInteractionActor =	_TargetActor;
+
+	const float InteractionDuration = TargetComponent->GetInteractionDuration();
+
+	UE_LOG(LogTemp, Log, TEXT("Server_TryInteract - Interaction Started with %s for %.2f seconds"), *_TargetActor->GetName(), InteractionDuration);
+
+	// 타이머 안쓰면 리턴
+	//if (!bUseTimer) return;
+
+	// 상호작용 완료 타이머는 서버에서 시작되어
+	// 서버의 TimerManager 에 의해 CompleteInteract() 호출된다
+	StartInteractionTimer(InteractionDuration);
 }

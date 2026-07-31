@@ -71,10 +71,18 @@ private:
 
 public:
 	
-
+	/// <summary>
+	/// 서버에게 실제 장착하는 아이템 스폰 요청.
+	/// </summary>
+	/// <param name="SlotIndex"> : Player의 인벤토리의 장비전용 슬롯 인덱스</param>
+	/// <param name="ItemData"> : 아이템 데이터</param>
 	UFUNCTION(Server, Reliable)
 	void Server_RequestSpawnEquippedActor(int32 SlotIndex, const FInventoryEntry& ItemData);
 
+	void UpdateWeaponData(EWeaponSlot _TargetWeapon, FName InItemRow);
+	
+	UFUNCTION(Client, Reliable)
+	void Client_UpdateWeaponData(EWeaponSlot _TargetWeapon, FName InItemRow);
 public:
 	
 	/// <summary>
