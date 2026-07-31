@@ -363,6 +363,36 @@ void AC_GunBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifeti
 	DOREPLIFETIME(AC_GunBase, m_bIsReloading);
 }
 
+// 타이머 중단 및 총기 상태값 RPC
+void AC_GunBase::Server_CancelReload_Implementation()
+{
+	if (GetWorldTimerManager().IsTimerActive(m_ReloadTimerHandle))
+	{
+		GetWorldTimerManager().ClearTimer(m_ReloadTimerHandle);
+	}
+
+	m_bIsReloading = false;
+	m_bIsFiring = false;
+
+	Multicast_StopReloadEffects();
+}
+
+// 모든 클라이언트들의 재장전 애니메이션 정지를 위한 멀티캐스트
+void AC_GunBase::Multicast_StopReloadEffects_Implementation()
+{
+	if (m_OwnerPlayer && m_PlayerReloadAnimation)
+	{
+		m_OwnerPlayer->StopAnimMontage(m_PlayerReloadAnimation);
+	}
+
+	if (m_WeaponMesh && m_ReloadAnimation)
+	{
+		m_WeaponMesh->Stop();
+	}
+
+	m_bIsReloading = false;
+}
+
 bool AC_GunBase::AttachToHand(USceneComponent* _ParentMesh)
 {
 	if (!_ParentMesh) return false;
@@ -471,7 +501,7 @@ void AC_GunBase::ReleaseTrigger()
 	m_bIsFiring = false;
 }
 
-FVector AC_GunBase::LineTraceDamage(const FVector& CameraStart, const FRotator& CameraRot, float DamageVal, float SpreadAngleDegree, AActor*& OutHitActor)
+FVector AC_GunBase::LineTraceDamage(const FVector& CameraStart, const FRotator& CameraRot, AActor*& OutHitActor)
 {
 	OutHitActor = nullptr;
 
@@ -500,9 +530,9 @@ FVector AC_GunBase::LineTraceDamage(const FVector& CameraStart, const FRotator& 
 	FVector MuzzleStart = m_WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
 	FVector ShootDirection = (TargetPoint - MuzzleStart).GetSafeNormal();
 
-	if (SpreadAngleDegree > 0.0f)
+	if (m_SpreadAngle > 0.0f)
 	{
-		float ConeHalfAngleRad = FMath::DegreesToRadians(SpreadAngleDegree);
+		float ConeHalfAngleRad = FMath::DegreesToRadians(m_SpreadAngle);
 		ShootDirection = FMath::VRandCone(ShootDirection, ConeHalfAngleRad);
 	}
 
@@ -517,7 +547,7 @@ FVector AC_GunBase::LineTraceDamage(const FVector& CameraStart, const FRotator& 
 		QueryParams
 	);
 
-	// 최종으로 맞은 Actor 저장
+	// 최종으로 맞은 Actor
 	if (bMuzzleHit)
 	{
 		OutHitActor = MuzzleHitResult.GetActor();
@@ -570,7 +600,7 @@ void AC_GunBase::Client_ExecuteFire()
 			m_OwnerPlayer->GetActorEyesViewPoint(CameraLoc, CameraRot);
 		}
 
-		ImpactPoint = LineTraceDamage(CameraLoc, CameraRot, m_Damage, m_SpreadAngle, HitActor);
+		ImpactPoint = LineTraceDamage(CameraLoc, CameraRot, HitActor);
 	}
 
 	// 4. 클라이언트 판정 결과를 서버로 전송
@@ -632,12 +662,32 @@ void AC_GunBase::Client_CompleteReload_Implementation()
 
 void AC_GunBase::OnSheathStart()
 {
-	ReleaseTrigger(); // 사격 중이었다면, 사격 중지 (Timer 등록 해지 등)
+	// 사격 해제
+	ReleaseTrigger();
 
-	// Aim 카메라, UI 등 원위치
-	if (m_OwnerPlayer) m_OwnerPlayer->GetAimComponent()->OnAimReleased();
-	
-	// TODO : 재장전 중이었던 경우, 필요한 원위치 또는 중단 처리 필요
+	// Aim 카메라 및 UI 등 조준 관련 원위치
+	if (m_OwnerPlayer && m_OwnerPlayer->GetAimComponent())
+	{
+		m_OwnerPlayer->GetAimComponent()->OnAimReleased();
+	}
+
+	// 총기, 몽타주 재장전 애니메이션 해제
+	if (m_bIsReloading)
+	{
+		m_bIsReloading = false;
+
+		if (m_OwnerPlayer && m_PlayerReloadAnimation)
+		{
+			m_OwnerPlayer->StopAnimMontage(m_PlayerReloadAnimation);
+		}
+
+		if (m_WeaponMesh && m_ReloadAnimation)
+		{
+			m_WeaponMesh->SetAnimation(nullptr);
+		}
+
+		Server_CancelReload();
+	}
 }
 
 void AC_GunBase::OnMainColliderBeginOverlap

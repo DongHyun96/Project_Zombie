@@ -28,16 +28,15 @@ bool AC_ShotGun::OnStartFire(AC_BasicPlayer* _WeaponUser)
 	return Super::OnStartFire(_WeaponUser);
 }
 
-// ---------------------------------------------------------------------
-// [재장전 처리]
-// ---------------------------------------------------------------------
 bool AC_ShotGun::Reload(AC_BasicPlayer* _WeaponUser)
 {
 	if (!_WeaponUser) return false;
 	m_OwnerPlayer = _WeaponUser;
 
-	if (m_bIsFiring || m_bIsReloading || m_CurrentAmmo >= m_MaxAmmo) return false;
+	// 이미 재장전 중이거나 탄약이 꽉 찼다면 거부
+	if (m_bIsReloading || m_CurrentAmmo >= m_MaxAmmo) return false;
 
+	m_bIsFiring = false;
 	m_bIsReloading = true;
 
 	if (!HasAuthority())
@@ -61,7 +60,8 @@ bool AC_ShotGun::Reload(AC_BasicPlayer* _WeaponUser)
 
 void AC_ShotGun::Server_StartReload_Implementation()
 {
-	if (m_bIsReloading) return;
+	// 탄약이 이미 꽉 찬 경우 거부
+	if (m_CurrentAmmo >= m_MaxAmmo) return;
 
 	m_bIsFiring = false;
 	m_bIsReloading = true;
@@ -79,30 +79,34 @@ void AC_ShotGun::Server_StartReload_Implementation()
 
 void AC_ShotGun::InsertSingleShell()
 {
-	if (!HasAuthority() || !m_bIsReloading) return;
+	if (!HasAuthority()) return;
 
-	if (m_CurrentAmmo < m_MaxAmmo)
+	// 재장전 도중 취소되었거나 이미 가득 찼다면 종료
+	if (!m_bIsReloading || m_CurrentAmmo >= m_MaxAmmo)
 	{
-		m_CurrentAmmo++;
-
-		// ★ [핵심] 서버가 클라이언트 PC에 "1발 들어갔으니 UI와 Ammo 변수 업데이트해!" 전달
-		Client_OnSingleShellInserted(m_CurrentAmmo);
-
-		if (m_CurrentAmmo >= m_MaxAmmo)
-		{
-			EndReload();
-			return;
-		}
-
-		Multicast_PlayReloadEffects();
+		EndReload();
+		return;
 	}
+
+	m_CurrentAmmo++;
+
+	// 클라이언트 UI 및 탄약 동기화
+	Client_OnSingleShellInserted(m_CurrentAmmo);
+
+	if (m_CurrentAmmo >= m_MaxAmmo)
+	{
+		EndReload();
+		return;
+	}
+
+	Multicast_PlayReloadEffects();
 }
 
-// ★ 클라이언트 로컬 PC에서 실행되는 함수
 void AC_ShotGun::Client_OnSingleShellInserted_Implementation(int32 NewAmmo)
 {
 	m_CurrentAmmo = NewAmmo;
-	UpdateAmmoUI(); // 클라이언트 본인의 HUD UI 업데이트
+	m_bIsReloading = true; // 클라이언트 재장전 상태 유지
+	UpdateAmmoUI();
 }
 
 void AC_ShotGun::EndReload()
@@ -113,17 +117,16 @@ void AC_ShotGun::EndReload()
 
 	if (HasAuthority())
 	{
-		// ★ [핵심] 서버에서 장전 끝났으니 클라이언트의 m_bIsReloading 상태도 false로 해제
 		Client_EndReload();
 		Multicast_StopReloadAnimation();
 	}
 }
 
-// ★ 클라이언트 로컬 PC에서 실행되는 장전 종료 함수
 void AC_ShotGun::Client_EndReload_Implementation()
 {
 	m_bIsReloading = false;
 	m_bIsFiring = false;
+	m_bCanFire = true;
 	UpdateAmmoUI();
 }
 
@@ -135,9 +138,6 @@ void AC_ShotGun::Multicast_StopReloadAnimation_Implementation()
 	}
 }
 
-// ---------------------------------------------------------------------
-// [사격 처리]
-// ---------------------------------------------------------------------
 void AC_ShotGun::PullTrigger()
 {
 	if (m_bIsFiring || m_bIsReloading || !m_bCanFire || m_CurrentAmmo <= 0) return;
@@ -164,22 +164,24 @@ void AC_ShotGun::Client_ExecuteFire()
 		return;
 	}
 
-	// 1. 탄약 차감 및 UI 갱신
-	m_CurrentAmmo--;
-	if (m_CurrentAmmo <= 0)
+	// ★ 핵심 수정: 서버(HasAuthority)에서는 아래 Server_ShotgunFireEffects에서 차감할 것이므로,
+	// 클라이언트(순수 클라)일 때만 여기서 로컬 탄약을 차감하고 UI를 올립니다.
+	if (!HasAuthority())
 	{
-		m_CurrentAmmo = 0;
-		m_bIsFiring = false;
+		m_CurrentAmmo--;
+		if (m_CurrentAmmo <= 0)
+		{
+			m_CurrentAmmo = 0;
+			m_bIsFiring = false;
+		}
+		UpdateAmmoUI();
 	}
-	UpdateAmmoUI();
 
-	// 2. 로컬 화면 탄피 배출 (클라이언트 본인 화면용 1발)
 	PlayFireEffects_Client();
 	SpawnShellEject();
 
 	if (!m_OwnerPlayer || !GetWorld()) return;
 
-	// 3. 카메라 트레이스 준비
 	FVector CameraLoc;
 	FRotator CameraRot;
 	if (APlayerController* PC = Cast<APlayerController>(m_OwnerPlayer->GetController()))
@@ -191,16 +193,20 @@ void AC_ShotGun::Client_ExecuteFire()
 		m_OwnerPlayer->GetActorEyesViewPoint(CameraLoc, CameraRot);
 	}
 
-	float PelletDamage = m_Damage / static_cast<float>(m_PelletCount);
-
 	TArray<FVector_NetQuantize> ImpactPoints;
 	ImpactPoints.Reserve(m_PelletCount);
 
-	// 4. 8개 펠릿 라인트레이스 및 데미지 전달
 	for (int32 i = 0; i < m_PelletCount; ++i)
 	{
 		AActor* HitActor = nullptr;
-		FVector ImpactPoint = LineTraceDamage(CameraLoc, CameraRot, PelletDamage, m_SpreadAngle, HitActor);
+		FVector ImpactPoint = LineTraceDamage(CameraLoc, CameraRot, HitActor);
+
+		if (ImpactPoint.IsZero())
+		{
+			FVector ShootingDir = CameraRot.Vector();
+			ImpactPoint = CameraLoc + (ShootingDir * 10000.0f);
+		}
+
 		ImpactPoints.Add(ImpactPoint);
 
 		if (HitActor && HitActor->IsA<AC_BasicEnemy>())
@@ -209,16 +215,25 @@ void AC_ShotGun::Client_ExecuteFire()
 		}
 	}
 
-	// 5. 서버 및 타인에게 "사격 연출 1회(탄피 1개 배출)"를 동기화하기 위해 1번만 RPC 호출
-	Server_ShotgunFireEffects();
-
-	// 6. 로컬 궤적 및 임팩트 이펙트
-	Multicast_PlayShotgunFireEffects(ImpactPoints);
+	// 서버로 이펙트 연출 및 서버 측 탄약 차감 전송
+	Server_ShotgunFireEffects(ImpactPoints);
 }
 
-void AC_ShotGun::Server_ShotgunFireEffects_Implementation()
+void AC_ShotGun::Server_ShotgunFireEffects_Implementation(const TArray<FVector_NetQuantize>& ImpactPoints)
 {
-	Multicast_PlayFireEffects(FVector::ZeroVector);
+	// 서버 메모리 탄약 차감 (서버 플레이어가 쐈든, 클라이언트가 RPC 보냈든 무조건 여기서 1발 차감)
+	if (m_CurrentAmmo > 0)
+	{
+		m_CurrentAmmo--;
+	}
+
+	// ★ 서버 플레이어가 직접 쏜 경우에도 UI를 최신 탄약 수로 갱신해줍니다.
+	if (HasAuthority() && m_OwnerPlayer && m_OwnerPlayer->IsLocallyControlled())
+	{
+		UpdateAmmoUI();
+	}
+
+	Multicast_PlayShotgunFireEffects(ImpactPoints);
 }
 
 void AC_ShotGun::Multicast_PlayShotgunFireEffects_Implementation(const TArray<FVector_NetQuantize>& ImpactPoints)

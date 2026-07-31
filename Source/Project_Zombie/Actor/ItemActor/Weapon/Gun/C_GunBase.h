@@ -163,7 +163,7 @@ public:
 	/// <param name="_WeaponUser"> : 이 Weapon을 사용하는 Player 객체 </param>
 	/// <returns> : R키에 대한 처리가 필요없거나 실패했을 경우 return false </returns>
 	virtual bool Reload(AC_BasicPlayer* _WeaponUser) override;
-	
+
 	virtual void UpdateAmmoInfoHUDForDrawEnd() override;
 
 protected:
@@ -180,7 +180,7 @@ protected:
 	// HUD 갱신
 	void UpdateAmmoUI();
 
-	virtual FVector LineTraceDamage(const FVector& CameraStart, const FRotator& CameraRot, float DamageVal, float SpreadAngleDegree, AActor*& OutHitActor);
+	virtual FVector LineTraceDamage(const FVector& CameraStart, const FRotator& CameraRot, AActor*& OutHitActor);
 
 protected:
 	// 클라이언트가 사격 후 결과를 서버로 동기화
@@ -204,6 +204,14 @@ protected:
 	// 클라이언트들에게 사격 연출 Multicast
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_PlayReloadEffects();
+
+	// 재장전 취소 RPC
+	UFUNCTION(Server, Reliable)
+	void Server_CancelReload();
+
+	// 재생 중인 재장전 애니메이션 정지 멀티캐스트
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_StopReloadEffects();
 
 public:
 

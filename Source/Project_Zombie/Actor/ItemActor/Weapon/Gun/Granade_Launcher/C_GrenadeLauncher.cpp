@@ -184,9 +184,6 @@ FVector AC_GrenadeLauncher::GetCameraTargetPoint() const
 	return bCameraHit ? CameraHitResult.ImpactPoint : CameraEnd;
 }
 
-// ---------------------------------------------------------------------
-// [재장전]
-// ---------------------------------------------------------------------
 void AC_GrenadeLauncher::StartReload()
 {
 	if (m_CurrentAmmo >= m_MaxAmmo || m_bIsReloading)
@@ -201,7 +198,6 @@ void AC_GrenadeLauncher::StartReload()
 		ReloadDuration = m_ReloadAnimation->GetPlayLength();
 	}
 
-	// 클라이언트라면 서버에 재장전 요청 / 서버라면 직접 탄피 배출 및 서버 타이머 세팅
 	if (!HasAuthority())
 	{
 		Server_StartReload();
@@ -211,11 +207,9 @@ void AC_GrenadeLauncher::StartReload()
 		int32 SpentShellCount = m_MaxAmmo - m_CurrentAmmo;
 		Multicast_EjectAllSpentShells(SpentShellCount);
 
-		// ★ 서버에서도 타이머를 돌려 m_CurrentAmmo를 꽉 채워줍니다.
 		GetWorldTimerManager().SetTimer(m_ReloadTimerHandle, this, &AC_GrenadeLauncher::CompleteReload, ReloadDuration, false);
 	}
 
-	// 로컬 애니메이션 재생
 	if (m_WeaponMesh && m_ReloadAnimation)
 	{
 		m_WeaponMesh->PlayAnimation(m_ReloadAnimation, false);
@@ -226,13 +220,11 @@ void AC_GrenadeLauncher::StartReload()
 		m_OwnerPlayer->PlayAnimMontage(m_PlayerReloadAnimation);
 	}
 
-	// 클라이언트 로컬 타이머 세팅
 	GetWorldTimerManager().SetTimer(m_ReloadTimerHandle, this, &AC_GrenadeLauncher::CompleteReload, ReloadDuration, false);
 }
 
 void AC_GrenadeLauncher::Server_StartReload_Implementation()
 {
-	// 부모의 Server_StartReload_Implementation 호출
 	Super::Server_StartReload_Implementation();
 
 	int32 SpentShellCount = m_MaxAmmo - m_CurrentAmmo;
@@ -247,7 +239,6 @@ void AC_GrenadeLauncher::Server_StartReload_Implementation()
 		ReloadDuration = m_ReloadAnimation->GetPlayLength();
 	}
 
-	// ★ 서버 단에서도 재장전 시간이 지나면 m_CurrentAmmo를 m_MaxAmmo로 채워줍니다!
 	GetWorldTimerManager().SetTimer(m_ReloadTimerHandle, this, &AC_GrenadeLauncher::CompleteReload, ReloadDuration, false);
 }
 
@@ -276,7 +267,6 @@ void AC_GrenadeLauncher::CompleteReload()
 {
 	m_bIsReloading = false;
 
-	// 서버와 클라이언트 모두 탄약이 꽉 차게 됨!
 	m_CurrentAmmo = m_MaxAmmo;
 	UpdateAmmoUI();
 }

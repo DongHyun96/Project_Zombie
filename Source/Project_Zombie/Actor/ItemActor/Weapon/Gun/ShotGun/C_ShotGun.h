@@ -28,7 +28,7 @@ protected:
 	virtual void Client_ExecuteFire() override;
 
 	UFUNCTION(Server, Reliable)
-	void Server_ShotgunFireEffects();
+	void Server_ShotgunFireEffects(const TArray<FVector_NetQuantize>& ImpactPoints);
 
 	virtual void Server_StartReload_Implementation() override;
 

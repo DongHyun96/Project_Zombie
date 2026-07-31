@@ -7,6 +7,7 @@
 AC_Rifle::AC_Rifle()
 {
 	m_FireMode = EFireMode::FullAuto;
+	m_SpreadAngle = 3.5f;
 }
 
 void AC_Rifle::PullTrigger()
