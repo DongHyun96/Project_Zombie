@@ -41,12 +41,6 @@ AC_BasicEnemy::AC_BasicEnemy()
 	if (HealedEffect.Succeeded())
 		m_HealedEffectNGComponent->SetAsset(HealedEffect.Object.Get());
 	
-	// 회전 관련 처리 설정 (서버 쪽은 Controller가 존재하여, 부드럽게 보임 -> 클라이언트단 화면에서는 Controller가 없기에, Controller Rotation (0, 0, 0) 값을 사용
-	// 따라서 끊겨보이는 버그가 있었음
-	bUseControllerRotationYaw                             = false;
-	GetCharacterMovement()->bOrientRotationToMovement     = true;
-	GetCharacterMovement()->bUseControllerDesiredRotation = false;
-	GetCharacterMovement()->RotationRate                  = FRotator(0.f, 360.f, 0.f);
 }
 
 void AC_BasicEnemy::BeginPlay()
@@ -63,7 +57,16 @@ void AC_BasicEnemy::BeginPlay()
 		
 		m_ZombieController = GetController<AC_ZombieController>();
 	}
-	
+	else // 클라이언트 환경
+	{
+		// 클라이언트단 화면에서는 Controller가 없기에, Controller Rotation (0, 0, 0) 값을 사용ㄴ
+		// 따라서 끊겨보이는 버그가 있었음
+		bUseControllerRotationYaw                             = false;
+		GetCharacterMovement()->bOrientRotationToMovement     = true;
+		GetCharacterMovement()->bUseControllerDesiredRotation = false;
+		GetCharacterMovement()->RotationRate                  = FRotator(0.f, 360.f, 0.f);
+		
+	}
 
 	// HealEffect 재생 속도 조절
 	m_HealedEffectNGComponent->SetCustomTimeDilation(2.f);

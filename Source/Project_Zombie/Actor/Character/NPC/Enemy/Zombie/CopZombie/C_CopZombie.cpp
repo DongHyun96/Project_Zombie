@@ -57,6 +57,8 @@ void AC_CopZombie::OnANSGrabStart()
 void AC_CopZombie::OnANSGrabEnd()
 {
 	if (!IsLocallyControlled()) return;
+
+	UC_Util::Print("ONANS GrabEnd", FColor::MakeRandomColor(), 10.f);
 	
 	m_GrabRangeCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	// ANS가 끊기는 것이 -> Abort Task에 의해 끊길 수도 있음 -> 따라서 자체적으로 BTTask_GrabMainWeapon에서 EndSkill 시, Skill 성공 여부에 따라서 처리해줄 것
@@ -89,7 +91,10 @@ void AC_CopZombie::OnGrabRangeColliderEndOverlap
 	// Client 쪽은 Event 바인딩 처리 자체를 안해서 검사하지 않아도 됨
 	
 	if (AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(OtherActor))
+	{
 		m_GrabRangeEnteredPlayers.Remove(Player);
+		UC_Util::Print("PLAYER REMOVED BY END_OVERLAP", FColor::Yellow, 10.f);
+	}
 }
 
 bool AC_CopZombie::EquipWeapon(AC_GunBase* _StolenWeapon)
