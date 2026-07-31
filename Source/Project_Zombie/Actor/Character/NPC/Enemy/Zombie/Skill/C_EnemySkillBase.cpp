@@ -27,6 +27,5 @@ bool UC_EnemySkillBase::Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data
 	_PlayedMontageSectionIdx = 0;
 
 	// 정상 재생시작 처리되었다면 Montage Duration float값이 나옴(true) | 재생처리가 되지 않은 경우 0.f (false) )
-	const bool Played = static_cast<bool>(_Owner->PlayAnimMontage(_Data->Montage));
 	return static_cast<bool>(_Owner->PlayAnimMontage(_Data->Montage));
 }

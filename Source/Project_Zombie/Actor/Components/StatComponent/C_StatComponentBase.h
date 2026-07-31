@@ -123,6 +123,10 @@ private:
 	/// </summary>
 	virtual void InitAdditionalStat();
 
+private:
+
+	
+	
 protected:
 	
 	UPROPERTY()
