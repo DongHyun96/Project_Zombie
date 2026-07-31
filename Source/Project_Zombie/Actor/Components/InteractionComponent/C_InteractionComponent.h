@@ -99,6 +99,8 @@ public:
 	//const FText& GetInteractionText() const { return m_InteractionStrategyObject ? m_InteractionStrategyObject->GetInteractionText() : FText::GetEmpty(); }
 	const FText& GetInteractionText() const { return m_InteractionText; }
 
+	
+	bool GetbUseTimer() {return bUseTimer;}
 public:
 
 	/// <summary>
@@ -294,10 +296,13 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Interaction|UI")
 	FText m_InteractionText;
-
+	
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,Category = "Interaction|UI")
+	bool bUseTimer = true;
+	
 private:
 
-	//bool bUseTimer = true;
 
 	// 상호작용 걸리는 시간
 	FTimerHandle m_InteractionTimerHandle;
