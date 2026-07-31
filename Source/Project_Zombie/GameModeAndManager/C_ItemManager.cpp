@@ -13,27 +13,37 @@ void UC_ItemManager::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
 
-    // Settings 클래스로부터 설정 에셋 포인터 가져오기
     const UC_ItemManagerSettings* Settings = GetDefault<UC_ItemManagerSettings>();
     if (!Settings) return;
 
-    // Helper Lambda: SoftObjectPtr을 로드하고 Map에 등록
+    // Helper Lambda: SoftObjectPtr 동기 로드 후 Map 등록
     auto RegisterTable = [this](EItemTableType Type, const TSoftObjectPtr<UDataTable>& SoftTablePtr)
     {
         if (SoftTablePtr.IsNull()) return;
 
-        UDataTable* LoadedTable = SoftTablePtr.LoadSynchronous();
-        if (LoadedTable)
+        if (UDataTable* LoadedTable = SoftTablePtr.LoadSynchronous())
         {
             CachedItemTables.Add(Type, LoadedTable);
         }
     };
 
-    // 설정된 데이터 테이블들을 동기 로드 및 캐싱
+    // 설정된 데이터 테이블 동기 로드 및 캐싱
     RegisterTable(EItemTableType::General, Settings->GeneralItemDataTableConfig);
     RegisterTable(EItemTableType::Gun, Settings->GunDataTableConfig);
     RegisterTable(EItemTableType::Melee, Settings->MeleeDataTableConfig);
     RegisterTable(EItemTableType::Throwable, Settings->ThrowableDataTableConfig);
+
+    // 강화 데이터 테이블 캐싱 (ItemManager가 계속 관리)
+    if (!Settings->WeaponUpgradePerValueTableConfig.IsNull())
+    {
+        WeaponUpgradeData = Settings->WeaponUpgradePerValueTableConfig.LoadSynchronous();
+    }
+    
+    // 아이템 강화 재료 데이터 테이블 캐싱
+    if (!Settings->WeaponUpgradeCostTableConfig.IsNull())
+    {
+        ItemUpgradeCostData = Settings->WeaponUpgradeCostTableConfig.LoadSynchronous();
+    }
 }
 
 const UDataTable* UC_ItemManager::GetTargetTable(EItemTableType InTableType) const
@@ -288,7 +298,11 @@ bool UC_ItemManager::GetItemDataBP(EItemTableType InTableType, FName InRowName, 
         break;
 
     case EItemTableType::Throwable:
-        // TODO: FThrowableData 추가 시 작성
+        if (const FThrowableData* Ptr = GetItemData<FThrowableData>(InTableType, InRowName))
+        {
+            OutData.InitializeAs<FThrowableData>(*Ptr);
+            return true;
+        }
         break;
     }
     return false;
