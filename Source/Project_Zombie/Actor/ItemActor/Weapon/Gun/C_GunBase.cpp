@@ -631,7 +631,6 @@ void AC_GunBase::Server_StartReload_Implementation()
 	m_bIsFiring = false;
 	m_bIsReloading = true;
 
-	// 서버 내부 탄약도 미리 0 또는 상태 처리 (필요시)
 	float ReloadDuration = 2.0f;
 	if (m_PlayerReloadAnimation)
 	{
@@ -648,7 +647,7 @@ void AC_GunBase::Server_StartReload_Implementation()
 			m_CurrentAmmo = m_MaxAmmo;
 			m_bIsReloading = false;
 
-			// 클라이언트에게 재장전 완료 알림 (클라이언트 내부 m_CurrentAmmo 채우기용)
+			// 클라이언트에게 재장전 완료 알림 클라이언트 내부 m_CurrentAmmo 채움
 			Client_CompleteReload();
 
 		}, ReloadDuration, false);

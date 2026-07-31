@@ -134,10 +134,18 @@ protected:
 public:
 	USkeletalMeshComponent* GetWeaponMesh() const { return m_WeaponMesh; }
 
+	void SetCurrentAmmo(int32 _CurAmmo) { m_CurrentAmmo = _CurAmmo; }
+
 	int32 GetCurrentAmmo() const { return m_CurrentAmmo; }
 
+	float GetDamage() const { return m_Damage; }
+
 	UC_AIGunUsageComponent* GetAIGunUsageComponent() const { return m_AIGunUsageComponent; }
+
+	UParticleSystem* GetTracerFX() { return m_TracerFX; }
 	
+	UParticleSystem* GetImpactFX() { return m_ImpactFX; }
+
 public:
 	/// <summary>
 	/// 발사 시작 동작 처리 (기본 키 : LMB Started (발사 키 클릭 이벤트 발생 시))

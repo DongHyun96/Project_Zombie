@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "C_AIGunUsageComponent.h"
@@ -7,6 +7,7 @@
 #include "Actor/Character/NPC/Enemy/Zombie/Controller/C_ZombieController.h"
 #include "Actor/Character/NPC/Enemy/Zombie/CopZombie/C_CopZombie.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
+#include "Particles/ParticleSystemComponent.h"
 #include "Actor/Components/C_PingSystemComponent.h"
 #include "Actor/ItemActor/Weapon/Gun/C_GunBase.h"
 #include "Components/SphereComponent.h"
@@ -17,6 +18,8 @@
 UC_AIGunUsageComponent::UC_AIGunUsageComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
+
+	SetIsReplicatedByDefault(true);
 }
 
 void UC_AIGunUsageComponent::BeginPlay()
@@ -29,25 +32,21 @@ void UC_AIGunUsageComponent::BeginPlay()
 
 bool UC_AIGunUsageComponent::AIFire()
 {
-	// 사격 불가능한 상황
-	if (--m_OwnerGun->m_CurrentAmmo <= 0)
+	if (!m_OwnerGun) return false;
+
+	if (!m_OwnerGun->HasAuthority()) return false;
+
+	if (m_OwnerGun->GetCurrentAmmo() <= 0)
 	{
-		m_OwnerGun->m_CurrentAmmo = 0;
 		return false;
 	}
 
-	UC_Util::Print("Current Ammo : " + FString::FromInt(m_OwnerGun->m_CurrentAmmo), FColor::Green, 5.f);
-	
-	// 총기 자체의 발사 애니메이션 재생
-	if (m_OwnerGun->m_WeaponMesh && m_OwnerGun->m_FireAnimation)
-		m_OwnerGun->m_WeaponMesh->PlayAnimation(m_OwnerGun->m_FireAnimation, false);
-	
-	m_OwnerGun->SpawnShellEject();
+	m_OwnerGun->SetCurrentAmmo(m_OwnerGun->GetCurrentAmmo() - 1);
 
-	// 사격 방면 LineTrace Damage 처리
-	AIProcessLineTraceDamage(m_OwnerGun->m_Damage);
-	
-	// 사격 성공
+	FVector ImpactPoint = AIProcessLineTraceDamage(m_OwnerGun->GetDamage());
+
+	Multicast_PlayAIFireEffects(ImpactPoint);
+
 	return true;
 }
 
@@ -123,48 +122,78 @@ bool UC_AIGunUsageComponent::DetachFromHand()
 	return true;
 }
 
-void UC_AIGunUsageComponent::AIProcessLineTraceDamage(float _DamageVal)
+FVector UC_AIGunUsageComponent::AIProcessLineTraceDamage(float _DamageVal)
 {
-	if (!m_WeaponCopZombieUser)
+	if (!m_WeaponCopZombieUser || !m_OwnerGun) return FVector::ZeroVector;
+
+	USkeletalMeshComponent* WeaponMesh = m_OwnerGun->GetWeaponMesh();
+	if (!WeaponMesh) return FVector::ZeroVector;
+
+	const FVector StartLocation = WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
+
+	// 1. AIController로부터 현재 블랙보드 타겟 가져오기
+	AActor* Target = m_WeaponCopZombieUser->GetZombieController() ?
+		m_WeaponCopZombieUser->GetZombieController()->GetCurrentBBTarget() : nullptr;
+
+	FVector EndLocation = FVector::ZeroVector;
+
+	if (Target)
 	{
-		UC_Util::Print("From UC_AIGunUsageComponent::AIProcessLineTraceDamage : AI Weapon user nullptr", FColor::Red, 10.f);
-		return;
+		// 2. Target의 발바닥(Origin) 대신 가슴/상체 위치 보정 (+Z 50.f)
+		FVector TargetCenter = Target->GetActorLocation() + FVector(0.0f, 0.0f, 50.0f);
+
+		// 3. (선택사항) AI 사격 탄퍼짐/오차 추가 (완벽한 명중을 원하시면 Offset을 FVector::ZeroVector로 고정)
+		float SpreadAmount = 15.0f; // 오차 범위 (센티미터 단위)
+		FVector RandomOffset = FVector(
+			FMath::RandRange(-SpreadAmount, SpreadAmount),
+			FMath::RandRange(-SpreadAmount, SpreadAmount),
+			FMath::RandRange(-SpreadAmount, SpreadAmount)
+		);
+
+		FVector AimDir = (TargetCenter - StartLocation).GetSafeNormal();
+
+		// 총구에서 타겟 상체 방향으로 사격 거리(예: 5000 units)만큼 뻗어나감
+		EndLocation = StartLocation + (AimDir + RandomOffset * 0.001f).GetSafeNormal() * 5000.0f;
 	}
-	
-	AActor* Target = m_WeaponCopZombieUser->GetZombieController()->GetCurrentBBTarget();
-	
-	// TODO : 무조건 Target을 맞추는 것이 아닌 오차를 좀 주긴 해야 함 (일단은 Target을 무조건 맞추는 처리로 함)
-	// 사망 시에도 EndLocation Front 방면으로 줄것
-	const FVector StartLocation = m_OwnerGun->GetWeaponMesh()->GetSocketLocation(TEXT("MuzzleFlash"));
-	const FVector EndLocation   = Target ? Target->GetActorLocation()
-										   : StartLocation + m_OwnerGun->GetWeaponMesh()->GetSocketRotation(TEXT("MuzzleFlash")).Vector() * 5000.0f;
-		                              
-	
+	else
+	{
+		// 타겟이 없는 경우 좀비가 바라보는 정면 방향으로 발사
+		FVector ForwardDir = m_WeaponCopZombieUser->GetActorForwardVector();
+		EndLocation = StartLocation + ForwardDir * 5000.0f;
+	}
+
+	// 4. LineTrace 수행
 	FHitResult HitResult{};
 	FCollisionQueryParams QueryParams{};
 	QueryParams.AddIgnoredActor(m_OwnerGun);
 	QueryParams.AddIgnoredActor(m_WeaponCopZombieUser);
-	
-	bool bHasHit = GetWorld()->LineTraceSingleByChannel
-	(
+
+	bool bHasHit = GetWorld()->LineTraceSingleByChannel(
 		HitResult,
 		StartLocation,
 		EndLocation,
 		ECC_Visibility,
 		QueryParams
 	);
-	const FVector ActualEndLocation = bHasHit ? HitResult.ImpactPoint : EndLocation;
-	
-	DrawDebugLine(GetWorld(), StartLocation, ActualEndLocation, FColor::Green, false, 5.f);
 
+	const FVector ActualImpactPoint = bHasHit ? HitResult.ImpactPoint : EndLocation;
+
+	// 5. 서버에서 데미지 전달
 	if (bHasHit)
 	{
-		DrawDebugSphere(GetWorld(), ActualEndLocation, 7.f, 12, FColor::Red, false, 7.5f);
-
-		// TODO : 거점사격에 대한 처리도 해주어야 함 (거점 퍼센티지 다운)
 		if (AC_BasicCharacter* HitCharacter = Cast<AC_BasicCharacter>(HitResult.GetActor()))
-			UGameplayStatics::ApplyDamage(HitCharacter, _DamageVal, m_WeaponCopZombieUser->GetController(), m_OwnerGun, nullptr);
+		{
+			UGameplayStatics::ApplyDamage(
+				HitCharacter,
+				_DamageVal,
+				m_WeaponCopZombieUser->GetController(),
+				m_OwnerGun,
+				nullptr
+			);
+		}
 	}
+
+	return ActualImpactPoint;
 }
 
 void UC_AIGunUsageComponent::HandleGunMeshPhysicsStopped()
@@ -210,3 +239,81 @@ void UC_AIGunUsageComponent::HandleGunMeshPhysicsStopped()
 	m_PrevOwnerPlayer = nullptr;
 }
 
+void UC_AIGunUsageComponent::Multicast_PlayAIFireEffects_Implementation(FVector_NetQuantize ImpactPoint)
+{
+	if (IsRunningDedicatedServer() || !m_OwnerGun) return;
+
+	USkeletalMeshComponent* WeaponMesh = m_OwnerGun->GetWeaponMesh();
+	if (!WeaponMesh) return;
+
+	// 3. 탄피 배출
+	m_OwnerGun->SpawnShellEject();
+
+	FVector MuzzleStart = WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
+	FVector ExplicitImpactPoint = FVector(ImpactPoint);
+	FVector ShootDir = (ExplicitImpactPoint - MuzzleStart).GetSafeNormal();
+	FRotator MuzzleRotation = ShootDir.Rotation();
+
+	if (UParticleSystem* TracerFX = m_OwnerGun->GetTracerFX())
+	{
+		UParticleSystemComponent* TracerComp = UGameplayStatics::SpawnEmitterAtLocation(
+			GetWorld(),
+			TracerFX,
+			MuzzleStart,
+			MuzzleRotation,
+			FVector(1.0f),
+			false
+		);
+
+		if (TracerComp)
+		{
+			float Distance = FVector::Distance(MuzzleStart, ExplicitImpactPoint);
+			float Speed = 20000.0f;
+			float FlyTime = Distance / Speed;
+
+			TSharedPtr<float> ElapsedTime = MakeShared<float>(0.0f);
+			TSharedPtr<FTimerHandle> TracerTimerHandle = MakeShared<FTimerHandle>();
+
+			GetWorld()->GetTimerManager().SetTimer(
+				*TracerTimerHandle,
+				[TracerComp, MuzzleStart, ExplicitImpactPoint, ShootDir, FlyTime, ElapsedTime, TracerTimerHandle, this]() mutable
+				{
+					if (!TracerComp || !TracerComp->IsValidLowLevel()) return;
+
+					*ElapsedTime += 0.01f;
+					float Alpha = FMath::Clamp(*ElapsedTime / FlyTime, 0.0f, 1.0f);
+
+					FVector CurrentLoc = FMath::Lerp(MuzzleStart, ExplicitImpactPoint, Alpha);
+					TracerComp->SetWorldLocation(CurrentLoc);
+
+					if (Alpha >= 1.0f)
+					{
+						TracerComp->DeactivateSystem();
+						TracerComp->DestroyComponent();
+
+						// 탄착 지점에 Impact 이펙트 스폰
+						if (m_OwnerGun && m_OwnerGun->GetImpactFX() && GetWorld())
+						{
+							FRotator ImpactRotation = (-ShootDir).Rotation();
+							UGameplayStatics::SpawnEmitterAtLocation(
+								GetWorld(),
+								m_OwnerGun->GetImpactFX(),
+								ExplicitImpactPoint,
+								ImpactRotation,
+								FVector(1.0f),
+								true
+							);
+						}
+
+						if (GetWorld() && TracerTimerHandle.IsValid())
+						{
+							GetWorld()->GetTimerManager().ClearTimer(*TracerTimerHandle);
+						}
+					}
+				},
+				0.01f,
+				true
+			);
+		}
+	}
+}

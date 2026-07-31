@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "C_CopFire.h"
@@ -8,12 +8,32 @@
 #include "Actor/ItemActor/Weapon/Gun/C_GunBase.h"
 #include "Actor/ItemActor/Weapon/WeaponComponent/GunComponent/AIGunUsageComponent/C_AIGunUsageComponent.h"
 #include "Utility/C_Util.h"
+#include "../C_EnemySkillData.h"
+
+#include "Actor/ItemActor/Weapon/Gun/Rifle/C_Rifle.h"
 
 bool UC_CopFire::Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data, OUT int32& _PlayedMontageSectionIdx)
 {
 	// TODO : 일단 당장에는 Rifle Section만 사용(바로 재생 처리)
 	// -> 추후 무기 종류가 늘어나면, 해당하는 무기의 Fire동작 Section을 재생처리 시켜주어야 함
-	return Super::Activate(_Owner, _Data, _PlayedMontageSectionIdx);
+	AC_CopZombie* CopZombie = Cast<AC_CopZombie>(_Owner);
+	if (!CopZombie)
+	{
+		UC_Util::Print("From UC_CopFire::Activate : CopZombie casting failed!", FColor::Red, 10.f);
+		return false;
+	}
+
+	if (Cast<AC_Rifle>(CopZombie->GetEquippedGun()))
+		return Super::Activate(_Owner, _Data, _PlayedMontageSectionIdx);
+	else
+	{
+		_PlayedMontageSectionIdx = 1;
+
+		// 정상 재생시작 처리되었다면 Montage Duration float값이 나옴(true) | 재생처리가 되지 않은 경우 0.f (false) )
+		const FName SectionName = _Data->Montage->GetSectionName(1);
+		const bool Played = static_cast<bool>(_Owner->PlayAnimMontage(_Data->Montage, 1.f, SectionName));
+		return Played;
+	}
 }
 
 void UC_CopFire::Fire(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data)

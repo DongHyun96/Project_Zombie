@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -36,6 +36,10 @@ public:
 	/// </summary>
 	virtual bool AIFire();
 	
+	// 모든 클라이언트에게 이펙트 재생
+	UFUNCTION(NetMulticast, Unreliable)
+	void Multicast_PlayAIFireEffects(FVector_NetQuantize ImpactPoint);
+
 public: /* Attachment 처리 관련 */
 
 	/// <summary>
@@ -56,7 +60,7 @@ private:
 	/// <summary>
 	/// AI 전용 Damage 주기 처리
 	/// </summary>
-	void AIProcessLineTraceDamage(float _DamageVal);
+	FVector AIProcessLineTraceDamage(float _DamageVal);
 
 	/// <summary>
 	/// 무기 Drop 처리 이후, GunMesh 굴러가는 게 멈췄는지 체크하고, 멈췄다면 대응되는 처리 실행
