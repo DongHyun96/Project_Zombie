@@ -18,8 +18,6 @@ AC_CopZombie::AC_CopZombie()
 {
 	PrimaryActorTick.bCanEverTick = false;
 	
-	
-	
 	m_GrabRangeCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("GrabRangeCollider"));
 	m_GrabRangeCollider->SetupAttachment(GetRootComponent());
 	
