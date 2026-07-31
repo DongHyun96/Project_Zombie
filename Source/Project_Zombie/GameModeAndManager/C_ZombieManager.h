@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -51,6 +51,16 @@ public: /* Spawn 관련 함수들 */
 
 	const TSet<AC_NurseZombie*>& GetActiveNurseZombies() const { return m_ActiveNurseZombies; }
 	
+
+	/*// ================== 동기화 처리 후 마무리 =======================
+	/// <summary>
+	/// 죽음 처리가 끝난 Zombie를 대기 Pool로 반환
+	/// </summary>
+	/// <param name="_Zombie"> : Pool로 반환할 Zombie </param>
+	/// <returns> : 반환에 실패하면 false </returns> 
+	bool ReturnZombieToPool(class AC_Zombie* _Zombie);
+	//==================================================================*/
+
 public: /* For testing TODO : 이 Block 밑 지울 함수들 모두 지워버릴 것 */
 
 	// TODO : 이 함수 테스트 때문에 넣어둠 지워버릴 것

@@ -24,6 +24,12 @@ class PROJECT_ZOMBIE_API AC_Zombie : public AC_BasicEnemy
 protected:
 	
 	const EZombieType m_ZombieType{};
+
+public:
+	/// <summary>
+	/// 현재 Zombie 종류 반환
+	/// </summary>
+	EZombieType GetZombieType() const { return m_ZombieType; }
 	
 protected: /* 공통 NormalAttack 피격판정 및 피격처리 (해당 기능이 없는 좀비의 경우 처리되지 않음) */
 

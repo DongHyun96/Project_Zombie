@@ -45,4 +45,7 @@ public:
 	UFUNCTION()
 	void AnimNotify_ChargeStart();
 
+	UFUNCTION()
+	void AnimNotify_LandingImpact();
+
 };

@@ -10,6 +10,7 @@
 #include "Components/StatComponent/C_EnemyStatComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameModeAndManager/C_GameMode_GameLv.h"
+#include "BrainComponent.h"
 #include "GameModeAndManager/C_ZombieManager.h"
 #include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 #include "Kismet/GameplayStatics.h"
@@ -134,12 +135,110 @@ void AC_BasicEnemy::OnDead(AC_BasicCharacter* _DeadCharacter)
 {
 	// 서버 환경의 Enemy인 경우에만 호출처리됨
 	
-	m_HealedEffectNGComponent->DeactivateImmediate();
-	Multicast_ToggleHealedEffect(false);
-	
+
 	// TODO : Dead에 필요한 처리가 더 필요하다면 여기서 이어서 처리해줄 것(ex 랙돌 처리 등)
 	// 아마 죽은 뒤에 죽은 모션이나 랙돌 처리를 보여준 후, 몇 초 뒤에 Pool로 돌아가게끔 처리를 해줄 듯
+	
+	if (!HasAuthority())
+		return;
+
+	if (m_bDead)
+		return;
+
+	if (_DeadCharacter != this)
+		return;
+
+	m_bDead = true;
+
+	if (IsValid(m_HealedEffectNGComponent))
+	{
+		m_HealedEffectNGComponent->DeactivateImmediate();
+		Multicast_ToggleHealedEffect(false);
+	}
+
+	// 실행중이던 모든 행동(AI 정지, 스킬 및 이동..) 정지시키기
+	StopAllActionsForDead();
+
+	// 죽음 애니메이션 재생
+	PlayDeadAnimation();
 }
+
+void AC_BasicEnemy::StopAllActionsForDead()
+{
+	if (AAIController* pController = Cast<AAIController>(GetController()))
+	{
+		pController->StopMovement();
+
+		// 비헤이비어트리에서 완전히 정지시키기
+		if (UBrainComponent* Brain = pController->GetBrainComponent())
+		{
+			Brain->StopLogic(TEXT("Enemy Dead"));
+		}
+	}
+
+	if (UCharacterMovementComponent* MoveCom = GetCharacterMovement())
+	{
+		MoveCom->StopMovementImmediately();
+		MoveCom->DisableMovement();
+	}
+
+	// 재생 중이던 스킬 몽타주 정지
+	StopAnimMontage();
+
+	// 현재 사용중인 스킬 강제 종료
+	if (IsValid(m_SkillCom))
+	{
+		// 스킬컴포넌트에서 스킬 종료 함수가 있다면 호출
+	}
+}
+
+void AC_BasicEnemy::PlayDeadAnimation()
+{
+	// 여러개의 죽음 몽타주 중 랜덤하게 play
+	if (m_DeadMontages.IsEmpty())
+	{
+		UC_Util::Print("!!Dead Montage is Empty!!", FColor::Red, 10.f);
+		return;
+	}
+
+	const int32 RandomIndex = FMath::RandRange(0, m_DeadMontages.Num() - 1);
+
+	UAnimMontage* SelectedMontage = m_DeadMontages[RandomIndex];
+
+	if (!IsValid(SelectedMontage))
+	{
+		UC_Util::Print("!!Selected Dead Montage is nullptr!!", FColor::Red, 10.f);
+		return;
+	}
+
+	PlayAnimMontage(SelectedMontage);
+}
+
+/* 동기화 처리 후 마무리
+void AC_BasicEnemy::FinishDead()
+{
+	// 서버에서만 Zombie Pool 반환 처리
+	if (!HasAuthority())
+		return;
+
+	// C_Zombie 를 상속받은 계열만 ZombieManager Pool로 반환
+	AC_Zombie* Zombie = Cast<AC_Zombie>(this);
+
+	if (!IsValid(Zombie))
+	{
+		UC_Util::Print("From AC_BasicEnemy::FinishDead : This Enemy is not Zombie", FColor::Red, 10.f);
+
+		return;
+	}
+
+	// 죽음 몽타주가 종료된 Zombie를 대기 Pool로 반환
+	if (!ZOMBIE_MANAGER->ReturnZombieToPool(Zombie))
+	{
+		UC_Util::Print("From AC_BasicEnemy::FinishDead : ReturnZombieToPool Failed !!", FColor::Red, 10.f);
+
+	}
+}*/
+
 
 void AC_BasicEnemy::DecreaseHealRequestRegisterCount()
 {

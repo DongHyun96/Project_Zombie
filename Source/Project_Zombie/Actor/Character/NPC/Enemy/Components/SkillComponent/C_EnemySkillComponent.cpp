@@ -74,8 +74,6 @@ void UC_EnemySkillComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 
 bool UC_EnemySkillComponent::UseSkill(ESkillSlot _Slot)
 {
-	/*if (!CanUseSkill(_Slot))
-		return false;*/
 
 	// 이미 다른 스킬을 사용중일 때
 	if (bUsingSkill) return false;
@@ -123,11 +121,10 @@ void UC_EnemySkillComponent::OnAN_EndSkill()
 {
 	UC_Util::Print("OnAN_EndSkill");
 
-	m_SkillEndDelegate.Broadcast(Cast<AC_BasicEnemy>(GetOwner()));
-	
 	bUsingSkill = false;
 	m_CurSkillData = nullptr;
 
+	m_SkillEndDelegate.Broadcast(Cast<AC_BasicEnemy>(GetOwner()));
 }
 
 void UC_EnemySkillComponent::EndSkillManually()

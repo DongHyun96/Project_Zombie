@@ -41,11 +41,7 @@ bool UC_ChargeAttack::Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data, 
 	if (!IsValid(_Data->Montage))
 		return false;
 
-	USkeletalMeshComponent* Mesh = Tank->GetMesh();
-	if (!IsValid(Mesh))
-		return false;
-
-	UAnimInstance* AnimInst = Mesh->GetAnimInstance();
+	UAnimInstance* AnimInst = Tank->GetMesh()->GetAnimInstance();
 	if (!IsValid(AnimInst))
 		return false;
 

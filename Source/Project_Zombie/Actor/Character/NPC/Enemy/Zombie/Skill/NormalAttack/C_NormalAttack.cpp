@@ -3,6 +3,8 @@
 
 #include "C_NormalAttack.h"
 
+#include "Actor/Character/NPC/Enemy/Components/SkillComponent/C_EnemySkillComponent.h"
+
 #include "Actor/Character/NPC/Enemy/C_BasicEnemy.h"
 #include "Actor/Character/NPC/Enemy/Zombie/Skill/C_EnemySkillData.h"
 
