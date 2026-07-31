@@ -8,6 +8,7 @@
 #include "Actor/ItemActor/Weapon/Gun/C_GunBase.h"
 #include "Actor/ItemActor/Weapon/WeaponComponent/GunComponent/AIGunUsageComponent/C_AIGunUsageComponent.h"
 #include "Components/BoxComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "Utility/C_Util.h"
 
@@ -31,10 +32,15 @@ void AC_CopZombie::BeginPlay()
 	Super::BeginPlay();
 	// m_GrabRangeCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-	if (!IsLocallyControlled()) return; // Server쪽 좀비인 경우에만, CollisionHandling 처리	
+	if (!IsLocallyControlled())
+	{
+		m_GrabRangeCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		m_NormalAttackCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		return; // Server쪽 좀비인 경우에만, CollisionHandling 처리
+	}
+	
 	m_GrabRangeCollider->OnComponentBeginOverlap.AddDynamic(this, &AC_CopZombie::OnGrabRangeColliderBeginOverlap);
 	m_GrabRangeCollider->OnComponentEndOverlap.AddDynamic(this, &AC_CopZombie::OnGrabRangeColliderEndOverlap);
-	m_NormalAttackCollider->OnComponentBeginOverlap.AddDynamic(this, &AC_CopZombie::OnNormalAttackColliderBeginOverlap);
 }
 
 void AC_CopZombie::Tick(float DeltaTime)
@@ -110,19 +116,6 @@ void AC_CopZombie::DropWeapon()
 	if (!m_EquippedGun->GetAIGunUsageComponent()->DetachFromHand()) return;
 	
 	m_EquippedGun = nullptr;
-}
-
-void AC_CopZombie::OnNormalAttackColliderBeginOverlap
-(
-	UPrimitiveComponent* OverlappedComponent,
-	AActor*				 OtherActor,
-	UPrimitiveComponent* OtherComp,
-	int32				 OtherBodyIndex,
-	bool				 bFromSweep,
-	const FHitResult&	 SweepResult
-)
-{
-	// Client 쪽은 Event 바인딩 처리 자체를 안해서 검사하지 않아도 됨
 }
 
 void AC_CopZombie::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const

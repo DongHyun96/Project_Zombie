@@ -113,6 +113,9 @@ bool UC_EnemySkillComponent::UseSkill(ESkillSlot _Slot)
 	// 현재 서버환경에서 실행되는 중, 스킬 정상 발동되었으니 Multicast를 통해 나머지 게스트 환경에서도 스킬 동작 나오도록 RPC 호출 처리
 	Multicast_ImitateUseSkill(_Slot, PlayedMontageSection);
 	
+	// 클라이언트 환경에서 현재 동작중인 최신 스킬 슬롯을 서버 쪽에서도 들고 있게끔 처리(이 값은 딱히 Replicate 처리까지는 하지 않음)
+	m_CurImitatingSkillSlot = _Slot;  
+	
 	return true;
 }
 
@@ -133,6 +136,10 @@ void UC_EnemySkillComponent::EndSkillManually()
 	// 현재 Skill이 Valid하고, 해당 Skill의 모션이 끝나지 않았다면 끊어줌
 	if (m_CurSkillData && m_OwnerEnemy->GetMesh()->GetAnimInstance()->Montage_IsPlaying(m_CurSkillData->Montage))
 		m_OwnerEnemy->StopAnimMontage(m_CurSkillData->Montage);
+	
+	Multicast_ImitateEndSkillManually(m_CurImitatingSkillSlot);
+	
+	m_CurImitatingSkillSlot = ESkillSlot::END;
 
 	// 나머지 처리는 기존의 OnEndSkill 처리와 같음
 	OnAN_EndSkill();
@@ -244,6 +251,17 @@ float UC_EnemySkillComponent::GetSkillRange(ESkillSlot _Slot) const
 	return m_SkillSlots[TargetIdx].LoadedSkillData->Range;
 }
 
+float UC_EnemySkillComponent::GetCurSkillDamage() const
+{
+	if (!m_CurSkillData)
+	{
+		UC_Util::Print("[UC_EnemySkillComponent::GetCurSkillDamage] : CurSkillData nullptr", FColor::Red, 10.f);
+		return 0.f;
+	}
+	
+	return m_CurSkillData->Damage;
+}
+
 void UC_EnemySkillComponent::Multicast_ImitateUseSkill_Implementation(ESkillSlot _ImitatingSkillSlot, int32 _PlayedMontageSection)
 {
 	// 서버 환경의 UseSkill 따라하기 요청처리는 무시 (자기자신이 보낸 요청이고, 자기자신은 이미 UseSkill 동작을 발현한 상태)
@@ -262,6 +280,31 @@ void UC_EnemySkillComponent::Multicast_ImitateUseSkill_Implementation(ESkillSlot
 	// 스킬 동작 따라하기
 	UAnimMontage* TargetSkillMontage = m_SkillSlots[SkillSlotIdx].LoadedSkillData->Montage;
 	const FName TargetSectionName    = TargetSkillMontage->GetSectionName(_PlayedMontageSection);
-	m_OwnerEnemy->PlayAnimMontage(TargetSkillMontage, 1.f, TargetSectionName);
+	const float Duration = m_OwnerEnemy->PlayAnimMontage(TargetSkillMontage, 1.f, TargetSectionName);
+
+	// 제대로 재생 처리 되었다면, 현재 재생 중인 Skill 동작 Slot을 저장
+	// Manual 하게 동작이 끊긴 처리 Multicast 수신했을 경우, 더블 체크로 현재 수행중인 동작을 끊어버릴 예정
+	if (Duration > 0.f) m_CurImitatingSkillSlot = _ImitatingSkillSlot;
 }
 
+void UC_EnemySkillComponent::Multicast_ImitateEndSkillManually_Implementation(ESkillSlot _TargetSkillSlot)
+{
+	if (!m_OwnerEnemy || m_OwnerEnemy->IsLocallyControlled()) return;
+
+	// 다른 동작을 처리 중
+	if (m_CurImitatingSkillSlot != _TargetSkillSlot) return;
+
+	const int32 TargetIdx = static_cast<int32>(_TargetSkillSlot);
+	if (!m_SkillSlots.IsValidIndex(TargetIdx)) return;
+	
+	if (m_SkillSlots[TargetIdx].LoadedSkillData && m_SkillSlots[TargetIdx].LoadedSkillData->Montage)
+	{
+		UAnimInstance* OwnerAnimInst = m_OwnerEnemy->GetMesh()->GetAnimInstance();
+		
+		if (OwnerAnimInst->Montage_IsPlaying(m_SkillSlots[TargetIdx].LoadedSkillData->Montage))
+			m_OwnerEnemy->StopAnimMontage(m_SkillSlots[TargetIdx].LoadedSkillData->Montage);
+	}
+	
+	// Imitating 처리 중인 동작이 없다고 판단
+	m_CurImitatingSkillSlot = ESkillSlot::END;
+}

@@ -60,6 +60,13 @@ private:
 	
 	void OnHPIncreased(AC_BasicCharacter* _HPIncreasedCharacter);
 
+	/// <summary>
+	/// 힐 받았을 때 Effect 동기화 시 호출처리
+	/// </summary>
+	/// <param name="_Activate"></param>
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_ToggleHealedEffect(bool _Activate);
+
 protected:
 	
 	/// <summary>

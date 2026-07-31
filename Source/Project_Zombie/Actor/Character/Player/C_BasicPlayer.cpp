@@ -51,10 +51,6 @@ AC_BasicPlayer::AC_BasicPlayer()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	// Replication 설정
-	SetReplicates(true);
-
-	
 	m_SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	m_SpringArm->SetupAttachment(RootComponent);
 	m_SpringArm->TargetArmLength = 250.0f;

@@ -13,6 +13,14 @@ UCLASS()
 class PROJECT_ZOMBIE_API AC_GameMode_GameLv : public AGameModeBase
 {
 	GENERATED_BODY()
+
+public:
+	
+	AC_GameMode_GameLv();
+
+public:
+	
+	virtual void BeginPlay() override;
 	
 public:
 	/*
@@ -20,4 +28,23 @@ public:
 	 * 근데 컨트롤러쪽에서 따로 구현해두었는데 나중에 실제 Release버전에서 다시 한번 조정해야 할 수 있음.
 	 */
 	virtual void Logout(AController* Exiting) override;
+	
+public:
+	
+	class UC_ZombieManager* GetZombieManager() const { return m_ZombieManager; }
+
+protected:
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	class UC_ZombieManager* m_ZombieManager{};
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	TSubclassOf<UC_ZombieManager> m_ZombieManagerClass{};
+	
 };
+
+#define GAME_LV_GAME_MODE(WorldContext) \
+	(Cast<AC_GameMode_GameLv>(UGameplayStatics::GetGameMode(WorldContext)))
+
+#define ZOMBIE_MANAGER(WorldContext) \
+    (GAME_LV_GAME_MODE(WorldContext)->GetZombieManager())

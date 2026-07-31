@@ -34,23 +34,12 @@ public:
 	void AddPlayer(class AC_BasicPlayer* _Player) { m_Players.Add(_Player); }
 	const TArray<AC_BasicPlayer*>& GetPlayers() const { return m_Players; }
 	
-	class UC_ZombieManager* GetZombieManager() const { return m_ZombieManager; } 
-	
 private:
 
 	// 이 레벨을 플레이 중인 모든 플레이어 객체
 	TArray<AC_BasicPlayer*> m_Players{};
 	
-private:
-
-	UPROPERTY()
-	TSubclassOf<UC_ZombieManager> m_ZombieManagerClass{};
-	
-	UPROPERTY()
-	UC_ZombieManager* m_ZombieManager{};
-	
 };
 
 // 주의 : GetWorld() 가 valid하거나, Valid한 시점에만 사용 & In GameLevel인 경우에만 사용할 것
 #define LEVEL_MANAGER	GetWorld()->GetSubsystem<UC_GameLevelManager>()
-#define ZOMBIE_MANAGER	LEVEL_MANAGER->GetZombieManager()

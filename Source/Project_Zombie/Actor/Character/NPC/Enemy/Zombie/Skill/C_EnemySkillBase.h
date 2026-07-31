@@ -27,7 +27,7 @@ public:
 	/// </summary>
 	/// <param name="_Owner"></param>
 	/// <param name="_Data"></param>
-	virtual void Fire(class AC_BasicEnemy* _Owner, class UC_EnemySkillData* _Data);
+	virtual void Fire(class AC_BasicEnemy* _Owner, class UC_EnemySkillData* _Data) {}
 
 public:
 	UC_EnemySkillBase();

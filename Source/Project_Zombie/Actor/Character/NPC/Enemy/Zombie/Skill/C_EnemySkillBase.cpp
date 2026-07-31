@@ -30,8 +30,3 @@ bool UC_EnemySkillBase::Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data
 	const bool Played = static_cast<bool>(_Owner->PlayAnimMontage(_Data->Montage));
 	return static_cast<bool>(_Owner->PlayAnimMontage(_Data->Montage));
 }
-
-void UC_EnemySkillBase::Fire(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data)
-{
-}
-

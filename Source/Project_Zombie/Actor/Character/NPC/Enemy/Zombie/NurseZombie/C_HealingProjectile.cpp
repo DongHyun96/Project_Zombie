@@ -12,14 +12,20 @@
 #include "Actor/Components/StatComponent/C_StatComponentBase.h"
 #include "Components/SphereComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "GameModeAndManager/C_GameMode_GameLv.h"
 #include "GameModeAndManager/C_ZombieManager.h"
 #include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
+#include "Kismet/GameplayStatics.h"
+#include "Net/UnrealNetwork.h"
 #include "Utility/C_Util.h"
 
 
 AC_HealingProjectile::AC_HealingProjectile()
 {
 	PrimaryActorTick.bCanEverTick = false;
+
+	SetReplicates(true);
+	SetReplicateMovement(true);
 	
 	m_MainCollider = CreateDefaultSubobject<USphereComponent>(TEXT("MainCollider"));
 	m_MainCollider->InitSphereRadius(30.f);
@@ -46,8 +52,12 @@ void AC_HealingProjectile::BeginPlay()
 	if (m_NiagaraComponent && m_TrailEffect)
 		m_NiagaraComponent->SetAsset(m_TrailEffect);
 
-	m_MainCollider->OnComponentHit.AddDynamic(this, &AC_HealingProjectile::OnMainColliderHit);
-	m_MainCollider->OnComponentBeginOverlap.AddDynamic(this, &AC_HealingProjectile::OnMainColliderBeginOverlap);
+	// 서버 쪽 환경에서만 실질적인 이펙트 충돌 처리를 할 것임
+	if (HasAuthority())
+	{
+		m_MainCollider->OnComponentHit.AddDynamic(this, &AC_HealingProjectile::OnMainColliderHit);
+		m_MainCollider->OnComponentBeginOverlap.AddDynamic(this, &AC_HealingProjectile::OnMainColliderBeginOverlap);
+	}
 
 	m_ProjectileMovement->HomingAccelerationMagnitude = m_Speed * m_HomingAccFactor;
 	
@@ -80,6 +90,9 @@ bool AC_HealingProjectile::Fire
 	
 	/* 스폰 처리 */
 
+	FlushNetDormancy();			// Dormant였다면 깨움
+	SetNetDormancy(DORM_Awake); // Replication 재개
+	
 	SetActorLocation(_FireStartLocation);
 	m_bActive         = true;
 	m_SpawnedBy       = _SpawnedBy;
@@ -101,7 +114,9 @@ bool AC_HealingProjectile::Fire
 	
 	
 	m_MainCollider->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	UC_Util::Print("Fire succeeded", FColor::Red, 10.f);
+	
+	ForceNetUpdate();
+	
 	return true;
 }
 
@@ -130,6 +145,14 @@ void AC_HealingProjectile::Deactivate()
 	
 	// TrailEffect 비활성화
 	m_NiagaraComponent->DeactivateImmediate();
+
+	
+	
+	if (HasAuthority())
+	{
+		ForceNetUpdate(); // 지금 변경사항 즉시 전송
+		SetNetDormancy(DORM_DormantAll);
+	}
 }
 
 void AC_HealingProjectile::OnHealTargetDead(AC_BasicCharacter* _DeadCharacter)
@@ -138,7 +161,7 @@ void AC_HealingProjectile::OnHealTargetDead(AC_BasicCharacter* _DeadCharacter)
 	if (m_bActive)
 	{
 		Deactivate();
-		ZOMBIE_MANAGER->ReturnHealingProjectileToPool(this);
+		ZOMBIE_MANAGER(this)->ReturnHealingProjectileToPool(this);
 	}
 }
 
@@ -157,7 +180,7 @@ void AC_HealingProjectile::OnMainColliderBeginOverlap
 	if (!OverlappedEnemy) // Enemy가 아닌 다른 물체와의 충돌 (지형지물 등) -> 바로 Pool로 돌아가기
 	{
 		Deactivate();
-		ZOMBIE_MANAGER->ReturnHealingProjectileToPool(this); // 좀비 풀로 다시 들어가기
+		ZOMBIE_MANAGER(this)->ReturnHealingProjectileToPool(this); // 좀비 풀로 다시 들어가기
 		return;
 	}
 
@@ -177,7 +200,7 @@ void AC_HealingProjectile::OnMainColliderBeginOverlap
 		
 		// HealTarget에 도달함 -> 풀피라 힐 처리 x -> Pool로 다시 되돌아가기
 		Deactivate();
-		ZOMBIE_MANAGER->ReturnHealingProjectileToPool(this);
+		ZOMBIE_MANAGER(this)->ReturnHealingProjectileToPool(this);
 		return;
 	}
 	
@@ -186,16 +209,20 @@ void AC_HealingProjectile::OnMainColliderBeginOverlap
 	
 	if (m_HealEffect)
 	{
+		const FVector ActorLocation = GetActorLocation();
+		
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation
 		(
 			GetWorld(),
 			m_HealEffect,
-			GetActorLocation()
+			ActorLocation
 		);
+		
+		Multicast_SpawnHealEffect(ActorLocation);
 	}
 	
 	Deactivate();
-	ZOMBIE_MANAGER->ReturnHealingProjectileToPool(this);
+	ZOMBIE_MANAGER(this)->ReturnHealingProjectileToPool(this);
 }
 
 void AC_HealingProjectile::OnMainColliderHit
@@ -209,5 +236,44 @@ void AC_HealingProjectile::OnMainColliderHit
 {
 	// 지형지물 및 기타 불필요한 물체와의 충돌 -> Pool로 바로 들어가기 처리
 	Deactivate();
-	ZOMBIE_MANAGER->ReturnHealingProjectileToPool(this);
+	ZOMBIE_MANAGER(this)->ReturnHealingProjectileToPool(this);
+}
+
+void AC_HealingProjectile::Multicast_SpawnHealEffect_Implementation(FVector_NetQuantize _SpawnLocation)
+{
+	// 서버 환경에서는 이미 해당 Effect가 재생되어 나옴 (주체)
+	if (HasAuthority()) return;
+	
+	if (m_HealEffect)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation
+		(
+			GetWorld(),
+			m_HealEffect,
+			_SpawnLocation
+		);
+	}
+}
+
+void AC_HealingProjectile::OnRep_Active()
+{
+	if (m_bActive)
+	{
+		// 비주얼적인 처리만 켜준다
+		SetActorHiddenInGame(false);
+		m_NiagaraComponent->Activate(true);
+	}
+	else
+	{
+		// 비주얼적인 처리만 꺼준다
+		SetActorHiddenInGame(true);
+		m_NiagaraComponent->DeactivateImmediate();
+	}
+}
+
+void AC_HealingProjectile::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	
+	DOREPLIFETIME(AC_HealingProjectile, m_bActive);
 }

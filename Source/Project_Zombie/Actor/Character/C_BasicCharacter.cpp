@@ -38,6 +38,9 @@ float AC_BasicCharacter::TakeDamage
 	
 	// Invalid DamageAmount early return
 	if (DamageAmount <= 0.f) return 0.f;
+	
+	// 서버 환경에서만 TakeDamage 과정을 처리할 예정
+	if (!HasAuthority()) return 0.f;
 
 	m_StatComponent->DecreaseCurHP(DamageAmount);
 	

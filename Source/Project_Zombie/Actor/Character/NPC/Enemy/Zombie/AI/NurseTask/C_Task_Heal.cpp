@@ -11,8 +11,10 @@
 #include "Actor/Character/NPC/Enemy/Zombie/NurseZombie/C_NurseZombie.h"
 #include "Actor/Components/StatComponent/C_StatComponentBase.h"
 #include "Chaos/ChaosVDTraceRelayTransport.h"
+#include "GameModeAndManager/C_GameMode_GameLv.h"
 #include "GameModeAndManager/C_ZombieManager.h"
 #include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
+#include "Kismet/GameplayStatics.h"
 #include "Utility/C_Util.h"
 
 UC_Task_Heal::UC_Task_Heal()
@@ -89,7 +91,14 @@ void UC_Task_Heal::TickTask(UBehaviorTreeComponent& _OwnCom, uint8* _NodeMemory,
 			const FVector ToTargetDir    = (HealTarget->GetActorLocation() - Nurse->GetActorLocation()).GetSafeNormal();
 			const FVector LaunchDirection = (FVector::UnitZ() + ToTargetDir).GetSafeNormal();
 			
-			ZOMBIE_MANAGER->SpawnHealingProjectile(Nurse->GetActorLocation() + FVector::UnitZ() * 100.f, LaunchDirection, Nurse, HealTarget, 30.f);
+			ZOMBIE_MANAGER(this)->SpawnHealingProjectile
+			(
+				Nurse->GetActorLocation() + FVector::UnitZ() * 100.f,
+				LaunchDirection,
+				Nurse,
+				HealTarget,
+				30.f
+			);
 		}
 	}
 }

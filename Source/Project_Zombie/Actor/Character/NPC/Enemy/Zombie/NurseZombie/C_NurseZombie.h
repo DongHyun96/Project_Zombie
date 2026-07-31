@@ -58,7 +58,8 @@ public:
 	bool TryRegisterAsHealTarget(AC_BasicEnemy* _NewHealTarget);
 
 public:
-	
+
+	// ABP 상태값으로 사용하고 있지 않음 -> 따라서 Replicate 처리할 필요 없음
 	void SetActionState(ENurseZombieActionState _ActionState) { m_ActionState = _ActionState; }
 	ENurseZombieActionState GetActionState() const { return m_ActionState; }
 
@@ -66,6 +67,11 @@ public:
 	/// 주변부 Healing Aura 활성화/비활성화
 	/// </summary>
 	void ToggleHealingAura(bool _Activate);
+	
+private:
+	
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_ToggleHealingAura(bool _Active);
 	
 private:
 	
@@ -108,5 +114,10 @@ private:
 
 	// 3 마리까지 Heal Target을 잡을 수 있도록 한다
 	static const uint8 s_HealTargetCountLimit;
+	
+protected:
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	class UBoxComponent* m_NormalAttackCollider{};
 	
 };

@@ -8,8 +8,11 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/SkillComponent/C_EnemySkillComponent.h"
 #include "Components/StatComponent/C_EnemyStatComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "GameModeAndManager/C_GameMode_GameLv.h"
 #include "GameModeAndManager/C_ZombieManager.h"
 #include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
+#include "Kismet/GameplayStatics.h"
 #include "Utility/C_Util.h"
 #include "Zombie/NurseZombie/C_NurseZombie.h"
 #include "Zombie/Controller/C_ZombieController.h"
@@ -19,7 +22,7 @@ const int8 AC_BasicEnemy::s_MaxHealRequestRegisterCount = 2;
 AC_BasicEnemy::AC_BasicEnemy()
 {
 	// Replication 설정
-	SetReplicates(true);
+	// SetReplicates(true); -> 이걸 걸면 오히려 뚝뚝 끊겨보이는데 왜지?
 	
 	// 스탯 컴포넌트 추가
 	m_StatComponent = CreateDefaultSubobject<UC_EnemyStatComponent>(TEXT("StatComponent"));
@@ -36,6 +39,13 @@ AC_BasicEnemy::AC_BasicEnemy()
 	
 	if (HealedEffect.Succeeded())
 		m_HealedEffectNGComponent->SetAsset(HealedEffect.Object.Get());
+	
+	// 회전 관련 처리 설정 (서버 쪽은 Controller가 존재하여, 부드럽게 보임 -> 클라이언트단 화면에서는 Controller가 없기에, Controller Rotation (0, 0, 0) 값을 사용
+	// 따라서 끊겨보이는 버그가 있었음
+	bUseControllerRotationYaw                             = false;
+	GetCharacterMovement()->bOrientRotationToMovement     = true;
+	GetCharacterMovement()->bUseControllerDesiredRotation = false;
+	GetCharacterMovement()->RotationRate                  = FRotator(0.f, 360.f, 0.f);
 }
 
 void AC_BasicEnemy::BeginPlay()
@@ -84,7 +94,7 @@ float AC_BasicEnemy::TakeDamage
 	// TODO : 이거 요청 빈도가 너무 높으면 여기서 병목 생길수도 있음 -> 추후 최적화할 때 고려할 것
 	if (m_StatComponent->GetCurHPRatio() < FMath::RandRange(0.5f, 0.7f))
 	{
-		for (AC_NurseZombie* ActiveNurse : ZOMBIE_MANAGER->GetActiveNurseZombies())
+		for (AC_NurseZombie* ActiveNurse : ZOMBIE_MANAGER(this)->GetActiveNurseZombies())
 			if (ActiveNurse->TryRegisterAsHealTarget(this))
 			{
 				++m_HealRequestRegisterCount; // 등록 횟수 하나 올리기
@@ -101,14 +111,32 @@ void AC_BasicEnemy::OnHPIncreased(AC_BasicCharacter* _HPIncreasedCharacter)
 	
 	// 이미 HealedEffect 재생중인 경우
 	if (m_HealedEffectNGComponent->IsActive()) return;
+	{
 		m_HealedEffectNGComponent->Activate(true);
+		Multicast_ToggleHealedEffect(true);
+	}
+}
+
+void AC_BasicEnemy::Multicast_ToggleHealedEffect_Implementation(bool _Activate)
+{
+	// 서버 쪽은 이미 해당 처리를 한 상황
+	if (IsLocallyControlled()) return;
+	
+	if (_Activate)
+	{
+		if (m_HealedEffectNGComponent->IsActive()) return;
+			m_HealedEffectNGComponent->Activate(true);
+	}
+	else m_HealedEffectNGComponent->DeactivateImmediate();
 }
 
 void AC_BasicEnemy::OnDead(AC_BasicCharacter* _DeadCharacter)
 {
-	// 서버 환경의 Enemy인 겨웅에만 호출처리됨
+	// 서버 환경의 Enemy인 경우에만 호출처리됨
 	
 	m_HealedEffectNGComponent->DeactivateImmediate();
+	Multicast_ToggleHealedEffect(false);
+	
 	// TODO : Dead에 필요한 처리가 더 필요하다면 여기서 이어서 처리해줄 것(ex 랙돌 처리 등)
 	// 아마 죽은 뒤에 죽은 모션이나 랙돌 처리를 보여준 후, 몇 초 뒤에 Pool로 돌아가게끔 처리를 해줄 듯
 }

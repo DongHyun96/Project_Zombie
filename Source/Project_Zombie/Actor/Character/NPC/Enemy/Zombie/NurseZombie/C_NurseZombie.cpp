@@ -7,9 +7,12 @@
 #include "NiagaraComponent.h"
 #include "Actor/Character/NPC/Enemy/Components/SkillComponent/C_EnemySkillComponent.h"
 #include "Actor/Components/StatComponent/C_StatComponentBase.h"
+#include "Components/BoxComponent.h"
 #include "Components/SphereComponent.h"
+#include "GameModeAndManager/C_GameMode_GameLv.h"
 #include "GameModeAndManager/C_ZombieManager.h"
 #include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
+#include "Kismet/GameplayStatics.h"
 #include "Utility/C_Util.h"
 
 
@@ -25,14 +28,22 @@ AC_NurseZombie::AC_NurseZombie()
 	
 	m_HealingAuraEffectNG = CreateDefaultSubobject<UNiagaraComponent>(TEXT("HealingAuraNGComponent"));
 	m_HealingAuraEffectNG->SetupAttachment(GetRootComponent());
+	
+	m_NormalAttackCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("NormalAttackCollider"));
+	m_NormalAttackCollider->SetupAttachment(GetRootComponent());
+	AddNormalAttackCollider(m_NormalAttackCollider);
 }
 
 void AC_NurseZombie::BeginPlay()
 {
 	Super::BeginPlay();
-	ZOMBIE_MANAGER->AddNurseZombieToActivePool(this); // TODO : 이 라인 지워버리기 (Level 배치한 테스트용 처리 / 실질적인 Spawn 처리는 ZombieManager에서 할 것) 
 	
-	ToggleHealingAura(false);
+	if (HasAuthority())
+		ZOMBIE_MANAGER(this)->AddNurseZombieToActivePool(this); // TODO : 이 라인 지워버리기 (Level 배치한 테스트용 처리 / 실질적인 Spawn 처리는 ZombieManager에서 할 것) 
+	
+	// ToggleHealingAura(false);
+	m_HealingAuraCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	m_HealingAuraEffectNG->DeactivateImmediate();
 }
 
 void AC_NurseZombie::GetHealingAuraOverlappingEnemies(TArray<AActor*>& _OutOverlappingEnemies) const
@@ -102,6 +113,16 @@ void AC_NurseZombie::ToggleHealingAura(bool _Activate)
 		m_HealingAuraCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		m_HealingAuraEffectNG->DeactivateImmediate();
 	}
+	
+	Multicast_ToggleHealingAura(_Activate);
+}
+
+void AC_NurseZombie::Multicast_ToggleHealingAura_Implementation(bool _Active)
+{
+	if (IsLocallyControlled()) return;
+	
+	if (_Active)	m_HealingAuraEffectNG->Activate(true);
+	else			m_HealingAuraEffectNG->DeactivateImmediate();
 }
 
 void AC_NurseZombie::OnHealTargetDeadOrReachedFullHP(AC_BasicCharacter* _HealTarget)
