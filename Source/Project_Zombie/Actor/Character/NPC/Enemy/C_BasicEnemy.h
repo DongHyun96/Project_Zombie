@@ -16,6 +16,20 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (DisplayName = "SkillComponent"))
 	class UC_EnemySkillComponent*			m_SkillCom;
 
+protected: /* Dead 관련 */
+
+	// 죽었는지 판단
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Dead")
+	bool m_bDead = false;
+
+	// 죽음 몽타주
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dead")
+	TArray<TObjectPtr<UAnimMontage>> m_DeadMontages;
+
+	// 죽은 뒤 월드에 남아있는 시간(FinishDead 구현 시 추가)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dead")
+	float m_DeadRemainTime = 3.f;
+
 private:
 	
 	UPROPERTY()
@@ -63,10 +77,27 @@ private:
 protected:
 	
 	/// <summary>
+	/// 사망 절차만 처리
 	/// 사망 시 호출받는 Delegate -> HealedEffect 활성화 중이었다면 해당 Effect 끄기 (및 기타 처리 여기서 할 것)
 	/// </summary>
 	/// <param name="_DeadCharacter"> : 죽은 캐릭터 (자기자신) </param>
 	virtual void OnDead(AC_BasicCharacter* _DeadCharacter);
+
+
+	/* =============== 동기화 처리 후 마무리 ====================
+	/// <summary>
+	/// 죽음 몽타주 재생이 끝나고 ZombieManager에 Pool 반환 요청
+	/// </summary>
+	UFUNCTION(BlueprintCallable)
+	virtual void FinishDead();
+	===========================================================*/
+
+	/// <summary>
+	/// AI와 이동 정지
+	/// </summary>
+	virtual void StopAllActionsForDead();
+
+	virtual void PlayDeadAnimation();
 	
 public:
 	

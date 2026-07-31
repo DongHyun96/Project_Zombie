@@ -30,6 +30,7 @@
 
 
 AC_TankZombie::AC_TankZombie()
+	: Super(EZombieType::TankZombie)
 {
 	PrimaryActorTick.bCanEverTick = true;
 
@@ -199,7 +200,7 @@ void AC_TankZombie::OnChargeBeginOverlap(UPrimitiveComponent* OverlappedComponen
 
 void AC_TankZombie::OnChargeCapsuleHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-	UC_Util::Print("Wall Hit");
+	//UC_Util::Print("Wall Hit");
 
 	if (!HasAuthority())
 		return;

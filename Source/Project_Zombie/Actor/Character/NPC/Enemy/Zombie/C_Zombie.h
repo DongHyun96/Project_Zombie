@@ -12,7 +12,8 @@ enum class EZombieType : uint8
 	NormalZombie,
 	ToxicZombie,
 	NurseZombie,
-	CopZombie
+	CopZombie,
+	TankZombie
 };
 
 UCLASS()
@@ -23,6 +24,12 @@ class PROJECT_ZOMBIE_API AC_Zombie : public AC_BasicEnemy
 protected:
 	
 	const EZombieType m_ZombieType{};
+
+public:
+	/// <summary>
+	/// 현재 Zombie 종류 반환
+	/// </summary>
+	EZombieType GetZombieType() const { return m_ZombieType; }
 	
 protected:
 	virtual void BeginPlay() override;
