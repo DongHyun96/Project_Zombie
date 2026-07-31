@@ -138,7 +138,7 @@ void UC_ItemUpgradeWidget::RequestItemUpgrade()
 	
 	if (!hasRequiredItems) return; 
 	
-	AC_InteractableBase* Base = Cast<AC_InteractableBase>(m_UsePlayer->GetInteractionComponent()->GetCurrentInterationActor());
+	AC_InteractableBase* Base = Cast<AC_InteractableBase>(m_UsePlayer->GetInteractionComponent()->GetCurrentInteractionTarget());
 
 	if (!Base) return;
 	

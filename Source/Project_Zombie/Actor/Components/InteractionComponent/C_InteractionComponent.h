@@ -86,7 +86,7 @@ public:
 	/// <summary>
 	/// 현재 상호작용 중인 상대 Actor 반환
 	/// </summary>
-	AActor* GetCurrentInterationTarget() const { return m_CurrentInteractionTarget.Get(); }
+	AActor* GetCurrentInteractionTarget() const { return m_CurrentInteractionTarget.Get(); }
 
 
 	EInteractionNetType GetInteractionNetType() const { return m_InteractionNetType; }
