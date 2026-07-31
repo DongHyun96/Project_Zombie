@@ -32,6 +32,7 @@ private:
 protected:
 	virtual void PullTrigger() override;
 	virtual void ReleaseTrigger() override;
+	virtual void AIFire(const FVector& TargetLocation) override;
 
 	// 사격 모드 전환 
 	virtual void SwitchFireMode() override;

@@ -32,20 +32,33 @@ void UC_AIGunUsageComponent::BeginPlay()
 
 bool UC_AIGunUsageComponent::AIFire()
 {
-	if (!m_OwnerGun) return false;
+	if (!m_OwnerGun || !m_OwnerGun->HasAuthority()) return false;
+	if (m_OwnerGun->GetCurrentAmmo() <= 0) return false;
 
-	if (!m_OwnerGun->HasAuthority()) return false;
+	AActor* Target = m_WeaponCopZombieUser && m_WeaponCopZombieUser->GetZombieController() ?
+		m_WeaponCopZombieUser->GetZombieController()->GetCurrentBBTarget() : nullptr;
 
-	if (m_OwnerGun->GetCurrentAmmo() <= 0)
+	USkeletalMeshComponent* WeaponMesh = m_OwnerGun->GetWeaponMesh();
+	FVector StartLocation = WeaponMesh ? WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash")) : m_OwnerGun->GetActorLocation();
+	FVector TargetLocation = FVector::ZeroVector;
+
+	if (Target)
 	{
-		return false;
+		FVector TargetCenter = Target->GetActorLocation() + FVector(0.0f, 0.0f, 50.0f);
+		float SpreadAmount = 0.0f;
+		FVector RandomOffset = FVector(
+			FMath::RandRange(-SpreadAmount, SpreadAmount),
+			FMath::RandRange(-SpreadAmount, SpreadAmount),
+			FMath::RandRange(-SpreadAmount, SpreadAmount)
+		);
+		TargetLocation = TargetCenter + RandomOffset;
+	}
+	else
+	{
+		TargetLocation = StartLocation + (m_WeaponCopZombieUser ? m_WeaponCopZombieUser->GetActorForwardVector() : m_OwnerGun->GetActorForwardVector()) * 5000.0f;
 	}
 
-	m_OwnerGun->SetCurrentAmmo(m_OwnerGun->GetCurrentAmmo() - 1);
-
-	FVector ImpactPoint = AIProcessLineTraceDamage(m_OwnerGun->GetDamage());
-
-	Multicast_PlayAIFireEffects(ImpactPoint);
+	m_OwnerGun->AIFire(TargetLocation);
 
 	return true;
 }

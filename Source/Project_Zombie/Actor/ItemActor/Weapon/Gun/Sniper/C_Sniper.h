@@ -24,6 +24,8 @@ private:
 protected:
 	virtual void PullTrigger() override;
 
+	virtual void AIFire(const FVector& TargetLocation) override;
+
 public:
 	AC_Sniper();
 };

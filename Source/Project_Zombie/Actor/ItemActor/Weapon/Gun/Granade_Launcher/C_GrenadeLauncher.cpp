@@ -121,8 +121,8 @@ void AC_GrenadeLauncher::SpawnShellEject()
 
 void AC_GrenadeLauncher::SpawnGrenadeProjectile(const FVector& TargetPoint)
 {
-	// 스폰 로직은 오직 서버에서만 작동
-	if (!HasAuthority() || !m_WeaponMesh || !GetWorld() || !m_GrenadeClass || !m_OwnerPlayer)
+	// 1. !m_OwnerPlayer 검사를 제거합니다.
+	if (!HasAuthority() || !m_WeaponMesh || !GetWorld() || !m_GrenadeClass)
 		return;
 
 	FVector StartLocation = m_WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
@@ -133,7 +133,9 @@ void AC_GrenadeLauncher::SpawnGrenadeProjectile(const FVector& TargetPoint)
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
-	SpawnParams.Instigator = m_OwnerPlayer;
+
+	// 2. Player뿐만 아니라 AI(CopZombie)도 Instigator가 될 수 있도록 Cast 처리
+	SpawnParams.Instigator = m_OwnerPlayer ? Cast<APawn>(m_OwnerPlayer) : Cast<APawn>(GetOwner());
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 	FRotator SpawnRotation = LaunchVelocity.Rotation();
@@ -269,4 +271,15 @@ void AC_GrenadeLauncher::CompleteReload()
 
 	m_CurrentAmmo = m_MaxAmmo;
 	UpdateAmmoUI();
+}
+
+void AC_GrenadeLauncher::AIFire(const FVector& TargetLocation)
+{
+	if (!HasAuthority() || !m_WeaponMesh || !m_GrenadeClass) return;
+
+	m_CurrentAmmo = FMath::Max(0, m_CurrentAmmo - 1);
+
+	SpawnGrenadeProjectile(TargetLocation);
+
+	PlayFireEffects_Client();
 }

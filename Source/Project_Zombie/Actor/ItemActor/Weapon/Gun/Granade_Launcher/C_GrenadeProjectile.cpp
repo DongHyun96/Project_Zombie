@@ -18,7 +18,6 @@ AC_GrenadeProjectile::AC_GrenadeProjectile()
 	CollisionComp = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComp"));
 	CollisionComp->InitSphereRadius(8.0f);
 	CollisionComp->SetCollisionProfileName(TEXT("Projectile"));
-	CollisionComp->OnComponentHit.AddDynamic(this, &AC_GrenadeProjectile::OnHit);
 	RootComponent = CollisionComp;
 
 	bAlwaysRelevant = true;
@@ -42,6 +41,8 @@ AC_GrenadeProjectile::AC_GrenadeProjectile()
 void AC_GrenadeProjectile::BeginPlay()
 {
 	Super::BeginPlay();
+
+	CollisionComp->OnComponentHit.AddDynamic(this, &AC_GrenadeProjectile::OnHit);
 
 	if (GetInstigator())
 	{

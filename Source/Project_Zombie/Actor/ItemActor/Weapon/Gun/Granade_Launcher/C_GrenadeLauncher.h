@@ -31,6 +31,7 @@ protected:
 	virtual void ReleaseTrigger() override;
 	virtual void SpawnShellEject() override;
 	virtual void PlayFireEffects_Client() override;
+	virtual void AIFire(const FVector& TargetLocation) override;
 
 	// 클라이언트 사격 시 서버에 발사체 스폰 요청
 	virtual void Server_ExecuteFire_Implementation(FVector_NetQuantize ImpactPoint, AActor* HitActor) override;

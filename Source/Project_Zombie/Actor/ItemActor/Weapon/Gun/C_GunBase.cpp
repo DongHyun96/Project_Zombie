@@ -280,7 +280,6 @@ void AC_GunBase::SpawnShellEject()
 
 void AC_GunBase::Multicast_PlayFireEffects_Implementation(FVector_NetQuantize ImpactPoint)
 {
-	if (!m_OwnerPlayer) return;
 
 	if (!m_OwnerPlayer->IsLocallyControlled())
 	{
@@ -730,5 +729,85 @@ void AC_GunBase::OnMainColliderBeginOverlap
 		// 아직 마지막으로 핑을 스폰한 LastInstigator가 이 총기일 경우 -> 아직 해당 정보의 Ping이 나온 상태
 		// Ping 정보를 가려준다
 		OverlappedPlayer->GetPingSystemComponent()->HidePing();
+	}
+}
+
+void AC_GunBase::Multicast_PlayAIFireEffects_Implementation(FVector_NetQuantize ImpactPoint)
+{
+	if (m_WeaponMesh && m_FireAnimation)
+	{
+		m_WeaponMesh->PlayAnimation(m_FireAnimation, false);
+	}
+
+	SpawnShellEject();
+
+	if (m_WeaponMesh && GetWorld())
+	{
+		FVector MuzzleStart = m_WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
+		FVector ExplicitImpactPoint = FVector(ImpactPoint);
+		FVector ShootDir = (ExplicitImpactPoint - MuzzleStart).GetSafeNormal();
+		FRotator MuzzleRotation = ShootDir.Rotation();
+
+		if (m_TracerFX)
+		{
+			UParticleSystemComponent* TracerComp = UGameplayStatics::SpawnEmitterAtLocation(
+				GetWorld(),
+				m_TracerFX,
+				MuzzleStart,
+				MuzzleRotation,
+				FVector(1.0f),
+				false
+			);
+
+			if (TracerComp)
+			{
+				float Distance = FVector::Distance(MuzzleStart, ExplicitImpactPoint);
+				float Speed = 20000.0f;
+				float FlyTime = Distance / Speed;
+
+				TSharedPtr<float> ElapsedTime = MakeShared<float>(0.0f);
+				TSharedPtr<FTimerHandle> TracerTimerHandle = MakeShared<FTimerHandle>();
+
+				GetWorld()->GetTimerManager().SetTimer(
+					*TracerTimerHandle,
+					[TracerComp, MuzzleStart, ExplicitImpactPoint, ShootDir, FlyTime, ElapsedTime, TracerTimerHandle, this]() mutable
+					{
+						if (!TracerComp || !TracerComp->IsValidLowLevel()) return;
+
+						*ElapsedTime += 0.01f;
+						float Alpha = FMath::Clamp(*ElapsedTime / FlyTime, 0.0f, 1.0f);
+
+						FVector CurrentLoc = FMath::Lerp(MuzzleStart, ExplicitImpactPoint, Alpha);
+						TracerComp->SetWorldLocation(CurrentLoc);
+
+						if (Alpha >= 1.0f)
+						{
+							TracerComp->DeactivateSystem();
+							TracerComp->DestroyComponent();
+
+							if (m_ImpactFX && GetWorld())
+							{
+								FRotator ImpactRotation = (-ShootDir).Rotation();
+								UGameplayStatics::SpawnEmitterAtLocation(
+									GetWorld(),
+									m_ImpactFX,
+									ExplicitImpactPoint,
+									ImpactRotation,
+									FVector(1.0f),
+									true
+								);
+							}
+
+							if (GetWorld() && TracerTimerHandle.IsValid())
+							{
+								GetWorld()->GetTimerManager().ClearTimer(*TracerTimerHandle);
+							}
+						}
+					},
+					0.01f,
+					true
+				);
+			}
+		}
 	}
 }

@@ -323,3 +323,41 @@ void AC_ShotGun::OnSheathStart()
 	Super::OnSheathStart();
 
 }
+
+void AC_ShotGun::AIFire(const FVector& TargetLocation)
+{
+	if (!HasAuthority() || !m_WeaponMesh) return;
+
+	m_CurrentAmmo = FMath::Max(0, m_CurrentAmmo - 1);
+
+	FVector MuzzleStart = m_WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
+	FVector BaseDir = (TargetLocation - MuzzleStart).GetSafeNormal();
+
+	TArray<FVector_NetQuantize> ImpactPoints;
+	ImpactPoints.Reserve(m_PelletCount);
+
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+	if (GetOwner()) QueryParams.AddIgnoredActor(GetOwner());
+
+	for (int32 i = 0; i < m_PelletCount; ++i)
+	{
+		FVector PelletDir = FMath::VRandCone(BaseDir, FMath::DegreesToRadians(m_SpreadAngle));
+		FVector EndLoc = MuzzleStart + (PelletDir * 10000.0f);
+
+		FHitResult HitResult;
+		bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, MuzzleStart, EndLoc, ECC_Visibility, QueryParams);
+		FVector ImpactPoint = bHit ? HitResult.ImpactPoint : EndLoc;
+
+		ImpactPoints.Add(ImpactPoint);
+
+		if (bHit && HitResult.GetActor())
+		{
+			AController* InstigatorController = GetOwner() ? Cast<APawn>(GetOwner())->GetController() : nullptr;
+			float PelletDamage = m_Damage / static_cast<float>(m_PelletCount);
+			UGameplayStatics::ApplyDamage(HitResult.GetActor(), PelletDamage, InstigatorController, this, nullptr);
+		}
+	}
+
+	Multicast_PlayShotgunFireEffects(ImpactPoints);
+}

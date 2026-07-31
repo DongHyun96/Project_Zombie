@@ -177,6 +177,9 @@ public:
 
 	virtual void UpdateAmmoInfoHUDForDrawEnd() override;
 
+	// AI 사격 함수
+	virtual void AIFire(const FVector& TargetLocation) { return; };;
+
 protected:
 	virtual void PullTrigger();
 	virtual void ReleaseTrigger();
@@ -223,6 +226,9 @@ protected:
 	// 재생 중인 재장전 애니메이션 정지 멀티캐스트
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_StopReloadEffects();
+
+	UFUNCTION(NetMulticast, Unreliable)
+	void Multicast_PlayAIFireEffects(FVector_NetQuantize ImpactPoint);
 
 public:
 

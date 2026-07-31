@@ -26,6 +26,7 @@ public:
 protected:
 	virtual void PullTrigger() override;
 	virtual void Client_ExecuteFire() override;
+	virtual void AIFire(const FVector& TargetLocation) override;
 
 	UFUNCTION(Server, Reliable)
 	void Server_ShotgunFireEffects(const TArray<FVector_NetQuantize>& ImpactPoints);

@@ -2,6 +2,8 @@
 
 #include "C_Sniper.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
+
+#include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
 
 AC_Sniper::AC_Sniper()
@@ -33,4 +35,31 @@ void AC_Sniper::ResetFireCooldown()
 {
 	m_bCanFire = true;
 	m_bIsFiring = false;
+}
+
+void AC_Sniper::AIFire(const FVector& TargetLocation)
+{
+    if (!HasAuthority() || !m_WeaponMesh || m_CurrentAmmo <= 0) return;
+
+    m_CurrentAmmo = FMath::Max(0, m_CurrentAmmo - 1);
+
+    FVector MuzzleStart = m_WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
+    FVector ShootDir = (TargetLocation - MuzzleStart).GetSafeNormal();
+    FVector EndLocation = MuzzleStart + (ShootDir * 10000.0f); 
+
+    FHitResult HitResult;
+    FCollisionQueryParams QueryParams;
+    QueryParams.AddIgnoredActor(this);
+    if (GetOwner()) QueryParams.AddIgnoredActor(GetOwner());
+
+    bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, MuzzleStart, EndLocation, ECC_Visibility, QueryParams);
+    FVector ActualImpactPoint = bHit ? HitResult.ImpactPoint : EndLocation;
+
+    if (bHit && HitResult.GetActor())
+    {
+        AController* InstigatorController = GetOwner() ? Cast<APawn>(GetOwner())->GetController() : nullptr;
+        UGameplayStatics::ApplyDamage(HitResult.GetActor(), m_Damage, InstigatorController, this, nullptr);
+    }
+
+    Multicast_PlayAIFireEffects(ActualImpactPoint);
 }
