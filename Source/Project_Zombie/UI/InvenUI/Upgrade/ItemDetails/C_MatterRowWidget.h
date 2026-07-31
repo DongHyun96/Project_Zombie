@@ -16,7 +16,7 @@ class PROJECT_ZOMBIE_API UC_MatterRowWidget : public UUserWidget
 {
 	GENERATED_BODY()
 public:
-	void UpdateWidget(UTexture2D* InItemIcon, const FText& InItemName, const int32& InItemCount);
+	void UpdateWidget(UTexture2D* InItemIcon, const FText& InItemName, const int32& InHeldCount, const int32& InRequiredCount);
 	
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
@@ -26,5 +26,8 @@ protected:
 	UTextBlock* ItemName = nullptr;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
-	UTextBlock* ItemCount = nullptr;
+	UTextBlock* HeldCount = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
+	UTextBlock* RequiredCount = nullptr;
 };

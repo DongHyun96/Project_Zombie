@@ -3,6 +3,7 @@
 
 #include "UI/InvenUI/Upgrade/C_ItemUpgradeWidget.h"
 
+#include "ToolMenusEditor.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/Components/C_InvenComponent.h"
 #include "Components/Image.h"
@@ -14,6 +15,9 @@
 #include "UI/InvenUI/DragDropOperation/C_DragDropOperation.h"
 #include "Actor/Components/InteractionComponent/C_InteractionComponent.h"
 #include "Item/Interact/C_InteractableBase.h"
+#include "ItemDetails/C_ItemStatRowWidget.h"
+#include "ItemDetails/C_SelectedStatWidget.h"
+#include "Tests/ToolMenusTestUtilities.h"
 
 void UC_ItemUpgradeWidget::NativeConstruct()
 {
@@ -25,8 +29,12 @@ bool UC_ItemUpgradeWidget::NativeOnDrop(const FGeometry& InGeometry, const FDrag
 {
 	UC_DragDropOperation* DragOperation = Cast<UC_DragDropOperation>(InOperation);
 	
+	DroppedItemSlotIdx = DragOperation->GetSlotIndex();
 	
 	m_UsePlayer->Server_RequestUnlockSlot(m_UsePlayer->GetInvenComponent(), DroppedItemSlotIdx);
+	
+	if (DroppedItemSlotIdx == -1) return false;
+	
 	
 	if (!DragOperation->GetItemEntry().HasEquipmentData())
 	{
@@ -34,22 +42,22 @@ bool UC_ItemUpgradeWidget::NativeOnDrop(const FGeometry& InGeometry, const FDrag
 		UpdateWidget();
 		return false;
 	}
-
-	DroppedItemSlotIdx = DragOperation->GetSlotIndex();
+	
+	TargetEntry = DragOperation->GetItemEntry();
 	
 	UpdateWidget();
 	
-	if (DroppedItemSlotIdx == -1) return false;
-	
+	//if (DroppedItemSlotIdx == -1) return false;
 	
 	return true;
 }
 
 void UC_ItemUpgradeWidget::UpdateWidget()
 {	
-	ItemIcon->SetVisibility(ESlateVisibility::Collapsed);
+
 	if (DroppedItemSlotIdx == -1 || !m_UsePlayer)
 	{
+		ItemIcon->SetVisibility(ESlateVisibility::Collapsed);
 		// TODO : 여기 들어오면 위젯들 초기화 해주기.
 		ItemName->SetText(FText());
 		ItemDesc->SetText(FText());
@@ -79,19 +87,100 @@ void UC_ItemUpgradeWidget::UpdateWidget()
 	// TODO : 아이템 동적 데이터 가져와서 보여주기
 	const FEquipmentCustomData* EquipCustomData = Entry.CustomData.GetPtr<FEquipmentCustomData>();
 	
+	const FWeaponData* WeaponData = ItemManager->GetWeaponData(Entry.ItemRowName);;
+	
+	//const float CurValue = WeaponData->
+	
 	ItemStats->UpdateWidget(EquipCustomData);
 	
 	// TODO : 강화에 필요한 재료 보여주기.
-	//Matters->UpdateWidget(); // TODO : 강화 테이블을 만들어야 넣어 줄 수 있을 듯?
+	
+	
+	Matters->UpdateWidget(Entry, m_TargetStat); // TODO : 강화 테이블을 만들어야 넣어 줄 수 있을 듯? -> TMap
+}
+
+void UC_ItemUpgradeWidget::ShowSelectedStatRow(const float& CurStatValue, const float& NextStatValue)
+{
+	const FInventoryEntry& Entry = m_UsePlayer->GetInvenComponent()->GetItemAt(DroppedItemSlotIdx);
+	
+	const FEquipmentCustomData* EquipData = Entry.GetEquipmentData();
+	
+	if (!EquipData)
+	{
+		SelectedStatRow->SetVisibility(ESlateVisibility::Collapsed);
+		return;
+	}
+	
+	UC_ItemManager* ItemManager = GetGameInstance()->GetSubsystem<UC_ItemManager>();
+	
+	if (!ItemManager) 
+	{
+		SelectedStatRow->SetVisibility(ESlateVisibility::Collapsed);
+		return;
+	}
+	
+	const FWeaponData* Data = ItemManager->GetWeaponData(Entry.ItemRowName);
+	
+	if (!Data)
+	{
+		SelectedStatRow->SetVisibility(ESlateVisibility::Collapsed);
+		return;
+	}
+	
+	
+	
+	//SelectedStatRow->UpdateWidget(m_TargetStat, EquipData->GetStatGrade(m_TargetStat), Data->);
 }
 
 void UC_ItemUpgradeWidget::RequestItemUpgrade()
 {
+	if (bIsUpgrading) return;
+	
+	if (!hasRequiredItems) return; 
+	
 	AC_InteractableBase* Base = Cast<AC_InteractableBase>(m_UsePlayer->GetInteractionComponent()->GetCurrentInterationActor());
 
 	if (!Base) return;
-
+	
+	if (TargetEntry.IsEmpty()) return;
+	
+	if (!TargetEntry.HasEquipmentData()) return;
+	
+	// 이미 최대 Grade면 서버에 요청을 보내지 않게해서 패킷 낭비를 막음.
+	if (TargetEntry.GetEquipmentData()->GetStatGrade(m_TargetStat) >= MAX_GRADE) return;
+	
+	bIsUpgrading = true;
+	
 	m_UsePlayer->Server_RequestItemUpgrade(Base, DroppedItemSlotIdx, m_TargetStat);
+}
 
-	UpdateWidget();
+void UC_ItemUpgradeWidget::BindingUpdateWidget(UC_InvenComponent* InInvenComp)
+{
+	InInvenComp->OnInventorySlotChanged.AddDynamic(this, &UC_ItemUpgradeWidget::HandleItemStatUpgraded);
+}
+
+void UC_ItemUpgradeWidget::HandleItemStatUpgraded(int32 SlotIdx, const FInventoryEntry& ItemData)
+{
+	const FEquipmentCustomData* EquipCustomData = ItemData.CustomData.GetPtr<FEquipmentCustomData>();
+	
+	ItemStats->UpdateWidget(EquipCustomData);
+}
+
+void UC_ItemUpgradeWidget::SetTargetStat(EUpgradableStats InTargetStat)
+{
+	m_TargetStat = InTargetStat;
+	
+	// TODO(상연) : 원래 이런건 여기서 구현하는게 맞나? 상호작용이 일어난 StatRowWidget쪽에서 했어야 하는건 아닐까?
+	
+	TArray<UC_ItemStatRowWidget*> StatRowArr = ItemStats->GetItemStatRows();
+	
+	for (int i = 0; i < StatRowArr.Num(); ++i)
+	{
+		if (StatRowArr[i]->GetTargetStat() == InTargetStat)
+			StatRowArr[i]->GetSelectedRow()->SetVisibility(ESlateVisibility::Visible);
+		else
+			StatRowArr[i]->GetSelectedRow()->SetVisibility(ESlateVisibility::Collapsed);
+	}
+	
+	Matters->UpdateWidget(TargetEntry, m_TargetStat);
 }

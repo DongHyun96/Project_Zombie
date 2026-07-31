@@ -12,7 +12,7 @@ void UC_ItemStatsWidget::UpdateWidget(const FEquipmentCustomData* InCustomData)
 	if (!ItemStatsScrollBox) return;
 	
 	ItemStatsScrollBox->ClearChildren();
-	
+	m_ItemStatRows.Empty();
 	if (!InCustomData)
 	{
 		UC_Util::Print("ItemStatsScrollBox Is Nullptr!");
@@ -44,6 +44,7 @@ void UC_ItemStatsWidget::UpdateWidget(const FEquipmentCustomData* InCustomData)
 		ItemStatRow->UpdateWidget(CustomKeyVal.Key, CustomKeyVal.Grade, MAX_GRADE); // TODO : Max_Grade 유의
 		
 		ItemStatsScrollBox->AddChild(ItemStatRow);
+		m_ItemStatRows.Add(ItemStatRow);
 	}
 }
 

@@ -6,11 +6,13 @@
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
 
-void UC_MatterRowWidget::UpdateWidget(UTexture2D* InItemIcon, const FText& InItemName, const int32& InItemCount)
+void UC_MatterRowWidget::UpdateWidget(UTexture2D* InItemIcon, const FText& InItemName, const int32& InHeldCount, const int32& InItemCount)
 {
 	ItemIcon->SetBrushFromTexture(InItemIcon);
 	
 	ItemName->SetText(InItemName);
 	
-	ItemCount->SetText(FText::AsNumber(InItemCount));
+	HeldCount->SetText(FText::AsNumber(InHeldCount));
+	
+	RequiredCount->SetText(FText::AsNumber(InItemCount));
 }

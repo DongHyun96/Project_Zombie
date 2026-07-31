@@ -23,7 +23,15 @@ public:
 	// TODO : 나중에 해당 StatValue까지 표현하게 만들기.
 	//void UpdateWidget(EUpgradableStats InStatType, const float& InStatValue, const int32& InCurGrade, const int32& InMaxGrade);
 	void UpdateWidget(EUpgradableStats InStatType, const int32& InCurGrade, const int32& InMaxGrade);
+	
+	EUpgradableStats GetTargetStat() {return TargetStat;}
+	
+	UTextBlock* GetSelectedRow() { return SelectedRow; }
+	
 protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
+	UTextBlock* SelectedRow = nullptr;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
 	UTextBlock* StatName = nullptr;
 	

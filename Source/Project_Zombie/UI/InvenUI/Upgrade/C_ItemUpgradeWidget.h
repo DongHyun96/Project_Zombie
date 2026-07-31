@@ -31,17 +31,34 @@ public:
 	// 현재 아이템에 따라 위젯 업데이트
 	void UpdateWidget();
 	
+	void ShowSelectedStatRow(const float& CurStatValue, const float& NextStatValue);
+	
 	// 아이템 강화 요청
 	UFUNCTION(BlueprintCallable)
 	void RequestItemUpgrade();
 	
+	void BindingUpdateWidget(UC_InvenComponent* InInvenComp);
 	
+	UFUNCTION()
+	void HandleItemStatUpgraded(int32 SlotIdx, const FInventoryEntry& ItemData);
 public:
 	void SetUsePlayer(AC_BasicPlayer* InUsePlayer) { m_UsePlayer = InUsePlayer; }
 	
-	void SetTargetStat(EUpgradableStats InTargetStat) { m_TargetStat = InTargetStat; }
+	void SetTargetStat(EUpgradableStats InTargetStat); // { m_TargetStat = InTargetStat; }
 
 	EUpgradableStats GetTargetStat() { return m_TargetStat; }
+	
+	void SetIsUpgrading(bool InIsUpgrading)
+	{
+		bIsUpgrading = InIsUpgrading;
+		
+		UpdateWidget();
+	}
+	
+	bool GetIsUpgrading() { return bIsUpgrading; }
+	
+	void SetHasRequiredItems(bool InHasRequiredItems) {hasRequiredItems = InHasRequiredItems;}
+	
 protected:
 	// 현재 강화하고자 하는 아이템의 이름
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
@@ -78,14 +95,25 @@ protected:
 protected:
 	// 현재 강화 하고자 하는 아이템.
 	// 이걸 Entry째로 들고 있을 지 아니면 그냥 슬롯 Idx만 들고 있게해서 Player에게 조회하게 할 지 고민.
-	UPROPERTY()
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 DroppedItemSlotIdx{};
 	
 	UPROPERTY()
 	TObjectPtr<AC_BasicPlayer> m_UsePlayer = nullptr;
 	
 	// 이건 UsePlayer의 InteractionComponent를 통해 대체 할 수 있다면 사용하지 않을 수 있음.
-	AActor* InteractingActor = nullptr;
-
-	EUpgradableStats m_TargetStat = EUpgradableStats::None;
+	//AActor* InteractingActor = nullptr;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	EUpgradableStats m_TargetStat = EUpgradableStats::None; // 이거도 None이면 강화되면 안됨.
+	
+	// 로컬에서 현재 업그레이드 중인지 판단하는 변수.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bIsUpgrading = false;
+	
+	// 강화에 필요한 아이템들을 가지고 있는가?
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool hasRequiredItems = false;
+	
+	FInventoryEntry TargetEntry{};
 };
