@@ -394,6 +394,14 @@ bool AC_BasicPlayer::IsCrouchTransitioning() const
 	return m_PoseColliderHandlerComponent->IsTransitioning();
 }
 
+bool AC_BasicPlayer::IsFalling() const
+{
+	if (!GetCharacterMovement())
+		return false;
+
+	return GetCharacterMovement()->IsFalling();
+}
+
 void AC_BasicPlayer::Landed(const FHitResult& Hit)
 {
 	Super::Landed(Hit);
@@ -660,6 +668,74 @@ void AC_BasicPlayer::SetPlayerStateOnServer(EPlayerState _NewState)
 	ForceNetUpdate();
 }
 
+void AC_BasicPlayer::ActivateInteractionUI(const FText& _InteractionText)
+{
+	if (!IsLocallyControlled())
+		return;
+
+	if (APlayerController* PC = GetController<APlayerController>())
+	{
+		if (AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD()))
+		{
+			if (UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget())
+			{
+				MainHUD->ActivateInteractionUI(_InteractionText);
+			}
+		}
+	}
+}
+
+void AC_BasicPlayer::DeactivateInteractionUI()
+{
+	if (!IsLocallyControlled())
+		return;
+
+	if (APlayerController* PC = GetController<APlayerController>())
+	{
+		if (AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD()))
+		{
+			if (UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget())
+			{
+				MainHUD->DeactivateInteractionUI();
+			}
+		}
+	}
+}
+
+void AC_BasicPlayer::ActivateInteractionTimerUI(float _Duration)
+{
+	if (!IsLocallyControlled())
+		return;
+
+	if (APlayerController* PC = GetController<APlayerController>())
+	{
+		if (AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD()))
+		{
+			if (UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget())
+			{
+				MainHUD->ActivateInteractionTimer(_Duration);
+			}
+		}
+	}
+}
+
+void AC_BasicPlayer::DeactivateInteractionTimerUI()
+{
+	if (!IsLocallyControlled())
+		return;
+
+	if (APlayerController* PC = GetController<APlayerController>())
+	{
+		if (AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD()))
+		{
+			if (UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget())
+			{
+				MainHUD->DeactivateInteractionTimer();
+			}
+		}
+	}
+}
+
 void AC_BasicPlayer::Server_EnterDownedState_Implementation()
 {
 	// 이미 사망 상태라면 처리하지 않음
@@ -685,7 +761,7 @@ void AC_BasicPlayer::Server_EnterDownedState_Implementation()
 	SetPlayerStateOnServer(EPlayerState::Dead); 
 }
 
-void AC_BasicPlayer::StartGettingUp(float _GetUpDuration)
+void AC_BasicPlayer::StartGettingUp()
 {
 	// 서버에서만 처리
 	if (!HasAuthority())
@@ -705,7 +781,7 @@ void AC_BasicPlayer::StartGettingUp(float _GetUpDuration)
 			m_GetUpTimerHandle,
 			this,
 			&AC_BasicPlayer::FinishGettingUp,
-			_GetUpDuration,
+			1.4f, // TODO: 하드코딩된 시간, 나중에 몽타주 길이에 맞춰서 변경 필요 // GettingUp 시퀀스 길이와 비슷하게 설정
 			false
 		);
 	}
@@ -748,19 +824,14 @@ void AC_BasicPlayer::ApplyPlayerState()
 	}
 	case EPlayerState::Reviving:
 	{
-		if (MovementComponent->MovementMode == MOVE_None)
-		{
-			MovementComponent->SetMovementMode(MOVE_Walking);
-		}
-		// 현재 자세에 맞는 이동 속도 적용
-		ApplyMovementSpeed();
+		MovementComponent->StopMovementImmediately();
+		MovementComponent->DisableMovement();
 		break;
 	}
 	case EPlayerState::Dead:
 	{
 		MovementComponent->StopMovementImmediately();
 		MovementComponent->DisableMovement();
-
 		break;
 	}
 	case EPlayerState::GettingUp:

@@ -5,6 +5,7 @@
 
 #include "Components/PrimitiveComponent.h"
 #include "Components/SphereComponent.h"
+#include "Components/MeshComponent.h"
 
 #include "TimerManager.h"
 
@@ -42,6 +43,17 @@ void UC_InteractionComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	if (GetWorld())
 	{
 		GetWorld()->GetTimerManager().ClearTimer(m_FocusUpdateTimerHandle);
+		GetWorld()->GetTimerManager().ClearTimer(m_InteractionTimerHandle);
+	}
+
+	// 포커스 대상 있으면 아웃라인 제거
+	if (AActor* FocusedTarget = m_FocusedTarget.Get())
+	{
+		UC_InteractionComponent* TargetInteractionComponent = GetTargetInteractionComponent(FocusedTarget);
+		if (TargetInteractionComponent)
+		{
+			TargetInteractionComponent->SetOutlineEffect(false);
+		}
 	}
 
 	m_InteractionCandidates.Empty();
@@ -62,6 +74,15 @@ void UC_InteractionComponent::SetupInteraction(UPrimitiveComponent* _Interaction
 	}
 
 	m_InteractionCollision = _InteractionCollision;
+	m_CurrentInteractionTarget = nullptr;
+	m_CurrentInteractors.Empty();
+
+	// 상호작용 대상 Actor 의 MeshComponent 를 가져와서 아웃라인 효과를 적용할 수 있도록 저장
+	m_OutlineMeshComponents.Reset();
+	if (AActor* OwnerActor = GetOwner())
+	{
+		OwnerActor->GetComponents<UMeshComponent>(m_OutlineMeshComponents);
+	}
 
 	// 상호작용 전략 객체 생성
 	CreateInteractionStrategy();
@@ -141,8 +162,8 @@ void UC_InteractionComponent::OnInteractionEndOverlap(UPrimitiveComponent* _Over
 	m_InteractionCandidates.Remove(_OtherActor);
 
 	// 제거한 Actor 가 현재 포커스 대상이면 포커스 대상 초기화
-	if (m_FocusedTarget.Get() == _OtherActor)
-		m_FocusedTarget.Reset();
+	//if (m_FocusedTarget.Get() == _OtherActor)
+	//	m_FocusedTarget.Reset();
 
 	// 남은 후보 중에 가장 적합한 상호작용 대상 업데이트
 	UpdateFocusedTarget(); 
@@ -156,16 +177,70 @@ void UC_InteractionComponent::UpdateFocusedTarget()
 		return;
 	}
 
+	// 이미 상호작용 중이면 포커스 대상 업데이트 중지
+	if (HasCurrentInteraction())
+	{
+		m_OwnerPlayer->DeactivateInteractionUI();
+		return;
+	}
+
 	// TODO: Actor 가 Destroy 됐는데 후보 목록에 남아있을 수 있으므로 유효성 검사 후 제거
 
 	if (m_InteractionCandidates.Num() == 0)
 	{
+		if (AActor* OldTarget = m_FocusedTarget.Get())
+		{
+			UC_InteractionComponent* OldTargetComponent = GetTargetInteractionComponent(OldTarget);
+			if (OldTargetComponent)
+			{
+				OldTargetComponent->SetOutlineEffect(false);
+			}
+		}
+
 		m_FocusedTarget.Reset();
+
+		m_OwnerPlayer->DeactivateInteractionUI();
+
 		StopFocusUpdateTimer();
 		return;
 	}
 
-	m_FocusedTarget = FindBestInteractionTarget();
+	AActor* NewTarget = FindBestInteractionTarget();
+	
+	if (m_FocusedTarget.Get() == NewTarget)
+		return;
+
+	// 새로운 포커스 대상이 있는 경우
+
+	// 포커스 대상이 변경되면 이전 포커스 이펙트 제거
+	if (AActor* OldTarget = m_FocusedTarget.Get())
+	{
+		UC_InteractionComponent* OldTargetComponent = GetTargetInteractionComponent(OldTarget);
+		if (OldTargetComponent)
+		{
+			OldTargetComponent->SetOutlineEffect(false);
+		}
+	}
+
+	m_FocusedTarget = NewTarget;
+
+	if (NewTarget)
+	{
+		UC_InteractionComponent* NewTargetComponent = GetTargetInteractionComponent(NewTarget);
+		if (NewTargetComponent)
+		{
+			// 아웃라인 활성화
+			NewTargetComponent->SetOutlineEffect(true);
+
+			// 상호작용 UI 활성화
+			m_OwnerPlayer->ActivateInteractionUI(NewTargetComponent->GetInteractionText());
+		}
+	}
+	else
+	{
+		// 상호작용 UI 비활성화
+		m_OwnerPlayer->DeactivateInteractionUI();
+	}
 }
 
 void UC_InteractionComponent::StartFocusUpdateTimer()
@@ -202,7 +277,7 @@ void UC_InteractionComponent::StopFocusUpdateTimer()
 		World->GetTimerManager().ClearTimer(m_FocusUpdateTimerHandle);
 	}
 
-	m_FocusedTarget.Reset();
+	//m_FocusedTarget.Reset();
 }
 
 void UC_InteractionComponent::StartInteractionTimer(float _Duration)
@@ -214,6 +289,12 @@ void UC_InteractionComponent::StartInteractionTimer(float _Duration)
 	FTimerManager& TimerManager = World->GetTimerManager();
 
 	TimerManager.ClearTimer(m_InteractionTimerHandle);
+
+	if (_Duration <= 0.f)
+	{
+		CompleteInteract();
+		return;
+	}
 
 	TimerManager.SetTimer(
 		m_InteractionTimerHandle,
@@ -246,9 +327,16 @@ void UC_InteractionComponent::TryInteract()
 	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled())
 		return;
 
-	// 이미 다른 Actor 와 상호작용 중이면 상호작용 불가
-	if (IsValid(m_CurrentInteractionActor))
+	// 공중에서는 상호작용 불가
+	if (m_OwnerPlayer->IsFalling())
 		return;
+
+	// 이미 다른 Actor 와 상호작용 중이면 상호작용 불가
+	if (HasCurrentInteraction())
+	{
+		CancleInteract();
+		return;
+	}
 
 	AActor* TargetActor = m_FocusedTarget.Get();
 	if (!TargetActor)
@@ -260,6 +348,7 @@ void UC_InteractionComponent::TryInteract()
 	UC_InteractionComponent* TargetComponent = GetTargetInteractionComponent(TargetActor);
 	if (!TargetComponent)
 		return;
+
 
 	// 상호작용 대상이 현재 플레이어와 상호작용 가능한지 검사
 	// 서버
@@ -276,12 +365,17 @@ void UC_InteractionComponent::TryInteract()
 	if (!TargetComponent->ExecuteInteract(m_OwnerPlayer))
 		return;
 
-	m_CurrentInteractionActor = TargetActor;
+	m_CurrentInteractionTarget = TargetActor;
 
 	// 타이머 핸들 안쓰면 리턴.
 	//if (!bUseTimer) return;
 
 	const float InteractionDuration = TargetComponent->GetInteractionDuration();
+
+	// 상호작용 시작 시 표시 끄기
+	TargetComponent->SetOutlineEffect(false);
+	m_OwnerPlayer->DeactivateInteractionUI();
+	m_OwnerPlayer->ActivateInteractionTimerUI(InteractionDuration);
 
 	UC_Util::Print("Client Interact", FColor::Red, 10.f);
 
@@ -292,6 +386,52 @@ void UC_InteractionComponent::TryInteract()
 
 void UC_InteractionComponent::CancleInteract()
 {
+	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled())
+		return;
+
+	AActor* TargetActor = m_CurrentInteractionTarget.Get();
+	if (!TargetActor)
+		return;
+
+	UC_InteractionComponent* TargetComponent = GetTargetInteractionComponent(TargetActor);
+	if (!TargetComponent)
+	{
+		ClearCurrentInteraction();
+		return;
+	}
+
+	// 서버 취소
+	if (TargetComponent->GetInteractionNetType() == EInteractionNetType::Server)
+	{
+		Server_CancleInteract(TargetActor);
+		
+		// 상호작용 취소 시 아웃라인 켜기
+		if (m_FocusedTarget.Get() == TargetActor)
+		{
+			TargetComponent->SetOutlineEffect(true);
+			m_OwnerPlayer->ActivateInteractionUI(TargetComponent->GetInteractionText());
+		}
+
+		m_OwnerPlayer->DeactivateInteractionTimerUI();
+
+		ClearCurrentInteraction();
+		
+		return;
+	}
+
+	// Target 의 Strategy 에게 실제 취소
+	TargetComponent->ExecuteCancleInteract(m_OwnerPlayer);
+
+	// 상호작용 취소 시 아웃라인 켜기
+	if (m_FocusedTarget.Get() == TargetActor)
+	{
+		TargetComponent->SetOutlineEffect(true);
+		m_OwnerPlayer->ActivateInteractionUI(TargetComponent->GetInteractionText());
+	}
+
+	m_OwnerPlayer->DeactivateInteractionTimerUI();
+
+	ClearCurrentInteraction();
 }
 
 bool UC_InteractionComponent::ExecuteInteract(AC_BasicPlayer* _Interactor)
@@ -299,15 +439,21 @@ bool UC_InteractionComponent::ExecuteInteract(AC_BasicPlayer* _Interactor)
 	if (!_Interactor || !m_InteractionStrategyObject)
 		return false;
 
-	// 이미 다른 플레이어와 상호작용 중이면 상호작용 불가
-	if (!m_AllowMultipleInteractor && IsValid(m_CurrentInteractionActor))
+
+	// 이미 이 Actor와 상호작용 중인 Player라면 다시 시작하지 않음
+	if (m_CurrentInteractors.Contains(_Interactor))
+		return false;
+
+
+	// 단일 상호작용인데, 이미 다른 플레이어와 상호작용 중이면 상호작용 불가
+	if (!m_AllowMultipleInteractor && m_CurrentInteractors.Num() > 0)
 	{
 		return false;
 	}
 
 	// 이미 다른 플레이어와 상호작용 중이면 상호작용 불가
 	// 강화 테이블은 여러명이서 사용 가능
-	//if (IsValid(m_CurrentInteractionActor))
+	//if (IsValid(m_CurrentInteractionTarget))
 	//	return false;
 
 	if (!m_InteractionStrategyObject->CanStartInteraction(_Interactor, GetOwner()))
@@ -318,18 +464,26 @@ bool UC_InteractionComponent::ExecuteInteract(AC_BasicPlayer* _Interactor)
 	if (!m_InteractionStrategyObject->StartInteraction(_Interactor, GetOwner()))
 		return false;
 
-	// 단일 사용자만 저장
-	if (!m_AllowMultipleInteractor)
-	{
-		m_CurrentInteractionActor = _Interactor;
-	}
+	m_CurrentInteractors.AddUnique(_Interactor);
 
 	return true;
 }
 
 bool UC_InteractionComponent::ExecuteCancleInteract(AC_BasicPlayer* _Interactor)
 {
-	return false;
+	if (!_Interactor || !m_InteractionStrategyObject)
+		return false;
+
+	// 이 Actor 와 상호작용 중인 플레이어인지 확인
+	if (!m_CurrentInteractors.Contains(_Interactor))
+		return false;
+
+	m_InteractionStrategyObject->CancleInteraction(_Interactor, GetOwner());
+
+	// 단일 사용자는 상호작용 정보도 초기화
+	m_CurrentInteractors.Remove(_Interactor);
+
+	return true;
 }
 
 void UC_InteractionComponent::CompleteInteract()
@@ -337,7 +491,7 @@ void UC_InteractionComponent::CompleteInteract()
 	if (!m_OwnerPlayer)
 		return;
 
-	AActor* TargetActor = m_CurrentInteractionActor.Get();
+	AActor* TargetActor = m_CurrentInteractionTarget.Get();
 	if (!TargetActor)
 	{
 		ClearCurrentInteraction();
@@ -353,7 +507,14 @@ void UC_InteractionComponent::CompleteInteract()
 
 	TargetComponent->ExecuteCompleteInteract(m_OwnerPlayer);
 
+	// 서버 or 로컬 현재 상호작용 정보 정리
 	ClearCurrentInteraction();
+
+	// 서버에서 처리했었다면 Client 상태도 정리
+	if (m_OwnerPlayer->HasAuthority())
+	{
+		Client_SetCurrentInteractionTarget(nullptr);
+	}
 }
 
 bool UC_InteractionComponent::ExecuteCompleteInteract(AC_BasicPlayer* _Interactor)
@@ -361,20 +522,48 @@ bool UC_InteractionComponent::ExecuteCompleteInteract(AC_BasicPlayer* _Interacto
 	if (!_Interactor || !m_InteractionStrategyObject)
 		return false;
 
-	if (!m_AllowMultipleInteractor)
-	{
-		if (m_CurrentInteractionActor != _Interactor)
-			return false;
-	}
+	if (!m_CurrentInteractors.Contains(_Interactor))
+		return false;
 
 	// 대상 쪽 상호작용 완료 처리
 	m_InteractionStrategyObject->CompleteInteraction(_Interactor, GetOwner());
 
-	// 대상 쪽 상호작용 정보 초기화
-	if (!m_AllowMultipleInteractor)
+	// 완료한 Playrer 를 목록에서 제거
+	m_CurrentInteractors.Remove(_Interactor);
+
+
+	// 완료 후에도 남아있는 Player 들이 이 Actor 와 상호작용 가능한가?
+	for (int32 i = m_CurrentInteractors.Num() - 1; i >= 0; --i)
 	{
-		ClearCurrentInteraction();
+		AC_BasicPlayer* OtherInteractor = m_CurrentInteractors[i].Get();
+
+		if (!OtherInteractor)
+		{
+			m_CurrentInteractors.RemoveAt(i);
+			continue;
+		}
+
+		// 상호작용 대상이 현재 플레이어와 상호작용 가능한지 검사
+		if (CanBeInteractedBy(OtherInteractor))
+			continue;
+
+		// 더이상 상호작용할 수 없다면 취소
+		m_InteractionStrategyObject->CancleInteraction(OtherInteractor, GetOwner());
+
+		UC_InteractionComponent* OtherInteractorComponent = GetTargetInteractionComponent(OtherInteractor);
+		if (OtherInteractorComponent)
+		{
+			// 서버 정리
+			OtherInteractorComponent->ClearCurrentInteraction();
+
+			// 조종하는 클라이언트 정리
+			OtherInteractorComponent->Client_SetCurrentInteractionTarget(nullptr);
+		}
+
+		// Target 의 Interactor 목록 제거
+		m_CurrentInteractors.RemoveAt(i);
 	}
+
 
 	return true;
 }
@@ -386,14 +575,17 @@ AActor* UC_InteractionComponent::FindBestInteractionTarget() const
 		return nullptr;
 
 	AActor* BestTarget = nullptr;
-	float BestDot = -2.0f; // Dot Product 범위는 -1.0 ~ 1.0
+	float BestDot = 0.9f; // Dot Product 범위는 -1.0 ~ 1.0
 
-	// 컨트롤러 방향으로 체크
-	FVector ViewForward = m_OwnerPlayer->GetControlRotation().Vector();
-	ViewForward.Z = 0.0f; // 수평 방향만 고려
+	// 카메라 위치 기준으로 상호작용 대상 찾기
+	FVector ViewLocation;
+	FRotator ViewRotation;
+	m_OwnerPlayer->GetController()->GetPlayerViewPoint(ViewLocation, ViewRotation);
+	
+	// 카메라 Forward
+	FVector ViewForward = ViewRotation.Vector();
 	ViewForward.Normalize();
 
-	const FVector SourceLocation = m_OwnerPlayer->GetActorLocation();
 
 	// 후보 목록에서 가장 적합한 상호작용 대상 찾기
 	for (const TWeakObjectPtr<AActor>& Candidate : m_InteractionCandidates)
@@ -417,16 +609,14 @@ AActor* UC_InteractionComponent::FindBestInteractionTarget() const
 			continue;
 
 
-		FVector DirectionToTarget = CandidateActor->GetActorLocation() - SourceLocation;
-		DirectionToTarget.Z = 0.0f; // 수평 방향만 고려
-
+		FVector DirectionToTarget = CandidateActor->GetActorLocation() - ViewLocation;
 		if (!DirectionToTarget.Normalize())
 			continue;
 
 		const float Dot = FVector::DotProduct(ViewForward, DirectionToTarget);
 
-		// 정면에 있는 대상 중에
-		if (Dot <= 0.0f)
+		// 화면 중앙 근처만
+		if (Dot < 0.85f)
 			continue;
 
 		// 현재까지 찾은 대상 중에서 가장 정면에 있는 대상 선택
@@ -490,6 +680,56 @@ bool UC_InteractionComponent::HasClearLineOfSight(AActor* _TargetActor) const
 	return !bBlocked;
 }
 
+void UC_InteractionComponent::ClearCurrentInteraction()
+{
+	// 상호작용 완료 타이머 제거
+	if (UWorld* World = GetWorld())
+		World->GetTimerManager().ClearTimer(m_InteractionTimerHandle);
+
+	// 현재 상호작용 중인 플레이어 초기화
+	m_CurrentInteractionTarget.Reset();
+}
+
+void UC_InteractionComponent::SetOutlineEffect(bool _Enable)
+{
+	for (UMeshComponent* MeshComp : m_OutlineMeshComponents)
+	{
+		if (MeshComp)
+		{
+			MeshComp->SetOverlayMaterial(_Enable ? m_OutlineMaterial : nullptr);
+		}
+	}
+}
+
+void UC_InteractionComponent::Client_SetCurrentInteractionTarget_Implementation(AActor* _TargetActor)
+{
+	if (_TargetActor)
+	{
+		// 상호작용이 성공한 경우
+		m_CurrentInteractionTarget = _TargetActor;
+
+		UC_InteractionComponent* TargetComponent = GetTargetInteractionComponent(_TargetActor);
+
+		if (TargetComponent)
+		{
+			const float InteractionDuration = TargetComponent->GetInteractionDuration();
+
+			// 상호작용 시작 시 표시 제거
+			TargetComponent->SetOutlineEffect(false);
+			m_OwnerPlayer->DeactivateInteractionUI();
+			m_OwnerPlayer->ActivateInteractionTimerUI(InteractionDuration);
+		}
+
+		return;
+	}
+		// 서버에서 상호작용이 끝났거나, 다른 Player 완료로 강제 종료된 경우
+	ClearCurrentInteraction();
+
+	m_OwnerPlayer->DeactivateInteractionTimerUI();
+
+	UpdateFocusedTarget();
+}
+
 void UC_InteractionComponent::Server_TryInteract_Implementation(AActor* _TargetActor)
 {
 	if (!m_OwnerPlayer || !IsValid(_TargetActor))
@@ -498,8 +738,12 @@ void UC_InteractionComponent::Server_TryInteract_Implementation(AActor* _TargetA
 	if (_TargetActor == m_OwnerPlayer)
 		return;
 
+	// 공중에서는 상호작용 불가
+	if (m_OwnerPlayer->IsFalling())
+		return;
+
 	// 이미 다른 플레이어와 상호작용 중이면 상호작용 불가
-	if (IsValid(m_CurrentInteractionActor))
+	if (HasCurrentInteraction())
 		return;
 
 	UC_InteractionComponent* TargetComponent = GetTargetInteractionComponent(_TargetActor);
@@ -511,7 +755,10 @@ void UC_InteractionComponent::Server_TryInteract_Implementation(AActor* _TargetA
 		return;
 
 	// 성공적으로 상호작용 시작 시도 성공 시 현재 상호작용 중인 Actor 저장
-	m_CurrentInteractionActor =	_TargetActor;
+	m_CurrentInteractionTarget =	_TargetActor;
+
+	// 해당 Player의 Client에게도 상호작용 시작 알려줌
+	Client_SetCurrentInteractionTarget(_TargetActor);
 
 	const float InteractionDuration = TargetComponent->GetInteractionDuration();
 
@@ -523,4 +770,22 @@ void UC_InteractionComponent::Server_TryInteract_Implementation(AActor* _TargetA
 	// 상호작용 완료 타이머는 서버에서 시작되어
 	// 서버의 TimerManager 에 의해 CompleteInteract() 호출된다
 	StartInteractionTimer(InteractionDuration);
+}
+
+void UC_InteractionComponent::Server_CancleInteract_Implementation(AActor* _TargetActor)
+{
+	if (!m_OwnerPlayer || !IsValid(_TargetActor))
+		return;
+
+	if (m_CurrentInteractionTarget.Get() != _TargetActor)
+		return;
+
+	UC_InteractionComponent* TargetComponent = GetTargetInteractionComponent(_TargetActor);
+	if (!TargetComponent)
+		return;
+
+	// Target 의 Strategy 에게 실제 취소
+	TargetComponent->ExecuteCancleInteract(m_OwnerPlayer);
+
+	ClearCurrentInteraction();
 }
