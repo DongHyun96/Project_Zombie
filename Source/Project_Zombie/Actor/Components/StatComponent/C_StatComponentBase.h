@@ -101,7 +101,7 @@ public: /* 공용 Stat 처리 함수 */
 	bool IsCurHPZero() const { return m_Stats[TEXT("CurHP")] <= 0.f; }
 	
 private:
-	
+	 
 	/// <summary>
 	/// 공용으로 사용되는 Stat 항목 추가
 	/// 자식 StatComponent -> 자신의 항목에 맞는 Stat 항목 추가해줄 것
