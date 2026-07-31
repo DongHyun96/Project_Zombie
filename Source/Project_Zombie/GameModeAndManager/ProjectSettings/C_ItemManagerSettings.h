@@ -24,17 +24,24 @@ public:
 	
 	// 소모품, 재료 등
 	UPROPERTY(Config, EditAnywhere, Category = "DataTables")
-	TSoftObjectPtr<UDataTable> GeneralItemDataTableConfig;
+	TSoftObjectPtr<UDataTable> GeneralItemDataTableConfig{};
 
 	// 총기류
 	UPROPERTY(Config, EditAnywhere, Category = "DataTables")
-	TSoftObjectPtr<UDataTable> GunDataTableConfig;
+	TSoftObjectPtr<UDataTable> GunDataTableConfig{};
 
 	// 근접무기
 	UPROPERTY(Config, EditAnywhere, Category = "DataTables")
-	TSoftObjectPtr<UDataTable> MeleeDataTableConfig;
+	TSoftObjectPtr<UDataTable> MeleeDataTableConfig{};
 
 	// 투척류
 	UPROPERTY(Config, EditAnywhere, Category = "DataTables")
-	TSoftObjectPtr<UDataTable> ThrowableDataTableConfig;
+	TSoftObjectPtr<UDataTable> ThrowableDataTableConfig{};
+	
+	// WeaponUpgradePerValue
+	UPROPERTY(Config, EditAnywhere, Category = "DataTables")
+	TSoftObjectPtr<UDataTable> WeaponUpgradePerValueTableConfig{};
+	
+	UPROPERTY(Config, EditAnywhere, Category = "DataTable Settings")
+	TSoftObjectPtr<UDataTable> WeaponUpgradeCostTableConfig;
 };
