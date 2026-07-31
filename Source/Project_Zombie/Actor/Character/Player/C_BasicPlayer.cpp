@@ -48,6 +48,7 @@
 #include "Net/UnrealNetwork.h"
 #include "UI/InvenUI/DivideWIdget/C_DivideItemWidget.h"
 #include "Item/Interact/C_InteractableBase.h"
+#include "UI/InvenUI/Upgrade/C_ItemUpgradeWidget.h"
 
 AC_BasicPlayer::AC_BasicPlayer()
 {
@@ -143,6 +144,14 @@ AC_BasicPlayer::AC_BasicPlayer()
 
 void AC_BasicPlayer::Server_RequestItemUpgrade_Implementation(AC_InteractableBase* InInteractableActor, int32 InItemIndex, EUpgradableStats TargetStat)
 {
+	AC_BasicPlayerController* PC = Cast<AC_BasicPlayerController>(GetController());
+	
+	if (!PC) return;
+	
+	if (PC->GetIsUpgrading()) return;
+	
+	PC->SetIsUpgrading(true);
+	
 	InInteractableActor->RequestItemUpgrade(this, InItemIndex, TargetStat);
 }
 
@@ -187,6 +196,8 @@ void AC_BasicPlayer::BeginPlay()
 		UIManager->GetInventoryWidget()->GetPlayerGridWidget()->SetInvenComponent(m_InvenComponent);
 	
 		UIManager->GetInventoryWidget()->GetEquipmentWidget()->InitEquipmentWidget(m_InvenComponent);
+		
+		UIManager->GetInventoryWidget()->GetItemUpgradeWidget()->BindingUpdateWidget(m_InvenComponent);
 	}
 	
 	if (m_InvenComponent && m_EquippedComponent)

@@ -479,6 +479,7 @@ public:
 	// Cotroller가 빙의할 때 실행되는 함수.
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	//UFUNCTION(BlueprintCallable)
 	void ToggleInventoryWidget();
 	
 public:

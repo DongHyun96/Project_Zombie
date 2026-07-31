@@ -89,6 +89,27 @@ void UC_EquippedComponent::SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* 
     else m_Weapons[TargetSlotIdx]->AttachToHolster(m_OwnerPlayer->GetMesh());
 }
 
+void UC_EquippedComponent::UpdateWeaponData(EWeaponSlot _TargetWeapon, FName InItemRow)
+{
+	const uint8 Idx = static_cast<uint8>(_TargetWeapon);
+	
+	UC_ItemManager* ItemManager = m_OwnerPlayer->GetGameInstance()->GetSubsystem<UC_ItemManager>();
+
+	if (!ItemManager) return;
+
+	m_Weapons[Idx]->InitializeItemData(ItemManager->GetWeaponData(InItemRow));
+	
+	//AC_UIManager* UIManager = Cast<AC_UIManager>(Cast<AC_BasicPlayerController>(m_OwnerPlayer->GetController())->GetHUD());
+	//
+	//if (!UIManager) return;
+	//
+	//UC_InventoryWidget* InventoryWidget = UIManager->GetInventoryWidget();
+	//
+	//InventoryWidget->GetItemUpgradeWidget()->SetIsUpgrading(false);
+	//
+	//InventoryWidget->GetItemUpgradeWidget()->UpdateWidget();
+}
+
 void UC_EquippedComponent::Server_RequestSpawnEquippedActor_Implementation(int32 SlotIndex, const FInventoryEntry& ItemData)
 {
 	if (!GetWorld()) return;
@@ -159,18 +180,7 @@ void UC_EquippedComponent::Server_SetSlotWeapon_Implementation(EWeaponSlot _Targ
 
 void UC_EquippedComponent::Client_UpdateWeaponData_Implementation(EWeaponSlot _TargetWeapon, FName InItemRow)
 {
-	const uint8 Idx = static_cast<uint8>(_TargetWeapon);
-	UC_ItemManager* ItemManager = m_OwnerPlayer->GetGameInstance()->GetSubsystem<UC_ItemManager>();
-
-	if (!ItemManager) return;
-
-	m_Weapons[Idx]->InitializeItemData(ItemManager->GetWeaponData(InItemRow));
-	
-	AC_UIManager* UIManager = Cast<AC_UIManager>(Cast<AC_BasicPlayerController>(m_OwnerPlayer->GetController())->GetHUD());
-
-	if (!UIManager) return;
-
-	UIManager->GetInventoryWidget()->GetItemUpgradeWidget()->UpdateWidget();
+	UpdateWeaponData(_TargetWeapon, InItemRow);
 }
 
 bool UC_EquippedComponent::ChangeCurWeapon(EWeaponSlot _ChangeTo)

@@ -48,6 +48,9 @@ public:
     		InventoryContainer.MarkItemDirty(InventoryContainer.Items[SlotIndex]);
     	}
     }
+	
+	int32 GetTotalItemCount(const FName& InItemRowName);
+	
 	// TODO : 현재 사용하지 않음
 	void SetContainerID(int32 _ContainerID) { ContainerID = _ContainerID; }
 	

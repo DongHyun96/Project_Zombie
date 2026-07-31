@@ -79,6 +79,8 @@ public:
 	UFUNCTION(Server, Reliable)
 	void Server_RequestSpawnEquippedActor(int32 SlotIndex, const FInventoryEntry& ItemData);
 
+	void UpdateWeaponData(EWeaponSlot _TargetWeapon, FName InItemRow);
+	
 	UFUNCTION(Client, Reliable)
 	void Client_UpdateWeaponData(EWeaponSlot _TargetWeapon, FName InItemRow);
 public:
