@@ -1,10 +1,11 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "C_GameMainHUD.h"
 
 #include "InformWidget/C_InformWidget.h"
 #include "PlayerStatHUD/C_PlayerStatWidget.h"
+#include "InteractionWidget/C_InteractionWidget.h"
 
 void UC_GameMainHUD::NativeOnInitialized()
 {
@@ -44,6 +45,22 @@ void UC_GameMainHUD::UpdateLeftAmmoTotalCount(int32 _LeftAmmoTotalCount)
 bool UC_GameMainHUD::UpdateFireMode(EFireMode _NewFireMode)
 {
 	return PlayerStatWidget->UpdateFireMode(_NewFireMode);
+}
+
+void UC_GameMainHUD::ActivateInteractionUI(const FText& _InteractionText)
+{
+	if (!InteractionWidget)
+		return;
+
+	InteractionWidget->ActivateInteraction(_InteractionText);
+}
+
+void UC_GameMainHUD::DeactivateInteractionUI()
+{
+	if (!InteractionWidget)
+		return;
+
+	InteractionWidget->DeactivateInteraction();
 }
 
 bool UC_GameMainHUD::AddPlayerWarningLog(const FString& WarningLog, const FColor& _LogColor)

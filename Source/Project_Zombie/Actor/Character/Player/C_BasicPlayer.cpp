@@ -331,6 +331,14 @@ bool AC_BasicPlayer::IsCrouchTransitioning() const
 	return m_PoseColliderHandlerComponent->IsTransitioning();
 }
 
+bool AC_BasicPlayer::IsFalling() const
+{
+	if (!GetCharacterMovement())
+		return false;
+
+	return GetCharacterMovement()->IsFalling();
+}
+
 void AC_BasicPlayer::Landed(const FHitResult& Hit)
 {
 	Super::Landed(Hit);
@@ -595,6 +603,40 @@ void AC_BasicPlayer::SetPlayerStateOnServer(EPlayerState _NewState)
 	ApplyPlayerState();
 
 	ForceNetUpdate();
+}
+
+void AC_BasicPlayer::ActivateInteractionUI(const FText& _InteractionText)
+{
+	if (!IsLocallyControlled())
+		return;
+
+	if (APlayerController* PC = GetController<APlayerController>())
+	{
+		if (AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD()))
+		{
+			if (UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget())
+			{
+				MainHUD->ActivateInteractionUI(_InteractionText);
+			}
+		}
+	}
+}
+
+void AC_BasicPlayer::DeactivateInteractionUI()
+{
+	if (!IsLocallyControlled())
+		return;
+
+	if (APlayerController* PC = GetController<APlayerController>())
+	{
+		if (AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD()))
+		{
+			if (UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget())
+			{
+				MainHUD->DeactivateInteractionUI();
+			}
+		}
+	}
 }
 
 void AC_BasicPlayer::Server_EnterDownedState_Implementation()

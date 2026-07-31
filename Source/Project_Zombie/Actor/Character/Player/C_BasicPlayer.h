@@ -313,6 +313,8 @@ public:
 	bool IsSprinting() const { return m_PlayerPoseState == EPlayerPoseState::Sprint; }
 	bool IsCrouching() const { return m_PlayerPoseState == EPlayerPoseState::Crouch; }
 
+	bool IsFalling() const;
+
 
 public:
 	/// <summary>
@@ -361,6 +363,21 @@ public:
 
 	// 서버에 플레이어 상태 변경 요청
 	void SetPlayerStateOnServer(EPlayerState _NewState);
+
+	// Interaction UI 관련
+public:
+	 
+	/// <summary>
+	/// 상호작용 UI 활성화
+	/// </summary>
+	/// <param name="_InteractionText">띄어줄 Text</param>
+	void ActivateInteractionUI(const FText& _InteractionText);
+
+	/// <summary>
+	///	상호작용 UI 비활성화
+	/// </summary>
+	void DeactivateInteractionUI();
+	
 
 	// Server함수 (생명 상태 변경)
 protected:

@@ -57,12 +57,12 @@ public:
 	/// <summary>
 	/// 현재 다른 Actor 와 상호작용 중인지 확인
 	/// </summary>
-	bool HasCurrentInteraction() const { return IsValid(m_CurrentInteractionActor); }
+	bool HasCurrentInteraction() const { return m_CurrentInteractionTarget.IsValid(); }
 
 	/// <summary>
 	/// 현재 상호작용 중인 상대 Actor 반환
 	/// </summary>
-	AActor* GetCurrentInterationActor() const { return m_CurrentInteractionActor.Get(); }
+	AActor* GetCurrentInterationTarget() const { return m_CurrentInteractionTarget.Get(); }
 
 
 	EInteractionNetType GetInteractionNetType() const { return m_InteractionNetType; }
@@ -70,6 +70,11 @@ public:
 	bool IsAllowMultipleInteractor() const { return m_AllowMultipleInteractor; }
 
 	float GetInteractionDuration() const;
+
+	// 나중에 전략 Strategy 에서 상호작용 텍스트를 가져오도록 처리해도 될듯
+	//const FText& GetInteractionText() const { return m_InteractionStrategyObject ? m_InteractionStrategyObject->GetInteractionText() : FText::GetEmpty(); }
+	const FText& GetInteractionText() const { return m_InteractionText; }
+
 
 public:
 
@@ -164,7 +169,7 @@ private:
 	/// <summary>
 	/// CurrentInteractionActor 를 초기화
 	/// </summary>
-	void ClearCurrentInteraction() { m_CurrentInteractionActor = nullptr; }
+	void ClearCurrentInteraction();
 
 	/// <summary>
 	/// 아웃라인 효과
@@ -209,8 +214,20 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UPrimitiveComponent> m_InteractionCollision;
 
+	/// <summary>
+	/// 내가 현재 상호작용 중인 Actor
+	/// Player 의 InteractionComponent 에서 사용
+	/// </summary>
 	UPROPERTY(Transient)
-	TObjectPtr<AActor> m_CurrentInteractionActor;
+	TWeakObjectPtr<AActor> m_CurrentInteractionTarget;
+
+	/// <summary>
+	/// 현재 나와 상호작용하고 있는 Player 목록
+	/// 상호작용되는 Actor 의 InteractionComponent 에서 사용
+	/// </summary>
+	UPROPERTY(Transient)
+	TArray<TWeakObjectPtr<AC_BasicPlayer>> m_CurrentInteractors;
+
 
 	// Server
 private:
@@ -219,6 +236,9 @@ private:
 
 	UFUNCTION(Server, Reliable)
 	void Server_CancleInteract(AActor* _TargetActor);
+
+	UFUNCTION(Client, Reliable)
+	void Client_SetCurrentInteractionTarget(AActor* _TargetActor);
 
 private:
 
@@ -233,6 +253,10 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Interaction")
 	float m_FocusUpdateInterval;
 
+	// ======================================
+	// 			아웃라인 효과
+	// ======================================
+
 	// 아웃라인을 적용할 Mesh 들을 미리 기억해둠
 	// 처음 한번만 찾고 그 이후에는 캐싱된 Mesh 들을 사용
 	UPROPERTY(EditAnywhere, Category = "Interaction|Outline")
@@ -240,6 +264,13 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Interaction|Outline")
 	UMaterialInterface* m_OutlineMaterial;
+
+	// ======================================
+	// 				UI 관련
+	// ======================================
+
+	UPROPERTY(EditAnywhere, Category = "Interaction|UI")
+	FText m_InteractionText;
 
 private:
 

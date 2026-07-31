@@ -73,6 +73,20 @@ public: // 무기 상태 정보 업데이트 관련
 	/// <returns> : 현재 AmmoInfo Visibility false이거나 새로 들어온 FireMode가 이미 보여지는 FireMode인 경우, Update 하지 않음(return false) </returns>
 	bool UpdateFireMode(EFireMode _NewFireMode);
 
+public: // Interaction UI 관련
+
+	/// <summary>
+	/// 상호작용 UI 활성화
+	/// </summary>
+	/// <param name="_InteractionText">띄어줄 Text</param>
+	void ActivateInteractionUI(const FText& _InteractionText);
+
+	/// <summary>
+	/// 상호작용 UI 비활성화
+	/// </summary>
+	void DeactivateInteractionUI();
+
+
 public:
 	
 	class UC_CompassBarWidget* GetCompassBarWidget() const { return CompassBarWidget; }
@@ -80,6 +94,8 @@ public:
 	class UC_CrosshairWidget* GetCrosshairWidget() const { return CrosshairWidget; }
 	
 	class UC_PlayerStatWidget* GetPlayerStatWidget() const { return PlayerStatWidget; }
+
+	class UC_InteractionWidget* GetInteractionWidget() const { return InteractionWidget; }
 
 public: // Ingame Log 관련
 	
@@ -106,4 +122,6 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	class UC_CrosshairWidget* CrosshairWidget{};
 
+	UPROPERTY(meta = (BindWidget))
+	class UC_InteractionWidget* InteractionWidget{};
 };
