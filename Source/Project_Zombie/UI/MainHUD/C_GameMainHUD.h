@@ -86,6 +86,17 @@ public: // Interaction UI 관련
 	/// </summary>
 	void DeactivateInteractionUI();
 
+	/// <summary>
+	/// 상호작용 시 Timer 활성화
+	/// </summary>
+	/// <param name="_Duration">상호작용 시간</param>
+	void ActivateInteractionTimer(float _Duration);
+
+	/// <summary>
+	/// 상호작용 종료 시 Timer 비활성화
+	/// </summary>
+	void DeactivateInteractionTimer();
+
 
 public:
 	

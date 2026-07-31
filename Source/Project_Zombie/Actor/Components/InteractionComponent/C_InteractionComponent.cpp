@@ -351,10 +351,6 @@ void UC_InteractionComponent::TryInteract()
 	{
 		UC_Util::Print("Server Interact", FColor::Red, 10.f);
 
-		// 상호작용 시작 시 표시 제거
-		TargetComponent->SetOutlineEffect(false);
-		m_OwnerPlayer->DeactivateInteractionUI();
-
 		// 서버에서 상호작용 시도 요청
 		Server_TryInteract(TargetActor);
 		return;
@@ -366,11 +362,12 @@ void UC_InteractionComponent::TryInteract()
 
 	m_CurrentInteractionTarget = TargetActor;
 
+	const float InteractionDuration = TargetComponent->GetInteractionDuration();
+
 	// 상호작용 시작 시 표시 끄기
 	TargetComponent->SetOutlineEffect(false);
 	m_OwnerPlayer->DeactivateInteractionUI();
-
-	const float InteractionDuration = TargetComponent->GetInteractionDuration();
+	m_OwnerPlayer->ActivateInteractionTimerUI(InteractionDuration);
 
 	UC_Util::Print("Client Interact", FColor::Red, 10.f);
 
@@ -404,7 +401,10 @@ void UC_InteractionComponent::CancleInteract()
 		if (m_FocusedTarget.Get() == TargetActor)
 		{
 			TargetComponent->SetOutlineEffect(true);
+			m_OwnerPlayer->ActivateInteractionUI(TargetComponent->GetInteractionText());
 		}
+
+		m_OwnerPlayer->DeactivateInteractionTimerUI();
 
 		ClearCurrentInteraction();
 		
@@ -418,7 +418,10 @@ void UC_InteractionComponent::CancleInteract()
 	if (m_FocusedTarget.Get() == TargetActor)
 	{
 		TargetComponent->SetOutlineEffect(true);
+		m_OwnerPlayer->ActivateInteractionUI(TargetComponent->GetInteractionText());
 	}
+
+	m_OwnerPlayer->DeactivateInteractionTimerUI();
 
 	ClearCurrentInteraction();
 }
@@ -498,7 +501,7 @@ void UC_InteractionComponent::CompleteInteract()
 	ClearCurrentInteraction();
 
 	// 서버에서 처리했었다면 Client 상태도 정리
-	if (m_OwnerPlayer->HasAuthority() && !m_OwnerPlayer->IsLocallyControlled())
+	if (m_OwnerPlayer->HasAuthority())
 	{
 		Client_SetCurrentInteractionTarget(nullptr);
 	}
@@ -540,12 +543,11 @@ bool UC_InteractionComponent::ExecuteCompleteInteract(AC_BasicPlayer* _Interacto
 		UC_InteractionComponent* OtherInteractorComponent = GetTargetInteractionComponent(OtherInteractor);
 		if (OtherInteractorComponent)
 		{
+			// 서버 정리
 			OtherInteractorComponent->ClearCurrentInteraction();
 
-			if (OtherInteractor->HasAuthority() && !OtherInteractor->IsLocallyControlled())
-			{
-				OtherInteractorComponent->Client_SetCurrentInteractionTarget(nullptr);
-			}
+			// 조종하는 클라이언트 정리
+			OtherInteractorComponent->Client_SetCurrentInteractionTarget(nullptr);
 		}
 
 		// Target 의 Interactor 목록 제거
@@ -695,12 +697,25 @@ void UC_InteractionComponent::Client_SetCurrentInteractionTarget_Implementation(
 	{
 		// 상호작용이 성공한 경우
 		m_CurrentInteractionTarget = _TargetActor;
+
+		UC_InteractionComponent* TargetComponent = GetTargetInteractionComponent(_TargetActor);
+
+		if (TargetComponent)
+		{
+			const float InteractionDuration = TargetComponent->GetInteractionDuration();
+
+			// 상호작용 시작 시 표시 제거
+			TargetComponent->SetOutlineEffect(false);
+			m_OwnerPlayer->DeactivateInteractionUI();
+			m_OwnerPlayer->ActivateInteractionTimerUI(InteractionDuration);
+		}
+
+		return;
 	}
-	else
-	{
 		// 서버에서 상호작용이 끝났거나, 다른 Player 완료로 강제 종료된 경우
-		ClearCurrentInteraction();
-	}
+	ClearCurrentInteraction();
+
+	m_OwnerPlayer->DeactivateInteractionTimerUI();
 
 	UpdateFocusedTarget();
 }
@@ -732,11 +747,8 @@ void UC_InteractionComponent::Server_TryInteract_Implementation(AActor* _TargetA
 	// 성공적으로 상호작용 시작 시도 성공 시 현재 상호작용 중인 Actor 저장
 	m_CurrentInteractionTarget =	_TargetActor;
 
-	// 원격 Client에게도 상호작용 시작 알려줌
-	if (!m_OwnerPlayer->IsLocallyControlled())
-	{
-		Client_SetCurrentInteractionTarget(_TargetActor);
-	}
+	// 해당 Player의 Client에게도 상호작용 시작 알려줌
+	Client_SetCurrentInteractionTarget(_TargetActor);
 
 	const float InteractionDuration = TargetComponent->GetInteractionDuration();
 

@@ -75,7 +75,6 @@ public:
 	//const FText& GetInteractionText() const { return m_InteractionStrategyObject ? m_InteractionStrategyObject->GetInteractionText() : FText::GetEmpty(); }
 	const FText& GetInteractionText() const { return m_InteractionText; }
 
-
 public:
 
 	/// <summary>

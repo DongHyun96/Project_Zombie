@@ -639,6 +639,40 @@ void AC_BasicPlayer::DeactivateInteractionUI()
 	}
 }
 
+void AC_BasicPlayer::ActivateInteractionTimerUI(float _Duration)
+{
+	if (!IsLocallyControlled())
+		return;
+
+	if (APlayerController* PC = GetController<APlayerController>())
+	{
+		if (AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD()))
+		{
+			if (UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget())
+			{
+				MainHUD->ActivateInteractionTimer(_Duration);
+			}
+		}
+	}
+}
+
+void AC_BasicPlayer::DeactivateInteractionTimerUI()
+{
+	if (!IsLocallyControlled())
+		return;
+
+	if (APlayerController* PC = GetController<APlayerController>())
+	{
+		if (AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD()))
+		{
+			if (UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget())
+			{
+				MainHUD->DeactivateInteractionTimer();
+			}
+		}
+	}
+}
+
 void AC_BasicPlayer::Server_EnterDownedState_Implementation()
 {
 	// 이미 사망 상태라면 처리하지 않음

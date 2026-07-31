@@ -63,6 +63,22 @@ void UC_GameMainHUD::DeactivateInteractionUI()
 	InteractionWidget->DeactivateInteraction();
 }
 
+void UC_GameMainHUD::ActivateInteractionTimer(float _Duration)
+{
+	if (!InteractionWidget)
+		return;
+
+	InteractionWidget->ActivateInteractionTimer(_Duration);
+}
+
+void UC_GameMainHUD::DeactivateInteractionTimer()
+{
+	if (!InteractionWidget)
+		return;
+
+	InteractionWidget->DeactivateInteractionTimer();
+}
+
 bool UC_GameMainHUD::AddPlayerWarningLog(const FString& WarningLog, const FColor& _LogColor)
 {
 	return InformWidget->AddPlayerWarningLog(WarningLog, _LogColor);

@@ -20,6 +20,9 @@ bool UC_ReviveInteractionStrategy::CanStartInteraction(AC_BasicPlayer* _Interact
 	if (!_Interactor || !TargetPlayer)
 		return false;
 
+	if (_Interactor->IsDead())
+		return false;
+
 	// 다운되어 있어야지 상호작용 가능
 	return TargetPlayer->IsDead();
 }

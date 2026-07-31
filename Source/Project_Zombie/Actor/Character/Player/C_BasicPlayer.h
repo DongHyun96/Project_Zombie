@@ -378,6 +378,17 @@ public:
 	/// </summary>
 	void DeactivateInteractionUI();
 	
+	/// <summary>
+	/// 상호작용 타이머 UI 활성화
+	/// </summary>
+	/// <param name="_Duration">상호작용 시간</param>
+	void ActivateInteractionTimerUI(float _Duration);
+
+	/// <summary>
+	///	상호작용 타이머 UI 비활성화
+	/// </summary>
+	void DeactivateInteractionTimerUI();
+
 
 	// Server함수 (생명 상태 변경)
 protected:
