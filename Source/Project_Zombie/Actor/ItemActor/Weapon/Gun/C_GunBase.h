@@ -36,10 +36,6 @@ protected:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Mesh", meta = (AllowPrivateAccess = "true"))
 	class USkeletalMeshComponent* m_WeaponMesh;		// 정적정보 - 상연, 데이터 테이블에서 가져와서 초기화 해주기.
 
-	// TODO : Lagacy로 삭제 예정
-	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon|Components", meta = (DisplayName = "DataComponent"))
-	//class UC_GunDataTableComponent* m_DataCom;
-
 	// AI Enemy가 Gun을 사용하는 처리 기능 담당
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI", meta = (DisplayName = "AIGunUsageComponent"))
 	UC_AIGunUsageComponent* m_AIGunUsageComponent{};
@@ -50,8 +46,8 @@ protected:
 	float					m_Damage;
 
 	// 현재 남아있는 총알 수
-	UPROPERTY(ReplicatedUsing = OnRep_CurrentAmmo, BlueprintReadOnly, Category = "Weapon|Stats")
-	int32					m_CurrentAmmo;
+	UPROPERTY(BlueprintReadOnly, Category = "Weapon|Stats")
+	int32 m_CurrentAmmo;
 
 	// 총이 갖는 최종 MaxAmmo
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Weapon|Stats")
@@ -63,9 +59,6 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GunStats")
 	float m_SpreadAngle = 0.0f;
-
-	// 총이 갖는 최종 ShellEjectImpulse(탄피 배출에 가하는 힘), TODO : 아마 나중에 Actor로 만든게 아니라 나이아가라등으로 바꾸면서 사라질 수 도? 
-	float					m_ShellEjectImpulse;	// 살짝 애매 - 상연
 	
 	class UAnimMontage* m_PlayerFireAnimation;
 
@@ -109,9 +102,9 @@ protected:
 
 	EFireMode m_FireMode{};
 
-	// 클라이언트에서 전달받은 카메라 위치/회전값 캐싱
-	FVector m_CachedCameraLoc;
-	FRotator m_CachedCameraRot;
+	//// 클라이언트에서 전달받은 카메라 위치/회전값 캐싱
+	//FVector m_CachedCameraLoc;
+	//FRotator m_CachedCameraRot;
 
 private:
 
@@ -122,45 +115,7 @@ private:
 	// 모든 무기 RifleHolster 사용처리
 	static const FName s_HolsterSocketName;
 
-protected:
-#if WITH_EDITOR
-	// 에디터에서 프로퍼티(속성)가 변경될 때마다 호출되는 엔진 함수. TODO : 이제 init함수가 바뀌어서 사용하지 않음.
-	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
-#endif
-
 public:
-	
-	/// <summary>
-	/// 멤버변수 초기화,
-	/// TODO : 삭제하거나 아이템 매니저에서 데이터 테이블 받아와서 처리해야함. 개인적으로는 지우는게 나을 듯. 
-	/// </summary>
-	//void Gun_init();
-
-	/// <summary>
-	/// 탄약 체크 및 UI 업데이트 (사격 가능하면 true 반환)
-	/// </summary>
-	bool ConsumeAmmo();   
-
-	/// <summary>
-	/// 공통 탄피 배출 로직
-	/// </summary>
-	virtual void SpawnShellEject();
-	
-	/// <summary>
-	/// 라인트레이스 파티클 이펙트 출력
-	/// </summary>
-	// 멀티캐스트 이펙트 재생 (원본 로직 그대로)
-	UFUNCTION(NetMulticast, Unreliable)
-	void Multicast_PlayFireEffects(const FVector_NetQuantize& ImpactPoint);
-	void Multicast_PlayFireEffects_Implementation(const FVector_NetQuantize& ImpactPoint);
-
-	// 리팩토링중....
-public:
-	// 인벤토리나 Pickup에서 Spawn/Attach 시 호출하여 데이터를 주입, TODO : ItemActor를 상속받게 하고 ItemActor에서 선언하기.
-	//virtual void InitFromInventoryEntry(const FInventoryEntry& InEntry);
-
-	// 액터에서 수정된 동적 정보(남은 탄약, 업그레이드 등)를 반영한 최신 Entry 반환, TODO : ItemActor를 상속받게 하고 ItemActor에서 선언하기.
-	//virtual FInventoryEntry GetUpdatedInventoryEntry();
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	
@@ -211,41 +166,55 @@ public:
 	/// <param name="_WeaponUser"> : 이 Weapon을 사용하는 Player 객체 </param>
 	/// <returns> : R키에 대한 처리가 필요없거나 실패했을 경우 return false </returns>
 	virtual bool Reload(AC_BasicPlayer* _WeaponUser) override;
-	
+
 	virtual void UpdateAmmoInfoHUDForDrawEnd() override;
 
 protected:
 	virtual void PullTrigger();
 	virtual void ReleaseTrigger();
 
-	// 자식 클래스가 고유 로직을 구현할 순수 가상 메서드 성격의 인터페이스
-	virtual void Server_ExecuteFire();
-	virtual void Server_ExecuteReload();
+	// 클라이언트 사격 실행
+	virtual void Client_ExecuteFire();
 
-	// 로컬/멀티캐스트 사격 이펙트
-	virtual void PlayFireEffects_Local();
+	// 로컬 사격/재장전
+	virtual void PlayFireEffects_Client();
+	virtual void SpawnShellEject();
 
-	// 클라이언트 HUD 갱신
-	UFUNCTION()
-	virtual void OnRep_CurrentAmmo();
+	// HUD 갱신
+	void UpdateAmmoUI();
 
-	virtual FVector LineTraceDamage(const FVector& CameraStart, const FRotator& CameraRot, float DamageVal, float SpreadAngleDegree);
+	virtual FVector LineTraceDamage(const FVector& CameraStart, const FRotator& CameraRot, AActor*& OutHitActor);
 
 protected:
+	// 클라이언트가 사격 후 결과를 서버로 동기화
 	UFUNCTION(Server, Reliable)
-	void Server_PullTrigger();
+	void Server_ExecuteFire(FVector_NetQuantize ImpactPoint, AActor* HitActor);
 
-	UFUNCTION(Server, Reliable)
-	void Server_ReleaseTrigger();
+	// 클라이언트들에게 사격 연출 Multicast
+	// FVector_NetQuantize = 소수점 아래 아주 미세한 수치는 버리고 정수 단위 위주로 압축해서 
+	// 서버/클라이언트 간 주고받는 데이터 크기를 줄이는 FVector 변종
+	UFUNCTION(NetMulticast, Unreliable)
+	void Multicast_PlayFireEffects(FVector_NetQuantize ImpactPoint);
 
+	// 클라이언트가 재장전
 	UFUNCTION(Client, Reliable)
-	void Client_PlayFireEffects();
+	void Client_CompleteReload();
 
+	// 클라이언트가 재장전 후 결과를 서버로 동기화
 	UFUNCTION(Server, Reliable)
 	void Server_StartReload();
 
+	// 클라이언트들에게 사격 연출 Multicast
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_PlayReloadEffects();
+
+	// 재장전 취소 RPC
+	UFUNCTION(Server, Reliable)
+	void Server_CancelReload();
+
+	// 재생 중인 재장전 애니메이션 정지 멀티캐스트
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_StopReloadEffects();
 
 public:
 

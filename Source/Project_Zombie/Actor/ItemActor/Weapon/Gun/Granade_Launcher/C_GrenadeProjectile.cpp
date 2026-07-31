@@ -1,6 +1,5 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "C_GrenadeProjectile.h"
 #include "Engine/OverlapResult.h"
 #include "Engine/World.h"
@@ -22,6 +21,9 @@ AC_GrenadeProjectile::AC_GrenadeProjectile()
 	CollisionComp->OnComponentHit.AddDynamic(this, &AC_GrenadeProjectile::OnHit);
 	RootComponent = CollisionComp;
 
+	bAlwaysRelevant = true;
+	bReplicates = true;
+
 	ProjectileMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComp"));
 	ProjectileMesh->SetupAttachment(RootComponent);
 
@@ -34,8 +36,6 @@ AC_GrenadeProjectile::AC_GrenadeProjectile()
 	ProjectileMovement->ProjectileGravityScale = 0.8f;
 
 	ExplosionStrategyClass = UC_GrenadeExplode::StaticClass();
-
-	// 부모(AC_ThrowableWeaponBase)의 이펙트 기본 스케일 설정 (기본값 1.0f)
 	m_ExplosionEffectScale = 1.0f;
 }
 
@@ -54,28 +54,9 @@ void AC_GrenadeProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActo
 	if (OtherActor && OtherActor != this && OtherActor != GetInstigator())
 	{
 		const FVector ExplosionLocation = GetActorLocation();
-		if (m_ExplosionEffect)
-		{
-			float EffectScale = (m_ExplosionEffectScale > 0.0f) ? m_ExplosionEffectScale : 1.0f;
 
-			UGameplayStatics::SpawnEmitterAtLocation(
-				GetWorld(),
-				m_ExplosionEffect,
-				ExplosionLocation,
-				FRotator::ZeroRotator,
-				FVector(EffectScale)
-			);
-		}
-
-		DrawDebugSphere(
-			GetWorld(),
-			ExplosionLocation,
-			m_ExplosionRadius,
-			32,
-			FColor::Red,
-			false,
-			2.0f
-		);
+		// ★ 1. 이펙트와 디버그 구체를 모든 화면(클라이언트 포함)에 출력하도록 실행
+		Multicast_PlayExplosionFX(ExplosionLocation);
 
 		FCollisionObjectQueryParams ObjectQueryParams;
 		ObjectQueryParams.AddObjectTypesToQuery(ECC_Pawn);
@@ -115,7 +96,7 @@ void AC_GrenadeProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActo
 					BlockHit,
 					TraceStart,
 					TraceEnd,
-					m_ExplosionTraceChannel, // 부모의 TraceChannel 사용
+					ECC_Visibility,
 					QueryParams
 				);
 
@@ -125,7 +106,6 @@ void AC_GrenadeProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActo
 
 					AController* InstigatorController = GetInstigator() ? GetInstigator()->GetController() : nullptr;
 
-					// 거리 비례 데미지 적용
 					float Distance = FVector::Distance(ExplosionLocation, Target->GetActorLocation());
 					float AppliedDamage = FMath::Lerp(m_MaxDamage, m_MinDamage, FMath::Clamp(Distance / m_ExplosionRadius, 0.0f, 1.0f));
 
@@ -146,7 +126,32 @@ void AC_GrenadeProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActo
 			}
 		}
 
-		// 폭발 후 액터 파괴
-		Destroy();
+		SetLifeSpan(0.05f);
 	}
+}
+
+void AC_GrenadeProjectile::Multicast_PlayExplosionFX_Implementation(FVector ExplosionLocation)
+{
+	if (m_ExplosionEffect)
+	{
+		float EffectScale = (m_ExplosionEffectScale > 0.0f) ? m_ExplosionEffectScale : 1.0f;
+
+		UGameplayStatics::SpawnEmitterAtLocation(
+			GetWorld(),
+			m_ExplosionEffect,
+			ExplosionLocation,
+			FRotator::ZeroRotator,
+			FVector(EffectScale)
+		);
+	}
+
+	DrawDebugSphere(
+		GetWorld(),
+		ExplosionLocation,
+		m_ExplosionRadius,
+		32,
+		FColor::Red,
+		false,
+		2.0f
+	);
 }

@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Actor/ItemActor/Weapon/ThrowableWeapon/C_ThrowableWeaponBase.h"
+#include "GameFramework/Actor.h"
 #include "C_GrenadeProjectile.generated.h"
 
 class USphereComponent;
@@ -12,7 +12,7 @@ class UProjectileMovementComponent;
 class UC_GrenadeExplode;
 
 UCLASS()
-class PROJECT_ZOMBIE_API AC_GrenadeProjectile : public AC_ThrowableWeaponBase
+class PROJECT_ZOMBIE_API AC_GrenadeProjectile : public AActor
 {
 	GENERATED_BODY()
 
@@ -29,9 +29,29 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UProjectileMovementComponent* ProjectileMovement;
 
+	// 최대 데미지
+	UPROPERTY(VisibleAnywhere, Category = "Explosion")
+	float m_MaxDamage;
+
+	// 최소 데미지
+	UPROPERTY(VisibleAnywhere, Category = "Explosion")
+	float m_MinDamage;
+
 	// 폭발 전략 클래스
-	UPROPERTY(EditDefaultsOnly, Category = "Explosion")
+	UPROPERTY(VisibleAnywhere, Category = "Explosion")
 	TSubclassOf<UC_GrenadeExplode> ExplosionStrategyClass;
+
+	// 폭발 반경
+	UPROPERTY(VisibleAnywhere, Category = "Explosion")
+	float m_ExplosionRadius;
+
+	// 폭발 이펙트 
+	UPROPERTY(VisibleAnywhere, Category = "Effect")
+	TObjectPtr<UParticleSystem> m_ExplosionEffect{};
+
+	// 폭발 이펙트 크기 (1.0 = 기본 크기)
+	UPROPERTY(VisibleAnywhere, Category = "Effect")
+	float m_ExplosionEffectScale;
 
 public:
 	UProjectileMovementComponent* GetProjectileMovement() { return ProjectileMovement; }
@@ -39,9 +59,11 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	// 충돌 시 호출될 콜백 함수
 	UFUNCTION()
 	void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_PlayExplosionFX(FVector ExplosionLocation);
 
 public:
 	AC_GrenadeProjectile();

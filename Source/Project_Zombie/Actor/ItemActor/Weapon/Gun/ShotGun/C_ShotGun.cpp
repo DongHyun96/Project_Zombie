@@ -1,27 +1,144 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #include "C_ShotGun.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/Character/NPC/Enemy/C_BasicEnemy.h"
 #include "GameModeAndManager/C_UIManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystemComponent.h"
-#include "UI/MainHUD/C_GameMainHUD.h"
+
+#include "TimerManager.h"
+#include "Animation/AnimMontage.h"
+
 
 AC_ShotGun::AC_ShotGun()
 {
 	m_PelletCount = 8;
 	m_SpreadAngle = 6.0f;
 	m_FireMode = EFireMode::Single;
+	m_FireRate = 0.8f;
+	m_SingleShellInsertTime = 0.6f;
+	m_bCanFire = true;
 }
 
 bool AC_ShotGun::OnStartFire(AC_BasicPlayer* _WeaponUser)
 {
+	if (!_WeaponUser) return false;
+
 	if (m_bIsReloading)
 	{
 		EndReload();
 	}
+
 	return Super::OnStartFire(_WeaponUser);
+}
+
+bool AC_ShotGun::Reload(AC_BasicPlayer* _WeaponUser)
+{
+	if (!_WeaponUser) return false;
+	m_OwnerPlayer = _WeaponUser;
+
+	// 이미 재장전 중이거나 탄약이 꽉 찼다면 거부
+	if (m_bIsReloading || m_CurrentAmmo >= m_MaxAmmo) return false;
+
+	m_bIsFiring = false;
+	m_bIsReloading = true;
+
+	if (!HasAuthority())
+	{
+		Server_StartReload();
+		return true;
+	}
+
+	Multicast_PlayReloadEffects();
+
+	GetWorldTimerManager().SetTimer(
+		m_ReloadLoopTimer,
+		this,
+		&AC_ShotGun::InsertSingleShell,
+		m_SingleShellInsertTime,
+		true
+	);
+
+	return true;
+}
+
+void AC_ShotGun::Server_StartReload_Implementation()
+{
+	// 탄약이 이미 꽉 찬 경우 거부
+	if (m_CurrentAmmo >= m_MaxAmmo) return;
+
+	m_bIsFiring = false;
+	m_bIsReloading = true;
+
+	Multicast_PlayReloadEffects();
+
+	GetWorldTimerManager().SetTimer(
+		m_ReloadLoopTimer,
+		this,
+		&AC_ShotGun::InsertSingleShell,
+		m_SingleShellInsertTime,
+		true
+	);
+}
+
+void AC_ShotGun::InsertSingleShell()
+{
+	if (!HasAuthority()) return;
+
+	// 재장전 도중 취소되었거나 이미 가득 찼다면 종료
+	if (!m_bIsReloading || m_CurrentAmmo >= m_MaxAmmo)
+	{
+		EndReload();
+		return;
+	}
+
+	m_CurrentAmmo++;
+
+	// 클라이언트 UI 및 탄약 동기화
+	Client_OnSingleShellInserted(m_CurrentAmmo);
+
+	if (m_CurrentAmmo >= m_MaxAmmo)
+	{
+		EndReload();
+		return;
+	}
+
+	Multicast_PlayReloadEffects();
+}
+
+void AC_ShotGun::Client_OnSingleShellInserted_Implementation(int32 NewAmmo)
+{
+	m_CurrentAmmo = NewAmmo;
+	m_bIsReloading = true; // 클라이언트 재장전 상태 유지
+	UpdateAmmoUI();
+}
+
+void AC_ShotGun::EndReload()
+{
+	m_bIsReloading = false;
+
+	GetWorldTimerManager().ClearTimer(m_ReloadLoopTimer);
+
+	if (HasAuthority())
+	{
+		Client_EndReload();
+		Multicast_StopReloadAnimation();
+	}
+}
+
+void AC_ShotGun::Client_EndReload_Implementation()
+{
+	m_bIsReloading = false;
+	m_bIsFiring = false;
+	m_bCanFire = true;
+	UpdateAmmoUI();
+}
+
+void AC_ShotGun::Multicast_StopReloadAnimation_Implementation()
+{
+	if (m_OwnerPlayer && m_PlayerReloadAnimation)
+	{
+		m_OwnerPlayer->StopAnimMontage(m_PlayerReloadAnimation);
+	}
 }
 
 void AC_ShotGun::PullTrigger()
@@ -31,8 +148,7 @@ void AC_ShotGun::PullTrigger()
 	m_bIsFiring = true;
 	m_bCanFire = false;
 
-	PlayFireEffects_Local();
-	Server_PullTrigger();
+	Client_ExecuteFire();
 
 	GetWorldTimerManager().SetTimer(m_ShotCooldownTimer, this, &AC_ShotGun::ResetFireCooldown, m_FireRate, false);
 }
@@ -43,81 +159,88 @@ void AC_ShotGun::ResetFireCooldown()
 	m_bIsFiring = false;
 }
 
-void AC_ShotGun::Server_ExecuteFire()
+void AC_ShotGun::Client_ExecuteFire()
 {
-	ProcessShotgunPellets(m_Damage);
-}
+	if (m_CurrentAmmo <= 0 || m_bIsReloading)
+	{
+		m_bIsFiring = false;
+		return;
+	}
 
-void AC_ShotGun::ProcessShotgunPellets(float BaseDamagePerPellet)
-{
-	if (!m_WeaponMesh || !GetWorld() || !m_OwnerPlayer) return;
+	// ★ 핵심 수정: 서버(HasAuthority)에서는 아래 Server_ShotgunFireEffects에서 차감할 것이므로,
+	// 클라이언트(순수 클라)일 때만 여기서 로컬 탄약을 차감하고 UI를 올립니다.
+	if (!HasAuthority())
+	{
+		m_CurrentAmmo--;
+		if (m_CurrentAmmo <= 0)
+		{
+			m_CurrentAmmo = 0;
+			m_bIsFiring = false;
+		}
+		UpdateAmmoUI();
+	}
 
-	APlayerController* PC = Cast<APlayerController>(m_OwnerPlayer->GetController());
-	if (!PC || !PC->PlayerCameraManager) return;
+	PlayFireEffects_Client();
+	SpawnShellEject();
 
-	FVector CameraStart = PC->PlayerCameraManager->GetCameraLocation();
-	FVector CameraForward = PC->PlayerCameraManager->GetCameraRotation().Vector();
+	if (!m_OwnerPlayer || !GetWorld()) return;
 
-	float TraceRange = 3500.0f;
-	FVector CameraEnd = CameraStart + (CameraForward * TraceRange);
+	FVector CameraLoc;
+	FRotator CameraRot;
+	if (APlayerController* PC = Cast<APlayerController>(m_OwnerPlayer->GetController()))
+	{
+		PC->GetPlayerViewPoint(CameraLoc, CameraRot);
+	}
+	else
+	{
+		m_OwnerPlayer->GetActorEyesViewPoint(CameraLoc, CameraRot);
+	}
 
-	FHitResult CameraHitResult;
-	FCollisionQueryParams QueryParams;
-	QueryParams.AddIgnoredActor(this);
-	QueryParams.AddIgnoredActor(m_OwnerPlayer);
-
-	bool bCameraHit = GetWorld()->LineTraceSingleByChannel(CameraHitResult, CameraStart, CameraEnd, ECC_Visibility, QueryParams);
-	FVector TargetPoint = bCameraHit ? CameraHitResult.ImpactPoint : CameraEnd;
-
-	FVector MuzzleStart = m_WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
-	FVector MainDirection = (TargetPoint - MuzzleStart).GetSafeNormal();
-
-	// 8발 펠릿의 충돌 지점 수집용 배열
 	TArray<FVector_NetQuantize> ImpactPoints;
 	ImpactPoints.Reserve(m_PelletCount);
 
-	// 8발 펠릿 사격 판정 Loop (서버)
 	for (int32 i = 0; i < m_PelletCount; ++i)
 	{
-		FVector SpreadDir = FMath::VRandCone(MainDirection, FMath::DegreesToRadians(m_SpreadAngle));
-		FVector MaxEndLocation = MuzzleStart + (SpreadDir * TraceRange);
+		AActor* HitActor = nullptr;
+		FVector ImpactPoint = LineTraceDamage(CameraLoc, CameraRot, HitActor);
 
-		FHitResult PelletHitResult;
-		bool bHit = GetWorld()->LineTraceSingleByChannel(PelletHitResult, MuzzleStart, MaxEndLocation, ECC_Visibility, QueryParams);
-
-		FVector ActualImpactPoint = bHit ? PelletHitResult.ImpactPoint : MaxEndLocation;
-		ImpactPoints.Add(ActualImpactPoint);
-
-		// 데미지 처리
-		if (bHit)
+		if (ImpactPoint.IsZero())
 		{
-			if (AC_BasicEnemy* Enemy = Cast<AC_BasicEnemy>(PelletHitResult.GetActor()))
-			{
-				UGameplayStatics::ApplyDamage(Enemy, BaseDamagePerPellet, m_OwnerPlayer->GetController(), this, nullptr);
-			}
+			FVector ShootingDir = CameraRot.Vector();
+			ImpactPoint = CameraLoc + (ShootingDir * 10000.0f);
+		}
+
+		ImpactPoints.Add(ImpactPoint);
+
+		if (HitActor && HitActor->IsA<AC_BasicEnemy>())
+		{
+			Server_ExecuteFire(ImpactPoint, HitActor);
 		}
 	}
 
-	// 서버에서 8개 충돌 지점을 한 번에 클라이언트들에게 멀티캐스트
+	// 서버로 이펙트 연출 및 서버 측 탄약 차감 전송
+	Server_ShotgunFireEffects(ImpactPoints);
+}
+
+void AC_ShotGun::Server_ShotgunFireEffects_Implementation(const TArray<FVector_NetQuantize>& ImpactPoints)
+{
+	// 서버 메모리 탄약 차감 (서버 플레이어가 쐈든, 클라이언트가 RPC 보냈든 무조건 여기서 1발 차감)
+	if (m_CurrentAmmo > 0)
+	{
+		m_CurrentAmmo--;
+	}
+
+	// ★ 서버 플레이어가 직접 쏜 경우에도 UI를 최신 탄약 수로 갱신해줍니다.
+	if (HasAuthority() && m_OwnerPlayer && m_OwnerPlayer->IsLocallyControlled())
+	{
+		UpdateAmmoUI();
+	}
+
 	Multicast_PlayShotgunFireEffects(ImpactPoints);
 }
 
 void AC_ShotGun::Multicast_PlayShotgunFireEffects_Implementation(const TArray<FVector_NetQuantize>& ImpactPoints)
 {
-	// 1. 발사 애니메이션 재생 (1회)
-	if (m_OwnerPlayer && m_PlayerFireAnimation)
-	{
-		m_OwnerPlayer->PlayAnimMontage(m_PlayerFireAnimation);
-	}
-	if (m_WeaponMesh && m_FireAnimation)
-	{
-		m_WeaponMesh->PlayAnimation(m_FireAnimation, false);
-	}
-
-	// 2. 탄피 배출 (딱 1회!)
-	SpawnShellEject();
-
-	// 3. 8발 펠릿 각각에 대해 GunBase와 동일한 Tracer & Impact 연출 적용
 	if (!m_WeaponMesh || !GetWorld()) return;
 
 	FVector MuzzleStart = m_WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
@@ -142,8 +265,8 @@ void AC_ShotGun::Multicast_PlayShotgunFireEffects_Implementation(const TArray<FV
 			if (TracerComp)
 			{
 				float Distance = FVector::Distance(MuzzleStart, ExplicitImpactPoint);
-				float Speed = 20000.0f; // 궤적 이동 속도
-				float FlyTime = Distance / Speed;
+				float Speed = 20000.0f;
+				float FlyTime = FMath::Max(0.01f, Distance / Speed);
 
 				TSharedPtr<float> ElapsedTime = MakeShared<float>(0.0f);
 				TSharedPtr<FTimerHandle> TracerTimerHandle = MakeShared<FTimerHandle>();
@@ -165,7 +288,6 @@ void AC_ShotGun::Multicast_PlayShotgunFireEffects_Implementation(const TArray<FV
 							TracerComp->DeactivateSystem();
 							TracerComp->DestroyComponent();
 
-							// 탄착 지점 임팩트 FX 재생
 							if (m_ImpactFX && GetWorld())
 							{
 								FRotator ImpactRotation = (-ShootDir).Rotation();
@@ -193,40 +315,11 @@ void AC_ShotGun::Multicast_PlayShotgunFireEffects_Implementation(const TArray<FV
 	}
 }
 
-void AC_ShotGun::Server_ExecuteReload()
+void AC_ShotGun::OnSheathStart()
 {
-	GetWorldTimerManager().SetTimer(m_ReloadLoopTimer, this, &AC_ShotGun::InsertSingleShell, m_SingleShellInsertTime, true);
-}
+	GetWorldTimerManager().ClearTimer(m_ShotCooldownTimer);
+	EndReload();
 
-void AC_ShotGun::InsertSingleShell()
-{
-	if (m_CurrentAmmo < m_MaxAmmo)
-	{
-		m_CurrentAmmo++;
+	Super::OnSheathStart();
 
-		if (m_OwnerPlayer->IsLocallyControlled())
-			UI_MANAGER(GetWorld())->GetMainHUDWidget()->UpdateMagazineAmmoCount(m_CurrentAmmo);
-		
-		Multicast_PlayReloadEffects();
-	}
-
-	if (m_CurrentAmmo >= m_MaxAmmo)
-	{
-		EndReload();
-	}
-}
-
-void AC_ShotGun::EndReload()
-{
-	m_bIsReloading = false;
-	GetWorldTimerManager().ClearTimer(m_ReloadLoopTimer);
-	Multicast_StopReloadAnimation();
-}
-
-void AC_ShotGun::Multicast_StopReloadAnimation_Implementation()
-{
-	if (m_OwnerPlayer && m_PlayerReloadAnimation)
-	{
-		m_OwnerPlayer->StopAnimMontage(m_PlayerReloadAnimation);
-	}
 }

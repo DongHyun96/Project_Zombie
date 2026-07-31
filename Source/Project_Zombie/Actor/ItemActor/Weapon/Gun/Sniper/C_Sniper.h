@@ -19,12 +19,10 @@ private:
 	FTimerHandle m_ShotCooldownTimer;
 
 private:
-	void ProcessSniperShot(float DamageVal);
 	void ResetFireCooldown();
 
 protected:
 	virtual void PullTrigger() override;
-	virtual void Server_ExecuteFire() override;
 
 public:
 	AC_Sniper();

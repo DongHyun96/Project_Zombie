@@ -2,29 +2,37 @@
 
 #include "C_Rifle.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
-#include "Actor/Character/NPC/Enemy/C_BasicEnemy.h"
 #include "Kismet/GameplayStatics.h"
 
 AC_Rifle::AC_Rifle()
 {
 	m_FireMode = EFireMode::FullAuto;
+	m_SpreadAngle = 3.5f;
 }
 
 void AC_Rifle::PullTrigger()
 {
-	if (m_bIsFiring || m_bIsReloading || m_CurrentAmmo <= 0) return;
+	if (m_bInBurstCooldown || m_bIsFiring || m_bIsReloading || m_CurrentAmmo <= 0) return;
 
 	m_bIsFiring = true;
-	HandleAutomaticFire();
 
-	// 연사 타이머 작동
-	GetWorldTimerManager().SetTimer(m_AutoFireTimer, this, &AC_Rifle::HandleAutomaticFire, m_FireRate, true);
-}
+	switch (m_FireMode)
+	{
+	case EFireMode::FullAuto:
+		HandleAutomaticFire();
+		GetWorldTimerManager().SetTimer(m_AutoFireTimer, this, &AC_Rifle::HandleAutomaticFire, m_FireRate, true);
+		break;
 
-void AC_Rifle::ReleaseTrigger()
-{
-	Super::ReleaseTrigger();
-	GetWorldTimerManager().ClearTimer(m_AutoFireTimer);
+	case EFireMode::Burst:
+		m_BurstCount = 0;
+		HandleBurstFire();
+		GetWorldTimerManager().SetTimer(m_AutoFireTimer, this, &AC_Rifle::HandleBurstFire, m_FireRate, true);
+		break;
+
+	case EFireMode::Single:
+		HandleAutomaticFire();
+		break;
+	}
 }
 
 void AC_Rifle::HandleAutomaticFire()
@@ -35,61 +43,85 @@ void AC_Rifle::HandleAutomaticFire()
 		return;
 	}
 
-	PlayFireEffects_Local();
-	Server_PullTrigger();
+	Client_ExecuteFire();
+
+	if (m_FireMode == EFireMode::Single)
+	{
+		ReleaseTrigger();
+	}
 }
 
-void AC_Rifle::Server_ExecuteFire()
+void AC_Rifle::HandleBurstFire()
 {
-	ProcessSingleRifleShot(m_Damage);
+	if (m_CurrentAmmo <= 0 || m_bIsReloading || m_BurstCount >= m_MaxBurstCount)
+	{
+		GetWorldTimerManager().ClearTimer(m_AutoFireTimer);
+		m_bIsFiring = false;
+		return;
+	}
+
+	Client_ExecuteFire();
+	m_BurstCount++;
+
+	if (m_BurstCount >= m_MaxBurstCount)
+	{
+		GetWorldTimerManager().ClearTimer(m_AutoFireTimer);
+		m_bIsFiring = false;
+
+		m_bInBurstCooldown = true;
+		GetWorldTimerManager().SetTimer(
+			m_BurstCooldownTimer,
+			this,
+			&AC_Rifle::ResetBurstCooldown,
+			m_BurstCooldown,
+			false
+		);
+	}
 }
 
-void AC_Rifle::ProcessSingleRifleShot(float DamageVal)
+void AC_Rifle::ResetBurstCooldown()
 {
-	if (!m_WeaponMesh || !GetWorld() || !m_OwnerPlayer) return;
+	m_bInBurstCooldown = false;
+}
 
-	APlayerController* PC = Cast<APlayerController>(m_OwnerPlayer->GetController());
-	if (!PC || !PC->PlayerCameraManager) return;
-
-	FVector CameraStart = PC->PlayerCameraManager->GetCameraLocation();
-	FVector CameraForward = PC->PlayerCameraManager->GetCameraRotation().Vector();
-
-	float TraceRange = 5000.0f;
-	FVector CameraEnd = CameraStart + (CameraForward * TraceRange);
-
-	FHitResult CameraHitResult;
-	FCollisionQueryParams QueryParams;
-	QueryParams.AddIgnoredActor(this);
-	QueryParams.AddIgnoredActor(m_OwnerPlayer);
-
-	bool bCameraHit = GetWorld()->LineTraceSingleByChannel(CameraHitResult, CameraStart, CameraEnd, ECC_Visibility, QueryParams);
-	FVector TargetPoint = bCameraHit ? CameraHitResult.ImpactPoint : CameraEnd;
-
-	FVector MuzzleStart = m_WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
-	FVector ShootDirection = (TargetPoint - MuzzleStart).GetSafeNormal();
-
-	if (m_SpreadAngle > 0.0f)
+void AC_Rifle::ReleaseTrigger()
+{
+	if (m_FireMode == EFireMode::Burst && m_BurstCount < m_MaxBurstCount && m_CurrentAmmo > 0)
 	{
-		ShootDirection = FMath::VRandCone(ShootDirection, FMath::DegreesToRadians(m_SpreadAngle));
+		m_bIsFiring = false;
+		return;
 	}
 
-	FVector FinalMuzzleEnd = MuzzleStart + (ShootDirection * TraceRange);
-	FHitResult MuzzleHitResult;
+	Super::ReleaseTrigger();
+	GetWorldTimerManager().ClearTimer(m_AutoFireTimer);
+}
 
-	bool bHit = GetWorld()->LineTraceSingleByChannel(MuzzleHitResult, MuzzleStart, FinalMuzzleEnd, ECC_Visibility, QueryParams);
-
-	// 1. 탄착 지점 결정 (맞았으면 ImpactPoint, 안 맞았으면 최종 도달 지점)
-	FVector ImpactPoint = bHit ? MuzzleHitResult.ImpactPoint : FinalMuzzleEnd;
-
-	// 2. 이펙트 멀티캐스트 호출 (궤적 LERP 이동 + 탄피 나이아가라 배출 + Impact 이펙트)
-	Multicast_PlayFireEffects(ImpactPoint);
-
-	// 3. 데미지 처리
-	if (bHit)
+void AC_Rifle::SwitchFireMode()
+{
+	if (m_bIsFiring)
 	{
-		if (AC_BasicEnemy* Enemy = Cast<AC_BasicEnemy>(MuzzleHitResult.GetActor()))
-		{
-			UGameplayStatics::ApplyDamage(Enemy, DamageVal, m_OwnerPlayer->GetController(), this, nullptr);
-		}
+		ReleaseTrigger();
 	}
+
+	// 모드 변경 시 진행 중이던 쿨타임도 리셋
+	m_bInBurstCooldown = false;
+	GetWorldTimerManager().ClearTimer(m_BurstCooldownTimer);
+
+	switch (m_FireMode)
+	{
+	case EFireMode::Single:
+		m_FireMode = EFireMode::Burst;
+		break;
+	case EFireMode::Burst:
+		m_FireMode = EFireMode::FullAuto;
+		break;
+	case EFireMode::FullAuto:
+		m_FireMode = EFireMode::Single;
+		break;
+	default:
+		m_FireMode = EFireMode::Single;
+		break;
+	}
+
+	Super::SwitchFireMode();
 }
