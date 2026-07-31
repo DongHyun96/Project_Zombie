@@ -251,6 +251,17 @@ float UC_EnemySkillComponent::GetSkillRange(ESkillSlot _Slot) const
 	return m_SkillSlots[TargetIdx].LoadedSkillData->Range;
 }
 
+float UC_EnemySkillComponent::GetCurSkillDamage() const
+{
+	if (!m_CurSkillData)
+	{
+		UC_Util::Print("[UC_EnemySkillComponent::GetCurSkillDamage] : CurSkillData nullptr", FColor::Red, 10.f);
+		return 0.f;
+	}
+	
+	return m_CurSkillData->Damage;
+}
+
 void UC_EnemySkillComponent::Multicast_ImitateUseSkill_Implementation(ESkillSlot _ImitatingSkillSlot, int32 _PlayedMontageSection)
 {
 	// 서버 환경의 UseSkill 따라하기 요청처리는 무시 (자기자신이 보낸 요청이고, 자기자신은 이미 UseSkill 동작을 발현한 상태)

@@ -115,4 +115,9 @@ private:
 	// 3 마리까지 Heal Target을 잡을 수 있도록 한다
 	static const uint8 s_HealTargetCountLimit;
 	
+protected:
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	class UBoxComponent* m_NormalAttackCollider{};
+	
 };

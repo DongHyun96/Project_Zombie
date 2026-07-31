@@ -84,19 +84,6 @@ public:
 	void DropWeapon();
 
 private:
-
-	UFUNCTION()
-	void OnNormalAttackColliderBeginOverlap
-	(
-		UPrimitiveComponent* OverlappedComponent,
-		AActor*				 OtherActor,
-		UPrimitiveComponent* OtherComp,
-		int32				 OtherBodyIndex,
-		bool				 bFromSweep,
-		const FHitResult&	 SweepResult
-	);
-
-private:
 	
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	
@@ -124,9 +111,4 @@ protected: // 빼앗아서 장착한 무기
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly)
 	AC_GunBase* m_EquippedGun{};
 	
-private:
-	
-	UPROPERTY()
-	TSet<AC_BasicPlayer*> m_NormalAttackColliderEntered{};
-
 };

@@ -28,12 +28,12 @@ struct FSkillSlotInfo
 public:
 	// 슬롯 종류
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	ESkillSlot								SlotType;
+	ESkillSlot								SlotType{};
 
 	// 프라이머리 데이터에셋 비동기로딩 사용시 TSoftObjectPtr 사용
 	// 에디터에서 설정할 데이터 에셋
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	TSoftObjectPtr<class UC_EnemySkillData>	SkillData; 
+	TSoftObjectPtr<class UC_EnemySkillData>	SkillData{}; 
 
 	// Transient를 붙이면 에디터에 노출되지 않고 저장도 되지 않는다.
 	// 런타임에 한번만 로드
@@ -147,6 +147,11 @@ public:
 	void Fire();
 
 	float GetSkillRange(ESkillSlot _Slot) const;
+
+	/// <summary>
+	/// 현재 사용중인 Skill의 Damage값 구하기 
+	/// </summary>
+	float GetCurSkillDamage() const;
 
 private:
 	

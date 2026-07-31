@@ -7,6 +7,7 @@
 #include "NiagaraComponent.h"
 #include "Actor/Character/NPC/Enemy/Components/SkillComponent/C_EnemySkillComponent.h"
 #include "Actor/Components/StatComponent/C_StatComponentBase.h"
+#include "Components/BoxComponent.h"
 #include "Components/SphereComponent.h"
 #include "GameModeAndManager/C_GameMode_GameLv.h"
 #include "GameModeAndManager/C_ZombieManager.h"
@@ -27,6 +28,10 @@ AC_NurseZombie::AC_NurseZombie()
 	
 	m_HealingAuraEffectNG = CreateDefaultSubobject<UNiagaraComponent>(TEXT("HealingAuraNGComponent"));
 	m_HealingAuraEffectNG->SetupAttachment(GetRootComponent());
+	
+	m_NormalAttackCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("NormalAttackCollider"));
+	m_NormalAttackCollider->SetupAttachment(GetRootComponent());
+	AddNormalAttackCollider(m_NormalAttackCollider);
 }
 
 void AC_NurseZombie::BeginPlay()
