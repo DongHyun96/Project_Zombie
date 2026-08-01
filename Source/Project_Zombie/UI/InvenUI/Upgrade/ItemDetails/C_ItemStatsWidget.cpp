@@ -4,7 +4,9 @@
 #include "UI/InvenUI/Upgrade/ItemDetails/C_ItemStatsWidget.h"
 #include "C_ItemStatRowWidget.h"
 #include "Components/ScrollBox.h"
+#include "Components/TextBlock.h"
 #include "GameModeAndManager/C_ItemManager.h"
+#include "UI/InvenUI/Upgrade/C_ItemUpgradeWidget.h"
 #include "Utility/C_Util.h"
 
 void UC_ItemStatsWidget::UpdateWidget(const FEquipmentCustomData* InCustomData)
@@ -41,7 +43,15 @@ void UC_ItemStatsWidget::UpdateWidget(const FEquipmentCustomData* InCustomData)
 		
 		FCustomKeyVal CustomKeyVal = InCustomData->StatList[i];
 		
+		//const FWeaponData* data = ItemManager->GetWeaponData(ItemUpgradeWidget->GetTargetEntry()->ItemRowName);
+		
+		//if (!data) continue;
+		// TODO : 현재 스탯 가져올 보여 줄 수 있나? 
+		
 		ItemStatRow->UpdateWidget(CustomKeyVal.Key, CustomKeyVal.Grade, MAX_GRADE); // TODO : Max_Grade 유의
+		
+		if (CustomKeyVal.Key == ItemUpgradeWidget->GetTargetStat())
+			ItemStatRow->GetSelectedRow()->SetVisibility(ESlateVisibility::Visible);
 		
 		ItemStatsScrollBox->AddChild(ItemStatRow);
 		m_ItemStatRows.Add(ItemStatRow);
