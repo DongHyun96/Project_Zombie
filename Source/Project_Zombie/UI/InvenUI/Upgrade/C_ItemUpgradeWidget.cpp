@@ -3,7 +3,6 @@
 
 #include "UI/InvenUI/Upgrade/C_ItemUpgradeWidget.h"
 
-#include "ToolMenusEditor.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/Components/C_InvenComponent.h"
 #include "Components/Image.h"
@@ -11,13 +10,11 @@
 #include "GameModeAndManager/C_ItemManager.h"
 #include "ItemDetails/C_ItemStatsWidget.h"
 #include "ItemDetails/C_MattersWidget.h"
-#include "Serialization/MappedName.h"
 #include "UI/InvenUI/DragDropOperation/C_DragDropOperation.h"
 #include "Actor/Components/InteractionComponent/C_InteractionComponent.h"
 #include "Item/Interact/C_InteractableBase.h"
 #include "ItemDetails/C_ItemStatRowWidget.h"
 #include "ItemDetails/C_SelectedStatWidget.h"
-#include "Tests/ToolMenusTestUtilities.h"
 #include "Utility/C_Util.h"
 
 void UC_ItemUpgradeWidget::NativeConstruct()
@@ -29,6 +26,8 @@ bool UC_ItemUpgradeWidget::NativeOnDrop(const FGeometry& InGeometry, const FDrag
 	UDragDropOperation* InOperation)
 {
 	UC_DragDropOperation* DragOperation = Cast<UC_DragDropOperation>(InOperation);
+	
+	//f (DroppedItemSlotIdx == -1) return false; NativeOnDragCancelled에서 슬롯 잠금 해제 해줘야 함.
 	
 	DroppedItemSlotIdx = DragOperation->GetSlotIndex();
 	
@@ -44,7 +43,7 @@ bool UC_ItemUpgradeWidget::NativeOnDrop(const FGeometry& InGeometry, const FDrag
 		return false;
 	}
 	
-	TargetEntry = DragOperation->GetItemEntry();
+	m_TargetEntry = DragOperation->GetSourceComponent()->GetSlotDataPtr(DroppedItemSlotIdx);
 	
 	UpdateWidget();
 	
@@ -56,6 +55,8 @@ bool UC_ItemUpgradeWidget::NativeOnDrop(const FGeometry& InGeometry, const FDrag
 void UC_ItemUpgradeWidget::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
+
+	ItemStats->SetParentWidget(this);
 	
 	Matters->SetParentWidget(this);
 }
@@ -102,9 +103,10 @@ void UC_ItemUpgradeWidget::UpdateWidget()
 	ItemStats->UpdateWidget(EquipCustomData);
 	
 	// TODO : 강화에 필요한 재료 보여주기.
+	// TODO : 강화하면 재료 차감하기.
 	
 	
-	Matters->UpdateWidget(Entry, m_TargetStat); // TODO : 강화 테이블을 만들어야 넣어 줄 수 있을 듯? -> TMap
+	Matters->UpdateWidget(Entry); // TODO : 강화 테이블을 만들어야 넣어 줄 수 있을 듯? 
 }
 
 void UC_ItemUpgradeWidget::ShowSelectedStatRow(const float& CurStatValue, const float& NextStatValue)
@@ -164,12 +166,13 @@ void UC_ItemUpgradeWidget::RequestItemUpgrade()
 
 	if (!Base) return;
 	
-	if (TargetEntry.IsEmpty()) return;
+	if (!m_TargetEntry) return;
 	
-	if (!TargetEntry.HasEquipmentData()) return;
+	if (!m_TargetEntry->HasEquipmentData()) return;
 	
 	// 이미 최대 Grade면 서버에 요청을 보내지 않게해서 패킷 낭비를 막음.
-	if (TargetEntry.GetEquipmentData()->GetStatGrade(m_TargetStat) >= MAX_GRADE) return;
+	UC_Util::Print(static_cast<int32>(m_TargetStat));
+	if (m_TargetEntry->GetEquipmentData()->GetStatGrade(m_TargetStat) >= MAX_GRADE) return;
 	
 	bIsUpgrading = true;
 	
@@ -192,6 +195,8 @@ void UC_ItemUpgradeWidget::SetTargetStat(EUpgradableStats InTargetStat)
 {
 	m_TargetStat = InTargetStat;
 	
+	if (m_TargetStat == EUpgradableStats::None) return;
+	
 	// TODO(상연) : 원래 이런건 여기서 구현하는게 맞나? 상호작용이 일어난 StatRowWidget쪽에서 했어야 하는건 아닐까?
 	
 	TArray<UC_ItemStatRowWidget*> StatRowArr = ItemStats->GetItemStatRows();
@@ -204,5 +209,5 @@ void UC_ItemUpgradeWidget::SetTargetStat(EUpgradableStats InTargetStat)
 			StatRowArr[i]->GetSelectedRow()->SetVisibility(ESlateVisibility::Collapsed);
 	}
 	
-	Matters->UpdateWidget(TargetEntry, m_TargetStat);
+	Matters->UpdateWidget(*m_TargetEntry);
 }
