@@ -85,7 +85,7 @@ float AC_BasicEnemy::TakeDamage
 )
 {
 	const float DamageAmount = Super::TakeDamage(_DamageAmount, _DamageEvent, _EventInstigator, _DamageCauser);
-	if (DamageAmount <= 0.f) return 0.f; // Damage가 들어오지 않음
+	if (DamageAmount <= 0.f) return 0.f; // Damage가 들어오지 않음 (클라이언트단, TakeDamage 로컬 호출인 경우에 그럴 수 있음 -> 알아서 서버 쪽으로 Damage 입은 사실 전달)
 	
 	// UC_Util::Print("Zombie Damaged", FColor::Red, 10.f);
 

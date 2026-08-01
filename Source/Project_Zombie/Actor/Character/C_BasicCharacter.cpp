@@ -4,6 +4,7 @@
 #include "Actor/Character/C_BasicCharacter.h"
 
 #include "Actor/Components/StatComponent/C_StatComponentBase.h"
+#include "Engine/DamageEvents.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
 AC_BasicCharacter::AC_BasicCharacter()
@@ -35,11 +36,11 @@ float AC_BasicCharacter::TakeDamage
 {
 	// 서버 환경에서만 TakeDamage 과정을 처리할 예정
 	// 클라이언트 환경인 경우, Server에게 Damage를 입은 사실을 보고 -> Server에서 실질적인 TakeDamage 처리가 들어갈 것이다
-	/*if (!HasAuthority())
+	if (!HasAuthority())
 	{
-		// Server_TakeDamage(_DamageAmount, _DamageEvent,)
+		Server_TakeDamage(_DamageAmount, _DamageEvent, _EventInstigator, _DamageCauser);
 		return 0.f;
-	}*/
+	}
 	
 	// Damage 총량 계산
 	const float DamageAmount = Super::TakeDamage(_DamageAmount, _DamageEvent, _EventInstigator, _DamageCauser);
@@ -56,9 +57,10 @@ void AC_BasicCharacter::Server_TakeDamage_Implementation
 (
 	float				_DamageAmount,
 	FDamageEvent const& _DamageEvent,
-	AActor*				_EventInstigatorActor,
+	AController*		_EventInstigator,
 	AActor*				_DamageCauser
 )
 {
-	TakeDamage(_DamageAmount, _DamageEvent, _EventInstigatorActor->GetInstigatorController(), _DamageCauser);
+	// 서버 쪽에서 실질적인 TakeDamage 정상 진행
+	TakeDamage(_DamageAmount, _DamageEvent, _EventInstigator, _DamageCauser);
 }

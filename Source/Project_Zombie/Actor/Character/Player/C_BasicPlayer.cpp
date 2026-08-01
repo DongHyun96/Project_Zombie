@@ -349,9 +349,11 @@ UC_InteractionComponent* AC_BasicPlayer::GetInteractionComponent() const
 
 float AC_BasicPlayer::TakeDamage(float _Damage, FDamageEvent const& _DamageEvent, AController* _InstigatorController, AActor* _InstigatorActor)
 {
-	UC_Util::Print("Player Damaged", FColor::MakeRandomColor(), 10.f);
-
 	const float DamageAmount = Super::TakeDamage(_Damage, _DamageEvent, _InstigatorController, _InstigatorActor);
+	
+	if (DamageAmount > 0.f)
+		UC_Util::Print("Player Damaged", FColor::MakeRandomColor(), 10.f);
+	
 	return DamageAmount;
 }
 

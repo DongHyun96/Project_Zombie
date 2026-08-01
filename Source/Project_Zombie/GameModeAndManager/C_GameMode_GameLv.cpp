@@ -4,14 +4,13 @@
 #include "C_GameMode_GameLv.h"
 
 #include "C_ZombieManager.h"
-#include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/Components/C_InvenComponent.h"
-#include "GameFramework/PlayerState.h"
-#include "Kismet/KismetSystemLibrary.h"
+#include "PlayerState/C_PlayerState.h"
 #include "Utility/C_Util.h"
 
 AC_GameMode_GameLv::AC_GameMode_GameLv()
 {
+	PlayerStateClass = AC_PlayerState::StaticClass();
 }
 
 void AC_GameMode_GameLv::BeginPlay()
@@ -27,6 +26,14 @@ void AC_GameMode_GameLv::BeginPlay()
 	}
 
 	if (m_ZombieManager) m_ZombieManager->OnWorldBeginPlay();
+}
+
+void AC_GameMode_GameLv::PostLogin(APlayerController* NewPlayer)
+{
+	Super::PostLogin(NewPlayer);
+
+	if (AC_PlayerState* PState = Cast<AC_PlayerState>(NewPlayer->PlayerState))
+		PState->m_bIsHost = true;
 }
 
 void AC_GameMode_GameLv::Logout(AController* Exiting)

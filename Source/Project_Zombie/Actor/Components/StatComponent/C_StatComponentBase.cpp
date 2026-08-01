@@ -6,6 +6,7 @@
 #include "GlobalData.h"
 #include "Actor/Character/C_BasicCharacter.h"
 #include "GameModeAndManager/C_UIManager.h"
+#include "GameModeAndManager/PlayerState/C_PlayerState.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
 #include "Utility/C_Util.h"
 
@@ -137,7 +138,26 @@ float UC_StatComponentBase::GetStat(const FName& _StatName) const
 	return 0.f;
 }
 
-bool UC_StatComponentBase::SetStat(const FName& _StatName, float _Value)
+void UC_StatComponentBase::SetStat(const FName& _StatName, float _Value)
+{
+	/*// 클라이언트 환경의 경우, 직접 SetStat 처리를 하는 것이 아닌 서버에 Stat 수정을 요청하여 Multicast로 받는다
+	if (!m_OwnerCharacter->HasAuthority())
+	{
+		Server_SetStat(_StatName, _Value);
+		return;
+	}
+	
+	// 서버 환경의 경우, 정확한 SetStat 검증을 통해 서버환경에서의 Stat을 업데이트 -> Multicast로 클라이언트 단에 뿌려주기
+	// 실질적인 서버에서의 SetStat 처리가 일어난 상황 -> 이 상황을 클라이언트단에도 맞추기 위해 Multicast를 쏴준다
+	if (Local_SetStat(_StatName, _Value))
+		Multicast_SetStat(_StatName, _Value);*/
+	
+	// 결론적으로, 아래의 한 줄로 모든 상황 해결이 된다
+	// TODO : 외부의 함수 Call도 Server~ 로 맞출 것(더 직관적 -> 어느 환경에서든, 서버가 Stat을 관리하는 주축이 된다)
+	Server_SetStat(_StatName, _Value);
+}
+
+bool UC_StatComponentBase::Local_SetStat(const FName& _StatName, float _Value)
 {
 	if (_Value < 0.f) return false;
 
@@ -151,16 +171,41 @@ bool UC_StatComponentBase::SetStat(const FName& _StatName, float _Value)
 	{
 		const float CurMaxHP = GetStat(TEXT("CurMaxHP"));
 		
+		if (CurMaxHP == 0.f) // Divide with 0 error 피하기 위함 (바로 터지기 때문에 처리함)
+		{
+			PRINT_LOCAL(GetWorld(), "CurMaxHP 0", FColor::Red, 10.f);
+			return false;
+		}
+		
 		if (*pTargetStatValue == 0.f)			OnCurHPReachedZeroDelegate.Broadcast(m_OwnerCharacter);
 		else if (*pTargetStatValue >= CurMaxHP)	OnCurHPReachedFullDelegate.Broadcast(m_OwnerCharacter);
 		
 		OnCurHPUpdatedDelegate.Broadcast(*pTargetStatValue / CurMaxHP);
 	}
-	
 	return true;
 }
 
-bool UC_StatComponentBase::IncreaseStat(const FName& _StatName, float _IncreaseAmount)
+void UC_StatComponentBase::Server_SetStat_Implementation(const FName& _StatName, float _Value)
+{
+	// 서버 환경에서의 Stat 맞추기
+	// 서버에서의 SetStat이 valid하게 작동되었다면, 나머지 클라이언트 환경에서의 SetStat 처리를 위해 Multicast를 쏴준다
+	if (Local_SetStat(_StatName, _Value))
+		Multicast_SetStat(_StatName, _Value);
+}
+
+void UC_StatComponentBase::Multicast_SetStat_Implementation(const FName& _StatName, float _Value)
+{
+	// 서버 환경은 이미 최신화 처리 완료 (2번 할 필요 없음)
+	if (m_OwnerCharacter && m_OwnerCharacter->HasAuthority()) return;
+	Local_SetStat(_StatName, _Value);
+}
+
+void UC_StatComponentBase::IncreaseStat(const FName& _StatName, float _IncreaseAmount)
+{
+	Server_IncreaseStat(_StatName, _IncreaseAmount);
+}
+
+bool UC_StatComponentBase::Local_IncreaseStat(const FName& _StatName, float _IncreaseAmount)
 {
 	if (_IncreaseAmount < 0.f) return false;
 	
@@ -176,14 +221,39 @@ bool UC_StatComponentBase::IncreaseStat(const FName& _StatName, float _IncreaseA
 		const float CurMaxHP = GetStat(TEXT("CurMaxHP"));
 		if (*pTargetStatValue >= CurMaxHP)
 			OnCurHPReachedFullDelegate.Broadcast(m_OwnerCharacter);
-		
-		OnCurHPUpdatedDelegate.Broadcast(*pTargetStatValue / CurMaxHP);
+
+		if (CurMaxHP != 0.f)
+			OnCurHPUpdatedDelegate.Broadcast(*pTargetStatValue / CurMaxHP);
 	}
 	
 	return true;
 }
 
-bool UC_StatComponentBase::DecreaseStat(const FName& _StatName, float _DecreaseAmount)
+void UC_StatComponentBase::Server_IncreaseStat_Implementation(const FName& _StatName, float _IncreaseAmount)
+{
+	if (Local_IncreaseStat(_StatName, _IncreaseAmount))
+		Multicast_IncreaseStat(_StatName, _IncreaseAmount);
+}
+
+void UC_StatComponentBase::Multicast_IncreaseStat_Implementation(const FName& _StatName, float _IncreaseAmount)
+{
+	if (m_OwnerCharacter && m_OwnerCharacter->HasAuthority()) return;
+	Local_IncreaseStat(_StatName, _IncreaseAmount);
+}
+
+void UC_StatComponentBase::DecreaseStat(const FName& _StatName, float _DecreaseAmount)
+{
+	if (!m_OwnerCharacter->HasAuthority())
+	{
+		Server_DecreaseStat(_StatName, _DecreaseAmount);
+		return;
+	}
+	
+	if (Local_DecreaseStat(_StatName, _DecreaseAmount))
+		Multicast_DecreaseStat(_StatName, _DecreaseAmount);
+}
+
+bool UC_StatComponentBase::Local_DecreaseStat(const FName& _StatName, float _DecreaseAmount)
 {
 	if (_DecreaseAmount < 0.f) return false;
 	
@@ -197,17 +267,48 @@ bool UC_StatComponentBase::DecreaseStat(const FName& _StatName, float _DecreaseA
 	{
 		if (*pTargetStatValue <= 0.f)
 			OnCurHPReachedZeroDelegate.Broadcast(m_OwnerCharacter);
-		
-		OnCurHPUpdatedDelegate.Broadcast(*pTargetStatValue / GetStat(TEXT("CurMaxHP")));
+
+		const float CurMaxHP = GetStat(TEXT("CurMaxHP"));
+		if (CurMaxHP != 0.f)
+			OnCurHPUpdatedDelegate.Broadcast(*pTargetStatValue / CurMaxHP);
 	}
 	
 	return true;
 }
 
-bool UC_StatComponentBase::SetCurHP(float _HP)
+void UC_StatComponentBase::Server_DecreaseStat_Implementation(const FName& _StatName, float _DecreaseAmount)
+{
+	if (Local_DecreaseStat(_StatName, _DecreaseAmount))
+		Multicast_DecreaseStat(_StatName, _DecreaseAmount);
+}
+
+void UC_StatComponentBase::Multicast_DecreaseStat_Implementation(const FName& _StatName, float _DecreaseAmount)
+{
+	if (m_OwnerCharacter && m_OwnerCharacter->HasAuthority()) return;
+	Local_DecreaseStat(_StatName, _DecreaseAmount);
+}
+
+void UC_StatComponentBase::SetCurHP(float _HP)
+{
+	Server_SetCurHP(_HP);
+}
+
+bool UC_StatComponentBase::Local_SetCurHP(float _HP)
 {
 	if (_HP > GetStat("CurMaxHP")) return false; // 음수 체크는 SetStat에서 처리됨
-	return SetStat(TEXT("CurHP"), _HP); // SetStat에 HP Delegate 들 호출부 포함되어 있음
+	return Local_SetStat(TEXT("CurHP"), _HP); // SetStat에 HP Delegate 들 호출부 포함되어 있음
+}
+
+void UC_StatComponentBase::Server_SetCurHP_Implementation(float _HP)
+{
+	if (Local_SetCurHP(_HP))
+		Multicast_SetCurHP(_HP);
+}
+
+void UC_StatComponentBase::Multicast_SetCurHP_Implementation(float _HP)
+{
+	if (m_OwnerCharacter && m_OwnerCharacter->HasAuthority()) return;
+	Local_SetCurHP(_HP);
 }
 
 float UC_StatComponentBase::GetCurHPRatio() const
@@ -222,7 +323,12 @@ float UC_StatComponentBase::GetCurHPRatio() const
 	return GetCurHP() / CurMaxHPAmount;
 }
 
-bool UC_StatComponentBase::IncreaseCurHP(float _IncreaseAmount)
+void UC_StatComponentBase::IncreaseCurHP(float _IncreaseAmount)
+{
+	Server_IncreaseCurHP(_IncreaseAmount);
+}
+
+bool UC_StatComponentBase::Local_IncreaseCurHP(float _IncreaseAmount)
 {
 	if (_IncreaseAmount < 0.f) return false;
 	
@@ -235,15 +341,33 @@ bool UC_StatComponentBase::IncreaseCurHP(float _IncreaseAmount)
 
 	OnIncreaseCurHPDelegate.Broadcast(m_OwnerCharacter);
 	
-	if (*pCurHP >= GetStat("CurMaxHP")) 
+	if (*pCurHP >= CurMaxHP) 
 		OnCurHPReachedFullDelegate.Broadcast(m_OwnerCharacter);
-	
-	OnCurHPUpdatedDelegate.Broadcast(*pCurHP / CurMaxHP);
+
+	if (CurMaxHP != 0.f)
+		OnCurHPUpdatedDelegate.Broadcast(*pCurHP / CurMaxHP);
 	
 	return true;
 }
 
-bool UC_StatComponentBase::DecreaseCurHP(float _DecreaseAmount)
+void UC_StatComponentBase::Server_IncreaseCurHP_Implementation(float _IncreaseAmount)
+{
+	if (Local_IncreaseCurHP(_IncreaseAmount))
+		Multicast_IncreaseCurHP(_IncreaseAmount);
+}
+
+void UC_StatComponentBase::Multicast_IncreaseCurHP_Implementation(float _IncreaseAmount)
+{
+	if (m_OwnerCharacter && m_OwnerCharacter->HasAuthority()) return;
+	Local_IncreaseCurHP(_IncreaseAmount);
+}
+
+void UC_StatComponentBase::DecreaseCurHP(float _DecreaseAmount)
+{
+	Server_DecreaseCurHP(_DecreaseAmount);
+}
+
+bool UC_StatComponentBase::Local_DecreaseCurHP(float _DecreaseAmount)
 {
 	if (_DecreaseAmount < 0.f) return false;
 
@@ -252,8 +376,22 @@ bool UC_StatComponentBase::DecreaseCurHP(float _DecreaseAmount)
 
 	// CurHP 0을 찍었으면 Delegate 호출 처리
 	if (*pCurHP == 0.f) OnCurHPReachedZeroDelegate.Broadcast(m_OwnerCharacter);
-	
-	OnCurHPUpdatedDelegate.Broadcast(*pCurHP / GetStat(TEXT("CurMaxHP")));
+
+	const float CurMaxHP = GetStat(TEXT("CurMaxHP"));
+	if (CurMaxHP != 0.f)
+		OnCurHPUpdatedDelegate.Broadcast(*pCurHP / CurMaxHP);
 	
 	return true;
+}
+
+void UC_StatComponentBase::Server_DecreaseCurHP_Implementation(float _DecreaseAmount)
+{
+	if (Local_DecreaseCurHP(_DecreaseAmount))
+		Multicast_DecreaseCurHP(_DecreaseAmount);
+}
+
+void UC_StatComponentBase::Multicast_DecreaseCurHP_Implementation(float _DecreaseAmount)
+{
+	if (m_OwnerCharacter && m_OwnerCharacter->HasAuthority()) return;
+	Local_DecreaseCurHP(_DecreaseAmount);
 }

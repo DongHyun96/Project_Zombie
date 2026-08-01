@@ -73,10 +73,6 @@ void AC_WeaponBase::CancelAsyncLoad()
 	}
 }
 
-void AC_WeaponBase::OnRep_OwnerPlayer()
-{
-}
-
 void AC_WeaponBase::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);

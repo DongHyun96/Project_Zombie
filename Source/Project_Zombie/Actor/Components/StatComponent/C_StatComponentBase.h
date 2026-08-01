@@ -74,28 +74,28 @@ public:
 public: /* 범용적으로 사용 가능한 Stat 처리 관련 함수 */
 
 	/// <returns> : 해당하는 Stat이 없거나 Value가 음수값인 경우(이건 좀 더 따져봐야할듯) </returns>
-	bool SetStat(const FName& _StatName, float _Value);
+	void SetStat(const FName& _StatName, float _Value);
 
+public:
+	
 	/// <summary>
 	/// 특정 Stat IncreaseAmount 만큼 증가 처리
 	/// </summary>
-	/// <returns> : 해당하는 Stat이 없거나 Amount가 음수인 경우 return false </returns>
-	bool IncreaseStat(const FName& _StatName, float _IncreaseAmount);
+	void IncreaseStat(const FName& _StatName, float _IncreaseAmount);
 
 	/// <summary>
 	/// 특정 Stat DecreaseAmount 만큼 감소 처리 
 	/// </summary>
-	/// <returns> 해당하는 Stat이 없거나 Amount가 음수인 경우 return false </returns>
-	bool DecreaseStat(const FName& _StatName, float _DecreaseAmount);
+	void DecreaseStat(const FName& _StatName, float _DecreaseAmount);
 
 public: /* 공용 Stat 처리 함수 */
 	
-	bool SetCurHP(float _HP);
+	void SetCurHP(float _HP);
 	float GetCurHP() const { return m_Stats[TEXT("CurHP")]; }
 	float GetCurHPRatio() const;
 	
-	bool IncreaseCurHP(float _IncreaseAmount);
-	bool DecreaseCurHP(float _DecreaseAmount);
+	void IncreaseCurHP(float _IncreaseAmount);
+	void DecreaseCurHP(float _DecreaseAmount);
 	
 	bool IsCurHPFull() const { return m_Stats[TEXT("CurHP")] >= m_Stats[TEXT("CurMaxHP")]; }
 	bool IsCurHPZero() const { return m_Stats[TEXT("CurHP")] <= 0.f; }
@@ -111,7 +111,7 @@ private:
 	/// <summary>
 	/// 스탯값 가져오기 
 	/// </summary>
-	void InitStatFromStruct(UScriptStruct* _InStruct, const void* _StrctPtr);
+	void InitStatFromStruct(UScriptStruct* _InStruct, const void* _StructPtr);
 
 	/// <summary>
 	/// Init시 사용할 DataTable 형식 return (자식 단에서 무조건 구현 처리해줄 것) 
@@ -124,9 +124,65 @@ private:
 	virtual void InitAdditionalStat();
 
 private:
+	
+	/// <summary>
+	/// 로컬에서 실행되는 SetStat 원본 로직 (실제로 값 수정 및 성공 여부 return 처리 등) 
+	/// </summary>
+	bool Local_SetStat(const FName& _StatName, float _Value);
+	
+	/// <summary>
+	/// 흐름 -> LocalSetStat(로컬이든, 서버든) -> Server 쪽 실질적인 SetStat -> 업데이트 상황 Multicast 처리 
+	/// </summary>
+	UFUNCTION(Server, Reliable)
+	void Server_SetStat(const FName& _StatName, float _Value);
+	
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_SetStat(const FName& _StatName, float _Value);
+	
+private: /* SetStat과 비슷한 일련의 과정으로 나머지 Stat 조정 함수들에 대한 처리 또한 해줌 */
+	
+	bool Local_IncreaseStat(const FName& _StatName, float _IncreaseAmount);
+	
+	UFUNCTION(Server, Reliable)
+	void Server_IncreaseStat(const FName& _StatName, float _IncreaseAmount);
+	
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_IncreaseStat(const FName& _StatName, float _IncreaseAmount);
+	
+	bool Local_DecreaseStat(const FName& _StatName, float _DecreaseAmount);
+	
+	UFUNCTION(Server, Reliable)
+	void Server_DecreaseStat(const FName& _StatName, float _DecreaseAmount);
+	
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_DecreaseStat(const FName& _StatName, float _DecreaseAmount);
+	
+private:
+	
+	bool Local_SetCurHP(float _HP);
+	
+	UFUNCTION(Server, Reliable)
+	void Server_SetCurHP(float _HP);
+	
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_SetCurHP(float _HP);
+	
+	bool Local_IncreaseCurHP(float _IncreaseAmount);
+	
+	UFUNCTION(Server, Reliable)
+	void Server_IncreaseCurHP(float _IncreaseAmount);
+	
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_IncreaseCurHP(float _IncreaseAmount);
+	
+	bool Local_DecreaseCurHP(float _DecreaseAmount);
+	
+	UFUNCTION(Server, Reliable)
+	void Server_DecreaseCurHP(float _DecreaseAmount);
+	
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_DecreaseCurHP(float _DecreaseAmount);
 
-	
-	
 protected:
 	
 	UPROPERTY()

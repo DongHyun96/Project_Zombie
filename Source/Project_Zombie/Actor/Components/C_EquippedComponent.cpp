@@ -496,8 +496,11 @@ void UC_EquippedComponent::UpdateAmmoWidget()
 void UC_EquippedComponent::Client_UpdateAmmoWidget_Implementation(const FAmmoUIInfo& _AmmoUIInfo)
 {
 	// if (_AmmoUIInfo.Visible)
-	
-	PRINT_LOCAL(GetWorld(), "RECEIVED CLIENT UPDATE AMMO_WIDGET", FColor::Cyan, 20.f);
+
+	if (_AmmoUIInfo.Visible)
+		PRINT_LOCAL(GetWorld(), "RECEIVED CLIENT UPDATE AMMO_WIDGET : VISIBLE", FColor::Cyan, 20.f);
+	else
+		PRINT_LOCAL(GetWorld(), "RECEIVED CLIENT UPDATE AMMO_WIDGET : HIDDEN", FColor::Cyan, 20.f);
 	
 	UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility
 	(

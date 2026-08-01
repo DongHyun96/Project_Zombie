@@ -4,6 +4,7 @@
 #include "C_EnemyStatComponent.h"
 
 #include "GlobalData.h"
+#include "Actor/Character/C_BasicCharacter.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Utility/C_Util.h"
@@ -28,6 +29,8 @@ void UC_EnemyStatComponent::BeginPlay()
 		OwnerZombieCharacter->GetCharacterMovement()->MaxWalkSpeed = MoveSpeed;
 	}
 	else UC_Util::Print("From UC_EnemyStatComponent::BeginPlay : Owner Actor casting to ACharacter failed!, Please attach this Comp to Zombie class", FColor::Red, 10.f);
+	
+	OnCurHPUpdatedDelegate.AddUObject(m_OwnerCharacter, &AC_BasicCharacter::UpdatePlayerHPOnAboveHeadTest);
 }
 
 UScriptStruct* UC_EnemyStatComponent::GetStatDataStruct() const

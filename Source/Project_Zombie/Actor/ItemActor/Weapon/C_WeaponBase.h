@@ -145,11 +145,6 @@ protected:
 	UPROPERTY(ReplicatedUsing = OnRep_WeaponRowName, Transient)
 	FName m_WeaponRowName{};
 
-private:
-	
-	UFUNCTION()
-	void OnRep_OwnerPlayer();
-	
 public:
 	
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
@@ -157,7 +152,7 @@ public:
 protected:
 
 	// 이 Weapon을 자신의 Slot에 장착중인 OwnerPlayer
-	UPROPERTY(ReplicatedUsing = OnRep_OwnerPlayer)
+	UPROPERTY(Replicated)
 	AC_BasicPlayer* m_OwnerPlayer{};
 	
 protected:

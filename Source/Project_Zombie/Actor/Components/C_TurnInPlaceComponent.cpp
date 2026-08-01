@@ -117,6 +117,9 @@ bool UC_TurnInPlaceComponent::Server_RequestTurnInPlaceMotion_Validate(bool _IsR
 void UC_TurnInPlaceComponent::Multicast_StartTurnInPlaceMotion_Implementation(bool _IsRight)
 {
 	// PRINT_LOCAL(GetWorld(), "Multicast_StartTurnInPlaceMotion", FColor::Cyan, 10.f);
+	// TODO : 다른 ActorComponent나 RPC 호출을 받은 구현부에서, BeginPlay 이전에 받을 수 있는 상황임을 따져야 함
+	// (특히 m_OwnerPlayer 초기화는 BeginPlay 시점이 가장 확실 -> 초기화 이전에 이미 Multicast 호출을 받는 경우가 종종 있었음)
+	if (!m_OwnerPlayer) return; // 아직 초기화 이전단계
 	
 	if (m_OwnerPlayer->IsLocallyControlled()) return; // 자기자신이 플레이 중인 Player는 요청을 보내기 전에 선으로 이미 해당 모션을 취한 상황
 	StartTurnInPlaceMotion(_IsRight, false); // Server에 해당 모션이 성공했을 때 재요청 x
@@ -168,6 +171,7 @@ bool UC_TurnInPlaceComponent::StartTurnInPlaceMotion(bool _IsRight, bool _Reques
 
 void UC_TurnInPlaceComponent::Multicast_CancelTurnInPlaceMotion_Implementation()
 {
+	if (!m_OwnerPlayer) return;
 	if (m_OwnerPlayer->IsLocallyControlled()) return;
 	CancelTurnInPlaceMotionIfNecessary();
 }

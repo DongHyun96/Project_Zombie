@@ -34,24 +34,26 @@ public:
 private:
 	
 	/// <summary>
-	/// 서버 쪽으로 Damage를 입은 상황 알림 및 동기화 요청 (서버 쪽도 이 함수 호출시킬 것) 
+	/// 서버 쪽으로 Damage를 입은 상황 알림 및 동기화 요청 
 	/// </summary>
-	/// <param name="_DamageAmount"> : Damage량 </param>
-	/// <param name="_DamageEvent"></param>
-	/// <param name="_EventInstigatorActor"> : 기존의 TakeDamage와 맞추기 위함 -> Controller가 있을법한 Actor를 인자로 넘길 것</param>
-	/// <param name="_DamageCauser"> : Damage 유발 Actor (무기 O / 무기를 사용하는 Character X) </param>
 	UFUNCTION(Server, Reliable)
 	void Server_TakeDamage
 	(
 		float				_DamageAmount,
 		FDamageEvent const& _DamageEvent,
-		AActor*				_EventInstigatorActor,
+		AController*		_EventInstigator,
 		AActor*				_DamageCauser
 	);
 	
 public:
 	
 	class UC_StatComponentBase* GetStatComponent() const { return m_StatComponent; }
+	
+public:
+
+	// TODO : 이거 지우기 (ForTesting)
+	UFUNCTION(BlueprintImplementableEvent)
+	void UpdatePlayerHPOnAboveHeadTest(float _Ratio);
 	
 protected:
 

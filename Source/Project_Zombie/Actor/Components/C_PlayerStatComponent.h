@@ -25,6 +25,9 @@ private:
 	virtual UScriptStruct* GetStatDataStruct() const override;
 	
 private:
+
+	UPROPERTY()
+	class AC_BasicPlayer* m_OwnerPlayer{};
 	
 	UPROPERTY()
 	class UC_GameMainHUD* m_MainHUD{};

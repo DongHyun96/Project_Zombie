@@ -5,6 +5,7 @@
 
 #include "GlobalData.h"
 #include "Actor/Character/C_BasicCharacter.h"
+#include "Actor/Character/Player/C_BasicPlayer.h"
 #include "GameModeAndManager/C_UIManager.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
 #include "UI/MainHUD/PlayerStatHUD/C_PlayerStatWidget.h"
@@ -19,6 +20,8 @@ void UC_PlayerStatComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	m_OwnerPlayer = Cast<AC_BasicPlayer>(GetOwner());
+	
 	if (m_OwnerCharacter->IsLocallyControlled())
 	{
 		AC_UIManager* UIManager = UI_MANAGER(GetWorld());
@@ -31,6 +34,8 @@ void UC_PlayerStatComponent::BeginPlay()
 		if (StatWidget)
 			this->OnCurHPUpdatedDelegate.AddUObject(StatWidget, &UC_PlayerStatWidget::UpdateHPBarRatio);
 	}
+	// TODO : 이거 다른 사람 Stat을 표기하려면, 여기에 이런식으로 처리를 해주면 됨 (다른 팀원 체력 확인은 해야할 듯)
+	else OnCurHPUpdatedDelegate.AddUObject(m_OwnerPlayer, &AC_BasicCharacter::UpdatePlayerHPOnAboveHeadTest);
 	
 }
 
