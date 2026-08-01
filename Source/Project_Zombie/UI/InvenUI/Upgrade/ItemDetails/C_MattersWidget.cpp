@@ -12,7 +12,7 @@
 #include "Utility/C_Util.h"
 
 
-void UC_MattersWidget::UpdateWidget(const FInventoryEntry& InEntry, EUpgradableStats TargetStat)
+void UC_MattersWidget::UpdateWidget(const FInventoryEntry& InEntry)
 {
 	MattersScrollBox->ClearChildren();
 	m_MatterRows.Empty();
@@ -31,6 +31,8 @@ void UC_MattersWidget::UpdateWidget(const FInventoryEntry& InEntry, EUpgradableS
 	
 	if (!UpgradeCostRow) return;
 	
+	EUpgradableStats TargetStat = ItemUpgradeWidget->GetTargetStat();
+	
 	const FStatUpgradeCostInfo* CostInfo = UpgradeCostRow->GetTargetStatUpCostInfo(TargetStat);
 	
 	if (!CostInfo) return;
@@ -44,8 +46,11 @@ void UC_MattersWidget::UpdateWidget(const FInventoryEntry& InEntry, EUpgradableS
 	//}
 	
 	//TArray<FStatUpgradeCostInfo> CostArr = UpgradeCostRow->StatUpgradeCosts;
+	if (CurGrade >= CostInfo->GradeCosts.Num()) return;
 	
 	const FGradeCostInfo& CurrentRecipe = CostInfo->GradeCosts[CurGrade];
+	
+
 	
 	UC_InvenComponent* InvenComp = nullptr;
 	if (APlayerController* PC = GetOwningPlayer())
@@ -88,8 +93,6 @@ void UC_MattersWidget::UpdateWidget(const FInventoryEntry& InEntry, EUpgradableS
 				HasCount,
 				RequiredCost.RequiredCount
 			);
-		
-			UC_Util::Print("MatterRowWidget", FColor::Red, 5.f);
 			
 			MattersScrollBox->AddChild(MatterRow);
 			m_MatterRows.Add(MatterRow);
