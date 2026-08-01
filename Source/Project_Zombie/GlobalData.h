@@ -81,7 +81,7 @@ public:
     // 3. 스탯 누적
     void AddStatGrade(EUpgradableStats Key, uint8 AddValue)
     {
-        uint8 CurrentVal = GetStatGrade(Key, 0.0f);
+        uint8 CurrentVal = GetStatGrade(Key);
         SetStatGrade(Key, CurrentVal + AddValue);
     }
     
@@ -333,7 +333,7 @@ struct FGradeCostInfo
 
     // 예: 1강, 2강, 3강...
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    int32 TargetGrade = 1;
+    int32 TargetGrade = 0;
 
     // 해당 단계 강화 시 필요한 재료 배열
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
