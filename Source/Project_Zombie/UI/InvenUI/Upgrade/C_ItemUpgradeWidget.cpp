@@ -109,6 +109,22 @@ void UC_ItemUpgradeWidget::UpdateWidget()
 	Matters->UpdateWidget(Entry); // TODO : 강화 테이블을 만들어야 넣어 줄 수 있을 듯? 
 }
 
+void UC_ItemUpgradeWidget::InitWidget()
+{
+	ItemIcon->SetVisibility(ESlateVisibility::Collapsed);
+	// TODO : 여기 들어오면 위젯들 초기화 해주기.
+	ItemName->SetText(FText());
+	ItemDesc->SetText(FText());
+	ItemStats->UpdateWidget(nullptr);
+	
+	DroppedItemSlotIdx = -1;
+	m_UsePlayer = nullptr;
+	m_TargetStat = EUpgradableStats::None;
+	bIsUpgrading = false;	
+	hasRequiredItems = false;
+	m_TargetEntry = nullptr;
+}
+
 void UC_ItemUpgradeWidget::ShowSelectedStatRow(const float& CurStatValue, const float& NextStatValue)
 {
 	const FInventoryEntry& Entry = m_UsePlayer->GetInvenComponent()->GetItemAt(DroppedItemSlotIdx);

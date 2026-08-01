@@ -32,6 +32,9 @@ public:
 	// 현재 아이템에 따라 위젯 업데이트
 	void UpdateWidget();
 	
+	// Cancel로 위젯을 닫으면 내부 변수 초기화할 때 사용할 함수.
+	void InitWidget();
+	
 	void ShowSelectedStatRow(const float& CurStatValue, const float& NextStatValue);
 	
 	// 아이템 강화 요청

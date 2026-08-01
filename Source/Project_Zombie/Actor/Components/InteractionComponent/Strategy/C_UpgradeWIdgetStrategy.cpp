@@ -80,7 +80,7 @@ void UC_UpgradeWIdgetStrategy::CancleInteraction(AC_BasicPlayer* _Interactor, AA
 	
 	if (!ItemUpgradeWidget) return;
 	
-	//ItemUpgradeWidget->SetUsePlayer(nullptr);
+	ItemUpgradeWidget->InitWidget();
 	
 	InvenWidget->CloseUpgradeWidget();
 }

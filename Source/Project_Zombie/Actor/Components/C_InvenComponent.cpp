@@ -234,6 +234,7 @@ bool UC_InvenComponent::RemoveItemByRowName(FName InRowName, int32 InAmountCount
 	{
 		return false;
 	}
+	
 
 	// 소유 중인 총 수량이 차감 요구량보다 적은지 미리 확인
 	int32 TotalHeld = GetTotalItemCount(InRowName);
@@ -267,6 +268,7 @@ bool UC_InvenComponent::RemoveItemByRowName(FName InRowName, int32 InAmountCount
 		Entry.CurCount -= DeductFromThisSlot;
 		RemainingToDeduct -= DeductFromThisSlot;
 
+		
 		// 슬롯의 수량이 0 이하가 되면 슬롯 초기화
 		if (Entry.CurCount <= 0)
 		{
@@ -276,11 +278,14 @@ bool UC_InvenComponent::RemoveItemByRowName(FName InRowName, int32 InAmountCount
 			
 			Entry.SlotIndex = CurSlotIdx;
 		}
-
 		// UI 업데이트 및 동기화를 위한 델리게이트 브로드캐스트
-		OnInventorySlotChanged.Broadcast(i, Entry);
-
-		// 더 이상 차감할 수량이 없으면 성공 종료
+		
+		if (GetOwner()->HasAuthority())
+		{
+			InventoryContainer.MarkItemDirty(Entry);
+			OnInventorySlotChanged.Broadcast(i, Entry);
+		}
+		// 더 이상 차감할 수량이 없으면 성공 종료	
 		if (RemainingToDeduct <= 0)
 		{
 			break;
@@ -290,6 +295,12 @@ bool UC_InvenComponent::RemoveItemByRowName(FName InRowName, int32 InAmountCount
 	// 차감이 완전히 끝났는지 확인
 	return RemainingToDeduct == 0;
 }
+
+void UC_InvenComponent::Server_RemoveItemByRowName_Implementation(FName InRowName, int32 InAmountCount)
+{
+	RemoveItemByRowName(InRowName, InAmountCount);
+}
+
 
 void UC_InvenComponent::ForceRepInven()
 {

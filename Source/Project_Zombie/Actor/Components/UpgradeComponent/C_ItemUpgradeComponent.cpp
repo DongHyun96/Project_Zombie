@@ -69,8 +69,11 @@ void UC_ItemUpgradeComponent::UpgradeItem(AC_BasicPlayer* InPlayer, int32 InItem
     ConsumeUpgradeMaterials(InPlayer, InvenComp, Entry->ItemRowName, TargetStat, CurStatGrade);
 
     // 슬롯 갱신 마킹
-    InvenComp->MarkSlotDirty(InItemIndex);
-
+	if (InPlayer->HasAuthority())
+		InvenComp->MarkSlotDirty(InItemIndex);
+	else
+		InvenComp->OnInventorySlotChanged.Broadcast(InItemIndex, *Entry);
+		
     // 장착 중인 무기면 동기화 처리
     UC_ItemManager* ItemManager = InPlayer->GetGameInstance()->GetSubsystem<UC_ItemManager>();
     if (ItemManager && InItemIndex < static_cast<int32>(EWeaponSlot::None))
@@ -118,7 +121,7 @@ void UC_ItemUpgradeComponent::ConsumeUpgradeMaterials(AC_BasicPlayer* InPlayer, 
     {
         if (RequiredCost.MatterItemID.IsNone() || RequiredCost.RequiredCount <= 0) continue;
         
-        InvenComp->RemoveItemByRowName(RequiredCost.MatterItemID, RequiredCost.RequiredCount);
+        InvenComp->Server_RemoveItemByRowName(RequiredCost.MatterItemID, RequiredCost.RequiredCount);
     }
 }
 
