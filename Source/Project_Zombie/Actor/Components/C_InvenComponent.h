@@ -78,6 +78,9 @@ public:
 	
 	// 아이템의 Type에 따라 장비인덱스값에는 들어갈 수 있는지 판단하는 함수. 
 	bool CanSetItemToSlot(int32 TargetSlotIndex, const FInventoryEntry& Entry) const;
+	
+	// 서버에서 실행됨.
+	bool RemoveItemByRowName(FName InRowName, int32 InAmountCount);
 public:
 	// 아이템이 드래그 드롭 되었을 때 처리해주는 함수.
 	void ProcessItemMove(UC_InvenComponent* SrcComp, int32 SrcIdx, UC_InvenComponent* DstComp, int32 DstIdx, int32 InPlayerID);
