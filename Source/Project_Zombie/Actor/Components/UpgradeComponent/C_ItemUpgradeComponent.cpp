@@ -43,6 +43,129 @@ void UC_ItemUpgradeComponent::TickComponent(float DeltaTime, ELevelTick TickType
 
 void UC_ItemUpgradeComponent::UpgradeItem(AC_BasicPlayer* InPlayer, int32 InItemIndex, EUpgradableStats TargetStat)
 {
+    if (!InPlayer) return;
+
+    PRINT_LOCAL(GetWorld(), "UpgradeItem", FColor::Blue, 5.f);
+
+    UC_InvenComponent* InvenComp = InPlayer->GetInvenComponent();
+    if (!InvenComp) return;
+
+    FInventoryEntry* Entry = InvenComp->GetSlotDataPtr(InItemIndex);
+    if (!Entry) return;
+
+    uint8 CurStatGrade = 0;
+    // 유효성 및 최대 등급 체크
+    if (!ValidateUpgradeTarget(Entry, TargetStat, CurStatGrade))
+    {
+        NotifyUpgradeFinished(InPlayer);
+        return;
+    }
+
+    // 스탯 등급 증가 (실제 강화 실행)
+    FEquipmentCustomData* EquipmentData = Entry->GetEquipmentDataPtr();
+    EquipmentData->AddStatGrade(TargetStat, 1);
+
+    // 강화 재료 차감
+    ConsumeUpgradeMaterials(InPlayer, InvenComp, Entry->ItemRowName, TargetStat, CurStatGrade);
+
+    // 슬롯 갱신 마킹
+    InvenComp->MarkSlotDirty(InItemIndex);
+
+    // 장착 중인 무기면 동기화 처리
+    UC_ItemManager* ItemManager = InPlayer->GetGameInstance()->GetSubsystem<UC_ItemManager>();
+    if (ItemManager && InItemIndex < static_cast<int32>(EWeaponSlot::None))
+    {
+        UpdateEquippedWeaponData(InPlayer, ItemManager, Entry->ItemRowName, InItemIndex);
+    }
+
+    // 5. 완료 알림
+    NotifyUpgradeFinished(InPlayer);
+}
+
+// ----------------------------------------------------------------------------
+// Helper Functions
+// ----------------------------------------------------------------------------
+
+bool UC_ItemUpgradeComponent::ValidateUpgradeTarget(FInventoryEntry* InEntry, EUpgradableStats TargetStat, uint8& OutCurGrade)
+{
+    if (!InEntry || !InEntry->HasEquipmentData()) return false;
+
+    FEquipmentCustomData* EquipmentData = InEntry->GetEquipmentDataPtr();
+    if (!EquipmentData) return false;
+
+    OutCurGrade = EquipmentData->GetStatGrade(TargetStat);
+    
+    // 이미 최대 등급이면 강화 불가
+    if (OutCurGrade >= MAX_GRADE) return false;
+
+    return true;
+}
+
+void UC_ItemUpgradeComponent::ConsumeUpgradeMaterials(AC_BasicPlayer* InPlayer, UC_InvenComponent* InvenComp, FName ItemRowName, EUpgradableStats TargetStat, uint8 CurGrade)
+{
+    UC_ItemManager* ItemManager = InPlayer->GetGameInstance()->GetSubsystem<UC_ItemManager>();
+    if (!ItemManager) return;
+
+    const FItemUpgradeCostRow* UpgradeCostRow = ItemManager->GetWeaponUpgradeCostData(ItemRowName);
+    if (!UpgradeCostRow) return;
+
+    const FStatUpgradeCostInfo* CostInfo = UpgradeCostRow->GetTargetStatUpCostInfo(TargetStat);
+    if (!CostInfo || !CostInfo->GradeCosts.IsValidIndex(CurGrade)) return;
+
+    const FGradeCostInfo& CurrentRecipe = CostInfo->GradeCosts[CurGrade];
+
+    for (const FUpgradeMaterialInfo& RequiredCost : CurrentRecipe.RequiredMaterials)
+    {
+        if (RequiredCost.MatterItemID.IsNone() || RequiredCost.RequiredCount <= 0) continue;
+        
+        InvenComp->RemoveItemByRowName(RequiredCost.MatterItemID, RequiredCost.RequiredCount);
+    }
+}
+
+void UC_ItemUpgradeComponent::UpdateEquippedWeaponData(AC_BasicPlayer* InPlayer, UC_ItemManager* ItemManager, FName ItemRowName, int32 InItemIndex)
+{
+    UC_EquippedComponent* EquipComp = InPlayer->GetEquippedComponent();
+    if (!EquipComp) return;
+
+    EWeaponSlot TargetSlot = static_cast<EWeaponSlot>(InItemIndex);
+    AC_WeaponBase* CurWeapon = EquipComp->GetSlotWeapon(TargetSlot);
+    const FWeaponData* WeaponData = ItemManager->GetWeaponData(ItemRowName);
+
+    if (CurWeapon && WeaponData)
+    {
+        CurWeapon->InitializeItemData(WeaponData);
+
+        if (InPlayer->IsLocallyControlled())
+        {
+            EquipComp->UpdateWeaponData(TargetSlot, ItemRowName);
+        }
+        else
+        {
+            EquipComp->Client_UpdateWeaponData(TargetSlot, ItemRowName);
+        }
+    }
+}
+
+void UC_ItemUpgradeComponent::NotifyUpgradeFinished(AC_BasicPlayer* InPlayer)
+{
+    AC_BasicPlayerController* PC = Cast<AC_BasicPlayerController>(InPlayer->GetController());
+    if (!PC) return;
+
+    PC->SetIsUpgrading(false);
+
+    if (PC->IsLocalPlayerController())
+    {
+        PC->FinishItemUpgrade();
+    }
+    else
+    {
+        PC->Client_FinishItemUpgrade();
+    }
+}
+
+/*
+void UC_ItemUpgradeComponent::UpgradeItem(AC_BasicPlayer* InPlayer, int32 InItemIndex, EUpgradableStats TargetStat)
+{
 	UC_InvenComponent* InvenComp = InPlayer->GetInvenComponent();
 
 	FInventoryEntry* Entry = InvenComp->GetSlotDataPtr(InItemIndex);
@@ -56,8 +179,10 @@ void UC_ItemUpgradeComponent::UpgradeItem(AC_BasicPlayer* InPlayer, int32 InItem
 	FEquipmentCustomData* EquipmentData = Entry->GetEquipmentDataPtr();
 
 	if (!EquipmentData) return;
-
-	if (EquipmentData->GetStatGrade(TargetStat) >= MAX_GRADE)
+	
+	const uint8 curStatGrade = EquipmentData->GetStatGrade(TargetStat);
+	
+	if (curStatGrade >= MAX_GRADE)
 	{
 		AC_BasicPlayerController* PC = Cast<AC_BasicPlayerController>(InPlayer->GetController());
 	
@@ -69,9 +194,41 @@ void UC_ItemUpgradeComponent::UpgradeItem(AC_BasicPlayer* InPlayer, int32 InItem
 			PC->Client_FinishItemUpgrade();
 		
 		return;
+	}	
+	
+	
+	// <Upgrade!> 
+	EquipmentData->AddStatGrade(TargetStat, 1);
+	
+	// TODO : 업그레이드 완료 되었으니 인벤에서 재료 소진해야 함.
+	// 재료는 
+	
+	UC_ItemManager* ItemManager = InPlayer->GetGameInstance()->GetSubsystem<UC_ItemManager>();
+
+	if (!ItemManager) return;
+	
+	// 어떤 아이템의 강화 재료 목록이 필요한 것 인지
+	const FItemUpgradeCostRow* UpgradeCostRow = ItemManager->GetWeaponUpgradeCostData(Entry->ItemRowName);
+	
+	if (!UpgradeCostRow) return;
+	
+	// 어떤 스탯의 요구 재료 목록을 원하는지.
+	const FStatUpgradeCostInfo* CostInfo = UpgradeCostRow->GetTargetStatUpCostInfo(TargetStat);
+	
+	if (!CostInfo) return;
+	
+	// 몇 단계를 가기 위한 요구 재료 목록을 원하는지.
+	const FGradeCostInfo& CurrentRecipe = CostInfo->GradeCosts[curStatGrade];
+	
+	// 필요한 재료 목록을 돌면서 인벤에 소모 요청.
+	for (const FUpgradeMaterialInfo& RequiredCost : CurrentRecipe.RequiredMaterials)
+	{
+		if (RequiredCost.MatterItemID.IsNone() || RequiredCost.RequiredCount <= 0) continue;
+		
+		// 인벤에게 해당 아이템 조정 요청.
+		InvenComp->RemoveItemByRowName(RequiredCost.MatterItemID, RequiredCost.RequiredCount);
 	}
 	
-	EquipmentData->AddStatGrade(TargetStat, 1);
 	
 	InvenComp->MarkSlotDirty(InItemIndex);
 
@@ -82,9 +239,9 @@ void UC_ItemUpgradeComponent::UpgradeItem(AC_BasicPlayer* InPlayer, int32 InItem
 
 		AC_WeaponBase* CurWeapon = EquipComp->GetSlotWeapon(static_cast<EWeaponSlot>(InItemIndex));
 
-		UC_ItemManager* ItemManager = InPlayer->GetGameInstance()->GetSubsystem<UC_ItemManager>();
+		//UC_ItemManager* ItemManager = InPlayer->GetGameInstance()->GetSubsystem<UC_ItemManager>();
 
-		if (!ItemManager) return;
+		//if (!ItemManager) return;
 
 		const FWeaponData* WeaponData = nullptr;
 
@@ -116,5 +273,6 @@ void UC_ItemUpgradeComponent::UpgradeItem(AC_BasicPlayer* InPlayer, int32 InItem
 	else
 		PC->Client_FinishItemUpgrade();
 }
+*/
 
 
