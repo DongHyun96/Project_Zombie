@@ -145,17 +145,12 @@ protected:
 	UPROPERTY(ReplicatedUsing = OnRep_WeaponRowName, Transient)
 	FName m_WeaponRowName{};
 
-private:
-	
-	// TODO : 현재 사용하지 않는 함수.
-	UFUNCTION()
-	void OnRep_OwnerPlayer();
-	
 public:
 	
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	
 protected:
+	UPROPERTY(Replicated)
 	AC_BasicPlayer* m_OwnerPlayer{};
 	
 protected:
