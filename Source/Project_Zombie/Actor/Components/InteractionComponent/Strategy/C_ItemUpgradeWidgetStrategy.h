@@ -4,19 +4,19 @@
 
 #include "CoreMinimal.h"
 #include "Actor/Components/InteractionComponent/Strategy/C_InteractionStrategyBase.h"
-#include "C_UpgradeWIdgetStrategy.generated.h"
+#include "C_ItemUpgradeWidgetStrategy.generated.h"
 
 /**
  * InteractableBase쪽의 InteractionComponent에서 사용하는 전략 객체로 
  * UpgradeWidget을 열게 해줄 목적.
  */
 UCLASS()
-class PROJECT_ZOMBIE_API UC_UpgradeWIdgetStrategy : public UC_InteractionStrategyBase
+class PROJECT_ZOMBIE_API UC_ItemUpgradeWidgetStrategy : public UC_InteractionStrategyBase
 {
 	GENERATED_BODY()
 	
 public:
-	UC_UpgradeWIdgetStrategy();
+	UC_ItemUpgradeWidgetStrategy();
 	
 	/// <summary>
 	/// 하위 전략 대상과 상호작용할 수 있는지 검사

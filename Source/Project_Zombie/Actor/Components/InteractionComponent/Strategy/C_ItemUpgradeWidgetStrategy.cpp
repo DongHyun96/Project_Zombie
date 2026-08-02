@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Actor/Components/InteractionComponent/Strategy/C_UpgradeWIdgetStrategy.h"
+#include "Actor/Components/InteractionComponent/Strategy/C_ItemUpgradeWidgetStrategy.h"
 
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/Components/InteractionComponent/C_InteractionComponent.h"
@@ -10,17 +10,17 @@
 #include "UI/InvenUI/C_InventoryWidget.h"
 #include "UI/InvenUI/Upgrade/C_ItemUpgradeWidget.h"
 
-UC_UpgradeWIdgetStrategy::UC_UpgradeWIdgetStrategy()
+UC_ItemUpgradeWidgetStrategy::UC_ItemUpgradeWidgetStrategy()
 {
 	m_InteractionDuration = 0;
 }
 
-bool UC_UpgradeWIdgetStrategy::CanStartInteraction(AC_BasicPlayer* _Interactor, AActor* _TargetActor) const
+bool UC_ItemUpgradeWidgetStrategy::CanStartInteraction(AC_BasicPlayer* _Interactor, AActor* _TargetActor) const
 {
 	return Super::CanStartInteraction(_Interactor, _TargetActor);
 }
 
-bool UC_UpgradeWIdgetStrategy::StartInteraction(AC_BasicPlayer* _Interactor, AActor* _TargetActor)
+bool UC_ItemUpgradeWidgetStrategy::StartInteraction(AC_BasicPlayer* _Interactor, AActor* _TargetActor)
 {
 	if (!CanStartInteraction(_Interactor, _TargetActor))
 		return false;
@@ -59,7 +59,7 @@ bool UC_UpgradeWIdgetStrategy::StartInteraction(AC_BasicPlayer* _Interactor, AAc
 	return true;
 }
 
-void UC_UpgradeWIdgetStrategy::CancleInteraction(AC_BasicPlayer* _Interactor, AActor* _TargetActor)
+void UC_ItemUpgradeWidgetStrategy::CancleInteraction(AC_BasicPlayer* _Interactor, AActor* _TargetActor)
 {
 	Super::CancleInteraction(_Interactor, _TargetActor);
 	
@@ -85,7 +85,7 @@ void UC_UpgradeWIdgetStrategy::CancleInteraction(AC_BasicPlayer* _Interactor, AA
 	InvenWidget->CloseUpgradeWidget();
 }
 
-void UC_UpgradeWIdgetStrategy::CompleteInteraction(AC_BasicPlayer* _Interactor, AActor* _TargetActor)
+void UC_ItemUpgradeWidgetStrategy::CompleteInteraction(AC_BasicPlayer* _Interactor, AActor* _TargetActor)
 {
 	Super::CompleteInteraction(_Interactor, _TargetActor);
 }

@@ -309,10 +309,4 @@ private:
 
 	/// 상호작용 완료 Timer
 	FTimerHandle m_FocusUpdateTimerHandle;
-	
-public:
-	// TODO : CancelInteract 구현 보고 없애야 할 수 있음.
-	OnEndOverlap m_OnEndOverlap;
-	// TODO : CancelInteract 구현 보고 없애야 할 수 있음.
-	OnEndOverlapParm1 m_OnEndOverlapParm1;
 };

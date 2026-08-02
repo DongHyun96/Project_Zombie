@@ -3,3 +3,6 @@
 
 #include "Item/Interact/StatUpgrade/C_StatUpgradeStation.h"
 
+AC_StatUpgradeStation::AC_StatUpgradeStation()
+{
+}
