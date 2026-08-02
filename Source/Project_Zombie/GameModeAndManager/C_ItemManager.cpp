@@ -46,6 +46,20 @@ void UC_ItemManager::Initialize(FSubsystemCollectionBase& Collection)
     }
 }
 
+void UC_ItemManager::ReturnToPool(AC_ItemPickUp* ItemToReturn)
+{
+    if (!IsValid(ItemToReturn)) return;
+
+    // 활성화 목록에서 제거
+    ActiveItemPool.Remove(ItemToReturn);
+
+    // 비활성화 처리 (시각/물리/타이머 끄기)
+    ItemToReturn->DeactivateItem();
+
+    // 풀 배열에 보관
+    InactiveItemPool.AddUnique(ItemToReturn);
+}
+
 const UDataTable* UC_ItemManager::GetTargetTable(EItemTableType InTableType) const
 {
     // Find는 const TMap에서 const TObjectPtr<UDataTable>* 를 반환합니다.
@@ -69,6 +83,41 @@ AC_ItemPickUp* UC_ItemManager::SpawnItemPickUp(FName InRowName, int32 InCount, c
 
 AC_ItemPickUp* UC_ItemManager::SpawnItemPickUp(const FInventoryEntry& InEntry, const FVector& SpawnLocation)
 {
+    //if (InEntry.ItemRowName.IsNone() || InEntry.CurCount <= 0) return nullptr;
+//
+    //const FItemData* Data = GetItemData<FItemData>(EItemTableType::General, InEntry.ItemRowName);
+    //if (!Data) return nullptr;
+//
+    //UWorld* World = GetWorld();
+    //if (!World) return nullptr;
+//
+    //FActorSpawnParameters SpawnParams;
+    //SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+    //
+    //AC_ItemPickUp* NewItem = World->SpawnActor<AC_ItemPickUp>(AC_ItemPickUp::StaticClass(), SpawnLocation, FRotator::ZeroRotator, SpawnParams);
+    //if (NewItem)
+    //{
+    //    // 1. InEntry 데이터 복사 (여기서 CustomData 포인터/값 및 동적 정보가 통째로 전달됨)
+    //    NewItem->ItemEntry = InEntry; 
+//
+    //    // 2. [핵심] 만약 인벤토리 Entry의 CustomData가 비어있는 상태로 새로 스폰된 아이템이라면?
+    //    // -> 데이터 테이블(FItemData)에 지정된 기본 CustomData(FEquipmentCustomData)를 넣어준다!
+    //    if (!NewItem->ItemEntry.CustomData.IsValid())
+    //    {
+    //        NewItem->ItemEntry.CustomData = FInstancedStruct::Make(Data->CustomData);
+    //    }
+//
+    //    NewItem->SetMeshRef(Data->DropMesh);
+    //    NewItem->SetPickupMeshAsync(NewItem->GetMeshRef());
+    //}
+    //
+    //return NewItem;
+    
+    return GetOrCreateItemPickUp(InEntry, SpawnLocation);
+}
+
+AC_ItemPickUp* UC_ItemManager::GetOrCreateItemPickUp(const FInventoryEntry& InEntry, const FVector& SpawnLocation)
+{
     if (InEntry.ItemRowName.IsNone() || InEntry.CurCount <= 0) return nullptr;
 
     const FItemData* Data = GetItemData<FItemData>(EItemTableType::General, InEntry.ItemRowName);
@@ -77,27 +126,56 @@ AC_ItemPickUp* UC_ItemManager::SpawnItemPickUp(const FInventoryEntry& InEntry, c
     UWorld* World = GetWorld();
     if (!World) return nullptr;
 
-    FActorSpawnParameters SpawnParams;
-    SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-    
-    AC_ItemPickUp* NewItem = World->SpawnActor<AC_ItemPickUp>(AC_ItemPickUp::StaticClass(), SpawnLocation, FRotator::ZeroRotator, SpawnParams);
-    if (NewItem)
+    // [미래 가능성 열어두기] 만약 활성화 수량이 한계치에 다다르면?
+    // (현재는 적용 안 함, 추후 필요 시 주석 해제하여 사용)
+    /*
+    if (ActiveItemPool.Num() >= MaxActiveItemLimit)
     {
-        // 1. InEntry 데이터 복사 (여기서 CustomData 포인터/값 및 동적 정보가 통째로 전달됨)
-        NewItem->ItemEntry = InEntry; 
+        // 가장 오래된 아이템 하나를 강제 수거하는 로직 등
+    }
+    */
 
-        // 2. [핵심] 만약 인벤토리 Entry의 CustomData가 비어있는 상태로 새로 스폰된 아이템이라면?
-        // -> 데이터 테이블(FItemData)에 지정된 기본 CustomData(FEquipmentCustomData)를 넣어준다!
-        if (!NewItem->ItemEntry.CustomData.IsValid())
+    AC_ItemPickUp* TargetItem = nullptr;
+
+    // 1. 풀에 재사용 가능한 액터가 있는지 확인
+    while (InactiveItemPool.Num() > 0)
+    {
+        AC_ItemPickUp* PooledCandidate = InactiveItemPool.Pop(false);
+        if (IsValid(PooledCandidate))
         {
-            NewItem->ItemEntry.CustomData = FInstancedStruct::Make(Data->CustomData);
+            TargetItem = PooledCandidate;
+            break;
+        }
+    }
+
+    // 2. 풀에 없으면 새로 스폰 (최초 스폰)
+    if (!TargetItem)
+    {
+        FActorSpawnParameters SpawnParams;
+        SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+        TargetItem = World->SpawnActor<AC_ItemPickUp>(AC_ItemPickUp::StaticClass(), SpawnLocation, FRotator::ZeroRotator, SpawnParams);
+    }
+
+    if (TargetItem)
+    {
+        ActiveItemPool.Add(TargetItem);
+
+        // CustomData 세팅
+        FInventoryEntry FinalEntry = InEntry;
+        if (!FinalEntry.CustomData.IsValid())
+        {
+            FinalEntry.CustomData = FInstancedStruct::Make(Data->CustomData);
         }
 
-        NewItem->SetMeshRef(Data->DropMesh);
-        NewItem->SetPickupMeshAsync(NewItem->GetMeshRef());
+        // 3. 풀링 전용 활성화 호출
+        TargetItem->ActivateItem(FinalEntry, SpawnLocation);
+
+        // 4. 비동기 메시 로드 및 적용 (기존 로직 그대로 유지)
+        TargetItem->SetMeshRef(Data->DropMesh);
+        TargetItem->SetPickupMeshAsync(TargetItem->GetMeshRef());
     }
-    
-    return NewItem;
+
+    return TargetItem;
 }
 
 bool UC_ItemManager::DropItemByPlayer(const FInventoryEntry& InEntry, AActor* InActor)

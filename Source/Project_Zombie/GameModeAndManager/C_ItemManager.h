@@ -17,6 +17,12 @@ class PROJECT_ZOMBIE_API UC_ItemManager : public UGameInstanceSubsystem
 public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	
+	// 사용이 끝난 아이템을 풀로 반환
+	UFUNCTION(BlueprintCallable, Category = "ItemManager|Pool")
+	void ReturnToPool(AC_ItemPickUp* ItemToReturn);
+
+	// Item Spawn Functions
+public:
 	// --- SpawnItemPickUp 오버로딩 ---  바닥에 주울 수 있는 아이템으로 생성.
 	// [1] Low-Level: 단순 템플릿 드롭, 상자, 몬스터 드롭용 (Name + Count)
 	UFUNCTION(BlueprintCallable, Category = "ItemManager")
@@ -31,6 +37,9 @@ public:
 	{
 		return SpawnItemPickUp(InEntry, SpawnLocation);
 	}
+	
+	// 풀에서 아이템을 획득하거나 생성
+	AC_ItemPickUp* GetOrCreateItemPickUp(const FInventoryEntry& InEntry, const FVector& SpawnLocation);
 
 	// --- DropItemByPlayer 오버로딩 ---
 	// [1] Entry 기반 드롭 (추천), 플레이어가 자신이 들고 있는 아이템을 마크처럼 레벨에 뱉어냄.(AC_ItemPickUp 형태로)
@@ -56,6 +65,7 @@ public:
 	//	return Cast<T>(SpawnEquippedActor(InRowName, SpawnTransform, InOwner));
 	//}
 	
+	// Getter
 public:
 	
 	// T           : 반환할 데이터 구조체 타입 (FItemData, FGunData...)
@@ -91,6 +101,7 @@ private:
 	// Enum 키값 기반 데이터 테이블 원본 포인터 반환 헬퍼
 	const UDataTable* GetTargetTable(EItemTableType InTableType) const;
 	
+	// 데이터 테이블 멤버 변수
 private:
 	// 동기 로드 완료된 데이터 테이블 포인터 맵 (런타임 캐싱)
 	UPROPERTY()
@@ -102,6 +113,19 @@ private:
 	// 강화 비용/재료 데이터 테이블
 	UPROPERTY()
 	TObjectPtr<UDataTable> ItemUpgradeCostData = nullptr;
+	
+	// 오브젝트 풀링 관련 멤버 변수.
+private:
+	// 비활성화되어 재사용 대기 중인 풀
+	UPROPERTY()
+	TArray<TObjectPtr<AC_ItemPickUp>> InactiveItemPool;
+
+	// 현재 월드에 활성화되어 떠돌아다니는 아이템 리스트 (향후 최대 수량 제한 확장용)
+	UPROPERTY()
+	TArray<TObjectPtr<AC_ItemPickUp>> ActiveItemPool;
+
+	// (미래 확장용) 최대 활성화 수량 제한
+	int32 MaxActiveItemLimit = 200; // 현재는 검사만 스킵하거나 높게 설정
 };
 
 template <typename T>
