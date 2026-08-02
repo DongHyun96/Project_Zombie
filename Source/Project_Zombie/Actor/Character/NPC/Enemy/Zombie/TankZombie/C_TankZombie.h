@@ -102,6 +102,12 @@ protected:
 	TObjectPtr<AActor>				m_ChargeTarget;
 
 protected:
+
+	// NormalAttack 피격판정용 Collider
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "NormalAttackCollider")
+	UBoxComponent* m_NormalAttackCollider{};
+	
+protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 

@@ -82,11 +82,8 @@ bool AC_HealingProjectile::Fire
 	if (!_HealingTarget) return false;
 	
 	// 이미 사망한 HealingTarget인 경우
-	if (_HealingTarget->GetStatComponent()->GetCurHP() <= 0.f)
-	{
-		UC_Util::Print("HealingTarget already dead", FColor::Red, 10.f);
+	if (_HealingTarget->GetStatComponent()->IsCurHPZero())
 		return false;
-	}
 	
 	/* 스폰 처리 */
 

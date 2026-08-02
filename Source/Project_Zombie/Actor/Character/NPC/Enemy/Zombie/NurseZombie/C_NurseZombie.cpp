@@ -70,25 +70,17 @@ bool AC_NurseZombie::TryRegisterAsHealTarget(AC_BasicEnemy* _NewHealTarget)
 	if (this == _NewHealTarget) return false;  
 	
 	if (m_HealProjectileTargets.Num() >= s_HealTargetCountLimit)
-	{
-		UC_Util::Print("Max TargetCount reached ", FColor::Red, 10.f);
 		return false;
-	}
+	
 	if (!_NewHealTarget || _NewHealTarget->GetStatComponent()->IsCurHPFull())	return false; // 새로 들어온 Target이 Valid하지 않거나, 이미 풀피인 상황
 	
 	if (m_HealProjectileTargets.Contains(_NewHealTarget))
-	{
-		UC_Util::Print("Already registered", FColor::Red, 10.f);	
 		return false; // 이미 힐 Target으로 지정되어 있는 상황
-	}
 
 	// Dist Squared 값 Max (20m 이내의 적만 등록 가능하다)
 	static const float MAX_DIST_LIMIT_SQR = 2000.f * 2000.f;
 	if (FVector::DistSquared(GetActorLocation(), _NewHealTarget->GetActorLocation()) > MAX_DIST_LIMIT_SQR)
-	{
-		UC_Util::Print("MaxDist Reached", FColor::Red, 10.f);
 		return false;
-	}
 	
 	// 힐 타겟 등록 및 HealTarget의 체력이 모두 찼거나, 이미 사망한 경우에 대해 m_HealTargets에서 제거해버리는 Delegate 구독
 	_NewHealTarget->GetStatComponent()->OnCurHPReachedZeroDelegate.AddUObject(this, &AC_NurseZombie::OnHealTargetDeadOrReachedFullHP);
@@ -96,8 +88,6 @@ bool AC_NurseZombie::TryRegisterAsHealTarget(AC_BasicEnemy* _NewHealTarget)
 
 	m_HealProjectileTargets.Add(_NewHealTarget);
 
-	UC_Util::Print("Heal target received!", FColor::Red, 10.f);
-	
 	return true;
 }
 
@@ -128,9 +118,6 @@ void AC_NurseZombie::Multicast_ToggleHealingAura_Implementation(bool _Active)
 void AC_NurseZombie::OnHealTargetDeadOrReachedFullHP(AC_BasicCharacter* _HealTarget)
 {
 	if (!_HealTarget) return;
-	if (_HealTarget->GetStatComponent()->IsCurHPFull()) UC_Util::Print("!!HealTarget Max HP Reached!!", FColor::MakeRandomColor(), 10.f);
-	else UC_Util::Print("!!HealTarget Dead!!", FColor::MakeRandomColor(), 10.f);
-	
 	RemoveHealProjectileTarget(Cast<AC_BasicEnemy>(_HealTarget));
 }
 

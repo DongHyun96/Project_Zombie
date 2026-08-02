@@ -72,7 +72,11 @@ AC_TankZombie::AC_TankZombie()
 	m_ChargeCollision->SetCollisionObjectType(ECC_WorldDynamic);
 	m_ChargeCollision->SetCollisionResponseToAllChannels(ECR_Ignore);
 	m_ChargeCollision->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
-
+	
+	// NormalAttack 피격판정용 Collider 생성 및 설정
+	m_NormalAttackCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("NormalAttackCollider"));
+	m_NormalAttackCollider->SetupAttachment(GetMesh());
+	AddNormalAttackCollider(m_NormalAttackCollider);
 }
 
 void AC_TankZombie::BeginPlay()
