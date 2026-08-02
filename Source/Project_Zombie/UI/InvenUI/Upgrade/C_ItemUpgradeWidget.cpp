@@ -13,6 +13,7 @@
 #include "UI/InvenUI/DragDropOperation/C_DragDropOperation.h"
 #include "Actor/Components/InteractionComponent/C_InteractionComponent.h"
 #include "Item/Interact/C_InteractableBase.h"
+#include "Item/Interact/ItemUpgrade/C_ItemUpgradeStation.h"
 #include "ItemDetails/C_ItemStatRowWidget.h"
 #include "ItemDetails/C_SelectedStatWidget.h"
 #include "Utility/C_Util.h"
@@ -187,7 +188,7 @@ void UC_ItemUpgradeWidget::RequestItemUpgrade()
 	
 	if (!actor) return;
 	
-	AC_InteractableBase* Base = Cast<AC_InteractableBase>(m_UsePlayer->GetInteractionComponent()->GetCurrentInteractionTarget());
+	AC_ItemUpgradeStation* Base = Cast<AC_ItemUpgradeStation>(m_UsePlayer->GetInteractionComponent()->GetCurrentInteractionTarget());
 
 	if (!Base) return;
 	
