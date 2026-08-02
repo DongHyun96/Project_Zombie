@@ -6,6 +6,8 @@
 #include "Actor/Character/NPC/C_BasicNPC.h"
 #include "C_BasicEnemy.generated.h"
 
+class UC_ItemManager;
+
 UCLASS()
 class PROJECT_ZOMBIE_API AC_BasicEnemy : public AC_BasicNPC
 {
@@ -14,7 +16,11 @@ class PROJECT_ZOMBIE_API AC_BasicEnemy : public AC_BasicNPC
 protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (DisplayName = "SkillComponent"))
-	class UC_EnemySkillComponent*			m_SkillCom;
+	class UC_EnemySkillComponent*			m_SkillCom{};
+	
+	// 이 몬스터가 사망 시 참조할 드랍 테이블 데이터 에셋
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drop")
+	TObjectPtr<class UC_DropTableDataAsset> m_DropTableDataAsset{};
 
 protected: /* Dead 관련 */
 
@@ -24,7 +30,7 @@ protected: /* Dead 관련 */
 
 	// 죽음 몽타주
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dead")
-	TArray<TObjectPtr<UAnimMontage>> m_DeadMontages;
+	TArray<TObjectPtr<UAnimMontage>> m_DeadMontages{};
 
 	// 죽은 뒤 월드에 남아있는 시간(FinishDead 구현 시 추가)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dead")
@@ -34,6 +40,10 @@ private:
 	
 	UPROPERTY()
 	class AC_ZombieController* m_ZombieController{};
+	
+	// ItemManager Subsystem 캐싱 
+	UPROPERTY()
+	TObjectPtr<UC_ItemManager> m_ItemManager{};
 	
 protected:
 	
@@ -81,6 +91,8 @@ private:
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_ToggleHealedEffect(bool _Activate);
 
+	
+	void DropItemOnDead();
 protected:
 	
 	/// <summary>

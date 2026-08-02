@@ -14,6 +14,7 @@
 #include "GameModeAndManager/C_ItemManager.h"
 #include "GameModeAndManager/C_ZombieManager.h"
 #include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
+#include "Item/DataAsset/C_DropTableDataAsset.h"
 #include "Kismet/GameplayStatics.h"
 #include "Utility/C_Util.h"
 #include "Zombie/NurseZombie/C_NurseZombie.h"
@@ -65,7 +66,15 @@ void AC_BasicEnemy::BeginPlay()
 		m_ZombieController = GetController<AC_ZombieController>();
 	}
 	
-
+	// 서버 환경인 경우에만 ItemManager 캐싱
+	if (HasAuthority())
+	{
+		if (UGameInstance* GI = GetGameInstance())
+		{
+			m_ItemManager = GI->GetSubsystem<UC_ItemManager>();
+		}
+	}
+	
 	// HealEffect 재생 속도 조절
 	m_HealedEffectNGComponent->SetCustomTimeDilation(2.f);
 	m_HealedEffectNGComponent->DeactivateImmediate();
@@ -132,14 +141,40 @@ void AC_BasicEnemy::Multicast_ToggleHealedEffect_Implementation(bool _Activate)
 	else m_HealedEffectNGComponent->DeactivateImmediate();
 }
 
+void AC_BasicEnemy::DropItemOnDead()
+{
+	// TODO(상연) : 데이터 에셋을 사용해서 어떤 아이템을 min~max로 스폰해줄 지 넣는 방식으로 바꾸어야 함. 
+	if (m_DropTableDataAsset && IsValid(m_DropTableDataAsset))
+	{
+		if (!m_ItemManager) return;
+		
+		const FVector DeathLocation = GetActorLocation();
+		// 데이터 에셋의 드랍 항목들 순회
+		for (const FDropEntry& Entry : m_DropTableDataAsset->DropEntries)
+		{
+			// 1. 드랍 확률 체크 (0.0f ~ 1.0f)
+			const float RandValue = FMath::FRand(); 
+			if (RandValue <= Entry.DropChance)
+			{
+				// 2. MinCount ~ MaxCount 사이의 랜덤 스폰 수량 결정
+				const int32 SpawnCount = FMath::RandRange(Entry.MinCount, Entry.MaxCount);
+				// 수량이 0 이하라면 스폰 스킵
+				if (SpawnCount <= 0) 
+					continue;
+				// 3. 아이템이 약간 퍼져서 떨어지도록 원형 오프셋 계산
+				const FVector2D RandCircle = FMath::RandPointInCircle(m_DropTableDataAsset->m_DropScatterRadius);
+				const FVector SpawnLocation = DeathLocation + FVector(RandCircle.X, RandCircle.Y, 10.f);
+				// 4. ItemManager를 통해 아이템 스폰
+				m_ItemManager->SpawnItemPickUp(Entry.ItemRowName, SpawnCount, SpawnLocation);
+			}
+		}
+	}
+}
+
 void AC_BasicEnemy::OnDead(AC_BasicCharacter* _DeadCharacter)
 {
 	// 서버 환경의 Enemy인 경우에만 호출처리됨
-	UC_ItemManager* ItemManager = GetWorld()->GetGameInstance()->GetSubsystem<UC_ItemManager>();
 	
-	if (!ItemManager) return;
-	
-	ItemManager->SpawnItemPickUp()
 
 	// TODO : Dead에 필요한 처리가 더 필요하다면 여기서 이어서 처리해줄 것(ex 랙돌 처리 등)
 	// 아마 죽은 뒤에 죽은 모션이나 랙돌 처리를 보여준 후, 몇 초 뒤에 Pool로 돌아가게끔 처리를 해줄 듯
@@ -154,6 +189,8 @@ void AC_BasicEnemy::OnDead(AC_BasicCharacter* _DeadCharacter)
 		return;
 
 	m_bDead = true;
+	
+	
 
 	if (IsValid(m_HealedEffectNGComponent))
 	{
@@ -166,6 +203,9 @@ void AC_BasicEnemy::OnDead(AC_BasicCharacter* _DeadCharacter)
 
 	// 죽음 애니메이션 재생
 	PlayDeadAnimation();
+	
+	// TODO :  충돌 끄기. 혹시 오브젝트 풀링으로 사용중이거나 해서 나중에 켜야 된다면 켜주어야 함.
+	SetActorEnableCollision(false);
 }
 
 void AC_BasicEnemy::StopAllActionsForDead()
