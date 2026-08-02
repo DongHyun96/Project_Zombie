@@ -143,7 +143,6 @@ void AC_BasicEnemy::Multicast_ToggleHealedEffect_Implementation(bool _Activate)
 
 void AC_BasicEnemy::DropItemOnDead()
 {
-	// TODO(상연) : 데이터 에셋을 사용해서 어떤 아이템을 min~max로 스폰해줄 지 넣는 방식으로 바꾸어야 함. 
 	if (m_DropTableDataAsset && IsValid(m_DropTableDataAsset))
 	{
 		if (!m_ItemManager) return;
@@ -190,7 +189,7 @@ void AC_BasicEnemy::OnDead(AC_BasicCharacter* _DeadCharacter)
 
 	m_bDead = true;
 	
-	
+	DropItemOnDead();
 
 	if (IsValid(m_HealedEffectNGComponent))
 	{
