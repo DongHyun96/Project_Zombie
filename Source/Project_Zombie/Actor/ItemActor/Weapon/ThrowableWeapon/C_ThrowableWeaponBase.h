@@ -368,6 +368,10 @@ protected: // 예상 투척 경로 TODO : 이 부분은 일단은 데이터 테�
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Throwable|Predicted Path")
 	UStaticMeshComponent* m_PredictedEndPoint;
 
+	// 예상 경로를 표시할 Mesh의 최대 개수
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Throwable|Predicted Path", meta = (ClampMax = "16"))
+	int32 m_MaxPredictedPathMeshCount;
+
 	// 예상 경로를 표시할 Mesh
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Throwable|Predicted Path")
 	UStaticMesh* m_PredictedPathMesh;
@@ -406,4 +410,6 @@ private:
 
 	// 쿠킹을 원하는지
 	bool m_bWantsCook;
+
+	float m_LastPredictedPathUpdateTime = -1.f;
 };
