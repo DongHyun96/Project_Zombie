@@ -11,6 +11,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameModeAndManager/C_GameMode_GameLv.h"
 #include "BrainComponent.h"
+#include "GameModeAndManager/C_ItemManager.h"
 #include "GameModeAndManager/C_ZombieManager.h"
 #include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 #include "Kismet/GameplayStatics.h"
@@ -134,7 +135,11 @@ void AC_BasicEnemy::Multicast_ToggleHealedEffect_Implementation(bool _Activate)
 void AC_BasicEnemy::OnDead(AC_BasicCharacter* _DeadCharacter)
 {
 	// 서버 환경의 Enemy인 경우에만 호출처리됨
+	UC_ItemManager* ItemManager = GetWorld()->GetGameInstance()->GetSubsystem<UC_ItemManager>();
 	
+	if (!ItemManager) return;
+	
+	ItemManager->SpawnItemPickUp()
 
 	// TODO : Dead에 필요한 처리가 더 필요하다면 여기서 이어서 처리해줄 것(ex 랙돌 처리 등)
 	// 아마 죽은 뒤에 죽은 모션이나 랙돌 처리를 보여준 후, 몇 초 뒤에 Pool로 돌아가게끔 처리를 해줄 듯
