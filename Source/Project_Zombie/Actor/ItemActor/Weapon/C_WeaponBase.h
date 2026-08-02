@@ -147,6 +147,7 @@ protected:
 
 private:
 	
+	// TODO : 현재 사용하지 않는 함수.
 	UFUNCTION()
 	void OnRep_OwnerPlayer();
 	
@@ -179,7 +180,7 @@ protected:
 	
 protected:
 	// 비동기 로딩 핸들을 관리할 스마트 포인터
-	TSharedPtr<FStreamableHandle> AsyncLoadHandle;
+	TSharedPtr<FStreamableHandle> m_AsyncLoadHandle;
 	
 private:
 

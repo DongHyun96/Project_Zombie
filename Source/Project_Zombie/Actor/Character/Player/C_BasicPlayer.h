@@ -232,12 +232,12 @@ protected:
 protected:
 	// => 나중에 InventoryComponent으로 분리?
 	// 상호작용 가능
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory")
-	bool m_IsCanInteract;
+	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory")
+	//bool m_IsCanInteract;
 
 	// 인벤토리 열려있나
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory")
-	bool m_IsInventoryOpen;
+	bool m_IsInventoryOpen = false;
 	
 	// 현재 드래그된 아이템의 정보 구조체
 	// TODO : C_DivideItemWidget에 CursorItem을 여기로 대체해야 하나?

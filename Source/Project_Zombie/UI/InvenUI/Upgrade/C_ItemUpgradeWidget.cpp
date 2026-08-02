@@ -35,8 +35,15 @@ bool UC_ItemUpgradeWidget::NativeOnDrop(const FGeometry& InGeometry, const FDrag
 	
 	if (DroppedItemSlotIdx == -1) return false;
 	
+	UC_ItemManager* ItemManager = GetGameInstance()->GetSubsystem<UC_ItemManager>();
+
+	if (!ItemManager) return false;
 	
-	if (!DragOperation->GetItemEntry().HasEquipmentData())
+	const FInventoryEntry& Entry = DragOperation->GetItemEntry();
+	
+	const FItemData* Data = ItemManager->GetItemData<FItemData>(EItemTableType::General, Entry.ItemRowName);
+	
+	if (static_cast<uint8>(Data->ItemType) >= static_cast<uint8>(EItemType::GADGET) || !DragOperation->GetItemEntry().HasEquipmentData())
 	{
 		DroppedItemSlotIdx = -1;
 		UpdateWidget();
@@ -86,6 +93,8 @@ void UC_ItemUpgradeWidget::UpdateWidget()
 	const FItemData* Data = ItemManager->GetItemData<FItemData>(EItemTableType::General, Entry.ItemRowName);
 
 	ItemName->SetText(Data->ItemName);
+	
+	ItemDesc->SetText(Data->ItemDescription);
 	
 	ItemIcon->SetBrushFromTexture(Data->IconTexture.Get());
 
@@ -202,6 +211,8 @@ void UC_ItemUpgradeWidget::BindingUpdateWidget(UC_InvenComponent* InInvenComp)
 
 void UC_ItemUpgradeWidget::HandleItemStatUpgraded(int32 SlotIdx, const FInventoryEntry& ItemData)
 {
+	if (SlotIdx != DroppedItemSlotIdx) return;
+	
 	const FEquipmentCustomData* EquipCustomData = ItemData.CustomData.GetPtr<FEquipmentCustomData>();
 	
 	ItemStats->UpdateWidget(EquipCustomData);

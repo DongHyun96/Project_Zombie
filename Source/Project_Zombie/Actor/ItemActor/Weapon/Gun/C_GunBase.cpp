@@ -182,11 +182,10 @@ void AC_GunBase::LoadAsyncAssets(const FWeaponData* InRawData)
 	
 	PRINT_LOCAL(GetWorld(), "Success LoadAsyncAssets", FColor::Red, 10.f);
 	
-	// AssetManager를 통한 비동기 로딩 요청
 	if (AssetsToLoad.Num() > 0)
 	{
 		FStreamableManager& Streamable = UAssetManager::GetStreamableManager();
-		
+       
 		// 캡처용 변수 복사
 		TSoftObjectPtr<USkeletalMesh> SoftMesh = GunData->WeaponSkeletalMesh;
 		TSoftObjectPtr<UAnimSequence> SoftFireAnim = GunData->FireAnimation;
@@ -195,27 +194,28 @@ void AC_GunBase::LoadAsyncAssets(const FWeaponData* InRawData)
 		TSoftObjectPtr<UAnimMontage> SoftPlayerReloadAnim = GunData->PlayerReloadAnimation;
 		TSoftObjectPtr<UAnimMontage> SoftPlayerFireAnim = GunData->PlayerFireAnimation;
 
-		// 람다(Lambda)를 이용해 로딩이 완료된 시점에 포인터 캐싱 및 메시 적용
-		Streamable.RequestAsyncLoad(AssetsToLoad, FStreamableDelegate::CreateLambda([this, SoftMesh, SoftFireAnim, SoftReloadAnim, SoftShellMesh, SoftPlayerReloadAnim, SoftPlayerFireAnim]()
-		{
-			if (!IsValid(this)) return;
+		// 비동기 요청
+		m_AsyncLoadHandle = Streamable.RequestAsyncLoad(
+		   AssetsToLoad,
+		   FStreamableDelegate::CreateWeakLambda(this, [this, SoftMesh, SoftFireAnim, SoftReloadAnim, SoftShellMesh, SoftPlayerReloadAnim, SoftPlayerFireAnim]()
+		   {
+			  if (SoftMesh.IsValid() && m_WeaponMesh)
+			  {
+				 m_WeaponMesh->SetSkeletalMesh(SoftMesh.Get());
+			  }
 
-			if (SoftMesh.IsValid() && m_WeaponMesh)
-			{
-				m_WeaponMesh->SetSkeletalMesh(SoftMesh.Get());
-			}
+			  m_FireAnimation = SoftFireAnim.Get();
+			  m_ReloadAnimation = SoftReloadAnim.Get();
+			  m_ShellMesh = SoftShellMesh.Get();
+			  m_PlayerReloadAnimation = SoftPlayerReloadAnim.Get();
+			  m_PlayerFireAnimation = SoftPlayerFireAnim.Get();
 
-			m_FireAnimation = SoftFireAnim.Get();
-			m_ReloadAnimation = SoftReloadAnim.Get();
-			m_ShellMesh = SoftShellMesh.Get();
-			m_PlayerReloadAnimation = SoftPlayerReloadAnim.Get();
-			m_PlayerFireAnimation = SoftPlayerFireAnim.Get();
-
-			UC_Util::Print("Weapon Assets Async Loaded Successfully!", FColor::Green, 5.f);
-		}));
+			  UC_Util::Print("Weapon Assets Async Loaded Successfully!", FColor::Green, 5.f);
+		   })
+		);
 	}
-	
 }
+
 
 // 사용하는 함수? : 희민
 void AC_GunBase::SetAmmoUIInfo(FAmmoUIInfo& _AmmoUIInfo)

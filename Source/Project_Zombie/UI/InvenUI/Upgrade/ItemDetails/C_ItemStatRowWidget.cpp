@@ -22,7 +22,7 @@ FReply UC_ItemStatRowWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry
 
 		// TODO : MatterRowUpdate해서 보여주기.
 		
-		UC_Util::Print(static_cast<int32>(UIManager->GetInventoryWidget()->GetItemUpgradeWidget()->GetTargetStat()));
+		//UC_Util::Print(static_cast<int32>(UIManager->GetInventoryWidget()->GetItemUpgradeWidget()->GetTargetStat()));
 
 		// TODO : SelectedStatWidget 보여주기.
 		//UIManager->GetInventoryWidget()->GetItemUpgradeWidget()->ShowSelectedStatRow()

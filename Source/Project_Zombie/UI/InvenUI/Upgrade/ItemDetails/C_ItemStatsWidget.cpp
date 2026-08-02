@@ -46,7 +46,7 @@ void UC_ItemStatsWidget::UpdateWidget(const FEquipmentCustomData* InCustomData)
 		//const FWeaponData* data = ItemManager->GetWeaponData(ItemUpgradeWidget->GetTargetEntry()->ItemRowName);
 		
 		//if (!data) continue;
-		// TODO : 현재 스탯 가져올 보여 줄 수 있나? 
+		// TODO : 현재 스탯 가져와 보여 줄 수 있나?
 		
 		ItemStatRow->UpdateWidget(CustomKeyVal.Key, CustomKeyVal.Grade, MAX_GRADE); // TODO : Max_Grade 유의
 		
