@@ -52,7 +52,7 @@ void AC_WeaponBase::OnRep_WeaponRowName()
 
 	const FWeaponData* WeaponData = nullptr;
 	
-	ItemManager->GetWeaponData(m_WeaponRowName);
+	WeaponData = ItemManager->GetWeaponData(m_WeaponRowName);
 
 	if (WeaponData)
 	{
@@ -65,11 +65,11 @@ void AC_WeaponBase::OnRep_WeaponRowName()
 void AC_WeaponBase::CancelAsyncLoad()
 {
 	// 기존에 진행 중이던 비동기 로딩 요청이 남아있다면 먼저 취소/해제
-	if (AsyncLoadHandle.IsValid())
+	if (m_AsyncLoadHandle.IsValid())
 	{
 		// 로딩 요청을 취소하고 엔진 메모리에서 핸들 참조를 해제합니다.
-		AsyncLoadHandle->CancelHandle();
-		AsyncLoadHandle.Reset();
+		m_AsyncLoadHandle->CancelHandle();
+		m_AsyncLoadHandle.Reset();
 	}
 }
 

@@ -10,6 +10,8 @@
 // 스폰되고 플레이어와 바로 오버랩되지 않고 DelayTime 이후에 오버랩 기능이 켜져서 오버랩(아이템 파밍)가능.
 #define DELAYTIME 2.f
 
+class AC_BasicPlayer;
+
 UCLASS()
 class PROJECT_ZOMBIE_API AC_ItemPickUp : public AActor
 {
@@ -46,8 +48,15 @@ public:
 	
 	void EnablePickupOverlap();
 	
+	void ActivateItem(const FInventoryEntry& InEntry, const FVector& SpawnLocation);
+	void DeactivateItem();
+
+	// 일정 시간 후 자동 수거 타이머 설정
+	void StartDespawnTimer(float InLifeTime = 30.0f);
+	
 	// 서버 함수
 public:
+	
 	UFUNCTION(Server, Reliable)
 	void Server_RequestPickup(AC_BasicPlayer* Player);
 	
@@ -87,5 +96,13 @@ protected:
 	// 비동기 로드를 관리할 핸들러 포인터 유지
 	TSharedPtr<struct FStreamableHandle> AssetLoadHandle;
 	
+	// 생성되고 일정 시간 동안 PcikUp할 수 없도록 막음.
 	FTimerHandle PickupDelayTimerHandle;
+	
+	// 자동 디스폰 타이머 핸들
+	FTimerHandle DespawnTimerHandle;
+
+	// 자동 수거 시간 (초 단위)
+	UPROPERTY(EditAnywhere, Category = "Item | LifeTime")
+	float DefaultLifeTime = 100.0f;
 };

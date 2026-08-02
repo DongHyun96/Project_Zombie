@@ -11,8 +11,10 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameModeAndManager/C_GameMode_GameLv.h"
 #include "BrainComponent.h"
+#include "GameModeAndManager/C_ItemManager.h"
 #include "GameModeAndManager/C_ZombieManager.h"
 #include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
+#include "Item/DataAsset/C_DropTableDataAsset.h"
 #include "Kismet/GameplayStatics.h"
 #include "Utility/C_Util.h"
 #include "Zombie/NurseZombie/C_NurseZombie.h"
@@ -56,6 +58,11 @@ void AC_BasicEnemy::BeginPlay()
 		m_StatComponent->OnIncreaseCurHPDelegate.AddUObject(this, &AC_BasicEnemy::OnHPIncreased);
 		
 		m_ZombieController = GetController<AC_ZombieController>();
+
+		if (UGameInstance* GI = GetGameInstance())
+		{
+			m_ItemManager = GI->GetSubsystem<UC_ItemManager>();
+		}
 	}
 	else // 클라이언트 환경
 	{
@@ -134,6 +141,35 @@ void AC_BasicEnemy::Multicast_ToggleHealedEffect_Implementation(bool _Activate)
 	else m_HealedEffectNGComponent->DeactivateImmediate();
 }
 
+void AC_BasicEnemy::DropItemOnDead()
+{
+	if (m_DropTableDataAsset && IsValid(m_DropTableDataAsset))
+	{
+		if (!m_ItemManager) return;
+		
+		const FVector DeathLocation = GetActorLocation();
+		// 데이터 에셋의 드랍 항목들 순회
+		for (const FDropEntry& Entry : m_DropTableDataAsset->DropEntries)
+		{
+			// 1. 드랍 확률 체크 (0.0f ~ 1.0f)
+			const float RandValue = FMath::FRand(); 
+			if (RandValue <= Entry.DropChance)
+			{
+				// 2. MinCount ~ MaxCount 사이의 랜덤 스폰 수량 결정
+				const int32 SpawnCount = FMath::RandRange(Entry.MinCount, Entry.MaxCount);
+				// 수량이 0 이하라면 스폰 스킵
+				if (SpawnCount <= 0) 
+					continue;
+				// 3. 아이템이 약간 퍼져서 떨어지도록 원형 오프셋 계산
+				const FVector2D RandCircle = FMath::RandPointInCircle(m_DropTableDataAsset->m_DropScatterRadius);
+				const FVector SpawnLocation = DeathLocation + FVector(RandCircle.X, RandCircle.Y, 10.f);
+				// 4. ItemManager를 통해 아이템 스폰
+				m_ItemManager->SpawnItemPickUp(Entry.ItemRowName, SpawnCount, SpawnLocation);
+			}
+		}
+	}
+}
+
 void AC_BasicEnemy::OnDead(AC_BasicCharacter* _DeadCharacter)
 {
 	// 서버 환경의 Enemy인 경우에만 호출처리됨
@@ -152,6 +188,8 @@ void AC_BasicEnemy::OnDead(AC_BasicCharacter* _DeadCharacter)
 		return;
 
 	m_bDead = true;
+	
+	DropItemOnDead();
 
 	if (IsValid(m_HealedEffectNGComponent))
 	{
@@ -164,6 +202,9 @@ void AC_BasicEnemy::OnDead(AC_BasicCharacter* _DeadCharacter)
 
 	// 죽음 애니메이션 재생
 	PlayDeadAnimation();
+	
+	// TODO :  충돌 끄기. 혹시 오브젝트 풀링으로 사용중이거나 해서 나중에 켜야 된다면 켜주어야 함.
+	SetActorEnableCollision(false);
 }
 
 void AC_BasicEnemy::StopAllActionsForDead()

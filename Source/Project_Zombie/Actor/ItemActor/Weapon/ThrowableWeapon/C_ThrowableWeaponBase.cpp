@@ -254,7 +254,7 @@ void AC_ThrowableWeaponBase::LoadAsyncAssets(const FWeaponData* InRawData)
         TSoftObjectPtr<UParticleSystem>  SoftExplosionEffect = ThrowableData->m_ExplosionEffect;
         TSoftClassPtr<AC_FireDamageArea>           SoftDamageAreaClass = ThrowableData->m_FireDamageAreaClass;
 
-        AsyncLoadHandle = Streamable.RequestAsyncLoad(AssetsToLoad, FStreamableDelegate::CreateLambda([
+        m_AsyncLoadHandle = Streamable.RequestAsyncLoad(AssetsToLoad, FStreamableDelegate::CreateLambda([
             this,
             SoftMesh,
             SoftThrowMontage,
@@ -285,9 +285,9 @@ void AC_ThrowableWeaponBase::LoadAsyncAssets(const FWeaponData* InRawData)
             UC_Util::Print("Throwable Weapon Assets Async Loaded Successfully!", FColor::Green, 5.f);
 
             // 로딩 완료 후 핸들 정리
-            if (AsyncLoadHandle.IsValid())
+            if (m_AsyncLoadHandle.IsValid())
             {
-                AsyncLoadHandle.Reset();
+                m_AsyncLoadHandle.Reset();
             }
         }));
     }

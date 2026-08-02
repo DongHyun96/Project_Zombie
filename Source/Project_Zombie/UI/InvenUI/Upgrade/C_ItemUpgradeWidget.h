@@ -27,9 +27,13 @@ protected:
 	
 	virtual bool NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
 	
+	virtual void NativeOnInitialized() override;
 public:
 	// 현재 아이템에 따라 위젯 업데이트
 	void UpdateWidget();
+	
+	// Cancel로 위젯을 닫으면 내부 변수 초기화할 때 사용할 함수.
+	void InitWidget();
 	
 	void ShowSelectedStatRow(const float& CurStatValue, const float& NextStatValue);
 	
@@ -37,8 +41,10 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void RequestItemUpgrade();
 	
+	// Inven의 델리게이트 거는 함수.
 	void BindingUpdateWidget(UC_InvenComponent* InInvenComp);
 	
+	// ItemStatUpdate 함수 호출(클라), TODO : AC_BasicPlayerController::FinishItemUpgrade 함수와 통합 가능한지 확인할 것
 	UFUNCTION()
 	void HandleItemStatUpgraded(int32 SlotIdx, const FInventoryEntry& ItemData);
 public:
@@ -47,6 +53,8 @@ public:
 	void SetTargetStat(EUpgradableStats InTargetStat); // { m_TargetStat = InTargetStat; }
 
 	EUpgradableStats GetTargetStat() { return m_TargetStat; }
+	
+	const FInventoryEntry* GetTargetEntry() {return m_TargetEntry;}
 	
 	void SetIsUpgrading(bool InIsUpgrading)
 	{
@@ -115,5 +123,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool hasRequiredItems = false;
 	
-	FInventoryEntry TargetEntry{};
+	//UPROPERTY()
+	// TODO : 이게 과연 안전한가?
+	FInventoryEntry* m_TargetEntry{};
 };

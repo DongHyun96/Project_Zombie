@@ -227,6 +227,81 @@ bool UC_InvenComponent::CanSetItemToSlot(int32 TargetSlotIndex, const FInventory
 	return true;
 }
 
+bool UC_InvenComponent::RemoveItemByRowName(FName InRowName, int32 InAmountCount)
+{
+	// 차감할 수량이 올바르지 않거나 빈 RowName이면 실패 처리
+	if (InRowName.IsNone() || InAmountCount <= 0)
+	{
+		return false;
+	}
+	
+
+	// 소유 중인 총 수량이 차감 요구량보다 적은지 미리 확인
+	int32 TotalHeld = GetTotalItemCount(InRowName);
+	if (TotalHeld < InAmountCount)
+	{
+		// 소유한 재료/아이템 부족
+		return false; 
+	}
+
+	int32 RemainingToDeduct = InAmountCount;
+    
+	// InventoryContainer.Items 포인터 참조
+	TArray<FInventoryEntry>* EntrySlots = &InventoryContainer.Items; 
+	if (!EntrySlots) return false;
+
+	// 인벤토리 슬롯 순회
+	for (int32 i = 0; i < EntrySlots->Num(); ++i)
+	{
+
+		FInventoryEntry& Entry = (*EntrySlots)[i];
+
+		// 비어있는 슬롯이거나 target RowName과 다른 아이템이면 스킵
+		if (Entry.IsEmpty() || Entry.ItemRowName != InRowName)
+		{
+			continue;
+		}
+
+		// 현재 슬롯에서 차감할 개수 계산
+		int32 DeductFromThisSlot = FMath::Min(Entry.CurCount, RemainingToDeduct);
+
+		Entry.CurCount -= DeductFromThisSlot;
+		RemainingToDeduct -= DeductFromThisSlot;
+
+		
+		// 슬롯의 수량이 0 이하가 되면 슬롯 초기화
+		if (Entry.CurCount <= 0)
+		{
+			int32 CurSlotIdx = Entry.SlotIndex;
+			
+			Entry.Clear(); // 또는 Entry = FInventoryEntry();
+			
+			Entry.SlotIndex = CurSlotIdx;
+		}
+		// UI 업데이트 및 동기화를 위한 델리게이트 브로드캐스트
+		
+		if (GetOwner()->HasAuthority())
+		{
+			InventoryContainer.MarkItemDirty(Entry);
+			OnInventorySlotChanged.Broadcast(i, Entry);
+		}
+		// 더 이상 차감할 수량이 없으면 성공 종료	
+		if (RemainingToDeduct <= 0)
+		{
+			break;
+		}
+	}
+
+	// 차감이 완전히 끝났는지 확인
+	return RemainingToDeduct == 0;
+}
+
+void UC_InvenComponent::Server_RemoveItemByRowName_Implementation(FName InRowName, int32 InAmountCount)
+{
+	RemoveItemByRowName(InRowName, InAmountCount);
+}
+
+
 void UC_InvenComponent::ForceRepInven()
 {
 	InventoryContainer.MarkArrayDirty();

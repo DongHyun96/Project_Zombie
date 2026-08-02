@@ -3,7 +3,6 @@
 
 #include "UI/InvenUI/Upgrade/C_ItemUpgradeWidget.h"
 
-#include "ToolMenusEditor.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/Components/C_InvenComponent.h"
 #include "Components/Image.h"
@@ -11,13 +10,12 @@
 #include "GameModeAndManager/C_ItemManager.h"
 #include "ItemDetails/C_ItemStatsWidget.h"
 #include "ItemDetails/C_MattersWidget.h"
-#include "Serialization/MappedName.h"
 #include "UI/InvenUI/DragDropOperation/C_DragDropOperation.h"
 #include "Actor/Components/InteractionComponent/C_InteractionComponent.h"
 #include "Item/Interact/C_InteractableBase.h"
 #include "ItemDetails/C_ItemStatRowWidget.h"
 #include "ItemDetails/C_SelectedStatWidget.h"
-#include "Tests/ToolMenusTestUtilities.h"
+#include "Utility/C_Util.h"
 
 void UC_ItemUpgradeWidget::NativeConstruct()
 {
@@ -29,27 +27,45 @@ bool UC_ItemUpgradeWidget::NativeOnDrop(const FGeometry& InGeometry, const FDrag
 {
 	UC_DragDropOperation* DragOperation = Cast<UC_DragDropOperation>(InOperation);
 	
+	//f (DroppedItemSlotIdx == -1) return false; NativeOnDragCancelled에서 슬롯 잠금 해제 해줘야 함.
+	
 	DroppedItemSlotIdx = DragOperation->GetSlotIndex();
 	
 	m_UsePlayer->Server_RequestUnlockSlot(m_UsePlayer->GetInvenComponent(), DroppedItemSlotIdx);
 	
 	if (DroppedItemSlotIdx == -1) return false;
 	
+	UC_ItemManager* ItemManager = GetGameInstance()->GetSubsystem<UC_ItemManager>();
+
+	if (!ItemManager) return false;
 	
-	if (!DragOperation->GetItemEntry().HasEquipmentData())
+	const FInventoryEntry& Entry = DragOperation->GetItemEntry();
+	
+	const FItemData* Data = ItemManager->GetItemData<FItemData>(EItemTableType::General, Entry.ItemRowName);
+	
+	if (static_cast<uint8>(Data->ItemType) >= static_cast<uint8>(EItemType::GADGET) || !DragOperation->GetItemEntry().HasEquipmentData())
 	{
 		DroppedItemSlotIdx = -1;
 		UpdateWidget();
 		return false;
 	}
 	
-	TargetEntry = DragOperation->GetItemEntry();
+	m_TargetEntry = DragOperation->GetSourceComponent()->GetSlotDataPtr(DroppedItemSlotIdx);
 	
 	UpdateWidget();
 	
 	//if (DroppedItemSlotIdx == -1) return false;
 	
 	return true;
+}
+
+void UC_ItemUpgradeWidget::NativeOnInitialized()
+{
+	Super::NativeOnInitialized();
+
+	ItemStats->SetParentWidget(this);
+	
+	Matters->SetParentWidget(this);
 }
 
 void UC_ItemUpgradeWidget::UpdateWidget()
@@ -78,6 +94,8 @@ void UC_ItemUpgradeWidget::UpdateWidget()
 
 	ItemName->SetText(Data->ItemName);
 	
+	ItemDesc->SetText(Data->ItemDescription);
+	
 	ItemIcon->SetBrushFromTexture(Data->IconTexture.Get());
 
 	ItemIcon->SetVisibility(ESlateVisibility::Visible);
@@ -94,9 +112,26 @@ void UC_ItemUpgradeWidget::UpdateWidget()
 	ItemStats->UpdateWidget(EquipCustomData);
 	
 	// TODO : 강화에 필요한 재료 보여주기.
+	// TODO : 강화하면 재료 차감하기.
 	
 	
-	Matters->UpdateWidget(Entry, m_TargetStat); // TODO : 강화 테이블을 만들어야 넣어 줄 수 있을 듯? -> TMap
+	Matters->UpdateWidget(Entry); // TODO : 강화 테이블을 만들어야 넣어 줄 수 있을 듯? 
+}
+
+void UC_ItemUpgradeWidget::InitWidget()
+{
+	ItemIcon->SetVisibility(ESlateVisibility::Collapsed);
+	// TODO : 여기 들어오면 위젯들 초기화 해주기.
+	ItemName->SetText(FText());
+	ItemDesc->SetText(FText());
+	ItemStats->UpdateWidget(nullptr);
+	
+	DroppedItemSlotIdx = -1;
+	m_UsePlayer = nullptr;
+	m_TargetStat = EUpgradableStats::None;
+	bIsUpgrading = false;	
+	hasRequiredItems = false;
+	m_TargetEntry = nullptr;
 }
 
 void UC_ItemUpgradeWidget::ShowSelectedStatRow(const float& CurStatValue, const float& NextStatValue)
@@ -136,18 +171,33 @@ void UC_ItemUpgradeWidget::RequestItemUpgrade()
 {
 	if (bIsUpgrading) return;
 	
+	UC_Util::Print(hasRequiredItems);
+	
 	if (!hasRequiredItems) return; 
+	
+	if (!m_UsePlayer) return;
+	
+	if (!m_UsePlayer->GetInteractionComponent()) return;
+	
+	UC_InteractionComponent* InteractionComp = m_UsePlayer->GetInteractionComponent();
+	
+	if (!InteractionComp) return;
+	
+	AActor* actor = InteractionComp->GetCurrentInteractionTarget();
+	
+	if (!actor) return;
 	
 	AC_InteractableBase* Base = Cast<AC_InteractableBase>(m_UsePlayer->GetInteractionComponent()->GetCurrentInteractionTarget());
 
 	if (!Base) return;
 	
-	if (TargetEntry.IsEmpty()) return;
+	if (!m_TargetEntry) return;
 	
-	if (!TargetEntry.HasEquipmentData()) return;
+	if (!m_TargetEntry->HasEquipmentData()) return;
 	
 	// 이미 최대 Grade면 서버에 요청을 보내지 않게해서 패킷 낭비를 막음.
-	if (TargetEntry.GetEquipmentData()->GetStatGrade(m_TargetStat) >= MAX_GRADE) return;
+	UC_Util::Print(static_cast<int32>(m_TargetStat));
+	if (m_TargetEntry->GetEquipmentData()->GetStatGrade(m_TargetStat) >= MAX_GRADE) return;
 	
 	bIsUpgrading = true;
 	
@@ -161,6 +211,8 @@ void UC_ItemUpgradeWidget::BindingUpdateWidget(UC_InvenComponent* InInvenComp)
 
 void UC_ItemUpgradeWidget::HandleItemStatUpgraded(int32 SlotIdx, const FInventoryEntry& ItemData)
 {
+	if (SlotIdx != DroppedItemSlotIdx) return;
+	
 	const FEquipmentCustomData* EquipCustomData = ItemData.CustomData.GetPtr<FEquipmentCustomData>();
 	
 	ItemStats->UpdateWidget(EquipCustomData);
@@ -169,6 +221,8 @@ void UC_ItemUpgradeWidget::HandleItemStatUpgraded(int32 SlotIdx, const FInventor
 void UC_ItemUpgradeWidget::SetTargetStat(EUpgradableStats InTargetStat)
 {
 	m_TargetStat = InTargetStat;
+	
+	if (m_TargetStat == EUpgradableStats::None) return;
 	
 	// TODO(상연) : 원래 이런건 여기서 구현하는게 맞나? 상호작용이 일어난 StatRowWidget쪽에서 했어야 하는건 아닐까?
 	
@@ -182,5 +236,5 @@ void UC_ItemUpgradeWidget::SetTargetStat(EUpgradableStats InTargetStat)
 			StatRowArr[i]->GetSelectedRow()->SetVisibility(ESlateVisibility::Collapsed);
 	}
 	
-	Matters->UpdateWidget(TargetEntry, m_TargetStat);
+	Matters->UpdateWidget(*m_TargetEntry);
 }

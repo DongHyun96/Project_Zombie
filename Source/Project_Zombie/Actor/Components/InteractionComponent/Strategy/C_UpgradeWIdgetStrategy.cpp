@@ -50,9 +50,9 @@ bool UC_UpgradeWIdgetStrategy::StartInteraction(AC_BasicPlayer* _Interactor, AAc
 	InvenWidget->ShowUpgradeWidget();
 	
 	// TODO : CancelInteract 구현 보고 없애야 할 수 있음.
-	_Interactor->GetInteractionComponent()->m_OnEndOverlap.RemoveAll(InvenWidget);
-	
-	_Interactor->GetInteractionComponent()->m_OnEndOverlap.AddUObject(InvenWidget, &UC_InventoryWidget::CloseUpgradeWidget);
+	//_Interactor->GetInteractionComponent()->m_OnEndOverlap.RemoveAll(InvenWidget);
+	//
+	//_Interactor->GetInteractionComponent()->m_OnEndOverlap.AddUObject(InvenWidget, &UC_InventoryWidget::CloseUpgradeWidget);
 	
 	//_Interactor->GetInteractionComponent()->m_OnEndOverlap.AddUObject(_Interactor->GetInteractionComponent(), &UC_InteractionComponent::ClearCurrentInteraction, nullptr);
 	// TODO : CancelInteract 구현 보고 없애야 할 수 있음.
@@ -62,6 +62,27 @@ bool UC_UpgradeWIdgetStrategy::StartInteraction(AC_BasicPlayer* _Interactor, AAc
 void UC_UpgradeWIdgetStrategy::CancleInteraction(AC_BasicPlayer* _Interactor, AActor* _TargetActor)
 {
 	Super::CancleInteraction(_Interactor, _TargetActor);
+	
+	// 여기서 Updrade WIdget 띄워주기.
+	AC_BasicPlayerController* PC = Cast<AC_BasicPlayerController>(_Interactor->GetController());
+	
+	if (!PC) return;
+	
+	AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD());
+	
+	if (!UIManager) return;
+	
+	UC_InventoryWidget* InvenWidget = UIManager->GetInventoryWidget();
+	
+	if (!InvenWidget) return;
+	
+	UC_ItemUpgradeWidget* ItemUpgradeWidget = InvenWidget->GetItemUpgradeWidget();
+	
+	if (!ItemUpgradeWidget) return;
+	
+	ItemUpgradeWidget->InitWidget();
+	
+	InvenWidget->CloseUpgradeWidget();
 }
 
 void UC_UpgradeWIdgetStrategy::CompleteInteraction(AC_BasicPlayer* _Interactor, AActor* _TargetActor)

@@ -153,9 +153,11 @@ void UC_InteractionComponent::OnInteractionEndOverlap(UPrimitiveComponent* _Over
 	if (!_OtherActor)
 		return;
 
+	m_OwnerPlayer->GetInteractionComponent()->CancleInteract();
+	
 	// EndOverlap되면 실행할 함수. TODO : 현재는 매개변수가 없는 함수만 가능.
-	m_OnEndOverlap.Broadcast();
-	m_OnEndOverlap.Clear();
+	//m_OnEndOverlap.Broadcast();
+	//m_OnEndOverlap.Clear();
 	
 	//m_OnEndOverlap.RemoveAll(_OtherActor);
 	// 후보 목록에서 Actor 제거
@@ -163,7 +165,7 @@ void UC_InteractionComponent::OnInteractionEndOverlap(UPrimitiveComponent* _Over
 
 	// 제거한 Actor 가 현재 포커스 대상이면 포커스 대상 초기화
 	//if (m_FocusedTarget.Get() == _OtherActor)
-	//	m_FocusedTarget.Reset();
+	//	m_FocusedTarget.Reset();s
 
 	// 남은 후보 중에 가장 적합한 상호작용 대상 업데이트
 	UpdateFocusedTarget(); 
@@ -222,6 +224,7 @@ void UC_InteractionComponent::UpdateFocusedTarget()
 		}
 	}
 
+	// TODO : 이곳 이외에 포커스 타겟을 초기화 어디서함?
 	m_FocusedTarget = NewTarget;
 
 	if (NewTarget)
@@ -367,8 +370,7 @@ void UC_InteractionComponent::TryInteract()
 
 	m_CurrentInteractionTarget = TargetActor;
 
-	// 타이머 핸들 안쓰면 리턴.
-	//if (!bUseTimer) return;
+
 
 	const float InteractionDuration = TargetComponent->GetInteractionDuration();
 
@@ -381,6 +383,10 @@ void UC_InteractionComponent::TryInteract()
 
 	// 상호작용 완료 타이머는 서버에서 시작되어
 	// 서버의 TimerManager 에 의해 CompleteInteract() 호출된다
+	
+	// 타이머 핸들 안쓰면 리턴.
+	if (!bUseTimer || !TargetComponent->GetbUseTimer()) return;
+	
 	StartInteractionTimer(InteractionDuration);
 }
 

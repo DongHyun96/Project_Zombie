@@ -119,7 +119,7 @@ void AC_MeleeWeaponBase::LoadAsyncAssets(const FWeaponData* InRawData)
 		TSoftObjectPtr<UStaticMesh>  SoftMesh       = MeleeData->WeaponStaticMesh;
 		TSoftObjectPtr<UAnimMontage> SoftAttackAnim = MeleeData->PlayerAttackAnimation; // 타입에 맞게 UAnimSequence/UAnimMontage 지정
 
-		AsyncLoadHandle = Streamable.RequestAsyncLoad(AssetsToLoad, FStreamableDelegate::CreateLambda([
+		m_AsyncLoadHandle = Streamable.RequestAsyncLoad(AssetsToLoad, FStreamableDelegate::CreateLambda([
 			this,
 			SoftMesh,
 			SoftAttackAnim
@@ -145,9 +145,9 @@ void AC_MeleeWeaponBase::LoadAsyncAssets(const FWeaponData* InRawData)
 			UC_Util::Print("Melee Weapon Assets Async Loaded Successfully!", FColor::Green, 5.f);
 
 			// 로딩 완료 후 핸들 정리
-			if (AsyncLoadHandle.IsValid())
+			if (m_AsyncLoadHandle.IsValid())
 			{
-				AsyncLoadHandle.Reset();
+				m_AsyncLoadHandle.Reset();
 			}
 		}));
 	}

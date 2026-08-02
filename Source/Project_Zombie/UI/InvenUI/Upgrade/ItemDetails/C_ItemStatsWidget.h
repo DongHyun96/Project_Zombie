@@ -7,6 +7,7 @@
 #include "Blueprint/UserWidget.h"
 #include "C_ItemStatsWidget.generated.h"
 
+class UC_ItemUpgradeWidget;
 class UC_ItemStatRowWidget;
 class UScrollBox;
 /**
@@ -22,6 +23,7 @@ public:
 	
 	TArray<UC_ItemStatRowWidget*> GetItemStatRows() {return m_ItemStatRows;};
 	
+	void SetParentWidget(UC_ItemUpgradeWidget* ParentWidget) { ItemUpgradeWidget = ParentWidget; }
 protected:
 	// C_ItemStatRowWidget을 담아 사용 할 예정.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
@@ -30,5 +32,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TSubclassOf<UC_ItemStatRowWidget> ItemStatRowWidgetClass{};
 	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TArray<TObjectPtr<UC_ItemStatRowWidget>> m_ItemStatRows{};
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UC_ItemUpgradeWidget* ItemUpgradeWidget{}; 
 };

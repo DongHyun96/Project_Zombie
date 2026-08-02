@@ -5,6 +5,7 @@
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
+#include "GameModeAndManager/C_ItemManager.h"
 #include "Net/UnrealNetwork.h"
 #include "Utility/C_Util.h"
 
@@ -134,13 +135,122 @@ void AC_ItemPickUp::EnablePickupOverlap()
 {
     if (PickupSphere)
     {
+        UC_Util::Print("EnablePickUpOverlap");
         // 이제 플레이어(Pawn)를 감지하도록 오버랩 설정 변경
         PickupSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+        PickupSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
         
         // (선택 사항) 만약 스폰 시점에 이미 플레이어가 범위 안에 겹쳐있었다면 
         // 자동으로 감지하지 못할 수 있으므로, 강제로 주변 오버랩을 갱신해 줍니다.
         PickupSphere->UpdateOverlaps();
     }
+}
+
+void AC_ItemPickUp::ActivateItem(const FInventoryEntry& InEntry, const FVector& SpawnLocation)
+{
+    // 1. 위치 및 충돌/시각 켜기
+    SetActorLocation(SpawnLocation);
+    SetActorHiddenInGame(false);
+    SetActorEnableCollision(true);
+    SetActorTickEnabled(false); // Tick을 안 쓴다면 꺼둠
+
+    bPickup = false;
+    ItemEntry = InEntry;
+
+    // 2. 물리 구체 리셋 및 초기화
+    if (PhysicsSphere)
+    {
+        PhysicsSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+        PhysicsSphere->SetSimulatePhysics(true);
+        //PhysicsSphere->SetAllPhysicsVelocity(FVector::ZeroVector);
+        //PhysicsSphere->SetAllPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+        PhysicsSphere->SetPhysicsLinearVelocity(FVector::ZeroVector);
+        PhysicsSphere->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+    }
+
+    // 3. 줍기 오버랩 구체 초기화 (기존 DELAYTIME 후 켜지던 타이머 재가동)
+    //if (PickupSphere)
+    //{
+    //    PickupSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
+    //}
+
+    if (HasAuthority())
+    {
+        GetWorldTimerManager().SetTimer(
+            PickupDelayTimerHandle, 
+            this, 
+            &AC_ItemPickUp::EnablePickupOverlap, 
+            DELAYTIME, 
+            false
+        );
+
+        // 4. 시한부 자동 수거 타이머 시작 (서버에서만)
+        StartDespawnTimer(DefaultLifeTime);
+    }
+}
+
+void AC_ItemPickUp::DeactivateItem()
+{
+    if (HasAuthority())
+    {
+        GetWorldTimerManager().ClearTimer(PickupDelayTimerHandle);
+        GetWorldTimerManager().ClearTimer(DespawnTimerHandle);
+    }
+
+    // 1. 물리 및 충돌 비활성화
+    if (PhysicsSphere)
+    {
+        PhysicsSphere->SetSimulatePhysics(false);
+        PhysicsSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    }
+
+    if (PickupSphere)
+    {
+        PickupSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    }
+
+    // 2. 시각 및 렌더링 끄기
+    SetActorLocation(FVector(0.f, 0.f, -10000.f));
+    SetActorHiddenInGame(true);
+    SetActorEnableCollision(false);
+
+    // 3. 비동기 핸들 취소
+    if (AssetLoadHandle.IsValid() && AssetLoadHandle->IsActive())
+    {
+        AssetLoadHandle->CancelHandle();
+    }
+    AssetLoadHandle.Reset();
+
+    // 데이터 초기화
+    ItemEntry = FInventoryEntry();
+    MeshRef = nullptr;
+    //bPickup = false;
+    if (MeshComp)
+    {
+        MeshComp->SetStaticMesh(nullptr);
+    }
+}
+
+void AC_ItemPickUp::StartDespawnTimer(float InLifeTime)
+{
+    if (!HasAuthority()) return;
+
+    GetWorldTimerManager().SetTimer(
+        DespawnTimerHandle,
+        [this]()
+        {
+            // 시간 다 되면 알아서 풀로 반환
+            if (UGameInstance* GI = GetGameInstance())
+            {
+                if (UC_ItemManager* ItemMgr = GI->GetSubsystem<UC_ItemManager>())
+                {
+                    ItemMgr->ReturnToPool(this);
+                }
+            }
+        },
+        InLifeTime,
+        false
+    );
 }
 
 void AC_ItemPickUp::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -174,14 +284,21 @@ void AC_ItemPickUp::Server_RequestPickup_Implementation(AC_BasicPlayer* Player)
     if (LeftoverCount <= 0)
     {
         bPickup = true; 
-        Destroy();      
+        
+        // --- [수정] Destroy() 대신 ItemManager를 통해 풀로 수거 ---
+        if (UGameInstance* GI = GetGameInstance())
+        {
+            if (UC_ItemManager* ItemMgr = GI->GetSubsystem<UC_ItemManager>())
+            {
+                ItemMgr->ReturnToPool(this);
+                return;
+            }
+        }
+        Destroy(); // 예외 처리용 Fallback
     }
     else if (LeftoverCount < ItemEntry.CurCount)
     {
-        // 수량이 줄어들었음을 기록 (Replicated 파이프라인을 타고 클라이언트로 전송됨)
         ItemEntry.CurCount = LeftoverCount;
-        
-        // 서버 측에서도 시각 변경 로직이 즉시 돌 수 있도록 직접 호출
         OnRep_ItemEntry();
     }
 }

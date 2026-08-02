@@ -145,14 +145,17 @@ protected:
 	UPROPERTY(ReplicatedUsing = OnRep_WeaponRowName, Transient)
 	FName m_WeaponRowName{};
 
+private:
+	
+	// TODO : 현재 사용하지 않는 함수.
+	UFUNCTION()
+	void OnRep_OwnerPlayer();
+	
 public:
 	
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	
 protected:
-
-	// 이 Weapon을 자신의 Slot에 장착중인 OwnerPlayer
-	UPROPERTY(Replicated)
 	AC_BasicPlayer* m_OwnerPlayer{};
 	
 protected:
@@ -174,7 +177,7 @@ protected:
 	
 protected:
 	// 비동기 로딩 핸들을 관리할 스마트 포인터
-	TSharedPtr<FStreamableHandle> AsyncLoadHandle;
+	TSharedPtr<FStreamableHandle> m_AsyncLoadHandle;
 	
 private:
 

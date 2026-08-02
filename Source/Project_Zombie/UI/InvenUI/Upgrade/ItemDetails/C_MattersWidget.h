@@ -21,7 +21,9 @@ class PROJECT_ZOMBIE_API UC_MattersWidget : public UUserWidget
 	GENERATED_BODY()
 	
 public:
-	void UpdateWidget(const FInventoryEntry& InEntry, EUpgradableStats TargetStat);
+	void UpdateWidget(const FInventoryEntry& InEntry);
+	
+	void SetParentWidget(UC_ItemUpgradeWidget* ParentWidget) { ItemUpgradeWidget = ParentWidget; }
 	
 protected:
 	// C_MatterRowWidget을 담아 사용 할 예정.
@@ -31,6 +33,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TSubclassOf<UC_MatterRowWidget> MatterRowWidgetClass{};
 	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TArray<TObjectPtr<UC_MatterRowWidget>> m_MatterRows{};
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
