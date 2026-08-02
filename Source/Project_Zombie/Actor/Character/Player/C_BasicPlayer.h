@@ -453,7 +453,7 @@ public:
 	void Server_RequestUnlockSlot(UC_InvenComponent* TargetComp, int32 SlotIdx);
 	
 	UFUNCTION(Server, Reliable, WithValidation)
-	void Server_RequestItemUpgrade(AC_InteractableBase* InInteractableActor, int32 InItemIndex, EUpgradableStats TargetStat);
+	void Server_RequestItemUpgrade(AC_ItemUpgradeStation* InInteractableActor, int32 InItemIndex, EUpgradableStats TargetStat);
 
 protected:
 	virtual void BeginPlay() override;

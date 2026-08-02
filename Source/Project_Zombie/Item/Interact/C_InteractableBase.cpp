@@ -11,7 +11,7 @@
 AC_InteractableBase::AC_InteractableBase()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 	
 	SetReplicates(true);
 
@@ -24,9 +24,6 @@ AC_InteractableBase::AC_InteractableBase()
 	m_MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComp"));
 
 	m_MeshComp->SetupAttachment(m_SphereComp);
-
-	m_UpgradeComp = CreateDefaultSubobject<UC_ItemUpgradeComponent>(TEXT("ItemUpgradeComp"));
-
 
 	m_InteractionComp = CreateDefaultSubobject<UC_InteractionComponent>(TEXT("InteractionComp"));
 
@@ -52,11 +49,4 @@ void AC_InteractableBase::Tick(float DeltaTime)
 
 }
 
-void AC_InteractableBase::RequestItemUpgrade(AC_BasicPlayer* InPlayer, int32 InItemIndex, EUpgradableStats TargetStat)
-{
-	if (!m_UpgradeComp) return;
 
-	PRINT_LOCAL(GetWorld(), "RequestItemUpgrade", FColor::Blue, 5.f);
-
-	m_UpgradeComp->UpgradeItem(InPlayer, InItemIndex, TargetStat);
-}

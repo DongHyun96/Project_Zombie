@@ -35,7 +35,7 @@ public:
 	virtual UC_InteractionComponent* GetInteractionComponent() const override { return m_InteractionComp; } 
 
 	//UFUNCTION(Server, Reliable)
-	void RequestItemUpgrade(AC_BasicPlayer* InPlayer, int32 InItemIndex, EUpgradableStats TargetStat);
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UStaticMeshComponent* m_MeshComp{};
@@ -47,6 +47,5 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	USphereComponent* m_SphereComp{};
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UC_ItemUpgradeComponent* m_UpgradeComp{};
+
 };
