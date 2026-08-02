@@ -558,6 +558,33 @@ struct FThrowableData : public FWeaponData
 
 
 // ******************************
+// 몬스터 드롭 데이터 에셋 Entry
+// ******************************
+USTRUCT(BlueprintType)
+struct FDropEntry
+{
+    GENERATED_BODY()
+
+    // General DataTable의 ItemRowName
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drop")
+    FName ItemRowName = NAME_None;
+
+    // 드랍 확률 (0.0 = 0%, 1.0 = 100%)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drop", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+    float DropChance = 0.1f; // 기본 10%
+
+    // 드랍 수량 범위
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drop", meta = (ClampMin = "1"))
+    int32 MinCount = 1;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drop", meta = (ClampMin = "1"))
+    int32 MaxCount = 1;
+};
+
+
+
+
+// ******************************
 // Stat Data
 // ******************************
 
