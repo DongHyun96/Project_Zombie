@@ -122,7 +122,8 @@ protected:
 	EHandState			m_HandState;
 
 
-	// => 여기서부터는 나중에 StatComponent으로 분리?
+	
+	// => 여기서부터는 나중에 StatComponent으로 분리? -> 분리작업 실시
 	// 기본 이동 속도
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Status")
 	float				m_BaseMaxSpeed;
