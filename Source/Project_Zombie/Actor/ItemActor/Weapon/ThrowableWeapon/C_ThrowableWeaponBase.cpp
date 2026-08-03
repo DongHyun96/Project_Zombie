@@ -409,7 +409,7 @@ bool AC_ThrowableWeaponBase::OnStartFire(class AC_BasicPlayer* _WeaponUser)
 	m_ThrowableState = m_bHasPin ? EThrowableState::RemovePin : EThrowableState::Ready;
 	 
 	// 투척류 애니메이션 재생
-	_WeaponUser->PlayAnimMontage(m_ThrowMontage, 1.f, StartSectionName);
+	PlayThrowMontageSynced(StartSectionName);
 
 	return true;
 }
@@ -424,6 +424,54 @@ bool AC_ThrowableWeaponBase::Reload(AC_BasicPlayer* _WeaponUser)
 
 	return OnStartCookInput();
 }
+
+void AC_ThrowableWeaponBase::PlayThrowMontageSynced(FName _SectionName)
+{
+	if (!m_OwnerPlayer || !m_ThrowMontage)
+		return;
+
+	if (!m_OwnerPlayer->IsLocallyControlled())
+		return;
+
+	m_OwnerPlayer->PlayAnimMontage(m_ThrowMontage, 1.f, _SectionName);
+
+	// 서버에서 실행 중이면, 멀티캐스트로 다른 클라이언트에게도 재생
+	if (HasAuthority())
+	{
+		Multicast_PlayThrowMontage(_SectionName);
+		return;
+	}
+
+	// 서버에서 실행 중이 아니면, 서버에 재생 요청
+	Server_PlayThrowMontage(_SectionName);
+}
+
+void AC_ThrowableWeaponBase::Server_ThrowThrowable_Implementation(FVector_NetQuantizeNormal _ThrowDirection)
+{
+}
+
+void AC_ThrowableWeaponBase::ThrowThrowableOnServer(const FVector& _ThrowDirection)
+{
+
+}
+
+void AC_ThrowableWeaponBase::Server_PlayThrowMontage_Implementation(FName _SectionName)
+{
+	Multicast_PlayThrowMontage(_SectionName);
+}
+
+void AC_ThrowableWeaponBase::Multicast_PlayThrowMontage_Implementation(FName _SectionName)
+{
+	if (!m_OwnerPlayer || !m_ThrowMontage)
+		return;
+
+	// 이미 로컬에서 재생한 경우, 중복 재생 방지
+	if (m_OwnerPlayer->IsLocallyControlled())
+		return;
+
+	m_OwnerPlayer->PlayAnimMontage(m_ThrowMontage, 1.f, _SectionName);
+}
+
 
 bool AC_ThrowableWeaponBase::Server_DecreaseCurCount_Validate()
 {
@@ -498,10 +546,12 @@ void AC_ThrowableWeaponBase::OnRemovePin()
 void AC_ThrowableWeaponBase::OnThrowReadyLoop()
 {
 	// 멀티 환경에서 여기서 터지는 듯?
-	
-	UAnimInstance* AnimInstance = m_OwnerPlayer->GetMesh()->GetAnimInstance();
-	if (!AnimInstance)
+	if (!m_OwnerPlayer)
 		return;
+
+	if (!m_OwnerPlayer->IsLocallyControlled())
+		return;
+	
 	
 	// 차징 중이면, ReadyLoop 상태로 넘어가고 투척 동작으로 넘어가지 않음
 	if (m_bIsCharging)
@@ -520,7 +570,7 @@ void AC_ThrowableWeaponBase::OnThrowReadyLoop()
 	// 차징이 끝났으면, 투척 동작으로 넘어감
 	m_ThrowableState = EThrowableState::Throwing;
 
-	m_OwnerPlayer->PlayAnimMontage(m_ThrowMontage, 1.f, m_ThrowSectionName);
+	PlayThrowMontageSynced(m_ThrowSectionName);
 }
 
 void AC_ThrowableWeaponBase::OnThrowThrowable()
@@ -528,11 +578,17 @@ void AC_ThrowableWeaponBase::OnThrowThrowable()
 	if (!m_OwnerPlayer)
 		return;
 
+	if (!m_OwnerPlayer->IsLocallyControlled())
+		return;
+
 	if (!m_MainCollider || !m_ProjectileMovement)
 		return;
 
 	// 투척류 예측 경로 제거
 	ClearPredictedPath();
+
+	m_bIsCharging = false;
+	m_ThrowableState = EThrowableState::Thrown;
 
 	// 투척 방향과 투척 시작 위치 계산
 	const FVector ThrowDirection = GetThrowDirection();
@@ -554,9 +610,6 @@ void AC_ThrowableWeaponBase::OnThrowThrowable()
 
 	// 투척류 Projectile Movement 활성화
 	LaunchCurrentActorAsProjectile(ThrowDirection);
-
-	m_ThrowableState = EThrowableState::Thrown;
-	m_bIsCharging = false;
 
 	// 타이머형 투척류만 타이머 시작
 	if (!m_bExplodeOnImpact && HasFuseTimer())
@@ -791,10 +844,11 @@ void AC_ThrowableWeaponBase::SetupThrowCollision()
 
 	for (UPrimitiveComponent* Component : PrimitiveComponents)
 	{
-		// Visibility 활성화
-		Component->SetVisibility(true, true);
-		// Hidden 상태 해제
-		Component->SetHiddenInGame(false, true);
+		// ==> 예상경로까지 켜져서 투척류가 날아가는 동안 예상경로가 보이는 현상 발생
+		//// Visibility 활성화
+		//Component->SetVisibility(true, true);
+		//// Hidden 상태 해제
+		//Component->SetHiddenInGame(false, true);
 
 		// MainCollider 만 충돌 활성화, 나머지 Collider는 충돌 비활성화 처리
 		if (Component != m_MainCollider)
