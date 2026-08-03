@@ -446,15 +446,6 @@ void AC_ThrowableWeaponBase::PlayThrowMontageSynced(FName _SectionName)
 	Server_PlayThrowMontage(_SectionName);
 }
 
-void AC_ThrowableWeaponBase::Server_ThrowThrowable_Implementation(FVector_NetQuantizeNormal _ThrowDirection)
-{
-}
-
-void AC_ThrowableWeaponBase::ThrowThrowableOnServer(const FVector& _ThrowDirection)
-{
-
-}
-
 void AC_ThrowableWeaponBase::Server_PlayThrowMontage_Implementation(FName _SectionName)
 {
 	Multicast_PlayThrowMontage(_SectionName);
@@ -470,6 +461,96 @@ void AC_ThrowableWeaponBase::Multicast_PlayThrowMontage_Implementation(FName _Se
 		return;
 
 	m_OwnerPlayer->PlayAnimMontage(m_ThrowMontage, 1.f, _SectionName);
+}
+
+void AC_ThrowableWeaponBase::Server_ThrowThrowable_Implementation(FVector_NetQuantizeNormal _ThrowDirection)
+{
+	ThrowThrowableOnServer(_ThrowDirection);
+}
+
+
+void AC_ThrowableWeaponBase::Server_StartFuseTimer_Implementation()
+{
+	StartFuseTimer();
+}
+
+void AC_ThrowableWeaponBase::ThrowThrowableOnServer(const FVector& _ThrowDirection)
+{
+	// 실제 투척은 서버에서만 실행
+	if (!HasAuthority())
+		return;
+
+	if (!m_OwnerPlayer)
+		return;
+
+	if (m_ThrowableState == EThrowableState::Thrown || m_ThrowableState == EThrowableState::Exploded)
+		return;
+
+	// 클라에서 받아온 투척 방향 정규화
+	const FVector ThrowDirection = _ThrowDirection.GetSafeNormal();
+	if (ThrowDirection.IsNearlyZero())
+		return;
+
+	// 투척 시작 위치 서버에서 계산
+	const FVector LaunchLocation = GetLaunchLocation(ThrowDirection);
+	const FRotator LaunchRotation = ThrowDirection.Rotation();
+
+	// 현재 붙어있는 손 소켓에서 분리하고 월드 Transform 은 유지
+	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+
+	// 손보다 앞에서 투척 시작
+	SetActorLocationAndRotation
+	(
+		LaunchLocation,
+		LaunchRotation,
+		false, // 이동 경로 충돌 검사			// 이거 true로 하면 투척류가 손에서 분리될 때, 손과 충돌해서 튕겨나가는 현상 발생
+		nullptr, // 충돌 정보 받을 포인터
+		ETeleportType::TeleportPhysics
+	);
+
+	// 투척류 Projectile Movement 활성화
+	LaunchCurrentActorAsProjectile(ThrowDirection);
+
+	m_bIsCharging = false;
+	m_ThrowableState = EThrowableState::Thrown;
+
+	// 타이머형 투척류만 타이머 시작
+	if (!m_bExplodeOnImpact && HasFuseTimer())
+	{
+		StartFuseTimer();
+	}
+
+	// 복제 빨리 요청
+	ForceNetUpdate();
+}
+
+void AC_ThrowableWeaponBase::Multicast_PlayExplosionFX_Implementation(bool _bStopThrowMontage, FVector_NetQuantize _ExplosionLocation, FRotator _ExplosionRotation)
+{
+	// 손에 들고 있는 상태에서 폭발할 수 있으므로 여기서도 예측 경로 제거
+	ClearPredictedPath();
+
+	/// TODO : 폭발 시, 투척류 애님 몽타주가 재생 중이면 Stop 처리
+	/// 수류탄을 들고있는 기본 상태보다 아무것도 들고있지 않는 기본 상태로
+	if (_bStopThrowMontage)
+	{
+		UAnimInstance* AnimInstance = m_OwnerPlayer->GetMesh()->GetAnimInstance();
+
+		if (AnimInstance)
+		{
+			AnimInstance->Montage_Stop(0.2f, m_ThrowMontage);
+		}
+	}
+
+	if (m_ExplosionEffect)
+	{
+		// 폭발 이펙트 생성
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld()
+			, m_ExplosionEffect
+			, _ExplosionLocation
+			, _ExplosionRotation
+			, FVector(m_ExplosionEffectScale)
+			, true);	// 재생 종료 후 자동 제거
+	}
 }
 
 
@@ -531,6 +612,9 @@ bool AC_ThrowableWeaponBase::OnFireEnd(AC_BasicPlayer* _WeaponUser)
 
 void AC_ThrowableWeaponBase::OnRemovePin()
 {
+	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled())
+		return;
+
 	if (!m_bHasPin)
 		return;
 
@@ -539,7 +623,10 @@ void AC_ThrowableWeaponBase::OnRemovePin()
 	// R 키를 먼저 눌러둔 경우, 핀 제거 후 바로 타이머 시작
 	if (m_bWantsCook)
 	{
-		StartFuseTimer();
+		if (HasAuthority())
+			StartFuseTimer();
+		else
+			Server_StartFuseTimer();
 	}
 }
 
@@ -581,41 +668,28 @@ void AC_ThrowableWeaponBase::OnThrowThrowable()
 	if (!m_OwnerPlayer->IsLocallyControlled())
 		return;
 
-	if (!m_MainCollider || !m_ProjectileMovement)
+	if (m_ThrowableState == EThrowableState::Thrown || m_ThrowableState == EThrowableState::Exploded)
+		return;
+
+	const FVector ThrowDirection = GetThrowDirection();
+	if (ThrowDirection.IsNearlyZero())
 		return;
 
 	// 투척류 예측 경로 제거
 	ClearPredictedPath();
 
+	if (HasAuthority())
+	{
+		ThrowThrowableOnServer(ThrowDirection);
+		return;
+	}
+
 	m_bIsCharging = false;
 	m_ThrowableState = EThrowableState::Thrown;
 
-	// 투척 방향과 투척 시작 위치 계산
-	const FVector ThrowDirection = GetThrowDirection();
-	const FVector LaunchLocation = GetLaunchLocation(ThrowDirection);
-	const FRotator LaunchRotation = ThrowDirection.Rotation();
+	Server_ThrowThrowable(ThrowDirection);
 
-	// 현재 붙어있는 손 소켓에서 분리하고 월드 Transform 은 유지
-	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
-	
-	// 손보다 앞에서 투척 시작
-	SetActorLocationAndRotation
-	(
-		LaunchLocation,
-		LaunchRotation,
-		false, // 이동 경로 충돌 검사			// 이거 true로 하면 투척류가 손에서 분리될 때, 손과 충돌해서 튕겨나가는 현상 발생
-		nullptr, // 충돌 정보 받을 포인터
-		ETeleportType::TeleportPhysics
-	);
-
-	// 투척류 Projectile Movement 활성화
-	LaunchCurrentActorAsProjectile(ThrowDirection);
-
-	// 타이머형 투척류만 타이머 시작
-	if (!m_bExplodeOnImpact && HasFuseTimer())
-	{
-		StartFuseTimer();
-	}
+	// 이후 부분 OnServer 로 옮김
 }
 
 void AC_ThrowableWeaponBase::OnThrowProcessEnd()
@@ -661,36 +735,40 @@ bool AC_ThrowableWeaponBase::OnStartCookInput()
 		return false;
 
 	// 핀 제거 전 단계는 쿠킹 불가
-	if (m_ThrowableState == EThrowableState::Idle || m_ThrowableState == EThrowableState::RemovePin)
+	if (m_ThrowableState == EThrowableState::Idle)
 		return false;
+
+	// 핀 제거 중이면 쿠킹 예약
+	if (m_ThrowableState == EThrowableState::RemovePin)
+	{
+		m_bWantsCook = true;
+		return true;
+	}
 
 	UC_Util::Print("OnStartCookInput");
 
-	return StartFuseTimer();
+	if (HasAuthority())
+	{
+		return StartFuseTimer();
+	}
+
+	Server_StartFuseTimer();
+
+	return true;
 }
 
 void AC_ThrowableWeaponBase::Explode()
 {
-	// 폭발 처리는 II_ExplodeStrategy를 상속받은 클래스에서 처리
+	// 서버에서만 폭발 판정
+	if (!HasAuthority())
+		return;
+
 	if (m_ThrowableState == EThrowableState::Exploded)
 		return;
 
-	// 손에 들고 있는 상태에서 폭발할 수 있으므로 여기서도 예측 경로 제거
-	ClearPredictedPath();
-
 	const EThrowableState PrevState = m_ThrowableState;
-
-	/// TODO : 폭발 시, 투척류 애님 몽타주가 재생 중이면 Stop 처리
-	/// 수류탄을 들고있는 기본 상태보다 아무것도 들고있지 않는 기본 상태로
-	if (PrevState != EThrowableState::Thrown && PrevState != EThrowableState::Throwing)
-	{
-		UAnimInstance* AnimInstance = m_OwnerPlayer->GetMesh()->GetAnimInstance();
-
-		if (AnimInstance)
-		{
-			AnimInstance->Montage_Stop(0.2f, m_ThrowMontage);
-		}
-	}
+	
+	const bool bStopThrowMontage = (PrevState != EThrowableState::Thrown && PrevState != EThrowableState::Throwing);
 
 	m_ThrowableState = EThrowableState::Exploded;
 
@@ -712,9 +790,10 @@ void AC_ThrowableWeaponBase::Explode()
 
 	SetActorEnableCollision(false);
 
+	// 폭발 처리는 II_ExplodeStrategy를 상속받은 클래스에서 처리
 	// 해당 객체가 Interface를 구현했는지 확인
 	// 폭발 전략 객체가 없거나, Interface를 구현하지 않은 경우, Actor 제거
-	if (!m_ExplodeStrategyObject->GetClass()->ImplementsInterface(UI_ExplodeStrategy::StaticClass()))
+	if (!IsValid(m_ExplodeStrategyObject) || !m_ExplodeStrategyObject->GetClass()->ImplementsInterface(UI_ExplodeStrategy::StaticClass()))
 	{
 		UC_Util::Print("[AC_ThrowableWeaponBase::Explode] Not Implements Interface");
 		
@@ -726,16 +805,10 @@ void AC_ThrowableWeaponBase::Explode()
 	bool bExploded = II_ExplodeStrategy::Execute_UseStrategy(m_ExplodeStrategyObject, this);
 	if (bExploded)
 	{
-		if (m_ExplosionEffect)
-		{
-			// 폭발 이펙트 생성
-			UGameplayStatics::SpawnEmitterAtLocation(GetWorld()
-				, m_ExplosionEffect
-				, GetActorLocation()
-				, GetActorRotation()
-				, FVector(m_ExplosionEffectScale) 
-				, true);	// 재생 종료 후 자동 제거
-		}
+		const FVector ExplosionLocation = GetActorLocation();
+		const FRotator ExplosionRotation = GetActorRotation();
+
+		Multicast_PlayExplosionFX(bStopThrowMontage, ExplosionLocation, ExplosionRotation);
 	}
 	
 	// 폭발 처리 완료 후, Actor 제거
@@ -934,6 +1007,10 @@ void AC_ThrowableWeaponBase::LaunchCurrentActorAsProjectile(const FVector& _Thro
 
 void AC_ThrowableWeaponBase::OnThrowableHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
+	// 서버에서만 처리
+	if (!HasAuthority())
+		return;
+
 	// 던져진 상태가 아니면 Hit 이벤트 무시
 	if (m_ThrowableState != EThrowableState::Thrown)
 		return;
@@ -967,6 +1044,10 @@ bool AC_ThrowableWeaponBase::HasFuseTimer() const
 
 bool AC_ThrowableWeaponBase::StartFuseTimer()
 {
+	// 서버에서만 관리
+	if (!HasAuthority())
+		return false;
+
 	if (!HasFuseTimer())
 		return false;
 
@@ -1006,6 +1087,9 @@ void AC_ThrowableWeaponBase::ClearFuseTimer()
 
 void AC_ThrowableWeaponBase::OnFuseTimerFinished()
 {
+	if (!HasAuthority())
+		return;
+
 	UC_Util::Print("Finish Fuse Timer");
 
 	Explode();

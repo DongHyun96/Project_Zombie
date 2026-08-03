@@ -15,6 +15,10 @@ AC_FireDamageArea::AC_FireDamageArea()
 	// Tick 이 아니라 Timer 를 사용하므로 비활성화
 	PrimaryActorTick.bCanEverTick = false;
 
+	SetReplicates(true);
+	SetReplicateMovement(false);
+	bAlwaysRelevant = false;
+
 	m_FirePatchEffectScale = 1.f;
 
 	m_SpreadDirectionCount = 8;
@@ -43,6 +47,10 @@ void AC_FireDamageArea::BeginPlay()
 
 	// 장판 생성
 	GenerateFirePatches();
+
+	// 서버에서 수명 & 데미지 관리
+	if (!HasAuthority())
+		return;
 
 	// 장판 생성 후 데미지 적용
 	ApplyPointDamage();
@@ -285,6 +293,10 @@ void AC_FireDamageArea::GenerateFirePatches()
 
 void AC_FireDamageArea::ApplyPointDamage()
 {
+	// 실제 장판 데미지는 서버에서만 처리
+	if (!HasAuthority())
+		return;
+
 	UWorld* World = GetWorld();
 	if (!World)
 		return;

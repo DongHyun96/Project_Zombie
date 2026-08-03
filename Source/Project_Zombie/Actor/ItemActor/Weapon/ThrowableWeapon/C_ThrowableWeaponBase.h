@@ -73,6 +73,11 @@ private:
 	void Multicast_PlayThrowMontage(FName _SectionName);
 
 
+	// ============= 쿠킹 관련 =================
+	UFUNCTION(Server, Reliable)
+	void Server_StartFuseTimer();
+
+
 	// ============== 투척 처리 관련 =================
 
 	UFUNCTION(Server, Reliable)
@@ -80,6 +85,13 @@ private:
 
 	// 서버에서 실제 투척 처리
 	void ThrowThrowableOnServer(const FVector& _ThrowDirection);
+
+
+	// ============== 폭발 처리 관련 =================
+	// 폭발 효과 재생
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_PlayExplosionFX(bool _bStopThrowMontage, FVector_NetQuantize _ExplosionLocation, FRotator _ExplosionRotation);
+
 
 public: // 애님 노티파이 관련
 
