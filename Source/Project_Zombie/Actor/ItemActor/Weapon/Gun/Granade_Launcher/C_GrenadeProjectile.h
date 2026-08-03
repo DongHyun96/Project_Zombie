@@ -53,6 +53,8 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = "Effect")
 	float m_ExplosionEffectScale;
 
+	bool m_bHasExploded = false;
+
 public:
 	UProjectileMovementComponent* GetProjectileMovement() { return ProjectileMovement; }
 

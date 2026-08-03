@@ -140,16 +140,34 @@ void AC_Rifle::AIFire(const FVector& TargetLocation)
 
 	FHitResult HitResult;
 	FCollisionQueryParams QueryParams;
-	QueryParams.AddIgnoredActor(this);
-	if (GetOwner()) QueryParams.AddIgnoredActor(GetOwner());
+	QueryParams.AddIgnoredActor(this);                     // 무기 자신 무시
+	if (GetOwner()) QueryParams.AddIgnoredActor(GetOwner()); // 무기 Owner 무시
+
+	// ★ 핵심 추가: 무기를 들고 있는 AI 캐릭터(CopZombie)도 Ignore 처리
+	if (AActor* AttachParent = GetAttachParentActor())
+	{
+		QueryParams.AddIgnoredActor(AttachParent);
+	}
 
 	bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, MuzzleStart, EndLocation, ECC_Visibility, QueryParams);
 	FVector ActualImpactPoint = bHit ? HitResult.ImpactPoint : EndLocation;
 
 	if (bHit && HitResult.GetActor())
 	{
-		AController* InstigatorController = GetOwner() ? Cast<APawn>(GetOwner())->GetController() : nullptr;
-		UGameplayStatics::ApplyDamage(HitResult.GetActor(), m_Damage, InstigatorController, this, nullptr);
+		AActor* HitActor = HitResult.GetActor();
+
+		// ★ 핵심 수정: HitActor가 플레이어 캐릭터인지 확인 후 대미지 전달
+		APawn* ShootingPawn = Cast<APawn>(GetAttachParentActor());
+		if (!ShootingPawn && GetOwner()) ShootingPawn = Cast<APawn>(GetOwner());
+
+		AController* InstigatorController = ShootingPawn ? ShootingPawn->GetController() : nullptr;
+
+		UGameplayStatics::ApplyDamage(
+			HitActor,
+			m_Damage,
+			InstigatorController,
+			Cast<AActor>(ShootingPawn ? (AActor*)ShootingPawn : (AActor*)this),
+			nullptr);
 	}
 
 	Multicast_PlayAIFireEffects(ActualImpactPoint);
