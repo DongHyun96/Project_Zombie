@@ -4,11 +4,13 @@
 #include "C_CopZombie.h"
 
 #include "Actor/Character/Player/C_BasicPlayer.h"
+#include "Actor/Components/C_InvenComponent.h"
 #include "Actor/Components/ItemLinkComponent/C_ItemLinkComponent.h"
 #include "Actor/ItemActor/Weapon/C_WeaponBase.h"
 #include "Actor/ItemActor/Weapon/Gun/C_GunBase.h"
 #include "Actor/ItemActor/Weapon/WeaponComponent/GunComponent/AIGunUsageComponent/C_AIGunUsageComponent.h"
 #include "Components/BoxComponent.h"
+#include "GameFramework/GameSession.h"
 #include "GameModeAndManager/C_ItemManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
@@ -98,7 +100,7 @@ bool AC_CopZombie::EquipWeapon(AC_GunBase* _StolenWeapon)
 {
 	if (!_StolenWeapon) return false;
 	if (m_EquippedGun) return false; // 이미 빼앗은 무기가 존재
-
+	
 	// 손에 부착 시도
 	if (!_StolenWeapon->GetAIGunUsageComponent()->AttachToHand(GetMesh()))
 		return false;
@@ -106,16 +108,45 @@ bool AC_CopZombie::EquipWeapon(AC_GunBase* _StolenWeapon)
 	// 부착 성공, State 변화 및 EquippedWeapon 저장
 	m_EquippedGun    = _StolenWeapon;
 	
-	if (_StolenWeapon->GetLinkComp())
+	UC_ItemLinkComponent* LinkComp = _StolenWeapon->GetLinkComp();
+	
+	if (LinkComp)
 	{
-		if (!_StolenWeapon->GetLinkComp()->GetItemEntry().IsEmpty())
-			Entry = _StolenWeapon->GetLinkComp()->GetItemEntry();
+		// Entry 정보 복사 TODO : LinkComp->GetItemEntryPtr()로 원본 포인터를 받아 오는게 나은가?
+		FInventoryEntry* TempEntry = LinkComp->GetItemEntryPtr();
+		
+		// 빈 Entry 생성.
+		FInventoryEntry sub = FInventoryEntry();
+		sub.SlotIndex = 0;
+		
+		// TempEntry가 비어 있지 않다면 Cop에게 복사
+		if (TempEntry)
+		{
+			Entry = *TempEntry;
+			
+			TempEntry->Clear();
+			
+			sub.SlotIndex = Entry.SlotIndex;// 사실 99퍼 0임.
+			
+			UC_InvenComponent* LinkOwningInvenComp = LinkComp->GetOwningInvenComp();
+			
+			// 무기를 빼앗긴 Player의 UI 업데이트.
+			if (LinkOwningInvenComp)
+			{
+				AC_BasicPlayer* OriginPlayer = Cast<AC_BasicPlayer>(LinkOwningInvenComp->GetOwner());
+				
+				if (OriginPlayer && OriginPlayer->IsLocallyControlled())
+					LinkOwningInvenComp->OnInventorySlotChanged.Broadcast(LinkComp->GetSlotIndex(), sub);
+				else
+					LinkOwningInvenComp->MarkSlotDirty(Entry.SlotIndex);
+			}
+		}
 		else
 		{
 			// 이 상황이 나오면 사실 안됨.
-			FInventoryEntry sub = FInventoryEntry();
 			sub.ItemRowName = _StolenWeapon->GetWeaponRowName();
 			sub.CurCount = 1;
+			Entry = sub;
 		}
 	}
 	m_CopZombieState = ECopZombieState::WeaponEarned; // ABP 무기 자세로 자세전환
@@ -130,13 +161,15 @@ void AC_CopZombie::DropWeapon()
 	
 	// C_ItemPickUp을 스폰해서 뿌려주면 됨. 이 때 AC_Weapon의 정보를 통해 데이터 테이블, 강화 테이블을 통해 역산해서 FInventoryEntry만들어야 함.
 	
+	m_EquippedGun = nullptr;
+	
 	UC_ItemManager* ItemManager = GetGameInstance()->GetSubsystem<UC_ItemManager>();
 	
 	if (!ItemManager) return;
 	
 	ItemManager->DropItemByPlayer(Entry, this);
 	
-	m_EquippedGun = nullptr;
+	Entry = FInventoryEntry();
 }
 
 void AC_CopZombie::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
