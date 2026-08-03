@@ -609,6 +609,7 @@ struct FPlayerStatData : public FCharacterStatData
     GENERATED_BODY()
 	
     // TODO : Player 쪽 사용할 Stat Data 추가해줄 것, 동시에 PlayerStatComponent에서 해당 값 참조해서 CurStatData들 초기화 처리해줄 것
+    
 };
 
 /// <summary>

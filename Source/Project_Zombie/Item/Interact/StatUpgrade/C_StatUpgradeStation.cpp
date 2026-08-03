@@ -6,3 +6,8 @@
 AC_StatUpgradeStation::AC_StatUpgradeStation()
 {
 }
+
+void AC_StatUpgradeStation::BeginPlay()
+{
+	Super::BeginPlay();
+}

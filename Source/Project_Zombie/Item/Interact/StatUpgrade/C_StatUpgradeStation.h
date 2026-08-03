@@ -21,7 +21,6 @@ public:
 	// void RequestStatUpgrade(AC_BasicPlayer* InPlayer, int32 InItemIndex, EUpgradableStats TargetStat);
 protected:
 	virtual void BeginPlay() override;
-	
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UC_StatUpgradeComponent* m_UpgradeComp{};
