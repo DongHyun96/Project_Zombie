@@ -74,6 +74,9 @@ void UC_EnemySkillComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 
 bool UC_EnemySkillComponent::UseSkill(ESkillSlot _Slot)
 {
+	// 스킬 선택과 판정 실행은 서버에서만 처리
+	if (!IsValid(m_OwnerEnemy) || !m_OwnerEnemy->HasAuthority())
+		return false;
 
 	// 이미 다른 스킬을 사용중일 때
 	if (bUsingSkill) return false;
