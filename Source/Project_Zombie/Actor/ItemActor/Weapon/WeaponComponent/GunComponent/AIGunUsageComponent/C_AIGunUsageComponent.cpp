@@ -75,7 +75,7 @@ bool UC_AIGunUsageComponent::AttachToHand(USceneComponent* _ParentMesh)
 
 	m_OwnerGun->m_OwnerPlayer = nullptr;
 
-	m_OwnerGun->SetOwner(m_WeaponCopZombieUser);
+	// m_OwnerGun->SetOwner(m_WeaponCopZombieUser);
 
 	const bool Attached = m_OwnerGun->AttachToComponent
 	(
@@ -96,6 +96,8 @@ bool UC_AIGunUsageComponent::AttachToHand(USceneComponent* _ParentMesh)
 	// 이미 사격중이었던 Weapon인 경우, Trigger 해제
 	m_OwnerGun->ReleaseTrigger();
 
+	m_OwnerGun->m_OwnerEnemy = m_WeaponCopZombieUser;
+	
 	return true;
 }
 
@@ -134,6 +136,7 @@ bool UC_AIGunUsageComponent::DetachFromHand()
 
 	// OwnerCopZombie 초기화
 	m_WeaponCopZombieUser = nullptr;
+	m_OwnerGun->m_OwnerEnemy = nullptr;
 	
 	return true;
 }

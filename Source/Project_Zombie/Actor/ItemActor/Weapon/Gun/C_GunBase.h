@@ -28,6 +28,11 @@ class PROJECT_ZOMBIE_API AC_GunBase : public AC_WeaponBase
 	GENERATED_BODY()
 
 	friend class UC_AIGunUsageComponent;
+
+protected:
+	
+	UPROPERTY()
+	class AC_BasicEnemy* m_OwnerEnemy{};
 	
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Component")
