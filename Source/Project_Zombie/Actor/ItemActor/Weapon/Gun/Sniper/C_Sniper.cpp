@@ -39,27 +39,44 @@ void AC_Sniper::ResetFireCooldown()
 
 void AC_Sniper::AIFire(const FVector& TargetLocation)
 {
-    if (!HasAuthority() || !m_WeaponMesh || m_CurrentAmmo <= 0) return;
+	if (!HasAuthority() || !m_WeaponMesh || m_CurrentAmmo <= 0) return;
 
-    m_CurrentAmmo = FMath::Max(0, m_CurrentAmmo - 1);
+	m_CurrentAmmo = FMath::Max(0, m_CurrentAmmo - 1);
 
-    FVector MuzzleStart = m_WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
-    FVector ShootDir = (TargetLocation - MuzzleStart).GetSafeNormal();
-    FVector EndLocation = MuzzleStart + (ShootDir * 10000.0f); 
+	FVector MuzzleStart = m_WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
+	FVector ShootDir = (TargetLocation - MuzzleStart).GetSafeNormal();
+	FVector EndLocation = MuzzleStart + (ShootDir * 10000.0f);
 
-    FHitResult HitResult;
-    FCollisionQueryParams QueryParams;
-    QueryParams.AddIgnoredActor(this);
-    if (GetOwner()) QueryParams.AddIgnoredActor(GetOwner());
+	FHitResult HitResult;
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+	if (GetOwner()) QueryParams.AddIgnoredActor(GetOwner());
 
-    bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, MuzzleStart, EndLocation, ECC_Visibility, QueryParams);
-    FVector ActualImpactPoint = bHit ? HitResult.ImpactPoint : EndLocation;
+	// ★ AI 캐릭터(CopZombie) Ignore 처리
+	if (AActor* AttachParent = GetAttachParentActor())
+	{
+		QueryParams.AddIgnoredActor(AttachParent);
+	}
 
-    if (bHit && HitResult.GetActor())
-    {
-        AController* InstigatorController = GetOwner() ? Cast<APawn>(GetOwner())->GetController() : nullptr;
-        UGameplayStatics::ApplyDamage(HitResult.GetActor(), m_Damage, InstigatorController, this, nullptr);
-    }
+	bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, MuzzleStart, EndLocation, ECC_Visibility, QueryParams);
+	FVector ActualImpactPoint = bHit ? HitResult.ImpactPoint : EndLocation;
 
-    Multicast_PlayAIFireEffects(ActualImpactPoint);
+	if (bHit && HitResult.GetActor())
+	{
+		AActor* HitActor = HitResult.GetActor();
+
+		APawn* ShootingPawn = Cast<APawn>(GetAttachParentActor());
+		if (!ShootingPawn && GetOwner()) ShootingPawn = Cast<APawn>(GetOwner());
+
+		AController* InstigatorController = ShootingPawn ? ShootingPawn->GetController() : nullptr;
+
+		UGameplayStatics::ApplyDamage(
+			HitActor,
+			m_Damage,
+			InstigatorController,
+			Cast<AActor>(ShootingPawn ? (AActor*)ShootingPawn : (AActor*)this),
+			nullptr);
+	}
+
+	Multicast_PlayAIFireEffects(ActualImpactPoint);
 }

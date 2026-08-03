@@ -17,6 +17,9 @@ bool UC_GrenadeExplode::UseStrategy_Implementation(AC_ThrowableWeaponBase* _Thro
 	if (!_ThrowableWeapon)
 		return false;
 
+	if (!_ThrowableWeapon->HasAuthority())
+		return false;
+
 	// 폭발이 발생한 위치
 	const FVector ExplosionLocation = _ThrowableWeapon->GetActorLocation();
 
@@ -190,6 +193,23 @@ bool UC_GrenadeExplode::UseStrategy_Implementation(AC_ThrowableWeaponBase* _Thro
 		{
 			InstigatorController = _ThrowableWeapon->GetOwnerPlayer()->GetController();
 		}
+
+		UE_LOG
+		(
+			LogTemp,
+			Warning,
+			TEXT(
+				"[Grenade Damage] Target=%s / Distance=%.2f / Radius=%.2f / Max=%.2f / Min=%.2f"
+			),
+			*GetNameSafe(Target),
+			Distance,
+			ExplosionRadius,
+			MaxDamage,
+			MinDamage
+		);
+
+
+
 
 		// 데미지 이벤트 전달
 		UGameplayStatics::ApplyDamage(

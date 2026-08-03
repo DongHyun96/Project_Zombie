@@ -61,9 +61,15 @@ bool UC_ChargeAttack::Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data, 
 		Tank->CancelPrepareCharge();
 		return false;
 	}
-	
+
 	// 정상 재생되었을 때
-	_PlayedMontageSectionIdx = 0;
+	_PlayedMontageSectionIdx = _Data->Montage->GetSectionIndex(TEXT("Roar"));
+
+	if (_PlayedMontageSectionIdx == INDEX_NONE)
+	{
+		Tank->CancelPrepareCharge();
+		return false;
+	}
 
 	return true;
 }

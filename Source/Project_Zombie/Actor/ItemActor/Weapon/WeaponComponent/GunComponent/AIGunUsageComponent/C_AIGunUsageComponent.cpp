@@ -73,6 +73,10 @@ bool UC_AIGunUsageComponent::AttachToHand(USceneComponent* _ParentMesh)
 		return false;
 	}
 
+	m_OwnerGun->m_OwnerPlayer = nullptr;
+
+	m_OwnerGun->SetOwner(m_WeaponCopZombieUser);
+
 	const bool Attached = m_OwnerGun->AttachToComponent
 	(
 		_ParentMesh,
@@ -80,19 +84,18 @@ bool UC_AIGunUsageComponent::AttachToHand(USceneComponent* _ParentMesh)
 		m_OwnerGun->s_HandSocketName
 	);
 
-	// 제대로 Attach되지 않은 상황 (여기 들어오면 안됨)
 	if (!Attached)
 	{
 		UC_Util::Print("From UC_AIGunUsageComponent::AttachToHand : AttachToComponent failed!", FColor::Red, 10.f);
 		return false;
 	}
-	
+
 	// MaxAmmoCount로 탄창 초기화 처리
 	m_OwnerGun->m_CurrentAmmo = m_OwnerGun->m_MaxAmmo;
 
 	// 이미 사격중이었던 Weapon인 경우, Trigger 해제
 	m_OwnerGun->ReleaseTrigger();
-	
+
 	return true;
 }
 

@@ -153,6 +153,8 @@ protected:
 	UPROPERTY(Replicated)
 	AC_BasicPlayer* m_OwnerPlayer{};
 	
+
+
 protected:
 	// TODO : 이 두 애니메이션도 데이터 테이블에 넣어주는게 나을 것 같긴한데.
 	// Draw, Sheath는 블프에서 넣어주고 있음.
