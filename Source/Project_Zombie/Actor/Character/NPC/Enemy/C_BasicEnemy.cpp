@@ -165,6 +165,7 @@ void AC_BasicEnemy::OnDead(AC_BasicCharacter* _DeadCharacter)
 
 void AC_BasicEnemy::StopAllActionsForDead()
 {
+	// 이동 및 비헤이비어트리 정지
 	if (AAIController* pController = Cast<AAIController>(GetController()))
 	{
 		pController->StopMovement();
@@ -176,19 +177,22 @@ void AC_BasicEnemy::StopAllActionsForDead()
 		}
 	}
 
+	// 이동 즉시 정지 및 비활성화
 	if (UCharacterMovementComponent* MoveCom = GetCharacterMovement())
 	{
 		MoveCom->StopMovementImmediately();
 		MoveCom->DisableMovement();
 	}
 
-	// 재생 중이던 스킬 몽타주 정지
-	StopAnimMontage();
-
-	// 현재 사용중인 스킬 강제 종료
+	// 현재 사용중인 스킬 상태와 몽타주 사망 처리
 	if (IsValid(m_SkillCom))
 	{
-		// 스킬컴포넌트에서 스킬 종료 함수가 있다면 호출
+		m_SkillCom->CancelSkillForDead();
+	}
+	else
+	{
+		// 스킬 컴포넌트가 없는 경우만 몽타주 직접정지
+		StopAnimMontage();
 	}
 }
 

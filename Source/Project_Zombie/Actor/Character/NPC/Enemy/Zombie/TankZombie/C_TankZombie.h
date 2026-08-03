@@ -131,7 +131,7 @@ protected:
 	void ApplyLandingShock();
 
 
-
+protected:
 	// ==== Charge 관련 함수 ====
 
 	/// <summary>
@@ -201,6 +201,14 @@ public:
 	void CancelPrepareCharge();
 
 	void FinishChargeSkill();
+
+protected:
+	/// <summary>
+	/// 돌진 중 사망 시 착지 없이 바로 스킬 종료처리
+	/// </summary>
+	void CancelChargeForDead();
+
+	virtual void OnDead(AC_BasicCharacter* _DeadCharacter) override;
 
 public:
 	AC_TankZombie();
