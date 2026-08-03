@@ -59,6 +59,40 @@ protected:
 	UFUNCTION(Server, Reliable, WithValidation)
 	virtual void Server_DecreaseCurCount();
 	
+private:
+
+	// ============= 투척 애님 몽타주 재생 관련 =================
+
+	// 로컬에서 즉시 몽타주 재생하고 서버에 동기화 요청
+	void PlayThrowMontageSynced(FName _SectionName);
+
+	UFUNCTION(Server, Reliable)
+	void Server_PlayThrowMontage(FName _SectionName);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_PlayThrowMontage(FName _SectionName);
+
+
+	// ============= 쿠킹 관련 =================
+	UFUNCTION(Server, Reliable)
+	void Server_StartFuseTimer();
+
+
+	// ============== 투척 처리 관련 =================
+
+	UFUNCTION(Server, Reliable)
+	void Server_ThrowThrowable(FVector_NetQuantizeNormal _ThrowDirection); // FVector_NetQuantizeNormal : 정규화된 방향벡터로 네트워크 전송량 줄임
+
+	// 서버에서 실제 투척 처리
+	void ThrowThrowableOnServer(const FVector& _ThrowDirection);
+
+
+	// ============== 폭발 처리 관련 =================
+	// 폭발 효과 재생
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_PlayExplosionFX(bool _bStopThrowMontage, FVector_NetQuantize _ExplosionLocation, FRotator _ExplosionRotation);
+
+
 public: // 애님 노티파이 관련
 
 	// Blueprint에서 사용 가능하도록 UFUNCTION으로 선언
@@ -368,6 +402,10 @@ protected: // 예상 투척 경로 TODO : 이 부분은 일단은 데이터 테�
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Throwable|Predicted Path")
 	UStaticMeshComponent* m_PredictedEndPoint;
 
+	// 예상 경로를 표시할 Mesh의 최대 개수
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Throwable|Predicted Path", meta = (ClampMax = "16"))
+	int32 m_MaxPredictedPathMeshCount;
+
 	// 예상 경로를 표시할 Mesh
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Throwable|Predicted Path")
 	UStaticMesh* m_PredictedPathMesh;
@@ -406,4 +444,6 @@ private:
 
 	// 쿠킹을 원하는지
 	bool m_bWantsCook;
+
+	float m_LastPredictedPathUpdateTime = -1.f;
 };
