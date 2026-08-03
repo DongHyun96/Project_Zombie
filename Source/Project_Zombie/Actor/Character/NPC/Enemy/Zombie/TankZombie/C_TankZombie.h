@@ -106,7 +106,6 @@ protected:
 	virtual void Tick(float DeltaTime) override;
 
 protected:
-	void UpdateCharge(float DeltaTime);
 
 	// ==== End 관련 함수 ====
 
@@ -134,6 +133,8 @@ protected:
 protected:
 	// ==== Charge 관련 함수 ====
 
+	void UpdateCharge(float DeltaTime);
+	
 	/// <summary>
 	/// 플레이어 충돌처리(데미지 + 넉백)
 	/// </summary>
@@ -209,6 +210,15 @@ protected:
 	void CancelChargeForDead();
 
 	virtual void OnDead(AC_BasicCharacter* _DeadCharacter) override;
+
+	/// <summary>
+	/// 서버가 몽타주 섹션을 변경했을때 
+	/// 클라이언트 몽타주도 같은 섹션으로 이동하도록 동기화
+	/// </summary>
+	/// <param name="_Montage"></param>
+	/// <param name="_SectionName"></param>
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_MoveToJumpMontageSection(UAnimMontage* _Montage, FName _SectionName);
 
 public:
 	AC_TankZombie();
