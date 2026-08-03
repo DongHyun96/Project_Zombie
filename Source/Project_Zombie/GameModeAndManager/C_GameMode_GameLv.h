@@ -35,14 +35,20 @@ public:
 public:
 	
 	class UC_ZombieManager* GetZombieManager() const { return m_ZombieManager; }
+	class UC_PointTowerManager* GetPointTowerManager() const { return m_PointTowerManager; }
 
-protected:
+protected: /* ZombieManager 관련 */
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	class UC_ZombieManager* m_ZombieManager{};
+	UC_ZombieManager* m_ZombieManager{};
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	TSubclassOf<UC_ZombieManager> m_ZombieManagerClass{};
+
+protected:
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UC_PointTowerManager* m_PointTowerManager{};
 	
 };
 
