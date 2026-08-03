@@ -74,6 +74,9 @@ void UC_EnemySkillComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 
 bool UC_EnemySkillComponent::UseSkill(ESkillSlot _Slot)
 {
+	// 스킬 선택과 판정 실행은 서버에서만 처리
+	if (!IsValid(m_OwnerEnemy) || !m_OwnerEnemy->HasAuthority())
+		return false;
 
 	// 이미 다른 스킬을 사용중일 때
 	if (bUsingSkill) return false;
@@ -138,6 +141,47 @@ void UC_EnemySkillComponent::EndSkillManually()
 
 	// 나머지 처리는 기존의 OnEndSkill 처리와 같음
 	OnAN_EndSkill();
+}
+
+void UC_EnemySkillComponent::CancelSkillForDead()
+{
+	// 서버에서만 실제 스킬 상태 종료 처리
+	if (!IsValid(m_OwnerEnemy) || !m_OwnerEnemy->HasAuthority())
+		return;
+
+	// 죽기 직전 실제 스킬 사용 여부 저장
+	const bool bWasUsingSkill = bUsingSkill && IsValid(m_CurSkillData.Get());
+
+	// 현재 실행중인 스킬 몽타주가 있으면 서버에서 정지시키기
+	if (bUsingSkill  
+		&& IsValid(m_CurSkillData->Montage)
+		&& IsValid(m_OwnerEnemy->GetMesh()) 
+		&& IsValid(m_OwnerEnemy->GetMesh()->GetAnimInstance()))
+	{
+		UAnimInstance* AnimInst = m_OwnerEnemy->GetMesh()->GetAnimInstance();
+
+		if (AnimInst->Montage_IsPlaying(m_CurSkillData->Montage))
+		{
+			// 서버에서 스킬 몽타주 정지 시키기
+			m_OwnerEnemy->StopAnimMontage(m_CurSkillData->Montage);
+		}
+	}
+
+	// 죽기 직전 실제 스킬 사용 여부를 기반으로,
+	// 클라이언트에서도 스킬 몽타주 정지 시키기
+	if (bWasUsingSkill)
+	{
+		Multicast_ImitateEndSkillManually(m_CurImitatingSkillSlot);
+	}
+
+	// 죽어있는 중에는 BT Task의 OnskillEnd가 호출되지 않게 
+	// SkillEndDelegate.Broadcast를 호출하지 않고, Delegate 제거
+	m_SkillEndDelegate.Clear();
+
+	// 스킬 상태 초기화
+	bUsingSkill = false;
+	m_CurSkillData = nullptr;
+	m_CurImitatingSkillSlot = ESkillSlot::END;
 }
 
 bool UC_EnemySkillComponent::CanUseSkill(ESkillSlot _Slot) const

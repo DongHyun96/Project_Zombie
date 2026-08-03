@@ -28,7 +28,6 @@
 
 #include "Kismet/GameplayStatics.h"
 
-
 AC_TankZombie::AC_TankZombie()
 	: Super(EZombieType::TankZombie)
 {
@@ -427,9 +426,11 @@ void AC_TankZombie::StopCharge()
 	// End 구간 실제 점프이동 시작
 	StartEndMove();
 
-	// Run 몽타주 섹션 루프에서 End 섹션으로 이동
+
+	// 서버와 클라이언트 둘다 같은 End 섹션으로 이동
 	if (IsValid(m_Skill) && IsValid(m_Skill->Montage))
 	{
+		// 서버 몽타주를 End 섹션으로 이동
 		if (USkeletalMeshComponent* pMesh = GetMesh())
 		{
 			if (UAnimInstance* AnimInst = pMesh->GetAnimInstance())
@@ -437,6 +438,9 @@ void AC_TankZombie::StopCharge()
 				AnimInst->Montage_JumpToSection(TEXT("End"), m_Skill->Montage);
 			}
 		}
+
+		// 클라이언트 몽타주도 End 섹션으로 이동
+		Multicast_MoveToJumpMontageSection(m_Skill->Montage, TEXT("End"));
 	}
 
 	// 위치, 속도, 방향값 초기화
@@ -694,4 +698,79 @@ void AC_TankZombie::ApplyLandingShock()
 
 		TargetCharacter->LaunchCharacter(LaunchVelocity, true, true);
 	}
+}
+
+void AC_TankZombie::CancelChargeForDead()
+{
+	// 서버에서만 돌진 상태 정리
+	if (!HasAuthority())
+		return;
+
+	// 돌진 및 End 이동 상태 정리
+	m_bCharging = false;
+	StopEndMove();
+
+	// 돌진 판정용 충돌박스 비활성화
+	if (IsValid(m_ChargeCollision))
+	{
+		m_ChargeCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+
+	// 캡슐 pawn 충돌 설정 복구
+	if (UCapsuleComponent* Capsule = GetCapsuleComponent())
+	{
+		Capsule->SetCollisionResponseToChannel(ECC_Pawn, m_PawnCollision);
+	}
+
+	// 현재 이동속도 제거
+	if (UCharacterMovementComponent* MoveCom = GetCharacterMovement())
+	{
+		MoveCom->StopMovementImmediately();
+	}
+
+	// 돌진 관련 설정 초기화
+	m_ChargeDirection = FVector::ZeroVector;
+	m_ChargeStartLocation = FVector::ZeroVector;
+	m_ChargeSpeed = 0.f;
+	m_ChargeElapsedTime = 0.f;
+	
+	m_ChargeTarget = nullptr;
+	m_Skill = nullptr;
+	m_ChargeHitTarget.Reset();
+}
+
+void AC_TankZombie::OnDead(AC_BasicCharacter* _DeadCharacter)
+{
+	// 본인이 죽었을때만 탱크 돌진 상태 정리
+	if (_DeadCharacter == this)
+	{
+		CancelChargeForDead();
+	}
+
+	// 공통 사망 처리
+	Super::OnDead(_DeadCharacter);
+}
+
+void AC_TankZombie::Multicast_MoveToJumpMontageSection_Implementation(UAnimMontage* _Montage, FName _SectionName)
+{
+	if (HasAuthority())
+		return;
+
+	if (!IsValid(_Montage))
+		return;
+
+	USkeletalMeshComponent* pMesh = GetMesh();
+
+	if (!IsValid(pMesh))
+		return;
+
+	UAnimInstance* AnimInst = pMesh->GetAnimInstance();
+
+	if (!IsValid(AnimInst))
+		return;
+
+	if (!AnimInst->Montage_IsPlaying(_Montage))
+		return;
+
+	AnimInst->Montage_JumpToSection(_SectionName, _Montage);
 }
