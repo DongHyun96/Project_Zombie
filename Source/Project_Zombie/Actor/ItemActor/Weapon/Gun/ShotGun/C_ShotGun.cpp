@@ -340,6 +340,12 @@ void AC_ShotGun::AIFire(const FVector& TargetLocation)
 	QueryParams.AddIgnoredActor(this);
 	if (GetOwner()) QueryParams.AddIgnoredActor(GetOwner());
 
+	// ★ 추가
+	if (AActor* AttachParent = GetAttachParentActor())
+	{
+		QueryParams.AddIgnoredActor(AttachParent);
+	}
+
 	for (int32 i = 0; i < m_PelletCount; ++i)
 	{
 		FVector PelletDir = FMath::VRandCone(BaseDir, FMath::DegreesToRadians(m_SpreadAngle));

@@ -703,13 +703,10 @@ void AC_GunBase::OnMainColliderBeginOverlap
 	const FHitResult&	 _SweepResult
 )
 {
-	/* 무기를 줍는 처리 */
-	
-	// 이미 이 무기의 주인이 존재
 	if (m_OwnerPlayer) return;
 
 	AC_BasicPlayer* OverlappedPlayer = Cast<AC_BasicPlayer>(_OtherActor);
-	if (!OverlappedPlayer) return; // Player가 아닌 다른 물체와 Overlap
+	if (!OverlappedPlayer) return;
 	
 	// TODO : 리슨서버에서의 아이템 파밍 시퀀스를 따라서 처리를 할 것
 	// 일단은 LocalPlayer인 경우에만, 충돌처리를 하는 것으로 체킹함
