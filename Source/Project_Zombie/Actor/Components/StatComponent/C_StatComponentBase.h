@@ -70,7 +70,9 @@ public:
 
 	void AddStat(const FName& _StatName, float _Amount);
 	float GetStat(const FName& _StatName) const;
-
+	
+	// UI쪽에서 스탯을 조회해야 해서 만듬.
+	const TMap<FName, float>& GetStatsMap() const { return m_Stats; }
 public: /* 범용적으로 사용 가능한 Stat 처리 관련 함수 */
 
 	/// <returns> : 해당하는 Stat이 없거나 Value가 음수값인 경우(이건 좀 더 따져봐야할듯) </returns>

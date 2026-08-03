@@ -15,7 +15,8 @@ class PROJECT_ZOMBIE_API UC_PlayerStatUpWidgetStrategy : public UC_InteractionSt
 	GENERATED_BODY()
 	
 public:
-
+	UC_PlayerStatUpWidgetStrategy();
+	
 	/// <summary>
 	/// 하위 전략 대상과 상호작용할 수 있는지 검사
 	/// </summary>

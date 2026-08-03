@@ -6,6 +6,7 @@
 #include "Blueprint/UserWidget.h"
 #include "C_PlayerStatsWidget.generated.h"
 
+class UC_StatComponentBase;
 class UC_PlayerStatUpgradeWidget;
 class UC_PlayerStatRowWidget;
 class UScrollBox;
@@ -18,7 +19,7 @@ class PROJECT_ZOMBIE_API UC_PlayerStatsWidget : public UUserWidget
 	GENERATED_BODY()
 	
 public:
-	void UpdateWidget(const FInventoryEntry& InEntry);
+	void UpdateWidget(UC_StatComponentBase* StatComp);
 	
 	TArray<UC_PlayerStatRowWidget*> GetItemStatRows() {return m_PlayerStatRows;};
 	
