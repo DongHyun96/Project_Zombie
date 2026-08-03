@@ -118,11 +118,11 @@ private:
 private:
 	// 비활성화되어 재사용 대기 중인 풀
 	UPROPERTY()
-	TArray<TObjectPtr<AC_ItemPickUp>> InactiveItemPool;
+	TArray<TObjectPtr<AC_ItemPickUp>> InactiveItemPool{};
 
 	// 현재 월드에 활성화되어 떠돌아다니는 아이템 리스트 (향후 최대 수량 제한 확장용)
 	UPROPERTY()
-	TArray<TObjectPtr<AC_ItemPickUp>> ActiveItemPool;
+	TArray<TObjectPtr<AC_ItemPickUp>> ActiveItemPool{};
 
 	// (미래 확장용) 최대 활성화 수량 제한
 	int32 MaxActiveItemLimit = 200; // 현재는 검사만 스킵하거나 높게 설정

@@ -4,10 +4,12 @@
 #include "C_CopZombie.h"
 
 #include "Actor/Character/Player/C_BasicPlayer.h"
+#include "Actor/Components/ItemLinkComponent/C_ItemLinkComponent.h"
 #include "Actor/ItemActor/Weapon/C_WeaponBase.h"
 #include "Actor/ItemActor/Weapon/Gun/C_GunBase.h"
 #include "Actor/ItemActor/Weapon/WeaponComponent/GunComponent/AIGunUsageComponent/C_AIGunUsageComponent.h"
 #include "Components/BoxComponent.h"
+#include "GameModeAndManager/C_ItemManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "Utility/C_Util.h"
@@ -103,6 +105,19 @@ bool AC_CopZombie::EquipWeapon(AC_GunBase* _StolenWeapon)
 	
 	// 부착 성공, State 변화 및 EquippedWeapon 저장
 	m_EquippedGun    = _StolenWeapon;
+	
+	if (_StolenWeapon->GetLinkComp())
+	{
+		if (!_StolenWeapon->GetLinkComp()->GetItemEntry().IsEmpty())
+			Entry = _StolenWeapon->GetLinkComp()->GetItemEntry();
+		else
+		{
+			// 이 상황이 나오면 사실 안됨.
+			FInventoryEntry sub = FInventoryEntry();
+			sub.ItemRowName = _StolenWeapon->GetWeaponRowName();
+			sub.CurCount = 1;
+		}
+	}
 	m_CopZombieState = ECopZombieState::WeaponEarned; // ABP 무기 자세로 자세전환
 	return true;
 }
@@ -111,7 +126,15 @@ void AC_CopZombie::DropWeapon()
 {
 	// 현재 들고있는 무기가 없을 때
 	if (!m_EquippedGun) return;
-	if (!m_EquippedGun->GetAIGunUsageComponent()->DetachFromHand()) return;
+	//if (!m_EquippedGun->GetAIGunUsageComponent()->DetachFromHand()) return;
+	
+	// C_ItemPickUp을 스폰해서 뿌려주면 됨. 이 때 AC_Weapon의 정보를 통해 데이터 테이블, 강화 테이블을 통해 역산해서 FInventoryEntry만들어야 함.
+	
+	UC_ItemManager* ItemManager = GetGameInstance()->GetSubsystem<UC_ItemManager>();
+	
+	if (!ItemManager) return;
+	
+	ItemManager->DropItemByPlayer(Entry, this);
 	
 	m_EquippedGun = nullptr;
 }

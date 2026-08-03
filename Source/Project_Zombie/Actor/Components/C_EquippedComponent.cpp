@@ -143,7 +143,6 @@ void UC_EquippedComponent::Server_RequestSpawnEquippedActor_Implementation(int32
 		}
 	}
 
-
 	PrevWeapon->Destroy();
 }
 

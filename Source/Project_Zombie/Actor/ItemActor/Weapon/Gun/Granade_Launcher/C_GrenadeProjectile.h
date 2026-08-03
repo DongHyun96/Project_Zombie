@@ -48,7 +48,7 @@ private:
 	// 폭발 이펙트 
 	UPROPERTY(VisibleAnywhere, Category = "Effect")
 	TObjectPtr<UParticleSystem> m_ExplosionEffect{};
-
+	
 	// 폭발 이펙트 크기 (1.0 = 기본 크기)
 	UPROPERTY(VisibleAnywhere, Category = "Effect")
 	float m_ExplosionEffectScale;

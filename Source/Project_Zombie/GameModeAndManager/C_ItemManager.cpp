@@ -44,6 +44,9 @@ void UC_ItemManager::Initialize(FSubsystemCollectionBase& Collection)
     {
         ItemUpgradeCostData = Settings->WeaponUpgradeCostTableConfig.LoadSynchronous();
     }
+    
+    
+    
 }
 
 void UC_ItemManager::ReturnToPool(AC_ItemPickUp* ItemToReturn)
@@ -205,6 +208,8 @@ bool UC_ItemManager::DropItemByPlayer(const FInventoryEntry& InEntry, AActor* In
             }
         }
     }
+    
+    UC_Util::Print(InactiveItemPool.Num());
     
     return NewItem != nullptr;
 }

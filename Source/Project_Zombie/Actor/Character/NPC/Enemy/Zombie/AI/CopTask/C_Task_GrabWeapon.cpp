@@ -83,6 +83,7 @@ void UC_Task_GrabWeapon::OnTaskFinished
 	if (!StolenWeapon) return; // BestGrabPlayer의 이전 Weapon이 없었던 상태(애초에 위에서 체킹해서 이 방어코드로 들어오면 안되긴 함)
 	AC_GunBase* StolenGun = Cast<AC_GunBase>(StolenWeapon);
 	
+	// 여기서 무기 뺏음 TODO : PlayerUI에서 해당 슬롯 지우고 실제 InvenComponent에서도 FInventoryEntry 클리어하기.
 	BestGrabPlayer->GetEquippedComponent()->Server_SetSlotWeapon(EWeaponSlot::MainWeapon, nullptr);
 	
 	// 뺏은 무기 장착 시도

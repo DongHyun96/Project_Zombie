@@ -11,6 +11,9 @@ class PROJECT_ZOMBIE_API AC_GrenadeLauncher : public AC_GunBase
 {
 	GENERATED_BODY()
 
+protected:
+	virtual void BeginPlay() override;
+	
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "Grenade", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<class AActor> m_GrenadeClass;
@@ -46,7 +49,9 @@ protected:
 	virtual bool OnFireOnGoing(AC_BasicPlayer* _WeaponUser) override;
 	virtual bool OnFireEnd(AC_BasicPlayer* _WeaponUser) override;
 	virtual bool Reload(AC_BasicPlayer* _WeaponUser) override;
-
+	
 public:
 	AC_GrenadeLauncher();
+	
+	
 };

@@ -3,8 +3,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GlobalData.h"
 #include "Actor/Character/NPC/Enemy/Zombie/C_Zombie.h"
 #include "C_CopZombie.generated.h"
+
 
 UENUM(BlueprintType)
 enum class ECopZombieState : uint8
@@ -111,4 +113,5 @@ protected: // 빼앗아서 장착한 무기
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly)
 	AC_GunBase* m_EquippedGun{};
 	
+	FInventoryEntry Entry{}; 
 };

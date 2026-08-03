@@ -186,6 +186,11 @@ FVector AC_GrenadeLauncher::GetCameraTargetPoint() const
 	return bCameraHit ? CameraHitResult.ImpactPoint : CameraEnd;
 }
 
+void AC_GrenadeLauncher::BeginPlay()
+{
+	Super::BeginPlay();
+}
+
 void AC_GrenadeLauncher::StartReload()
 {
 	if (m_CurrentAmmo >= m_MaxAmmo || m_bIsReloading)
