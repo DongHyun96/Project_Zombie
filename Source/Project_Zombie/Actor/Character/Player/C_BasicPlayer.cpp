@@ -514,7 +514,7 @@ void AC_BasicPlayer::StopSprint()
 
 void AC_BasicPlayer::ToggleCrouch()
 {
-	Server_EnterDownedState();
+	// Server_EnterDownedState();
 
 	if (!IsAlive())
 		return;
