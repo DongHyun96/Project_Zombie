@@ -47,7 +47,7 @@ bool UC_ItemUpgradeWidgetStrategy::StartInteraction(AC_BasicPlayer* _Interactor,
 	_Interactor->ToggleInventoryWidget();
 		
 	// 장비위젯 | 업그레이드위젯 | Player Inven Widget 을 보여줌(Visible) 
-	InvenWidget->ShowUpgradeWidget();
+	InvenWidget->ShowItemUpgradeWidget();
 	
 	// TODO : CancelInteract 구현 보고 없애야 할 수 있음.
 	//_Interactor->GetInteractionComponent()->m_OnEndOverlap.RemoveAll(InvenWidget);
@@ -82,7 +82,7 @@ void UC_ItemUpgradeWidgetStrategy::CancleInteraction(AC_BasicPlayer* _Interactor
 	
 	ItemUpgradeWidget->InitWidget();
 	
-	InvenWidget->CloseUpgradeWidget();
+	InvenWidget->CloseItemUpgradeWidget();
 }
 
 void UC_ItemUpgradeWidgetStrategy::CompleteInteraction(AC_BasicPlayer* _Interactor, AActor* _TargetActor)

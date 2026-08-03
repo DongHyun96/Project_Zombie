@@ -9,21 +9,24 @@
 #include "UI/InvenUI/Upgrade/C_ItemUpgradeWidget.h"
 #include "Utility/C_Util.h"
 
-void UC_ItemStatsWidget::UpdateWidget(const FUpgradableData* InCustomData)
+void UC_ItemStatsWidget::UpdateWidget(const FInventoryEntry& InEntry)
 {
 	if (!ItemStatsScrollBox) return;
 	
 	ItemStatsScrollBox->ClearChildren();
 	m_ItemStatRows.Empty();
-	if (!InCustomData)
+	
+	if (InEntry.IsEmpty())
 	{
-		UC_Util::Print("ItemStatsScrollBox Is Nullptr!");
+		//UC_Util::Print("ItemStatsScrollBox Is Nullptr!");
 		return;
 	}
 
-	//UC_ItemManager* ItemManager = GetGameInstance()->GetSubsystem<UC_ItemManager>();
-	//
-	//if (!ItemManager) return;
+	UC_ItemManager* ItemManager = GetGameInstance()->GetSubsystem<UC_ItemManager>();
+	
+	if (!ItemManager) return;
+	
+	const FUpgradableData* EquipCustomData = InEntry.CustomData.GetPtr<FUpgradableData>();
 	
 	//const FEquipmentCustomData& CustomData = InCustomData;
 	
@@ -31,7 +34,7 @@ void UC_ItemStatsWidget::UpdateWidget(const FUpgradableData* InCustomData)
 	// TODO : 2. EUpgradableStats의 최대값(Max)를 이용해서 모든 강화 가능 능력치를 한번씩 돌아 본다. - 강화가능 스탯이 많아지면 불필요한 탐색이 많아짐.
 	//const int num =static_cast<int>(EUpgradableStats::Max);
 	
-	for (int i = 0 ; i < InCustomData->StatList.Num() ; ++i)
+	for (int i = 0 ; i < EquipCustomData->StatList.Num() ; ++i)
 	{
 		UC_ItemStatRowWidget* ItemStatRow = CreateWidget<UC_ItemStatRowWidget>(this, ItemStatRowWidgetClass);
 		
@@ -41,7 +44,7 @@ void UC_ItemStatsWidget::UpdateWidget(const FUpgradableData* InCustomData)
 			continue;
 		}
 		
-		FUpgradableKeyVal CustomKeyVal = InCustomData->StatList[i];
+		FUpgradableKeyVal CustomKeyVal = EquipCustomData->StatList[i];
 		
 		//const FWeaponData* data = ItemManager->GetWeaponData(ItemUpgradeWidget->GetTargetEntry()->ItemRowName);
 		

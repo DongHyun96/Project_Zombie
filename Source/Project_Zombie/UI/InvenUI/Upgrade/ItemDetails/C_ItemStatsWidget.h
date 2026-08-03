@@ -19,7 +19,7 @@ class PROJECT_ZOMBIE_API UC_ItemStatsWidget : public UUserWidget
 	GENERATED_BODY()
 public:
 	// FEquipmentCustomData 혹은 TArray<FCustomKeyVal>를 매개 변수로 받아와야 할 듯.
-	void UpdateWidget(const FUpgradableData* InCustomData);
+	void UpdateWidget(const FInventoryEntry& InEntry);
 	
 	TArray<UC_ItemStatRowWidget*> GetItemStatRows() {return m_ItemStatRows;};
 	

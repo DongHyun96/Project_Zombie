@@ -6,6 +6,7 @@
 #include "Blueprint/UserWidget.h"
 #include "C_InventoryWidget.generated.h"
 
+class UC_PlayerStatUpgradeWidget;
 class UC_ItemUpgradeWidget;
 class UC_EquipmentWidget;
 class UC_DivideItemWidget;
@@ -26,10 +27,15 @@ public:
 	
 	void ShowDivideItemWidget();
 	
-	void ShowUpgradeWidget();
+	void ShowItemUpgradeWidget();
 	
-	void CloseUpgradeWidget();
+	void CloseItemUpgradeWidget();
+	
+	void ShowPlayerStatUpgradeWidget();
 
+	void ClosePlayerStatUpgradeWidget();
+
+	
 public:
 	class UC_InventoryGridWidget* GetPlayerGridWidget() { return PlayerGridWidget; }
 	
@@ -40,6 +46,8 @@ public:
 	UC_DivideItemWidget* GetDivideItemWidget() { return DivideItemWidget; }
 	
 	UC_ItemUpgradeWidget* GetItemUpgradeWidget() {return UpgradeWidget;}
+	
+	UC_PlayerStatUpgradeWidget* GetPlayerStatUpgradeWidget() { return PlayerStatUpgradeWidget; }
 	
 	virtual void SetVisibility(ESlateVisibility InVisibility) override;
 	
@@ -55,11 +63,14 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
 	UC_ItemUpgradeWidget* UpgradeWidget = nullptr;
 	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
+	UC_PlayerStatUpgradeWidget* PlayerStatUpgradeWidget = nullptr;
+	
 	// Equipment(장비창)의 아이템 슬롯을 가지고 있을 그리드 위젯.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
 	UC_EquipmentWidget* EquipmentWidget = nullptr;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
 	UC_DivideItemWidget* DivideItemWidget = nullptr;
-
+	
 };

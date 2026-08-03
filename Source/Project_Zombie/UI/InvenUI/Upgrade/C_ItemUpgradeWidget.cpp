@@ -78,7 +78,7 @@ void UC_ItemUpgradeWidget::UpdateWidget()
 		// TODO : 여기 들어오면 위젯들 초기화 해주기.
 		ItemName->SetText(FText());
 		ItemDesc->SetText(FText());
-		ItemStats->UpdateWidget(nullptr);
+		ItemStats->UpdateWidget(FInventoryEntry());
 		return;
 	}
 	// TODO : 멤버 변수로 가지고 있는 포인터들 일일이 다 검사 해주어야 하나?
@@ -104,17 +104,8 @@ void UC_ItemUpgradeWidget::UpdateWidget()
 	ItemDesc->SetText(Data->ItemDescription);
 
 	// TODO : 아이템 동적 데이터 가져와서 보여주기
-	const FUpgradableData* EquipCustomData = Entry.CustomData.GetPtr<FUpgradableData>();
 	
-	const FWeaponData* WeaponData = ItemManager->GetWeaponData(Entry.ItemRowName);;
-	
-	//const float CurValue = WeaponData->
-	
-	ItemStats->UpdateWidget(EquipCustomData);
-	
-	// TODO : 강화에 필요한 재료 보여주기.
-	// TODO : 강화하면 재료 차감하기.
-	
+	ItemStats->UpdateWidget(Entry);
 	
 	Matters->UpdateWidget(Entry); // TODO : 강화 테이블을 만들어야 넣어 줄 수 있을 듯? 
 }
@@ -125,7 +116,7 @@ void UC_ItemUpgradeWidget::InitWidget()
 	// TODO : 여기 들어오면 위젯들 초기화 해주기.
 	ItemName->SetText(FText());
 	ItemDesc->SetText(FText());
-	ItemStats->UpdateWidget(nullptr);
+	ItemStats->UpdateWidget(FInventoryEntry());
 	
 	DroppedItemSlotIdx = -1;
 	m_UsePlayer = nullptr;
@@ -214,9 +205,9 @@ void UC_ItemUpgradeWidget::HandleItemStatUpgraded(int32 SlotIdx, const FInventor
 {
 	if (SlotIdx != DroppedItemSlotIdx) return;
 	
-	const FUpgradableData* EquipCustomData = ItemData.CustomData.GetPtr<FUpgradableData>();
+	//const FUpgradableData* EquipCustomData = ItemData.CustomData.GetPtr<FUpgradableData>();
 	
-	ItemStats->UpdateWidget(EquipCustomData);
+	ItemStats->UpdateWidget(ItemData);
 }
 
 void UC_ItemUpgradeWidget::SetTargetStat(EUpgradableStats InTargetStat)

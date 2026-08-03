@@ -12,6 +12,7 @@
 #include "Equipment/C_EquipmentWidget.h"
 #include "GameModeAndManager/C_ItemManager.h"
 #include "Upgrade/C_ItemUpgradeWidget.h"
+#include "Upgrade/C_PlayerStatUpgradeWidget.h"
 #include "Utility/C_Util.h"
 
 void UC_InventoryWidget::NativeConstruct()
@@ -95,14 +96,24 @@ void UC_InventoryWidget::ShowDivideItemWidget()
 	DivideItemWidget->ShowDivideItem();
 }
 
-void UC_InventoryWidget::ShowUpgradeWidget()
+void UC_InventoryWidget::ShowItemUpgradeWidget()
 {
 	UpgradeWidget->SetVisibility(ESlateVisibility::Visible);
 }
 
-void UC_InventoryWidget::CloseUpgradeWidget()
+void UC_InventoryWidget::CloseItemUpgradeWidget()
 {
 	UpgradeWidget->SetVisibility(ESlateVisibility::Collapsed);
+}
+
+void UC_InventoryWidget::ShowPlayerStatUpgradeWidget()
+{
+	PlayerStatUpgradeWidget->SetVisibility(ESlateVisibility::Visible);
+}
+
+void UC_InventoryWidget::ClosePlayerStatUpgradeWidget()
+{
+	PlayerStatUpgradeWidget->SetVisibility(ESlateVisibility::Collapsed);
 }
 
 void UC_InventoryWidget::SetVisibility(ESlateVisibility InVisibility)
