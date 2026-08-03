@@ -201,7 +201,7 @@ void AC_ThrowableWeaponBase::InitializeItemData(const FWeaponData* InRawData)
 	if (FInventoryEntry* EntryPtr = ItemLinkComp ? ItemLinkComp->GetItemEntryPtr() : nullptr)
 	{
 		// 1. 없으면 데이터 안전하게 생성
-		FEquipmentCustomData* CustomData = EntryPtr->GetOrCreateEquipmentData();
+		FUpgradableData* CustomData = EntryPtr->GetOrCreateEquipmentData();
 
 		// 2. Grade(단계) 가져오기
 		int32 DamageGrade = CustomData->GetStatGrade(EUpgradableStats::AttackPower);

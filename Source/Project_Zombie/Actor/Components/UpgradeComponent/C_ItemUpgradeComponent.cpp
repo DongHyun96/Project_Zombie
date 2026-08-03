@@ -62,7 +62,7 @@ void UC_ItemUpgradeComponent::UpgradeItem(AC_BasicPlayer* InPlayer, int32 InItem
     }
 
     // 스탯 등급 증가 (실제 강화 실행)
-    FEquipmentCustomData* EquipmentData = Entry->GetEquipmentDataPtr();
+    FUpgradableData* EquipmentData = Entry->GetEquipmentDataPtr();
     EquipmentData->AddStatGrade(TargetStat, 1);
 
     // 강화 재료 차감
@@ -93,7 +93,7 @@ bool UC_ItemUpgradeComponent::ValidateUpgradeTarget(FInventoryEntry* InEntry, EU
 {
     if (!InEntry || !InEntry->HasEquipmentData()) return false;
 
-    FEquipmentCustomData* EquipmentData = InEntry->GetEquipmentDataPtr();
+    FUpgradableData* EquipmentData = InEntry->GetEquipmentDataPtr();
     if (!EquipmentData) return false;
 
     OutCurGrade = EquipmentData->GetStatGrade(TargetStat);

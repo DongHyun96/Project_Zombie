@@ -123,26 +123,7 @@ protected:
 
 
 	
-	// => 여기서부터는 나중에 StatComponent으로 분리? -> 분리작업 실시
-	// 기본 이동 속도
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Status")
-	float				m_BaseMaxSpeed;
 
-	// 최대 체력
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Status")
-	float				m_MaxHP;
-
-	// 현재 체력
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Status")
-	float				m_CurHP;
-
-	// 최대 부스트
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Status")
-	float				m_MaxBoost;
-
-	// 현재 부스트
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Status")
-	float				m_CurBoost;
 
 
 // 팀 설정
@@ -170,22 +151,22 @@ protected:
 
 // [Movement]
 protected:
-	// 걷기 속도
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
-	float m_WalkSpeed;
-
-	// 달리기 속도
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
-	float m_SprintSpeed;
-
-	// 조준 시 속도
+	// 조준 시 속도 : StatComp
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float m_AimMoveSpeed;
-
-	// 웅크리기 시 속도
+	
+	// 기본 이동 속도 : StatComp
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat")
+	float m_BaseMaxSpeed{};
+	
+	// 걷기 속도 : StatComp
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	float m_WalkSpeed{};
+	
+	// 웅크리기 시 속도 : 애매하내. 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float m_CrouchSpeed;
-
+	
 	// 점프 입력 여부
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
 	bool m_IsJumpInput;
@@ -193,15 +174,7 @@ protected:
 	// 달리기 입력 여부
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
 	bool m_IsSprintInput;
-
-	// 달리기 중 초당 부스트 소모량
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
-	float m_SprintBoostUseCost;
-
-	// 달리지 않을 때 초당 부스트 회복량F
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
-	float m_BoostRecoverCost;
-
+	
 	// 이 값 이상 회복되어야 다시 달리기 가능
 	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	//float m_MinBoostToSprint = 10.f;

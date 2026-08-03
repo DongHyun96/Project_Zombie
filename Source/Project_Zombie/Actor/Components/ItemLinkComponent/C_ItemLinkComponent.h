@@ -10,6 +10,7 @@
 //class FInventoryEntry;
 class UC_InvenComponent;
 
+// AC_Weapon과 인벤토리의 FInventoryEntry를 연결해주는 컴포넌트
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class PROJECT_ZOMBIE_API UC_ItemLinkComponent : public UActorComponent
 {

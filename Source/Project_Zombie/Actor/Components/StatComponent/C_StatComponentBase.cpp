@@ -9,6 +9,7 @@
 #include "GameModeAndManager/PlayerState/C_PlayerState.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
 #include "Utility/C_Util.h"
+#include "GlobalData.h"
 
 
 UC_StatComponentBase::UC_StatComponentBase()
@@ -92,10 +93,13 @@ void UC_StatComponentBase::InitStat(bool _bModifyForEditor)
 
 void UC_StatComponentBase::InitAdditionalStat()
 {
-	const float InitialMaxHPValue = GetStat(TEXT("InitialMaxHP"));
+	const float InitialMaxHPValue = GetStat(StatName::MaxHP);
 	
-	AddStat(TEXT("CurMaxHP"), InitialMaxHPValue);	// 최대 체력
-	AddStat(TEXT("CurHP"), InitialMaxHPValue);		// 현제 체력 또한 Stat 정보에 추가
+	//AddStat(TEXT("CurMaxHP"), InitialMaxHPValue);		// 최대 체력
+	AddStat(StatName::CurHP, InitialMaxHPValue);		// 현재 체력 또한 Stat 정보에 추가
+	
+	const float MaxBoost = GetStat(StatName::MaxBoost); // 최대 부스트 게이지 가져오기
+	AddStat(StatName::CurBoost, MaxBoost);				// 현재 부스트 게이지 생성하기
 }
 
 void UC_StatComponentBase::InitStatFromStruct(UScriptStruct* _InStruct, const void* _StructPtr)
@@ -169,7 +173,7 @@ bool UC_StatComponentBase::Local_SetStat(const FName& _StatName, float _Value)
 	// CurHP Set인 경우, Delegate 호출 처리
 	if (_StatName == TEXT("CurHP"))
 	{
-		const float CurMaxHP = GetStat(TEXT("CurMaxHP"));
+		const float CurMaxHP = GetStat(StatName::MaxHP);
 		
 		if (CurMaxHP == 0.f) // Divide with 0 error 피하기 위함 (바로 터지기 때문에 처리함)
 		{
@@ -218,7 +222,7 @@ bool UC_StatComponentBase::Local_IncreaseStat(const FName& _StatName, float _Inc
 	if (_StatName == TEXT("CurHP"))
 	{
 		// CurHP Full을 찍었으면 해당 Delegate 호출 처리
-		const float CurMaxHP = GetStat(TEXT("CurMaxHP"));
+		const float CurMaxHP = GetStat(StatName::MaxHP);
 		if (*pTargetStatValue >= CurMaxHP)
 			OnCurHPReachedFullDelegate.Broadcast(m_OwnerCharacter);
 
@@ -268,7 +272,7 @@ bool UC_StatComponentBase::Local_DecreaseStat(const FName& _StatName, float _Dec
 		if (*pTargetStatValue <= 0.f)
 			OnCurHPReachedZeroDelegate.Broadcast(m_OwnerCharacter);
 
-		const float CurMaxHP = GetStat(TEXT("CurMaxHP"));
+		const float CurMaxHP = GetStat(StatName::MaxHP);
 		if (CurMaxHP != 0.f)
 			OnCurHPUpdatedDelegate.Broadcast(*pTargetStatValue / CurMaxHP);
 	}
@@ -295,8 +299,8 @@ void UC_StatComponentBase::SetCurHP(float _HP)
 
 bool UC_StatComponentBase::Local_SetCurHP(float _HP)
 {
-	if (_HP > GetStat("CurMaxHP")) return false; // 음수 체크는 SetStat에서 처리됨
-	return Local_SetStat(TEXT("CurHP"), _HP); // SetStat에 HP Delegate 들 호출부 포함되어 있음
+	if (_HP > GetStat(StatName::MaxHP)) return false; // 음수 체크는 SetStat에서 처리됨
+	return Local_SetStat(StatName::CurHP, _HP); // SetStat에 HP Delegate 들 호출부 포함되어 있음
 }
 
 void UC_StatComponentBase::Server_SetCurHP_Implementation(float _HP)
@@ -313,7 +317,7 @@ void UC_StatComponentBase::Multicast_SetCurHP_Implementation(float _HP)
 
 float UC_StatComponentBase::GetCurHPRatio() const
 {
-	const float CurMaxHPAmount = GetStat(TEXT("CurMaxHP"));
+	const float CurMaxHPAmount = GetStat(StatName::MaxHP);
 	if (CurMaxHPAmount <= 0.f) // 0 나누기 방지
 	{
 		UC_Util::Print("From UC_StatComponentBase::GetCurHPRatio : Invalid CurMaxHP value", FColor::Red, 10.f);
@@ -332,9 +336,9 @@ bool UC_StatComponentBase::Local_IncreaseCurHP(float _IncreaseAmount)
 {
 	if (_IncreaseAmount < 0.f) return false;
 	
-	const float CurMaxHP = GetStat(TEXT("CurMaxHP"));
+	const float CurMaxHP = GetStat(StatName::MaxHP);
 
-	float* pCurHP = m_Stats.Find(TEXT("CurHP"));
+	float* pCurHP = m_Stats.Find(StatName::CurHP);
 	if (*pCurHP >= CurMaxHP) return false; // 이미 풀피인 상황이면 Increase 처리 x
 
 	*pCurHP = FMath::Min(*pCurHP + _IncreaseAmount, CurMaxHP);
@@ -371,13 +375,13 @@ bool UC_StatComponentBase::Local_DecreaseCurHP(float _DecreaseAmount)
 {
 	if (_DecreaseAmount < 0.f) return false;
 
-	float* pCurHP = m_Stats.Find(TEXT("CurHP"));
+	float* pCurHP = m_Stats.Find(StatName::CurHP);
 	*pCurHP       = FMath::Max(0.f, *pCurHP - _DecreaseAmount); // TODO : 다시 0.f로 수정할 것
 
 	// CurHP 0을 찍었으면 Delegate 호출 처리
 	if (*pCurHP == 0.f) OnCurHPReachedZeroDelegate.Broadcast(m_OwnerCharacter);
 
-	const float CurMaxHP = GetStat(TEXT("CurMaxHP"));
+	const float CurMaxHP = GetStat(StatName::MaxHP);
 	if (CurMaxHP != 0.f)
 		OnCurHPUpdatedDelegate.Broadcast(*pCurHP / CurMaxHP);
 	

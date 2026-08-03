@@ -19,7 +19,7 @@ void UC_MattersWidget::UpdateWidget(const FInventoryEntry& InEntry)
 	
 	if (InEntry.IsEmpty()) return;
 	
-	const FEquipmentCustomData* EquipmentCustomData = InEntry.GetEquipmentData();
+	const FUpgradableData* EquipmentCustomData = InEntry.GetEquipmentData();
 	
 	if (!EquipmentCustomData) return;
 	

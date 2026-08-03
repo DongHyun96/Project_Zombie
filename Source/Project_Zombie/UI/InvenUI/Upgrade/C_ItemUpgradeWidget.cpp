@@ -104,7 +104,7 @@ void UC_ItemUpgradeWidget::UpdateWidget()
 	ItemDesc->SetText(Data->ItemDescription);
 
 	// TODO : 아이템 동적 데이터 가져와서 보여주기
-	const FEquipmentCustomData* EquipCustomData = Entry.CustomData.GetPtr<FEquipmentCustomData>();
+	const FUpgradableData* EquipCustomData = Entry.CustomData.GetPtr<FUpgradableData>();
 	
 	const FWeaponData* WeaponData = ItemManager->GetWeaponData(Entry.ItemRowName);;
 	
@@ -139,7 +139,7 @@ void UC_ItemUpgradeWidget::ShowSelectedStatRow(const float& CurStatValue, const 
 {
 	const FInventoryEntry& Entry = m_UsePlayer->GetInvenComponent()->GetItemAt(DroppedItemSlotIdx);
 	
-	const FEquipmentCustomData* EquipData = Entry.GetEquipmentData();
+	const FUpgradableData* EquipData = Entry.GetEquipmentData();
 	
 	if (!EquipData)
 	{
@@ -214,7 +214,7 @@ void UC_ItemUpgradeWidget::HandleItemStatUpgraded(int32 SlotIdx, const FInventor
 {
 	if (SlotIdx != DroppedItemSlotIdx) return;
 	
-	const FEquipmentCustomData* EquipCustomData = ItemData.CustomData.GetPtr<FEquipmentCustomData>();
+	const FUpgradableData* EquipCustomData = ItemData.CustomData.GetPtr<FUpgradableData>();
 	
 	ItemStats->UpdateWidget(EquipCustomData);
 }

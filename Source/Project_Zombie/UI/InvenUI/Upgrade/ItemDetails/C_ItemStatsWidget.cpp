@@ -9,7 +9,7 @@
 #include "UI/InvenUI/Upgrade/C_ItemUpgradeWidget.h"
 #include "Utility/C_Util.h"
 
-void UC_ItemStatsWidget::UpdateWidget(const FEquipmentCustomData* InCustomData)
+void UC_ItemStatsWidget::UpdateWidget(const FUpgradableData* InCustomData)
 {
 	if (!ItemStatsScrollBox) return;
 	
@@ -21,9 +21,9 @@ void UC_ItemStatsWidget::UpdateWidget(const FEquipmentCustomData* InCustomData)
 		return;
 	}
 
-	UC_ItemManager* ItemManager = GetGameInstance()->GetSubsystem<UC_ItemManager>();
-	
-	if (!ItemManager) return;
+	//UC_ItemManager* ItemManager = GetGameInstance()->GetSubsystem<UC_ItemManager>();
+	//
+	//if (!ItemManager) return;
 	
 	//const FEquipmentCustomData& CustomData = InCustomData;
 	
@@ -41,7 +41,7 @@ void UC_ItemStatsWidget::UpdateWidget(const FEquipmentCustomData* InCustomData)
 			continue;
 		}
 		
-		FCustomKeyVal CustomKeyVal = InCustomData->StatList[i];
+		FUpgradableKeyVal CustomKeyVal = InCustomData->StatList[i];
 		
 		//const FWeaponData* data = ItemManager->GetWeaponData(ItemUpgradeWidget->GetTargetEntry()->ItemRowName);
 		

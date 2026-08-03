@@ -79,10 +79,10 @@ AC_BasicPlayer::AC_BasicPlayer()
 
 	// 이동 속도 설정
 	m_WalkSpeed = 300.f;
-	m_SprintSpeed = 600.f;
 	m_CrouchSpeed = 200.f;
+	m_BaseMaxSpeed = m_WalkSpeed; 
 
-	m_BaseMaxSpeed = m_WalkSpeed;
+	//m_SprintSpeed = 600.f;	    // StatComp
 
 	GetCharacterMovement()->MaxWalkSpeed = m_WalkSpeed;
 	GetCharacterMovement()->MaxWalkSpeedCrouched = m_CrouchSpeed;
@@ -91,12 +91,12 @@ AC_BasicPlayer::AC_BasicPlayer()
 	m_IsSprintInput = false;
 
 	// 부스트 초기화
-	m_MaxBoost = 100.f;
-	m_CurBoost = m_MaxBoost;
+	//m_MaxBoost = 100.f;          // StatComp
+	//m_CurBoost = m_MaxBoost;     // StatComp
 
 	// 부스트 사용량 설정
-	m_SprintBoostUseCost = 20.f;
-	m_BoostRecoverCost = 15.f;
+	//m_SprintBoostUseCost = 20.f; // StatComp
+	//m_BoostRecoverCost = 15.f;   // StatComp
 
 	// 점프 입력 초기화
 	m_IsJumpInput = false;
@@ -261,9 +261,10 @@ void AC_BasicPlayer::Tick(float DeltaTime)
 	// 달리기 중이면 부스트 소모
 	if (m_PlayerPoseState == EPlayerPoseState::Sprint)
 	{
-		UseBoost(m_SprintBoostUseCost * DeltaTime);
 		
-		if (m_CurBoost <= 0.f)
+		UseBoost(m_StatComponent->GetStat(StatName::BoostCost) * DeltaTime);
+		
+		if (m_StatComponent->GetStat(StatName::CurBoost) <= 0.f)
 		{
 			StopSprint();
 		}
@@ -271,7 +272,7 @@ void AC_BasicPlayer::Tick(float DeltaTime)
 	// 달리기 중이 아니면 부스트 회복
 	else
 	{
-		RecoverBoost(m_BoostRecoverCost * DeltaTime);
+		RecoverBoost(m_StatComponent->GetStat(StatName::BoostRecover) * DeltaTime);
 	}
 
 	// [Aim] 카메라 변환 중일 때만 함수 호출
@@ -417,19 +418,21 @@ void AC_BasicPlayer::Landed(const FHitResult& Hit)
 
 bool AC_BasicPlayer::UseBoost(float _UseAmount)
 {
-	if (_UseAmount <= 0.f || m_MaxBoost <= 0.f || m_CurBoost <= 0.f)
+	if (_UseAmount <= 0.f || m_StatComponent->GetStat(StatName::MaxBoost) <= 0.f || m_StatComponent->GetStat(StatName::CurBoost) <= 0.f)
 		return false;
+	
+	float CurBoost = m_StatComponent->GetStat(StatName::CurBoost);
 
-	float PrevBoost = m_CurBoost;
-	bool bHasBoost = (m_CurBoost >= _UseAmount);
+	float PrevBoost = CurBoost;
+	bool bHasBoost = (CurBoost >= _UseAmount);
 
 	if (bHasBoost)
 	{	
 		// 부스트 사용 
-		m_CurBoost = FMath::Max(0.f, m_CurBoost - _UseAmount);
+		m_StatComponent->SetStat(StatName::CurBoost, FMath::Max(0.f, CurBoost - _UseAmount));
 
 		// 값이 변경되었을 경우 HUD 업데이트
-		if (!FMath::IsNearlyEqual(PrevBoost, m_CurBoost))
+		if (!FMath::IsNearlyEqual(PrevBoost, m_StatComponent->GetStat(StatName::CurBoost)))
 			UpdateBoostBarHUD();
 	}
 	
@@ -438,16 +441,21 @@ bool AC_BasicPlayer::UseBoost(float _UseAmount)
 
 void AC_BasicPlayer::RecoverBoost(float _RecoverAmount)
 {
-	if (_RecoverAmount <= 0.f || m_MaxBoost <= 0.f || m_CurBoost >= m_MaxBoost)
+	float MaxBoost = m_StatComponent->GetStat(StatName::MaxBoost);
+	float CurBoost = m_StatComponent->GetStat(StatName::CurBoost);
+	
+	if (_RecoverAmount <= 0.f || MaxBoost <= 0.f || CurBoost >= MaxBoost)
 		return;
 
-	float PrevBoost = m_CurBoost;
+	float PrevBoost = CurBoost;
 	
 	// 부스트 회복
-	m_CurBoost = FMath::Min(m_MaxBoost, m_CurBoost + _RecoverAmount);
+	CurBoost = FMath::Min(MaxBoost, CurBoost + _RecoverAmount);
 
+	m_StatComponent->SetStat(StatName::CurBoost, CurBoost);
+	
 	// 값이 변경되었을 경우 HUD 업데이트
-	if (!FMath::IsNearlyEqual(PrevBoost, m_CurBoost))
+	if (!FMath::IsNearlyEqual(PrevBoost, CurBoost))
 		UpdateBoostBarHUD();
 }
 
@@ -469,7 +477,7 @@ void AC_BasicPlayer::StartSprint()
 		return;
 
 	// 부스트가 없으면 달리기 불가
-	if (m_CurBoost <= 0.f)
+	if (m_StatComponent->GetStat(StatName::CurBoost) <= 0.f)
 		return;
 
 	m_IsSprintInput = true;
@@ -589,7 +597,7 @@ void AC_BasicPlayer::ApplyMovementSpeed()
 		GetCharacterMovement()->MaxWalkSpeed = m_WalkSpeed;
 		break;
 	case EPlayerPoseState::Sprint:
-		GetCharacterMovement()->MaxWalkSpeed = m_SprintSpeed;
+		GetCharacterMovement()->MaxWalkSpeed = m_StatComponent->GetStat(StatName::SprintSpeed);
 		break;
 	case EPlayerPoseState::Crouch:
 		GetCharacterMovement()->MaxWalkSpeed = m_CrouchSpeed;
@@ -614,7 +622,7 @@ void AC_BasicPlayer::UpdateBoostBarHUD() const
 		if (AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD()))
 		{
 			if (UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget())
-				MainHUD->UpdateBoostBar(m_CurBoost, m_MaxBoost);
+				MainHUD->UpdateBoostBar(m_StatComponent->GetStat(StatName::CurBoost), m_StatComponent->GetStat(StatName::MaxBoost));
 		}
 	}
 }

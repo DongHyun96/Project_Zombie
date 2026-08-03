@@ -12,7 +12,7 @@
 
 // Key-Value 개별 항목
 USTRUCT(BlueprintType)
-struct FCustomKeyVal
+struct FUpgradableKeyVal
 {
     GENERATED_BODY()
     
@@ -27,7 +27,7 @@ struct FCustomKeyVal
 
 // FInstancedStruct 내부 데이터
 USTRUCT(BlueprintType)
-struct FEquipmentCustomData
+struct FUpgradableData
 {
     GENERATED_BODY()
 
@@ -42,7 +42,7 @@ public:
 
     // 동적 스탯 리스트 (TMap의 TArray 대안)
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment")
-    TArray<FCustomKeyVal> StatList{};
+    TArray<FUpgradableKeyVal> StatList{};
 
 public:
     // ── [TMap 방식처럼 접근하기 위한 헬퍼 함수] ──
@@ -50,7 +50,7 @@ public:
     // 1. 스탯 조회
     uint8 GetStatGrade(EUpgradableStats Key, uint8 DefaultValue = 0) const
     {
-        for (const FCustomKeyVal& Pair : StatList)
+        for (const FUpgradableKeyVal& Pair : StatList)
         {
             if (Pair.Key == Key)
             {
@@ -63,7 +63,7 @@ public:
     // 2. 스탯 설정
     void SetStatGrade(EUpgradableStats Key, uint8 NewValue)
     {
-        for (FCustomKeyVal& Pair : StatList)
+        for (FUpgradableKeyVal& Pair : StatList)
         {
             if (Pair.Key == Key)
             {
@@ -72,7 +72,7 @@ public:
             }
         }
 
-        FCustomKeyVal NewPair;
+        FUpgradableKeyVal NewPair;
         NewPair.Key = Key;
         NewPair.Grade = NewValue;
         StatList.Add(NewPair);
@@ -128,7 +128,7 @@ struct FItemData : public FTableRowBase
     
     // 처음에 세팅해줄 수 있는 업그레이드 데이터를 담은 구조체.
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    FEquipmentCustomData CustomData{};
+    FUpgradableData CustomData{};
 
     //UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment")
     //TSubclassOf<class AC_WeaponBase> WeaponClass;
@@ -182,33 +182,33 @@ public:
 	// CustomData가 FEquipmentCustomData 구조체를 담고 있는지 확인하는 함수.
     bool HasEquipmentData() const
     {
-        return CustomData.GetScriptStruct() == FEquipmentCustomData::StaticStruct();
+        return CustomData.GetScriptStruct() == FUpgradableData::StaticStruct();
     }
 
 	// CustomData가 FEquipmentCustomData 구조체를 담고 있다면 해당 구조체의 포인터를 반환하는 함수.
-    const FEquipmentCustomData* GetEquipmentData() const
+    const FUpgradableData* GetEquipmentData() const
     {
-        return CustomData.GetPtr<FEquipmentCustomData>();
+        return CustomData.GetPtr<FUpgradableData>();
     }
     //GetOrCreateEquipmentData
 	// CustomData가 FEquipmentCustomData 구조체를 담고 있지 않다면 새로 생성하고 해당 구조체의 포인터를 반환하는 함수.
-    FEquipmentCustomData* GetOrCreateEquipmentData()
+    FUpgradableData* GetOrCreateEquipmentData()
     {
         if (!HasEquipmentData())
         {
-            CustomData = FInstancedStruct::Make(FEquipmentCustomData());
+            CustomData = FInstancedStruct::Make(FUpgradableData());
         }
-        return CustomData.GetMutablePtr<FEquipmentCustomData>();
+        return CustomData.GetMutablePtr<FUpgradableData>();
     }
 
-    FEquipmentCustomData* GetEquipmentDataPtr()
+    FUpgradableData* GetEquipmentDataPtr()
     {
-        return CustomData.GetMutablePtr<FEquipmentCustomData>();
+        return CustomData.GetMutablePtr<FUpgradableData>();
     }
 
     int32 GetEnhanceLevel() const
     {
-        if (const FEquipmentCustomData* Data = GetEquipmentData())
+        if (const FUpgradableData* Data = GetEquipmentData())
         {
             return Data->EnhanceLevel;
         }
@@ -596,8 +596,13 @@ struct FCharacterStatData : public FTableRowBase
 {
     GENERATED_BODY()
 
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stat")
-    float InitialMaxHP{};
+    // 최대 체력 : 강화를 통해 Max값 늘리기.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Status")
+    float				MaxHP{};
+
+    // 현재 체력 : StatComp -> StatComponent에서 동적 생성해서 MaxHP로 초기화
+    //UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Status")
+    //float				CurHP{}; 
 };
 
 /// <summary>
@@ -609,7 +614,31 @@ struct FPlayerStatData : public FCharacterStatData
     GENERATED_BODY()
 	
     // TODO : Player 쪽 사용할 Stat Data 추가해줄 것, 동시에 PlayerStatComponent에서 해당 값 참조해서 CurStatData들 초기화 처리해줄 것
+    // => 여기서부터는 나중에 StatComponent으로 분리? -> 분리작업 실시
+    // 기본 이동 속도 : StatComp
+    //UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat")
+    //float	BaseMaxSpeed{};
+
+    // 달리기 속도 : 강화를 통해 Max값 늘리기.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+    float   SprintSpeed{};
     
+    // 최대 부스트 : 강화를 통해 Max값 늘리기.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat")
+    float	MaxBoost{};
+
+    // 현재 부스트 : StatComp -> StatComponent에서 동적 생성, MaxBoost로 초기화.
+    //UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat")
+    //float	CurBoost{};
+
+    // 달리기 중 초당 부스트 소모량 : 강화를 통해 부스트 소모량 줄이기.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+    float   SprintBoostUseCost{};
+
+    // 달리지 않을 때 초당 부스트 회복량 : 강화를 통해 부스트 회복량 늘리기.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+    float   BoostRecoverCost{};
+
 };
 
 /// <summary>
@@ -645,4 +674,19 @@ namespace Helper
         const UEnum* EnumPtr = StaticEnum<EUpgradableStats>();
         return EnumPtr ? EnumPtr->GetDisplayNameTextByValue(static_cast<int64>(StatType)) : FText::GetEmpty();
     }
+}
+
+
+// StatComponent에서 m_Stat에서 오타를 줄이기 위해 사용.
+namespace StatName
+{
+    const FName MaxHP        = TEXT("MaxHP");
+    const FName CurHP        = TEXT("CurHP");
+    const FName SprintSpeed  = TEXT("SprintSpeed");
+    const FName MaxBoost     = TEXT("MaxBoost");
+    const FName CurBoost     = TEXT("CurBoost");
+    const FName BoostCost    = TEXT("BoostCost");
+    const FName BoostRecover = TEXT("BoostRecover");
+    // 필요한 스탯 추가해서 사용하면 됨.
+    // StatName::MaxHP == TEXT("MaxHP")
 }
