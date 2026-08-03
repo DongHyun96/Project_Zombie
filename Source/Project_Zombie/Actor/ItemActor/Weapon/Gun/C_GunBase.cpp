@@ -67,7 +67,7 @@ void AC_GunBase::BeginPlay()
 	
 	//Gun_init();
 	m_Collision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	m_Collision->OnComponentBeginOverlap.AddDynamic(this, &AC_GunBase::OnMainColliderBeginOverlap);
+	// m_Collision->OnComponentBeginOverlap.AddDynamic(this, &AC_GunBase::OnMainColliderBeginOverlap);
 }
 
 void AC_GunBase::Tick(float DeltaTime)

@@ -181,9 +181,9 @@ AC_ItemPickUp* UC_ItemManager::GetOrCreateItemPickUp(const FInventoryEntry& InEn
     return TargetItem;
 }
 
-bool UC_ItemManager::DropItemByPlayer(const FInventoryEntry& InEntry, AActor* InActor)
+AC_ItemPickUp* UC_ItemManager::DropItemByPlayer(const FInventoryEntry& InEntry, AActor* InActor)
 {
-    if (!InActor || InEntry.ItemRowName.IsNone() || InEntry.CurCount <= 0) return false;
+    if (!InActor || InEntry.ItemRowName.IsNone() || InEntry.CurCount <= 0) return nullptr;
     
     FVector SpawnLocation = InActor->GetActorLocation() + FVector(0.f, 0.f, 30.f);
     FVector ForwardVec = InActor->GetActorForwardVector();
@@ -211,7 +211,7 @@ bool UC_ItemManager::DropItemByPlayer(const FInventoryEntry& InEntry, AActor* In
     
     UC_Util::Print(InactiveItemPool.Num());
     
-    return NewItem != nullptr;
+    return NewItem;
 }
 
 bool UC_ItemManager::DropItemByPlayer(FName InRowName, int32 InCount, AActor* InActor)
@@ -221,7 +221,7 @@ bool UC_ItemManager::DropItemByPlayer(FName InRowName, int32 InCount, AActor* In
     TempEntry.CurCount = InCount;
 
     // Entry 기반 드롭으로 전달
-    return DropItemByPlayer(TempEntry, InActor);
+    return DropItemByPlayer(TempEntry, InActor) != nullptr;
 }
 
 AC_WeaponBase* UC_ItemManager::SpawnEquippedActor(FName InRowName, AActor* InOwner, const FTransform& SpawnTransform)

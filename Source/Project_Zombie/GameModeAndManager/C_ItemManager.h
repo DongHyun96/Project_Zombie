@@ -43,12 +43,12 @@ public:
 
 	// --- DropItemByPlayer 오버로딩 ---
 	// [1] Entry 기반 드롭 (추천), 플레이어가 자신이 들고 있는 아이템을 마크처럼 레벨에 뱉어냄.(AC_ItemPickUp 형태로)
-	bool DropItemByPlayer(const FInventoryEntry& InEntry, AActor* InActor);
+	AC_ItemPickUp* DropItemByPlayer(const FInventoryEntry& InEntry, AActor* InActor);
 
 	UFUNCTION(BlueprintCallable, Category = "ItemManager")
 	bool BP_DropItemByPlayer(const FInventoryEntry& InEntry, AActor* InActor)
 	{
-		return DropItemByPlayer(InEntry, InActor);
+		return DropItemByPlayer(InEntry, InActor) != nullptr;
 	}
 
 	// [2] Name + Count 기반 드롭 (필요 시 단순 드롭용)

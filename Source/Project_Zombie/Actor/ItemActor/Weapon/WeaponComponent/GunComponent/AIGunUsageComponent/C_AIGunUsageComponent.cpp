@@ -101,7 +101,7 @@ bool UC_AIGunUsageComponent::AttachToHand(USceneComponent* _ParentMesh)
 	return true;
 }
 
-bool UC_AIGunUsageComponent::DetachFromHand()
+/*bool UC_AIGunUsageComponent::DetachFromHand()
 {
 	// 이 무기를 사용중인 CopZombie가 없을 때(또는 Valid하지 않은 경우)
 	if (!m_WeaponCopZombieUser) return false;
@@ -139,7 +139,7 @@ bool UC_AIGunUsageComponent::DetachFromHand()
 	m_OwnerGun->m_OwnerEnemy = nullptr;
 	
 	return true;
-}
+}*/
 
 FVector UC_AIGunUsageComponent::AIProcessLineTraceDamage(float _DamageVal)
 {

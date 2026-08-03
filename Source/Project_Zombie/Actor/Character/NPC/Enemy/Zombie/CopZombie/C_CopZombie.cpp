@@ -10,6 +10,7 @@
 #include "Actor/ItemActor/Weapon/WeaponComponent/GunComponent/AIGunUsageComponent/C_AIGunUsageComponent.h"
 #include "Components/BoxComponent.h"
 #include "GameModeAndManager/C_ItemManager.h"
+#include "Item/PickUp/C_ItemPickUp.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "Utility/C_Util.h"
@@ -134,8 +135,17 @@ void AC_CopZombie::DropWeapon()
 	
 	if (!ItemManager) return;
 	
-	ItemManager->DropItemByPlayer(Entry, this);
+	AC_ItemPickUp* SpawnedItemPickUp = ItemManager->DropItemByPlayer(Entry, this);
 	
+	if (SpawnedItemPickUp)
+	{
+		SpawnedItemPickUp->SetStolenPlayerPingSystemComponent
+		(
+			m_EquippedGun->GetAIGunUsageComponent()->GetPrevOwnerPlayer()->GetPingSystemComponent()
+		);
+	}
+	
+	m_EquippedGun->Destroy();
 	m_EquippedGun = nullptr;
 }
 

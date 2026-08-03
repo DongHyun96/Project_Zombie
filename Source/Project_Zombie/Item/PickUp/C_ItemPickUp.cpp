@@ -5,6 +5,8 @@
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
+#include "Actor/Components/C_PingSystemComponent.h"
+#include "Actor/Ping/C_WorldPingActor.h"
 #include "GameModeAndManager/C_ItemManager.h"
 #include "Net/UnrealNetwork.h"
 #include "Utility/C_Util.h"
@@ -166,6 +168,16 @@ void AC_ItemPickUp::ActivateItem(const FInventoryEntry& InEntry, const FVector& 
         //PhysicsSphere->SetAllPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
         PhysicsSphere->SetPhysicsLinearVelocity(FVector::ZeroVector);
         PhysicsSphere->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+        
+        // SimulatePhysics에 의한 움직임이 멈췄을 때, SimulatePhysics 끄기 및 기타 처리를 위함
+        GetWorld()->GetTimerManager().SetTimer
+        (
+            m_SimulatePhysicsStoppedCheckTimer,
+            this,
+            &AC_ItemPickUp::CheckPhysicsStopped,
+            0.5f,
+            true
+        );
     }
 
     // 3. 줍기 오버랩 구체 초기화 (기존 DELAYTIME 후 켜지던 타이머 재가동)
@@ -227,7 +239,18 @@ void AC_ItemPickUp::DeactivateItem()
     //bPickup = false;
     if (MeshComp)
     {
+        Multicast_ToggleOutline(false); // 외곽선 비활성화
         MeshComp->SetStaticMesh(nullptr);
+    }
+    
+    // SimulatePhysics 움직임 체킹 타이머 비활성화
+    GetWorld()->GetTimerManager().ClearTimer(m_SimulatePhysicsStoppedCheckTimer);
+    
+    // StolenPlayerPingSystemComponent가 존재했었다면 clear 및 해당 핑 비활성화(필요하다면)
+    if (m_StolenPlayerPingSystemComponent)
+    {
+        if (m_StolenPlayerPingSystemComponent->GetLastInstigator() == this)
+            m_StolenPlayerPingSystemComponent->Multicast_MustHidePingAll();
     }
 }
 
@@ -270,6 +293,43 @@ void AC_ItemPickUp::OnRep_MeshRef()
 void AC_ItemPickUp::OnRep_ItemEntry()
 {
     
+}
+
+void AC_ItemPickUp::CheckPhysicsStopped()
+{
+    // 아직 SimulatePhysics 처리에 의해 움직이는 중
+    if (PhysicsSphere->IsAnyRigidBodyAwake()) return;
+    
+    /* 움직임이 멈춤 */
+    
+    GetWorld()->GetTimerManager().ClearTimer(m_SimulatePhysicsStoppedCheckTimer);
+    
+    // PhysicsSphere SimulatePhysics 비활성화 처리
+    PhysicsSphere->SetSimulatePhysics(false);
+
+    // 만약 이 ItemPickUp이 StolenWeapon이 Drop되었을 때의 Weapon인 경우
+    if (m_StolenPlayerPingSystemComponent)
+    {
+        // 해당 지점에 이전 주인의 Ping 활성화
+        m_StolenPlayerPingSystemComponent->Multicast_MustSpawnAll
+        (
+            GetActorLocation(),
+            EGamePingType::GunBaseMarker,
+            EPingShapeType::FullPing,
+            this
+        );
+        
+        // 외곽선 활성화
+        if (MeshComp) Multicast_ToggleOutline(true);
+    }
+}
+
+void AC_ItemPickUp::Multicast_ToggleOutline_Implementation(bool _Visible)
+{
+    if (!MeshComp) return;
+
+    MeshComp->SetRenderCustomDepth(true);
+    MeshComp->SetCustomDepthStencilValue(_Visible ? 1 : 0);
 }
 
 void AC_ItemPickUp::Server_RequestPickup_Implementation(AC_BasicPlayer* Player)

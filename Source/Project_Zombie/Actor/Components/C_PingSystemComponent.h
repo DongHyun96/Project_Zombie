@@ -66,6 +66,22 @@ private:
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_HidePing();
 	
+public: 
+
+	// 핑을 스폰시킨 주최자가 자기자신이 아닐 때 사용할 것 -> ex) CopZombie 빼앗긴 무기에 대한 핑 스폰 등
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_MustSpawnAll
+	(
+		const FVector&	_SpawnedLocation,
+		EGamePingType	_GamePingType,
+		EPingShapeType	_PingShapeType,
+		AActor*			_LastInstigator
+	);
+
+	// 핑을 Hide시킨 주최자가 자기자신이 아닐 때 사용할 것 -> ex) CopZombie 빼앗긴 무기에 대한 핑 스폰 등
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_MustHidePingAll();
+	
 public:
 	
 	// void SetPingColor(const FColor& _PingColor);
