@@ -20,9 +20,9 @@ public:
 
 public:
 
-	void UpdateWidget(const FText& InStatName, const float& InStatValue, const int32& InCurGrade, const int32& InMaxGrade);
+	void UpdateWidget(const FName& InStatName, const float& InStatValue, const int32& InCurGrade, const int32& InMaxGrade);
 	
-	const FText& GetTargetStat() {return TargetStatName;}
+	const FName& GetTargetStat() {return TargetStatName;}
 	
 	UTextBlock* GetSelectedRow() { return SelectedRow; }
 	
@@ -42,5 +42,5 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (BindWidget))
 	UTextBlock* MaxGrade = nullptr;
 
-	FText TargetStatName{};
+	FName TargetStatName{};
 };

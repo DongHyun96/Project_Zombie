@@ -75,7 +75,7 @@ void UC_PlayerStatUpWidgetStrategy::CancleInteraction(AC_BasicPlayer* _Interacto
 	
 	PlayerStatUpgradeWidget->InitWidget();
 	
-	InvenWidget->CloseItemUpgradeWidget();
+	InvenWidget->ClosePlayerStatUpgradeWidget();
 }
 
 void UC_PlayerStatUpWidgetStrategy::CompleteInteraction(AC_BasicPlayer* _Interactor, AActor* _TargetActor)

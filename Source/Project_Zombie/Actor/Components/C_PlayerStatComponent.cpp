@@ -6,7 +6,10 @@
 #include "GlobalData.h"
 #include "Actor/Character/C_BasicCharacter.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
+#include "Controller/C_BasicPlayerController.h"
 #include "GameModeAndManager/C_UIManager.h"
+#include "Item/Interact/ItemUpgrade/C_ItemUpgradeStation.h"
+#include "Item/Interact/StatUpgrade/C_StatUpgradeStation.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
 #include "UI/MainHUD/PlayerStatHUD/C_PlayerStatWidget.h"
 
@@ -37,6 +40,20 @@ void UC_PlayerStatComponent::BeginPlay()
 	// TODO : 이거 다른 사람 Stat을 표기하려면, 여기에 이런식으로 처리를 해주면 됨 (다른 팀원 체력 확인은 해야할 듯)
 	else OnCurHPUpdatedDelegate.AddUObject(m_OwnerPlayer, &AC_BasicCharacter::UpdatePlayerHPOnAboveHeadTest);
 	
+}
+
+void UC_PlayerStatComponent::Server_RequestStatUpgrade(AC_StatUpgradeStation* InInteractableActor,
+	const FName& UpStatName)
+{
+	AC_BasicPlayerController* PC = Cast<AC_BasicPlayerController>(m_OwnerPlayer->GetController());
+	
+	if (!PC) return;
+	
+	if (PC->GetIsUpgradingPlayerStat()) return;
+	
+	PC->SetIsUpgradingPlayerStat(true);
+	
+	InInteractableActor->RequestStatUpgrade(m_OwnerPlayer, UpStatName);
 }
 
 UScriptStruct* UC_PlayerStatComponent::GetStatDataStruct() const

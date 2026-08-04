@@ -7,6 +7,8 @@
 #include "C_StatUpgradeComponent.generated.h"
 
 
+class AC_BasicPlayer;
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class PROJECT_ZOMBIE_API UC_StatUpgradeComponent : public UActorComponent
 {
@@ -21,5 +23,7 @@ protected:
 public:	
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-		
+	virtual void UpgradeItem(AC_BasicPlayer* InPlayer, const FName& UpStatName);
+	
+
 };

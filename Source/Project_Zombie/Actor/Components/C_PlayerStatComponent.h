@@ -7,6 +7,8 @@
 #include "C_PlayerStatComponent.generated.h"
 
 
+class AC_StatUpgradeStation;
+
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class PROJECT_ZOMBIE_API UC_PlayerStatComponent : public UC_StatComponentBase
 {
@@ -20,6 +22,7 @@ public:
 	
 	virtual void BeginPlay() override;
 	
+	void Server_RequestStatUpgrade(AC_StatUpgradeStation* InInteractableActor, const FName& UpStatName);
 private:
 	
 	virtual UScriptStruct* GetStatDataStruct() const override;
