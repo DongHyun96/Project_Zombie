@@ -294,7 +294,7 @@ AC_WeaponBase* UC_ItemManager::SpawnEquippedActor(FName InRowName, AActor* InOwn
 
     case EItemType::CONSUMABLE:
     case EItemType::MATTER:
-    case EItemType::GADGET:
+    case EItemType::POTION:
     default:
         break;
     }

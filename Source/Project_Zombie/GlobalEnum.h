@@ -8,7 +8,7 @@ enum class EItemType : uint8
     MAINWEAPON,
     MELEEWEAPON,
     THROWABLE,
-    GADGET,
+    POTION,
     CONSUMABLE,
     MATTER,
     MAX,
@@ -28,6 +28,7 @@ enum class EWeaponType : uint8
     Gun         UMETA(DisplayName = "Gun"),
     Melee       UMETA(DisplayName = "Melee"),
     Throwable   UMETA(DisplayName = "Throwable"),
+	Potion      UMETA(DisplayName = "Potion"),
     Max
 };
 
@@ -38,7 +39,8 @@ enum class EItemTableType : uint8
     General,
     Gun,
     Melee,
-    Throwable
+    Throwable,
+	Potion
 };
 
 // GlobalEnum의 EWeaponType으로 통합하는 방향으로 가면 될 듯?
@@ -50,7 +52,7 @@ enum class EWeaponSlot : uint8
     MainWeapon,
     MeleeWeapon,
     ThrowableWeapon,
-    //Gadget,							// 나중에 추가할지도 모르는 장비 슬롯 (예: 방어구, 액세서리, 설치형 무기등), gadget : 간단한 기계 장치
+    Potion,							// 나중에 추가할지도 모르는 장비 슬롯 (예: 방어구, 액세서리, 설치형 무기등), gadget : 간단한 기계 장치
     None,
     Max				UMETA(Hidden)
 };
@@ -89,6 +91,7 @@ enum class EUpgradableStats : uint8
 	//CurAmmo         UMETA(DisplayName = "현재 탄약"), // TODO : 이건 버리는 총의  CurAmmo값을 저장하기 위해 존재. (인벤이나 ItemPickUp에서 사용), 하지만 좀비는 다른 로직으로 사용하고 있고 탄약이 무한이라면 그냥 총을 버리면 무조건 0으로 해도 되는거 아닌가?
     //CriticalRate    UMETA(DisplayName = "치명타 확률"),
     //CriticalDamage  UMETA(DisplayName = "치명타 피해량"),
+	HPRecovery		UMETA(DisplayName = "체력 회복량"),
     MaxHP           UMETA(DisplayName = "최대 체력"),
     MoveSpeed       UMETA(DisplayName = "이동 속도"),
 	//Max
