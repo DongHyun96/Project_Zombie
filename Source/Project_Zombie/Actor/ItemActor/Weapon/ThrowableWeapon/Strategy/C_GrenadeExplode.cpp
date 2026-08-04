@@ -17,9 +17,6 @@ bool UC_GrenadeExplode::UseStrategy_Implementation(AC_ThrowableWeaponBase* _Thro
 	if (!_ThrowableWeapon)
 		return false;
 
-	if (!_ThrowableWeapon->HasAuthority())
-		return false;
-
 	// 폭발이 발생한 위치
 	const FVector ExplosionLocation = _ThrowableWeapon->GetActorLocation();
 
@@ -135,6 +132,17 @@ bool UC_GrenadeExplode::UseStrategy_Implementation(AC_ThrowableWeaponBase* _Thro
 		// 자기자신 무시
 		TraceParams.AddIgnoredActor(_ThrowableWeapon);
 
+		// 폭발 범위 안에 들어온 Pawn 은 서로를 벽처럼 가리지 않도록 무시
+		for (const FOverlapResult& OverlapResult : OverlapResults)
+		{
+			AActor* OverlapActor = OverlapResult.GetActor();
+
+			if (!IsValid(OverlapActor))
+				continue;
+
+			TraceParams.AddIgnoredActor(OverlapActor);
+		}
+
 		// TODO
 		// 나중에 바닥도 무시할 수 있도록 추가
 
@@ -194,27 +202,18 @@ bool UC_GrenadeExplode::UseStrategy_Implementation(AC_ThrowableWeaponBase* _Thro
 			InstigatorController = _ThrowableWeapon->GetOwnerPlayer()->GetController();
 		}
 
-		UE_LOG
-		(
-			LogTemp,
-			Warning,
-			TEXT(
-				"[Grenade Damage] Target=%s / Distance=%.2f / Radius=%.2f / Max=%.2f / Min=%.2f"
-			),
-			*GetNameSafe(Target),
-			Distance,
-			ExplosionRadius,
-			MaxDamage,
-			MinDamage
-		);
-
-
-
+		const float Damage =
+			FMath::Lerp
+			(
+				MaxDamage,
+				MinDamage,
+				Distance / ExplosionRadius
+			);
 
 		// 데미지 이벤트 전달
-		UGameplayStatics::ApplyDamage(
+		const float AppliedDamage = UGameplayStatics::ApplyDamage(
 			Target,						// 데미지 받는 대상
-			FMath::Lerp(MaxDamage, MinDamage, Distance / ExplosionRadius), // 거리 비례 데미지 계산
+			Damage, // 거리 비례 데미지 계산
 			InstigatorController,		// 데미지를 입힌 주체
 			_ThrowableWeapon,			// 데미지를 입힌 무기
 			UDamageType::StaticClass()	// 데미지 타입
@@ -222,6 +221,20 @@ bool UC_GrenadeExplode::UseStrategy_Implementation(AC_ThrowableWeaponBase* _Thro
 
 		// 5. 데미지를 입은 액터를 Set에 추가하여 중복 방지
 		DamagedActors.Add(Target);
+
+		UE_LOG
+		(
+			LogTemp,
+			Warning,
+			TEXT
+			(
+				"[Grenade ApplyDamage] Target=%s / Damage=%.2f / Applied=%.2f / Authority=%d"
+			),
+			*GetNameSafe(Target),
+			Damage,
+			AppliedDamage,
+			_ThrowableWeapon->HasAuthority()
+		);
 
 		UC_Util::Print("[UC_GrenadeExplode::UseStrategy_Implementation] Hit");
 	}

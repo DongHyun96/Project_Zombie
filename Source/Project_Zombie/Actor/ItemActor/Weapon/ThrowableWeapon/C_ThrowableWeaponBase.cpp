@@ -305,8 +305,6 @@ bool AC_ThrowableWeaponBase::AttachToHand(USceneComponent* _ParentMesh)
 	if (!_ParentMesh) return false;
 	AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(_ParentMesh->GetOwner());
 	if (!Player) return false; // 장착 시도하는 Owner Character가 Player형이 아닌 경우, return false
-
-	PRINT_LOCAL(GetWorld(), "Gun - AttachingToHand", FColor::Red, 10.f);
 	
 	// 투척류를 장착하는 경우, 투척류 상태 초기화
 	ResetThrowableState();
@@ -374,7 +372,7 @@ bool AC_ThrowableWeaponBase::AttachToHolster(USceneComponent* _ParentMesh)
 		FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true),
 		s_HolsterSocketName
 	);
-	
+
 	if (bIsAttached)
 		m_OwnerPlayer = Cast<AC_BasicPlayer>(_ParentMesh->GetOwner());
 	
@@ -463,26 +461,20 @@ void AC_ThrowableWeaponBase::Multicast_PlayThrowMontage_Implementation(FName _Se
 	m_OwnerPlayer->PlayAnimMontage(m_ThrowMontage, 1.f, _SectionName);
 }
 
-void AC_ThrowableWeaponBase::Server_ThrowThrowable_Implementation(FVector_NetQuantizeNormal _ThrowDirection)
+void AC_ThrowableWeaponBase::Server_ThrowThrowable_Implementation(FVector_NetQuantize _LaunchLocation, FVector_NetQuantizeNormal _ThrowDirection)
 {
-	ThrowThrowableOnServer(_ThrowDirection);
+	ThrowThrowableOnServer(_LaunchLocation, _ThrowDirection);
 }
 
-
-void AC_ThrowableWeaponBase::Server_StartFuseTimer_Implementation()
+void AC_ThrowableWeaponBase::ThrowThrowableOnServer(const FVector& _LaunchLocation, const FVector& _ThrowDirection)
 {
-	StartFuseTimer();
-}
-
-void AC_ThrowableWeaponBase::ThrowThrowableOnServer(const FVector& _ThrowDirection)
-{
-	// 실제 투척은 서버에서만 실행
 	if (!HasAuthority())
 		return;
 
 	if (!m_OwnerPlayer)
 		return;
 
+	// 서버 수류탄 중복 방지
 	if (m_ThrowableState == EThrowableState::Thrown || m_ThrowableState == EThrowableState::Exploded)
 		return;
 
@@ -491,46 +483,62 @@ void AC_ThrowableWeaponBase::ThrowThrowableOnServer(const FVector& _ThrowDirecti
 	if (ThrowDirection.IsNearlyZero())
 		return;
 
-	// 투척 시작 위치 서버에서 계산
-	const FVector LaunchLocation = GetLaunchLocation(ThrowDirection);
-	const FRotator LaunchRotation = ThrowDirection.Rotation();
-
-	// 현재 붙어있는 손 소켓에서 분리하고 월드 Transform 은 유지
-	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
-
-	// 손보다 앞에서 투척 시작
-	SetActorLocationAndRotation
-	(
-		LaunchLocation,
-		LaunchRotation,
-		false, // 이동 경로 충돌 검사			// 이거 true로 하면 투척류가 손에서 분리될 때, 손과 충돌해서 튕겨나가는 현상 발생
-		nullptr, // 충돌 정보 받을 포인터
-		ETeleportType::TeleportPhysics
-	);
-
-	// 투척류 Projectile Movement 활성화
-	LaunchCurrentActorAsProjectile(ThrowDirection);
-
-	m_bIsCharging = false;
-	m_ThrowableState = EThrowableState::Thrown;
-
-	// 타이머형 투척류만 타이머 시작
-	if (!m_bExplodeOnImpact && HasFuseTimer())
-	{
-		StartFuseTimer();
-	}
+	// 클라이언트가 사용한 위치/방향 그대로 사용
+	ExecuteThrowMovement(_LaunchLocation, ThrowDirection);
 
 	// 복제 빨리 요청
 	ForceNetUpdate();
 }
 
+void AC_ThrowableWeaponBase::Server_Explode_Implementation(bool _bStopThrowMontage, FVector_NetQuantize _ExplosionLocation, FRotator _ExplosionRotation)
+{
+	if (!HasAuthority())
+		return;
+
+	if (m_ThrowableState == EThrowableState::Exploded)
+		return;
+
+	// 서버 수류탄도 폭발 상태로 변경
+	m_ThrowableState = EThrowableState::Exploded;
+
+	// 서버에서 이동 정지
+	if (m_ProjectileMovement)
+	{
+		m_ProjectileMovement->StopMovementImmediately(); // 속도 제거
+		m_ProjectileMovement->Deactivate(); // Projectile Movement 비활성화
+	}
+
+	// 충돌 비활성화
+	if (m_MainCollider)
+	{
+		m_MainCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+
+	SetActorEnableCollision(false);
+
+	// 폭발 효과 전달
+	Multicast_PlayExplosionFX(_bStopThrowMontage, _ExplosionLocation, _ExplosionRotation);
+
+	// 폭발 처리 완료 후, Actor 제거
+	SetActorHiddenInGame(true);
+	Destroy();
+}
+
 void AC_ThrowableWeaponBase::Multicast_PlayExplosionFX_Implementation(bool _bStopThrowMontage, FVector_NetQuantize _ExplosionLocation, FRotator _ExplosionRotation)
 {
-	// 손에 들고 있는 상태에서 폭발할 수 있으므로 여기서도 예측 경로 제거
-	ClearPredictedPath();
+	if (!m_OwnerPlayer)
+	{
+		m_OwnerPlayer =
+			Cast<AC_BasicPlayer>(GetOwner());
+	}
 
-	/// TODO : 폭발 시, 투척류 애님 몽타주가 재생 중이면 Stop 처리
-	/// 수류탄을 들고있는 기본 상태보다 아무것도 들고있지 않는 기본 상태로
+	// 호스트가 던졌을 경우, 서버에서 이미 폭발 이펙트 재생했으므로, 중복 재생 방지
+	// 로컬 플레이어는 이미 폭발 이펙트 재생했으므로, 중복 재생 방지
+	if (!HasAuthority() && m_OwnerPlayer->IsLocallyControlled())
+	{
+		return;
+	}
+
 	if (_bStopThrowMontage)
 	{
 		UAnimInstance* AnimInstance = m_OwnerPlayer->GetMesh()->GetAnimInstance();
@@ -623,10 +631,7 @@ void AC_ThrowableWeaponBase::OnRemovePin()
 	// R 키를 먼저 눌러둔 경우, 핀 제거 후 바로 타이머 시작
 	if (m_bWantsCook)
 	{
-		if (HasAuthority())
-			StartFuseTimer();
-		else
-			Server_StartFuseTimer();
+		StartFuseTimer();
 	}
 }
 
@@ -675,27 +680,33 @@ void AC_ThrowableWeaponBase::OnThrowThrowable()
 	if (ThrowDirection.IsNearlyZero())
 		return;
 
+	const FVector LaunchLocation = GetLaunchLocation(ThrowDirection);
+
 	// 투척류 예측 경로 제거
 	ClearPredictedPath();
 
+	// 로컬 플레이어 신뢰 처리 // 여기서 먼저 처리
+	ExecuteThrowMovement(LaunchLocation, ThrowDirection);
+
+	// 로컬에서 FuseTimer 시작
+	if (!m_bExplodeOnImpact && HasFuseTimer())
+	{
+		StartFuseTimer();
+	}
+
+	// 서버는 RPC 호출 없이 바로 처리
 	if (HasAuthority())
 	{
-		ThrowThrowableOnServer(ThrowDirection);
+		ForceNetUpdate();
 		return;
 	}
 
-	m_bIsCharging = false;
-	m_ThrowableState = EThrowableState::Thrown;
-
-	Server_ThrowThrowable(ThrowDirection);
-
-	// 이후 부분 OnServer 로 옮김
+	// 서버에 투척 처리 요청
+	Server_ThrowThrowable(LaunchLocation, ThrowDirection);
 }
 
 void AC_ThrowableWeaponBase::OnThrowProcessEnd()
 {
-	PRINT_LOCAL(GetWorld(), "OnThrowProcessEnd", FColor::MakeRandomColor(), 20.f);
-	
 	// TODO 
 	// 수류탄 던짐
 	// EquippedComponent의 CurrentWeapon은 nullptr 또는 다음 수류탄으로 변경
@@ -745,22 +756,15 @@ bool AC_ThrowableWeaponBase::OnStartCookInput()
 		return true;
 	}
 
-	UC_Util::Print("OnStartCookInput");
+	PRINT_LOCAL(GetWorld(), "ThrowableWeaponBase - OnStartCookInput", FColor::Red, 10.f);
 
-	if (HasAuthority())
-	{
-		return StartFuseTimer();
-	}
-
-	Server_StartFuseTimer();
-
-	return true;
+	// 로컬 환경에서만 FuseTimer 시작
+	return StartFuseTimer();
 }
 
 void AC_ThrowableWeaponBase::Explode()
 {
-	// 서버에서만 폭발 판정
-	if (!HasAuthority())
+	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled())
 		return;
 
 	if (m_ThrowableState == EThrowableState::Exploded)
@@ -790,30 +794,68 @@ void AC_ThrowableWeaponBase::Explode()
 
 	SetActorEnableCollision(false);
 
-	// 폭발 처리는 II_ExplodeStrategy를 상속받은 클래스에서 처리
-	// 해당 객체가 Interface를 구현했는지 확인
-	// 폭발 전략 객체가 없거나, Interface를 구현하지 않은 경우, Actor 제거
-	if (!IsValid(m_ExplodeStrategyObject) || !m_ExplodeStrategyObject->GetClass()->ImplementsInterface(UI_ExplodeStrategy::StaticClass()))
+	// 예측 경로 제거
+	ClearPredictedPath();
+
+	bool bExploded = false;
+
+	if (IsValid(m_ExplodeStrategyObject) && m_ExplodeStrategyObject->GetClass()->ImplementsInterface(UI_ExplodeStrategy::StaticClass()))
 	{
-		UC_Util::Print("[AC_ThrowableWeaponBase::Explode] Not Implements Interface");
+		bExploded = II_ExplodeStrategy::Execute_UseStrategy(m_ExplodeStrategyObject, this);
+	}
+
+	else
+	{
+		UC_Util::Print("ExplodeStrategyObject is not valid or does not implement I_ExplodeStrategy", FColor::Red, 10.f);
+	}
+
+	if (!bExploded)
+	{
+		UC_Util::Print("[Throwable Explode] Strategy Failed");
+	}
+	
+	// 로컬의 폭발 위치와 회전 정보
+	const FVector ExplosionLocation = GetActorLocation();
+	const FRotator ExplosionRotation = GetActorRotation();
+
+	// 서버
+	if (HasAuthority())
+	{
+		Multicast_PlayExplosionFX(bStopThrowMontage, ExplosionLocation, ExplosionRotation);
 		
+		// 폭발 처리 완료 후, Actor 제거
 		SetActorHiddenInGame(true);
 		Destroy();
+
 		return;
 	}
 
-	bool bExploded = II_ExplodeStrategy::Execute_UseStrategy(m_ExplodeStrategyObject, this);
-	if (bExploded)
+	// 클라이언트
+	if (bStopThrowMontage)
 	{
-		const FVector ExplosionLocation = GetActorLocation();
-		const FRotator ExplosionRotation = GetActorRotation();
-
-		Multicast_PlayExplosionFX(bStopThrowMontage, ExplosionLocation, ExplosionRotation);
+		UAnimInstance* AnimInstance = m_OwnerPlayer->GetMesh()->GetAnimInstance();
+		if (AnimInstance)
+		{
+			AnimInstance->Montage_Stop(0.2f, m_ThrowMontage);
+		}
 	}
-	
-	// 폭발 처리 완료 후, Actor 제거
+
+	if (m_ExplosionEffect)
+	{
+		// 폭발 이펙트 생성
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld()
+			, m_ExplosionEffect
+			, ExplosionLocation
+			, ExplosionRotation
+			, FVector(m_ExplosionEffectScale)
+			, true
+		);	// 재생 종료 후 자동 제거
+	}
+
 	SetActorHiddenInGame(true);
-	Destroy();
+	// Destory() => 실제 제거는 서버에서만 호출하도록 변경
+
+	Server_Explode(bStopThrowMontage, ExplosionLocation, ExplosionRotation);
 }
 
 // ----------------- 투척 취소 관련 처리 -----------------
@@ -1005,10 +1047,44 @@ void AC_ThrowableWeaponBase::LaunchCurrentActorAsProjectile(const FVector& _Thro
 	m_ProjectileMovement->Activate(true);
 }
 
+void AC_ThrowableWeaponBase::ExecuteThrowMovement(const FVector& _LaunchLocation, const FVector& _ThrowDirection)
+{
+	const FVector ThrowDirection = _ThrowDirection.GetSafeNormal();
+	if (ThrowDirection.IsNearlyZero())
+		return;
+
+	const FRotator LaunchRotation = ThrowDirection.Rotation();
+
+	// 현재 붙어있는 손 소켓에서 분리하고 월드 Transform 은 유지
+	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+
+	// 손보다 앞에서 투척 시작
+	SetActorLocationAndRotation
+	(
+		_LaunchLocation,
+		LaunchRotation,
+		false, // 이동 경로 충돌 검사			// 이거 true로 하면 투척류가 손에서 분리될 때, 손과 충돌해서 튕겨나가는 현상 발생
+		nullptr, // 충돌 정보 받을 포인터
+		ETeleportType::TeleportPhysics
+	);
+
+	// 투척류 Projectile Movement 활성화
+	LaunchCurrentActorAsProjectile(ThrowDirection);
+
+	m_bIsCharging = false;
+	m_ThrowableState = EThrowableState::Thrown;
+}
+
 void AC_ThrowableWeaponBase::OnThrowableHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-	// 서버에서만 처리
-	if (!HasAuthority())
+	// m_OwnerPlayer 를 설정하는건 서버에서만 해주기때문에 클라이언트에서 먼저 폭발하려면 가져와야함
+	if (!m_OwnerPlayer)
+	{
+		m_OwnerPlayer = Cast<AC_BasicPlayer>(GetOwner());
+	}
+
+	// 로컬 플레이어만 폭발 판정
+	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled())
 		return;
 
 	// 던져진 상태가 아니면 Hit 이벤트 무시
@@ -1024,11 +1100,11 @@ void AC_ThrowableWeaponBase::OnThrowableHit(UPrimitiveComponent* HitComponent, A
 		return;
 
 	// 충돌이 발생했는가
-	if (Hit.bBlockingHit)
-	{
-		// 폭발 전에 실제 충돌 정보 저장
-		m_HitResult = Hit;
-	}
+	if (!Hit.bBlockingHit)
+		return;
+	
+	// 폭발 전에 실제 충돌 정보 저장
+	m_HitResult = Hit;
 
 	Explode();
 }
@@ -1044,8 +1120,11 @@ bool AC_ThrowableWeaponBase::HasFuseTimer() const
 
 bool AC_ThrowableWeaponBase::StartFuseTimer()
 {
-	// 서버에서만 관리
-	if (!HasAuthority())
+	if (!m_OwnerPlayer)
+		return false;
+
+	// 로컬 플레이어만 타이머 시작
+	if (!m_OwnerPlayer->IsLocallyControlled())
 		return false;
 
 	if (!HasFuseTimer())
@@ -1071,7 +1150,7 @@ bool AC_ThrowableWeaponBase::StartFuseTimer()
 		false
 	);
 	
-	UC_Util::Print("Start Fuse Timer");
+	PRINT_LOCAL(GetWorld(), "ThrowableWeaponBase - Start Fuse Timer", FColor::Red, 10.f);
 
 	return true;
 }
@@ -1087,7 +1166,8 @@ void AC_ThrowableWeaponBase::ClearFuseTimer()
 
 void AC_ThrowableWeaponBase::OnFuseTimerFinished()
 {
-	if (!HasAuthority())
+	// 로컬 환경에서만 폭발 처리
+	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled())
 		return;
 
 	UC_Util::Print("Finish Fuse Timer");

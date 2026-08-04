@@ -59,7 +59,7 @@ protected:
 	UFUNCTION(Server, Reliable, WithValidation)
 	virtual void Server_DecreaseCurCount();
 	
-private:
+private: // 동기화 관련
 
 	// ============= 투척 애님 몽타주 재생 관련 =================
 
@@ -72,22 +72,23 @@ private:
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_PlayThrowMontage(FName _SectionName);
 
-
-	// ============= 쿠킹 관련 =================
-	UFUNCTION(Server, Reliable)
-	void Server_StartFuseTimer();
-
-
 	// ============== 투척 처리 관련 =================
 
 	UFUNCTION(Server, Reliable)
-	void Server_ThrowThrowable(FVector_NetQuantizeNormal _ThrowDirection); // FVector_NetQuantizeNormal : 정규화된 방향벡터로 네트워크 전송량 줄임
+	void Server_ThrowThrowable(FVector_NetQuantize _LaunchLocation, FVector_NetQuantizeNormal _ThrowDirection); // FVector_NetQuantizeNormal : 정규화된 방향벡터로 네트워크 전송량 줄임
 
 	// 서버에서 실제 투척 처리
-	void ThrowThrowableOnServer(const FVector& _ThrowDirection);
+	void ThrowThrowableOnServer(const FVector& _LaunchLocation, const FVector& _ThrowDirection);
 
 
 	// ============== 폭발 처리 관련 =================
+	
+	/// <summary>
+	/// 클라이언트에서 발생한 폭발을 서버에 알림
+	/// </summary>
+	UFUNCTION(Server, Reliable)
+	void Server_Explode(bool _bStopThrowMontage, FVector_NetQuantize _ExplosionLocation, FRotator _ExplosionRotation);
+	
 	// 폭발 효과 재생
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_PlayExplosionFX(bool _bStopThrowMontage, FVector_NetQuantize _ExplosionLocation, FRotator _ExplosionRotation);
@@ -187,6 +188,11 @@ private: // 투척 관련 처리
 	/// 투척 시작 위치와 방향을 기준으로 Projectile Movement Component를 사용하여 투척
 	///	</summary>
 	void LaunchCurrentActorAsProjectile(const FVector& _ThrowDirection);
+
+	/// <summary>
+	/// 투척 시작 위치와 방향을 기준으로 수류탄 이동 시작
+	/// </summary>
+	void ExecuteThrowMovement(const FVector& _LaunchLocation, const FVector& _ThrowDirection);
 
 	/// <summary>
 	///  충돌 이벤트 함수
