@@ -17,6 +17,8 @@ class PROJECT_ZOMBIE_API UC_InventoryWidget : public UUserWidget
 {
 	GENERATED_BODY()
 	
+public:
+	void InitializeInventoryWidget();
 protected:
 	virtual void NativeConstruct() override;
 	
