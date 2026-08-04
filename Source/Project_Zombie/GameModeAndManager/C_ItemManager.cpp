@@ -45,8 +45,11 @@ void UC_ItemManager::Initialize(FSubsystemCollectionBase& Collection)
         ItemUpgradeCostData = Settings->WeaponUpgradeCostTableConfig.LoadSynchronous();
     }
     
-    
-    
+    // PlayerStatUpgradeData 데이터 테이블 캐싱
+    if (!Settings->FPlayerStatUpgradeDataTableConfig.IsNull())
+    {
+        PlayerStatUpgradeData = Settings->FPlayerStatUpgradeDataTableConfig.LoadSynchronous();
+    }
 }
 
 void UC_ItemManager::ReturnToPool(AC_ItemPickUp* ItemToReturn)
