@@ -144,9 +144,9 @@ void AC_BasicPlayer::Server_RequestItemUpgrade_Implementation(AC_ItemUpgradeStat
 	
 	if (!PC) return;
 	
-	if (PC->GetIsUpgrading()) return;
+	if (PC->GetIsUpgradingItem()) return;
 	
-	PC->SetIsUpgrading(true);
+	PC->SetIsUpgradingItem(true);
 	
 	InInteractableActor->RequestItemUpgrade(this, InItemIndex, TargetStat);
 }
@@ -188,6 +188,8 @@ void AC_BasicPlayer::BeginPlay()
 	if (m_InvenComponent)
 	{
 		m_InvenComponent->SetHasEquipmentSlots(true);
+		
+		UIManager->GetInventoryWidget()->InitializeInventoryWidget();
 		
 		UIManager->GetInventoryWidget()->GetPlayerGridWidget()->SetInvenComponent(m_InvenComponent);
 	
@@ -261,8 +263,7 @@ void AC_BasicPlayer::Tick(float DeltaTime)
 	// 달리기 중이면 부스트 소모
 	if (m_PlayerPoseState == EPlayerPoseState::Sprint)
 	{
-		
-		UseBoost(m_StatComponent->GetStat(StatName::BoostCost) * DeltaTime);
+		UseBoost( m_StatComponent->GetStat(StatName::BoostCost) * DeltaTime);
 		
 		if (m_StatComponent->GetStat(StatName::CurBoost) <= 0.f)
 		{
