@@ -8,6 +8,27 @@
 
 class UC_ItemManager;
 
+/// <summary>
+/// 서버에서 결정한 죽음 상태와 몽타주 정부를
+/// 클라이언트에도 전달하기 위한 구조체
+/// m_bDead와 몽타주 인덱스의 복제 순서를 
+/// 보장하기 위해 구조체로 묶어서 RepNotify 처리
+/// </summary>
+USTRUCT()
+struct FEnemyDeadRepData
+{
+	GENERATED_BODY()
+
+public:
+	// 현재 죽은 상태인지 여부
+	UPROPERTY()
+	bool bDead = false;
+
+	// 서버에서 선택한 죽음 몽타주 배열 인덱스
+	UPROPERTY()
+	int32 DeadMontageIndex = INDEX_NONE;
+};
+
 UCLASS()
 class PROJECT_ZOMBIE_API AC_BasicEnemy : public AC_BasicNPC
 {
@@ -23,10 +44,12 @@ protected:
 	TObjectPtr<class UC_DropTableDataAsset> m_DropTableDataAsset{};
 
 protected: /* Dead 관련 */
-
-	// 죽었는지 판단
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Dead")
-	bool m_bDead = false;
+	/// <summary>
+	/// 서버에서 결정한 죽음 상태와 몽타주 인덱스를
+	/// 클라이언트에서 받으면 OnRep_DeadData() 호출해서 처리
+	/// </summary>
+	UPROPERTY(ReplicatedUsing = OnRep_DeadData)
+	FEnemyDeadRepData m_DeadRepData;
 
 	// 죽음 몽타주
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dead")
@@ -116,8 +139,27 @@ protected:
 	/// </summary>
 	virtual void StopAllActionsForDead();
 
-	virtual void PlayDeadAnimation();
+	/// <summary>
+	/// 서버와 클라이언트에서 공통으로 적용할 죽음 시각 처리
+	/// </summary>
+	void ApplyDeadVisual(int32 _DeadMontageIndex);
+
+	/// <summary>
+	/// 전달받은 인덱스의 죽음 몽타주 재생
+	/// 서버와 클라이언트 공통 시각 처리
+	/// </summary>
+	virtual void PlayDeadAnimation(int32 _DeadMontageIndex);
+
+	/// <summary>
+	/// 클라이언트가 서버에서 결정된 죽음 상태와
+	/// 몽타주 인덱스를 받으면 호출되는 RepNotify 함수
+	/// </summary>
+	UFUNCTION()
+	void OnRep_DeadData();
 	
+public:
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 public:
 	
 	void DecreaseHealRequestRegisterCount();

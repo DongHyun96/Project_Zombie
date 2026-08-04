@@ -20,13 +20,17 @@
 
 AC_ToxicProjectile::AC_ToxicProjectile()
 {
+	m_bUseTargetArrivalCheck = false;
+
+	SetReplicates(true);
+	SetReplicateMovement(true);
+
 	// 데이터에셋 값을 받지 않았기 때문에 생성자에서 
 	// PMC 설정
 	m_bUseHighArc = false;
 	m_ArcVelocityOverride = 0.f;
 	m_GravityScale = 0.4;
 
-	m_bUseTargetArrivalCheck = false;
 }
 
 void AC_ToxicProjectile::InitProjectile(AC_BasicEnemy* _SkillUser, UC_EnemySkillData* _Skill, const FVector& _TargetLocation)
