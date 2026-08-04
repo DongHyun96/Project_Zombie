@@ -20,13 +20,25 @@ public:
 	
 	UFUNCTION(Client, Reliable)
 	void Client_FinishItemUpgrade();
-
-	UFUNCTION()
-	void OnRep_IsUpgrading();
-public:
-	void SetIsUpgrading(bool InIsUpgrading) { bIsUpgrading = InIsUpgrading; }
 	
-	bool GetIsUpgrading() { return bIsUpgrading; }
+	void FinishPlayerStatUpgrade();
+
+	UFUNCTION(Client, Reliable)
+	void Client_FinishPlayerStatUpgrade();
+	
+	UFUNCTION()
+	void OnRep_IsUpgradingItem();
+	
+	UFUNCTION()
+	void OnRep_IsUpgradingPlayerStat();
+public:
+	void SetIsUpgradingItem(bool InIsUpgrading) { bIsUpgradingItem = InIsUpgrading; }
+	
+	bool GetIsUpgradingItem() { return bIsUpgradingItem; }
+	
+	void SetIsUpgradingPlayerStat(bool InIsUpgrading) { bIsUpgradingPlayerStat = InIsUpgrading; }
+	
+	bool GetIsUpgradingPlayerStat() { return bIsUpgradingPlayerStat; }
 
 protected:
 	virtual void Destroyed() override;
@@ -44,7 +56,11 @@ public:
 	
 protected:
 
-	// 서버에서 현재 강화중인지 판단하는 함수. 
-	UPROPERTY(ReplicatedUsing = OnRep_IsUpgrading)
-	bool bIsUpgrading = false;
+	// 서버에서 현재 Item을 강화중인지 판단하는 함수. 
+	UPROPERTY(ReplicatedUsing = OnRep_IsUpgradingItem)
+	bool bIsUpgradingItem = false;
+	
+	// 서버에서 현재 Player Stat을 강화중인지 판단하는 함수. 
+	UPROPERTY(ReplicatedUsing = OnRep_IsUpgradingPlayerStat)
+	bool bIsUpgradingPlayerStat = false;
 };
