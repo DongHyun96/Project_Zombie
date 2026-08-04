@@ -297,6 +297,11 @@ void UC_StatComponentBase::SetCurHP(float _HP)
 	Server_SetCurHP(_HP);
 }
 
+float UC_StatComponentBase::GetCurHP() const
+{
+	return m_Stats[StatName::CurHP];
+}
+
 bool UC_StatComponentBase::Local_SetCurHP(float _HP)
 {
 	if (_HP > GetStat(StatName::MaxHP)) return false; // 음수 체크는 SetStat에서 처리됨
@@ -369,6 +374,16 @@ void UC_StatComponentBase::Multicast_IncreaseCurHP_Implementation(float _Increas
 void UC_StatComponentBase::DecreaseCurHP(float _DecreaseAmount)
 {
 	Server_DecreaseCurHP(_DecreaseAmount);
+}
+
+bool UC_StatComponentBase::IsCurHPFull() const
+{
+	return m_Stats[StatName::CurHP] >= m_Stats[StatName::MaxHP];
+}
+
+bool UC_StatComponentBase::IsCurHPZero() const
+{
+	return m_Stats[StatName::CurHP] <= 0.f;
 }
 
 bool UC_StatComponentBase::Local_DecreaseCurHP(float _DecreaseAmount)

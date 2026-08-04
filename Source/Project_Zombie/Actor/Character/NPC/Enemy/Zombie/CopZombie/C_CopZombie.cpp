@@ -149,6 +149,15 @@ void AC_CopZombie::DropWeapon()
 	m_EquippedGun = nullptr;
 }
 
+void AC_CopZombie::OnDead(AC_BasicCharacter* _DeadCharacter)
+{
+	Super::OnDead(_DeadCharacter);
+	
+	// 죽었을 때, 만약 무기를 들고 있는 상황이라면 DropWeapon 처리
+	if (m_EquippedGun)
+		DropWeapon();
+}
+
 void AC_CopZombie::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);

@@ -93,14 +93,14 @@ public:
 public: /* 공용 Stat 처리 함수 */
 	
 	void SetCurHP(float _HP);
-	float GetCurHP() const { return m_Stats[TEXT("CurHP")]; }
+	float GetCurHP() const;
 	float GetCurHPRatio() const;
 	
 	void IncreaseCurHP(float _IncreaseAmount);
 	void DecreaseCurHP(float _DecreaseAmount);
 	
-	bool IsCurHPFull() const { return m_Stats[TEXT("CurHP")] >= m_Stats[TEXT("CurMaxHP")]; }
-	bool IsCurHPZero() const { return m_Stats[TEXT("CurHP")] <= 0.f; }
+	bool IsCurHPFull() const;
+	bool IsCurHPZero() const;
 	
 private:
 	 
