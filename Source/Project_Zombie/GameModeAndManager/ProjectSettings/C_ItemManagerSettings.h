@@ -42,6 +42,11 @@ public:
 	UPROPERTY(Config, EditAnywhere, Category = "DataTables")
 	TSoftObjectPtr<UDataTable> WeaponUpgradePerValueTableConfig{};
 	
-	UPROPERTY(Config, EditAnywhere, Category = "DataTable Settings")
+	// Weapon 강화 재료 목록 
+	UPROPERTY(Config, EditAnywhere, Category = "DataTable")
 	TSoftObjectPtr<UDataTable> WeaponUpgradeCostTableConfig;
+	
+	// Player Stat의 Stat들의 강화 수치와 요구 재료 목록.
+	UPROPERTY(Config, EditAnywhere, Category = "DataTable")
+	TSoftObjectPtr<UDataTable> FPlayerStatUpgradeDataTableConfig;
 };
