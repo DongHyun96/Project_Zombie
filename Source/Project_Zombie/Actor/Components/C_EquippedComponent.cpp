@@ -99,6 +99,8 @@ void UC_EquippedComponent::UpdateWeaponData(EWeaponSlot _TargetWeapon, FName InI
 
 	m_Weapons[Idx]->InitializeItemData(ItemManager->GetWeaponData(InItemRow));
 	
+	UpdateAmmoWidget();
+	
 	//AC_UIManager* UIManager = Cast<AC_UIManager>(Cast<AC_BasicPlayerController>(m_OwnerPlayer->GetController())->GetHUD());
 	//
 	//if (!UIManager) return;
