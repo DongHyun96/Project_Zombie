@@ -18,7 +18,8 @@ void UC_CompassMarkerWidget::NativeOnInitialized()
 	InitDynamicMtrls();
 
 	m_LocalPlayer           = Cast<AC_BasicPlayer>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
-	m_LocalPlayerController = m_LocalPlayer->GetController<APlayerController>();
+	if (m_LocalPlayer)
+		m_LocalPlayerController = m_LocalPlayer->GetController<APlayerController>();
 	
 	if (!m_LocalPlayer)
 		UC_Util::Print("From UC_CompassMarkerWidget::NativeOnInitialized : LocalPlayer init failed!", FColor::Red, 10.f);
@@ -27,6 +28,10 @@ void UC_CompassMarkerWidget::NativeOnInitialized()
 void UC_CompassMarkerWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+	
+	// 생성자에서 못 넣었을 때 대비용으로 생성자 예외처리하고 여기서 추가 코드 생성 - 상연
+	if (m_LocalPlayer)
+		m_LocalPlayerController = m_LocalPlayer->GetController<APlayerController>();
 }
 
 void UC_CompassMarkerWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
