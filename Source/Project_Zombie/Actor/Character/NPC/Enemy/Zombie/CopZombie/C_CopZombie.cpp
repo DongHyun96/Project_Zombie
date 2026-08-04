@@ -123,6 +123,7 @@ bool AC_CopZombie::EquipWeapon(AC_GunBase* _StolenWeapon)
 		if (TempEntry)
 		{
 			Entry = *TempEntry;
+			Entry.LockedByPlayerID = INDEX_NONE;
 			
 			TempEntry->Clear();
 			
@@ -133,12 +134,16 @@ bool AC_CopZombie::EquipWeapon(AC_GunBase* _StolenWeapon)
 			// 무기를 빼앗긴 Player의 UI 업데이트.
 			if (LinkOwningInvenComp)
 			{
+				
 				AC_BasicPlayer* OriginPlayer = Cast<AC_BasicPlayer>(LinkOwningInvenComp->GetOwner());
 				
-				if (OriginPlayer && OriginPlayer->IsLocallyControlled())
-					LinkOwningInvenComp->OnInventorySlotChanged.Broadcast(LinkComp->GetSlotIndex(), sub);
-				else
-					LinkOwningInvenComp->MarkSlotDirty(Entry.SlotIndex);
+				if (OriginPlayer)
+					OriginPlayer->GetInvenComponent()->InitInvenItemAt(Entry.SlotIndex);
+				
+				//if (OriginPlayer && OriginPlayer->IsLocallyControlled())
+				//	LinkOwningInvenComp->OnInventorySlotChanged.Broadcast(LinkComp->GetSlotIndex(), sub);
+				//else
+				//	LinkOwningInvenComp->MarkSlotDirty(Entry.SlotIndex);
 			}
 		}
 		else
@@ -148,6 +153,8 @@ bool AC_CopZombie::EquipWeapon(AC_GunBase* _StolenWeapon)
 			sub.CurCount = 1;
 			Entry = sub;
 		}
+		
+		Entry.SlotIndex = -1;
 	}
 	
 	m_CopZombieState = ECopZombieState::WeaponEarned; // ABP 무기 자세로 자세전환
