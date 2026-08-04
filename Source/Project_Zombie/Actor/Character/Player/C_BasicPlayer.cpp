@@ -46,6 +46,7 @@
 #include "Actor/Components/PlayerProfileComponent/C_PlayerProfileComponent.h"
 
 #include "Net/UnrealNetwork.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "UI/InvenUI/DivideWIdget/C_DivideItemWidget.h"
 #include "UI/InvenUI/Upgrade/C_ItemUpgradeWidget.h"
 #include "Item/Interact/C_InteractableBase.h"
@@ -251,6 +252,7 @@ void AC_BasicPlayer::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(AC_BasicPlayer, m_PlayerPoseState);
 	
 	DOREPLIFETIME(AC_BasicPlayer, m_HandState);
+	DOREPLIFETIME(AC_BasicPlayer, ReplicatedAimYaw);
 }
 
 void AC_BasicPlayer::Tick(float DeltaTime)
@@ -281,6 +283,23 @@ void AC_BasicPlayer::Tick(float DeltaTime)
 		m_BasicPlayerAimComponent->UpdateCameraInterpolation(DeltaTime);
 	}
 
+	if (IsLocallyControlled())
+	{
+		const FRotator ControlRot = GetControlRotation();
+		const FRotator ActorRot = GetActorRotation();
+		const FRotator DeltaRot = UKismetMathLibrary::NormalizedDeltaRotator(ControlRot, ActorRot);
+
+		ReplicatedAimYaw = FMath::Clamp(DeltaRot.Yaw, -90.f, 90.f);
+
+		if (HasAuthority())
+		{
+			RemoteViewPitch = ControlRot.Pitch * 255.f / 360.f;
+		}
+		else
+		{
+			Server_SetAimYaw(ReplicatedAimYaw);
+		}
+	}
 }
 
 void AC_BasicPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -362,6 +381,11 @@ bool AC_BasicPlayer::SetCurDraggedItem(struct FInventoryEntry InEntry, UC_InvenC
 	curDraggedItem.Clear();
 	
 	return false;
+}
+
+void AC_BasicPlayer::Server_SetAimYaw_Implementation(float InAimYaw)
+{
+	ReplicatedAimYaw = FMath::Clamp(InAimYaw, -90.f, 90.f);
 }
 
 void AC_BasicPlayer::Server_SetHandState_Implementation(EHandState _HandState)
@@ -474,6 +498,10 @@ void AC_BasicPlayer::StartSprint()
 
 	// 웅크리기 중이거나 웅크리기 전환 중일 때는 달리기 불가
 	if (m_PlayerPoseState == EPlayerPoseState::Crouch)
+		return;
+
+	// 조준 상태일 때도 달리기 불가
+	if (m_PlayerPoseState == EPlayerPoseState::Aim)
 		return;
 
 	// 부스트가 없으면 달리기 불가

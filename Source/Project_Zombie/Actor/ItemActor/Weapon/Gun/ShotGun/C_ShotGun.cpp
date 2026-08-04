@@ -4,6 +4,8 @@
 #include "GameModeAndManager/C_UIManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystemComponent.h"
+#include "Actor/Character/NPC/Enemy/C_BasicEnemy.h"
+
 
 #include "TimerManager.h"
 #include "Animation/AnimMontage.h"
@@ -145,6 +147,8 @@ void AC_ShotGun::PullTrigger()
 {
 	if (m_bIsFiring || m_bIsReloading || !m_bCanFire || m_CurrentAmmo <= 0) return;
 
+	if (m_OwnerPlayer && m_OwnerPlayer->GetPlayerMoveState() == EPlayerPoseState::Sprint) return;
+
 	m_bIsFiring = true;
 	m_bCanFire = false;
 
@@ -161,6 +165,12 @@ void AC_ShotGun::ResetFireCooldown()
 
 void AC_ShotGun::Client_ExecuteFire()
 {
+	if (m_OwnerPlayer && m_OwnerPlayer->GetPlayerMoveState() == EPlayerPoseState::Sprint)
+	{
+		m_bIsFiring = false;
+		return;
+	}
+
 	if (m_CurrentAmmo <= 0 || m_bIsReloading)
 	{
 		m_bIsFiring = false;
@@ -338,9 +348,8 @@ void AC_ShotGun::AIFire(const FVector& TargetLocation)
 
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(this);
-	if (GetOwner()) QueryParams.AddIgnoredActor(GetOwner());
+	if (m_OwnerEnemy) QueryParams.AddIgnoredActor(m_OwnerEnemy);
 
-	// ★ 추가
 	if (AActor* AttachParent = GetAttachParentActor())
 	{
 		QueryParams.AddIgnoredActor(AttachParent);
@@ -359,7 +368,11 @@ void AC_ShotGun::AIFire(const FVector& TargetLocation)
 
 		if (bHit && HitResult.GetActor())
 		{
-			AController* InstigatorController = GetOwner() ? Cast<APawn>(GetOwner())->GetController() : nullptr;
+			AActor* HitActor = HitResult.GetActor();
+
+			APawn* ShootingPawn = Cast<APawn>(GetAttachParentActor());
+
+			AController* InstigatorController = ShootingPawn ? ShootingPawn->GetController() : nullptr;
 			float PelletDamage = m_Damage / static_cast<float>(m_PelletCount);
 			UGameplayStatics::ApplyDamage(HitResult.GetActor(), PelletDamage, InstigatorController, this, nullptr);
 		}

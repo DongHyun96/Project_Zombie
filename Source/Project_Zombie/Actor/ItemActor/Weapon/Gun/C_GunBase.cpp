@@ -498,6 +498,9 @@ void AC_GunBase::PullTrigger()
 {
 	if (m_bIsFiring || m_bIsReloading || m_CurrentAmmo <= 0) return;
 
+	// 달리는 상태에서 사격 불가
+	if (m_OwnerPlayer && m_OwnerPlayer->GetPlayerMoveState() == EPlayerPoseState::Sprint) return;
+
 	m_bIsFiring = true;
 	Client_ExecuteFire();
 }
@@ -570,6 +573,13 @@ FVector AC_GunBase::LineTraceDamage(const FVector& CameraStart, const FRotator& 
 
 void AC_GunBase::Client_ExecuteFire()
 {
+	// 달리기 시 사격 중단
+	if (m_OwnerPlayer  &&  m_OwnerPlayer->GetPlayerMoveState() == EPlayerPoseState::Sprint)
+	{
+		ReleaseTrigger();
+		return;
+	}
+
 	if (m_CurrentAmmo <= 0 || m_bIsReloading)
 	{
 		m_bIsFiring = false;

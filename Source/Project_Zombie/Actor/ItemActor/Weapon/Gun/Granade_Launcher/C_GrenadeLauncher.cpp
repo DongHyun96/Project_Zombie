@@ -60,6 +60,8 @@ void AC_GrenadeLauncher::PullTrigger()
 	if (m_bIsFiring || m_bIsReloading || !m_bCanFire || m_CurrentAmmo <= 0)
 		return;
 
+	if (m_OwnerPlayer && m_OwnerPlayer->GetPlayerMoveState() == EPlayerPoseState::Sprint) return;
+
 	m_bIsFiring = true;
 	m_bCanFire = false;
 
@@ -121,24 +123,18 @@ void AC_GrenadeLauncher::SpawnShellEject()
 
 void AC_GrenadeLauncher::SpawnGrenadeProjectile(const FVector& TargetPoint)
 {
-	// 1. !m_OwnerPlayer 검사를 제거합니다.
 	if (!HasAuthority() || !m_WeaponMesh || !GetWorld() || !m_GrenadeClass)
 		return;
 
 	FVector StartLocation = m_WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
 	FVector LaunchDirection = (TargetPoint - StartLocation).GetSafeNormal();
 
-	float LaunchSpeed = 2500.0f;
-	FVector LaunchVelocity = LaunchDirection * LaunchSpeed;
+	FRotator SpawnRotation = LaunchDirection.Rotation();
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
-
-	// 2. Player뿐만 아니라 AI(CopZombie)도 Instigator가 될 수 있도록 Cast 처리
 	SpawnParams.Instigator = m_OwnerPlayer ? Cast<APawn>(m_OwnerPlayer) : Cast<APawn>(GetOwner());
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	FRotator SpawnRotation = LaunchVelocity.Rotation();
 
 	AC_GrenadeProjectile* Grenade = GetWorld()->SpawnActor<AC_GrenadeProjectile>(
 		m_GrenadeClass,
@@ -147,10 +143,6 @@ void AC_GrenadeLauncher::SpawnGrenadeProjectile(const FVector& TargetPoint)
 		SpawnParams
 	);
 
-	if (Grenade && Grenade->GetProjectileMovement())
-	{
-		Grenade->GetProjectileMovement()->Velocity = LaunchVelocity;
-	}
 }
 
 FVector AC_GrenadeLauncher::GetCameraTargetPoint() const

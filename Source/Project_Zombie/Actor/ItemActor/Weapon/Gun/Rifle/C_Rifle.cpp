@@ -142,10 +142,9 @@ void AC_Rifle::AIFire(const FVector& TargetLocation)
 
 	FHitResult HitResult;
 	FCollisionQueryParams QueryParams;
-	QueryParams.AddIgnoredActor(this);                     // 무기 자신 무시
-	if (m_OwnerEnemy) QueryParams.AddIgnoredActor(m_OwnerEnemy); // 무기 Owner 무시
+	QueryParams.AddIgnoredActor(this); 
+	if (m_OwnerEnemy) QueryParams.AddIgnoredActor(m_OwnerEnemy);
 
-	// ★ 핵심 추가: 무기를 들고 있는 AI 캐릭터(CopZombie)도 Ignore 처리
 	if (AActor* AttachParent = GetAttachParentActor())
 	{
 		QueryParams.AddIgnoredActor(AttachParent);
@@ -158,7 +157,6 @@ void AC_Rifle::AIFire(const FVector& TargetLocation)
 	{
 		AActor* HitActor = HitResult.GetActor();
 
-		// ★ 핵심 수정: HitActor가 플레이어 캐릭터인지 확인 후 대미지 전달
 		APawn* ShootingPawn = Cast<APawn>(GetAttachParentActor());
 		AController* InstigatorController = ShootingPawn ? ShootingPawn->GetController() : nullptr;
 

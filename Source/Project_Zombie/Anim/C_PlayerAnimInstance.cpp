@@ -78,25 +78,31 @@ void UC_PlayerAnimInstance::NativeUpdateAnimation(float _DT)
 		}
 	}
 
-	// 캐릭터의 기본 조준 회전값(Aim Rotation) 가져오기
-	// FRotator AimRotation = m_Character->GetBaseAimRotation();
-	const FRotator AimRotation = m_Character->GetControlRotation();
-	
-	// 캐릭터 자체의 회전값 가져오기
-	const FRotator ActorRotation = m_Character->GetActorRotation();
+	FRotator TargetAimRotation = FRotator::ZeroRotator;
 
-	// 캐릭터 회전과 조준 회전의 차이 계산
-	// 조준 각도가 캐릭터 정면을 기준으로 얼마나 위/아래로 꺾였는지 계산
-	const FRotator DeltaRotation = UKismetMathLibrary::NormalizedDeltaRotator(AimRotation, ActorRotation);
+	// 1. 내가 직접 조종하는 로컬 캐릭터인 경우 (0ms 반응속도)
+	if (m_Character->IsLocallyControlled())
+	{
+		TargetAimRotation = m_Character->GetControlRotation();
 
-	// 피치 값 할당
-	// m_Pitch = DeltaRotation.Pitch;
-	m_Pitch = FMath::Clamp(DeltaRotation.Pitch, -90.f, 90.f);
-	
-	// 턴 인 플레이스의 야값 할당
-	// m_Yaw = m_Character->GetControllerFSM()->GetDeltaYaw();
-	
-	// m_Yaw = DeltaRotation.Yaw;
-	m_Yaw = FMath::Clamp(DeltaRotation.Yaw, -90.f, 90.f);;
+		const FRotator ActorRotation = m_Character->GetActorRotation();
+		const FRotator DeltaRotation = UKismetMathLibrary::NormalizedDeltaRotator(TargetAimRotation, ActorRotation);
+
+		m_Pitch = FMath::Clamp(DeltaRotation.Pitch, -90.f, 90.f);
+		m_Yaw = FMath::Clamp(DeltaRotation.Yaw, -90.f, 90.f);
+	}
+	// 2. 남을 바라보는 경우 (서버 플레이어 포함 remote proxies)
+	else
+	{
+		// Pitch는 내장된 GetBaseAimRotation 사용
+		const FRotator BaseAimRot = m_Character->GetBaseAimRotation();
+		const FRotator ActorRotation = m_Character->GetActorRotation();
+		const FRotator DeltaRotation = UKismetMathLibrary::NormalizedDeltaRotator(BaseAimRot, ActorRotation);
+
+		m_Pitch = FMath::Clamp(DeltaRotation.Pitch, -90.f, 90.f);
+
+		// Yaw는 캐릭터에서 동기화해준 Custom ReplicatedYaw 사용
+		m_Yaw = m_Character->GetReplicatedAimYaw();
+	}
 	
 }

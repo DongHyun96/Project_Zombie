@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #include "C_GrenadeProjectile.h"
 #include "Engine/OverlapResult.h"
 #include "Engine/World.h"
@@ -8,8 +6,6 @@
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
-#include "DrawDebugHelpers.h"
-#include "Actor/ItemActor/Weapon/ThrowableWeapon/Strategy/C_GrenadeExplode.h"
 
 AC_GrenadeProjectile::AC_GrenadeProjectile()
 {
@@ -38,7 +34,6 @@ AC_GrenadeProjectile::AC_GrenadeProjectile()
 	ProjectileMovement->bShouldBounce = false;
 	ProjectileMovement->ProjectileGravityScale = 0.8f;
 
-	ExplosionStrategyClass = UC_GrenadeExplode::StaticClass();
 	m_ExplosionEffectScale = 1.0f;
 }
 
@@ -54,37 +49,9 @@ void AC_GrenadeProjectile::BeginPlay()
 	}
 }
 
-void AC_GrenadeProjectile::Multicast_PlayExplosionFX_Implementation(FVector ExplosionLocation)
-{
-	if (m_ExplosionEffect)
-	{
-		float EffectScale = (m_ExplosionEffectScale > 0.0f) ? m_ExplosionEffectScale : 1.0f;
-
-		UGameplayStatics::SpawnEmitterAtLocation(
-			GetWorld(),
-			m_ExplosionEffect,
-			ExplosionLocation,
-			FRotator::ZeroRotator,
-			FVector(EffectScale)
-		);
-	}
-
-	/*
-	DrawDebugSphere(
-		GetWorld(),
-		ExplosionLocation,
-		m_ExplosionRadius,
-		32,
-		FColor::Red,
-		false,
-		2.0f
-	);
-	*/
-}
-
 void AC_GrenadeProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-	if (!HasAuthority() || m_bHasExploded) return;
+	if (m_bHasExploded) return;
 
 	if (OtherActor && OtherActor != this && OtherActor != GetInstigator())
 	{
@@ -96,60 +63,105 @@ void AC_GrenadeProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActo
 			ProjectileMovement->StopMovementImmediately();
 			ProjectileMovement->Deactivate();
 		}
-
 		if (ProjectileMesh)
 		{
 			ProjectileMesh->SetVisibility(false);
 		}
 
-		const FVector ExplosionLocation = GetActorLocation();
+		const FVector HitLocation = GetActorLocation();
 
-		Multicast_PlayExplosionFX(ExplosionLocation);
-
-		FCollisionObjectQueryParams ObjectQueryParams;
-		ObjectQueryParams.AddObjectTypesToQuery(ECC_Pawn);
-
-		FCollisionQueryParams OverlapParams;
-		OverlapParams.AddIgnoredActor(this);
-
-		TArray<FOverlapResult> OverlapResults;
-		bool bHasOverlap = GetWorld()->OverlapMultiByObjectType(
-			OverlapResults,
-			ExplosionLocation,
-			FQuat::Identity,
-			ObjectQueryParams,
-			FCollisionShape::MakeSphere(m_ExplosionRadius),
-			OverlapParams
-		);
-
-		if (bHasOverlap)
+		if (m_ExplosionEffect)
 		{
-			TSet<AActor*> DamagedActors;
-
-			AController* InstigatorController = GetInstigator() ? GetInstigator()->GetController() : nullptr;
-
-			for (const FOverlapResult& Result : OverlapResults)
-			{
-				AActor* Target = Result.GetActor();
-
-				if (!Target || DamagedActors.Contains(Target)) continue;
-
-				// 거리 비례 데미지 계산
-				float Distance = FVector::Distance(ExplosionLocation, Target->GetActorLocation());
-				float AppliedDamage = FMath::Lerp(m_MaxDamage, m_MinDamage, FMath::Clamp(Distance / m_ExplosionRadius, 0.0f, 1.0f));
-
-				UGameplayStatics::ApplyDamage(
-					Target,
-					AppliedDamage,
-					InstigatorController,
-					this,
-					UDamageType::StaticClass()
-				);
-
-				DamagedActors.Add(Target);
-			}
+			float EffectScale = (m_ExplosionEffectScale > 0.0f) ? m_ExplosionEffectScale : 1.0f;
+			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), m_ExplosionEffect, HitLocation, FRotator::ZeroRotator, FVector(EffectScale));
 		}
 
-		Destroy();
+		if (HasAuthority())
+		{
+			ExplodeInternal(HitLocation);
+		}
+		else
+		{
+			Server_RequestExplode(HitLocation);
+		}
+	}
+}
+
+bool AC_GrenadeProjectile::Server_RequestExplode_Validate(FVector ExplosionLocation)
+{
+	return true;
+}
+
+void AC_GrenadeProjectile::Server_RequestExplode_Implementation(FVector ExplosionLocation)
+{
+	ExplodeInternal(ExplosionLocation);
+}
+
+void AC_GrenadeProjectile::ExplodeInternal(FVector ExplosionLocation)
+{
+	if (!HasAuthority()) return;
+
+	Multicast_PlayExplosionFX(ExplosionLocation);
+
+	FCollisionObjectQueryParams ObjectQueryParams;
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_Pawn);
+
+	FCollisionQueryParams OverlapParams;
+	OverlapParams.AddIgnoredActor(this);
+
+	TArray<FOverlapResult> OverlapResults;
+	bool bHasOverlap = GetWorld()->OverlapMultiByObjectType(
+		OverlapResults,
+		ExplosionLocation,
+		FQuat::Identity,
+		ObjectQueryParams,
+		FCollisionShape::MakeSphere(m_ExplosionRadius),
+		OverlapParams
+	);
+
+	if (bHasOverlap)
+	{
+		TSet<AActor*> DamagedActors;
+		AController* InstigatorController = GetInstigator() ? GetInstigator()->GetController() : nullptr;
+
+		for (const FOverlapResult& Result : OverlapResults)
+		{
+			AActor* Target = Result.GetActor();
+
+			if (!Target || DamagedActors.Contains(Target)) continue;
+
+			float Distance = FVector::Distance(ExplosionLocation, Target->GetActorLocation());
+			float AppliedDamage = FMath::Lerp(m_MaxDamage, m_MinDamage, FMath::Clamp(Distance / m_ExplosionRadius, 0.0f, 1.0f));
+
+			UGameplayStatics::ApplyDamage(
+				Target,
+				AppliedDamage,
+				InstigatorController,
+				this,
+				UDamageType::StaticClass()
+			);
+
+			DamagedActors.Add(Target);
+		}
+	}
+
+	SetLifeSpan(0.1f);
+}
+
+void AC_GrenadeProjectile::Multicast_PlayExplosionFX_Implementation(FVector ExplosionLocation)
+{
+	if (GetInstigator() && GetInstigator()->IsLocallyControlled()) return;
+
+	if (m_ExplosionEffect)
+	{
+		float EffectScale = (m_ExplosionEffectScale > 0.0f) ? m_ExplosionEffectScale : 1.0f;
+
+		UGameplayStatics::SpawnEmitterAtLocation(
+			GetWorld(),
+			m_ExplosionEffect,
+			ExplosionLocation,
+			FRotator::ZeroRotator,
+			FVector(EffectScale)
+		);
 	}
 }
