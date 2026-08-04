@@ -4,10 +4,16 @@
 #include "C_PointTowerManager.h"
 
 #include "Actor/PointTower/C_PointTower.h"
+#include "Utility/C_Util.h"
 
 UC_PointTowerManager::UC_PointTowerManager()
 {
 	
+}
+
+void UC_PointTowerManager::OnWorldBeginPlay()
+{	
+	UC_Util::Print("PointTowerManager::OnWorldBeginPlay()", FColor::Red, 10.f);
 }
 
 void UC_PointTowerManager::StartFirstActivatePointsSequence()

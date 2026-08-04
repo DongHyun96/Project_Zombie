@@ -11,6 +11,7 @@ enum class EGamePingType : uint8
 {
 	DefaultMarker, // 기본 Marker
 	GunBaseMarker,
+	AntennaMarker,
 	End UMETA(Hidden)
 };
 
@@ -57,16 +58,10 @@ public:
 		EPingShapeType	_PingShapeType
 	);
 	
-	
 	void HidePing();
 	
 	void SetPingColor(const FColor& _Color);
 
-private:
-	
-	UPROPERTY()
-	class AC_BasicPlayer* m_OwnerPlayer{};
-	
 protected:
 
 	// Ping Marker WidgetComponent (Screen space 사용)
@@ -82,7 +77,7 @@ protected:
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, DisplayName = "RootComp")
 	USceneComponent* m_RootSceneComp{};	
 	
-private:
+protected:
 
 	UPROPERTY()
 	class UC_PingWidget* m_PingWidget{};

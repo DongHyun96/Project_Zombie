@@ -19,6 +19,13 @@ public:
 	
 	UC_PointTowerManager();
 
+public:
+	
+	/// <summary>
+	/// GameMode BeginPlay 시점에 호출됨 
+	/// </summary>
+	void OnWorldBeginPlay();
+	
 private:
 	
 	/// <summary>

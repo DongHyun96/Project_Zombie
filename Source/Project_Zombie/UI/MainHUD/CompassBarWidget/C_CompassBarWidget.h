@@ -6,6 +6,7 @@
 #include "Blueprint/UserWidget.h"
 #include "C_CompassBarWidget.generated.h"
 
+enum class EGamePingType : uint8;
 /**
  * 
  */
@@ -33,7 +34,23 @@ public:
 	/// </summary>
 	/// <returns> : 대응되는 CompassMarkerWidget </returns> 
 	class UC_CompassMarkerWidget* RegisterPlayerCompassPingMarker(class AC_BasicPlayer* _Player);
+	
+public:
+	
+	/// <summary>
+	/// 플레이어가 주인이 아닌 전역적으로 표시할 Ping 보이기 
+	/// </summary>
+	/// <param name="_GamePingType"></param>
+	/// <param name="_WorldPingLocation"></param>
+	/// <returns></returns>
+	bool SpawnGlobalPingMarker(EGamePingType _GamePingType, const FVector& _WorldPingLocation);
 
+	/// <summary>
+	/// 현재 표기중인 모든 CompassPingMarker 감추기 (TODO : 특정 GamePingType만 골라서 지우는 처리가 필요하다면 추가처리가 필요함)
+	/// 당장은 일괄적으로 모두 지워버림
+	/// </summary>
+	void HideAllGlobalPingMarkers();
+	
 protected:
 
 	// 가운데 현재 바라보는 방위 각도 Indicator TextBlock
@@ -59,6 +76,11 @@ private:
 	
 	UPROPERTY()
 	TMap<class AC_BasicPlayer*, UC_CompassMarkerWidget*> m_mapCompassPingMarkers{};
+
+private: /* Player 주인인 Ping이 아닌, 전역적으로 처리되는 CompassPingMarkerPool */
+
+	UPROPERTY()
+	TArray<UC_CompassMarkerWidget*> m_GlobalCompassPingMarkers{};
 	
 private:
 	

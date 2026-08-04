@@ -3,11 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Actor/Ping/C_WorldPingActor.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/Image.h"
 #include "C_PingWidget.generated.h"
 
+enum class EGamePingType : uint8;
 /**
  * World에 배치되는 PingWidget 관리와 동시에, PlayerMainHUD의 CompassBar Ping 정보 노출도 여기서 호출 처리
  */
@@ -26,7 +26,7 @@ public:
 
 public:
 	
-	void SetOwnerPlayer(AC_BasicPlayer* _OwnerPlayer) { m_OwnerPlayer = _OwnerPlayer; }
+	void SetOwnerPlayer(class AC_BasicPlayer* _OwnerPlayer) { m_OwnerPlayer = _OwnerPlayer; }
 	
 public:
 	

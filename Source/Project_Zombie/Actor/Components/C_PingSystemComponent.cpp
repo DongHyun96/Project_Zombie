@@ -4,6 +4,7 @@
 #include "C_PingSystemComponent.h"
 
 #include "Actor/Character/Player/C_BasicPlayer.h"
+#include "Actor/Ping/C_PlayerWorldPingActor.h"
 #include "Actor/Ping/C_WorldPingActor.h"
 #include "GameModeAndManager/C_UIManager.h"
 #include "Kismet/GameplayStatics.h"
@@ -38,7 +39,7 @@ void UC_PingSystemComponent::BeginPlay()
 	
 	FActorSpawnParameters Param{};
 	Param.Owner      = m_OwnerPlayer;
-	m_WorldPingActor = GetWorld()->SpawnActor<AC_WorldPingActor>(m_WorldPingActorClass, Param);
+	m_WorldPingActor = GetWorld()->SpawnActor<AC_PlayerWorldPingActor>(m_WorldPingActorClass, Param);
 	// PingActor BeginPlay에 자기자신 비활성화 처리 들어가 있음
 }
 

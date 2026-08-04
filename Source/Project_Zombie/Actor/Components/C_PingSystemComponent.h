@@ -91,18 +91,22 @@ public:
 	UObject* GetLastInstigator() const { return m_LastInstigator; }
 
 private:
-	
+
+	UPROPERTY()
 	class AC_BasicPlayer* m_OwnerPlayer{};
 	
 private:
+
+	UPROPERTY()
+	class AC_PlayerWorldPingActor*	m_WorldPingActor{};
 	
-	class AC_WorldPingActor*	m_WorldPingActor{};
+	UPROPERTY()
 	class UC_CompassBarWidget*	m_CompassBarWidget{}; // CompassBar에 핑 정보 Spawn 시킬 때 필요
 	
 protected:
 	
 	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<AC_WorldPingActor> m_WorldPingActorClass{};
+	TSubclassOf<AC_PlayerWorldPingActor> m_WorldPingActorClass{};
 	
 	
 private:

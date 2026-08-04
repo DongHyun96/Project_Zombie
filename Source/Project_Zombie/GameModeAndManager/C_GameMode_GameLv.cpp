@@ -6,6 +6,7 @@
 #include "C_ZombieManager.h"
 #include "Actor/Components/C_InvenComponent.h"
 #include "PlayerState/C_PlayerState.h"
+#include "PointTowerManager/C_PointTowerManager.h"
 #include "Utility/C_Util.h"
 
 AC_GameMode_GameLv::AC_GameMode_GameLv()
@@ -26,7 +27,10 @@ void AC_GameMode_GameLv::BeginPlay()
 	}
 
 	if (m_ZombieManager) m_ZombieManager->OnWorldBeginPlay();
-}
+	
+	m_PointTowerManager = NewObject<UC_PointTowerManager>(this);
+	m_PointTowerManager->OnWorldBeginPlay();
+}	
 
 void AC_GameMode_GameLv::PostLogin(APlayerController* NewPlayer)
 {

@@ -57,3 +57,6 @@ protected:
 
 #define ZOMBIE_MANAGER(WorldContext) \
     (GAME_LV_GAME_MODE(WorldContext)->GetZombieManager())
+
+#define POINT_TOWER_MANAGER(WorldContext) \
+	(GAME_LV_GAME_MODE(WorldContext)->GetPointTowerManager())
