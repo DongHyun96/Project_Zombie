@@ -384,6 +384,10 @@ bool AC_ThrowableWeaponBase::OnStartFire(class AC_BasicPlayer* _WeaponUser)
 	if (!_WeaponUser)
 		return false;
 
+	// 죽은 상태에서는 투척 시작 불가
+	if (!_WeaponUser->IsAlive())
+		return false;
+
 	if (m_ThrowableState != EThrowableState::Idle)
 	{
 		return false;
@@ -672,6 +676,14 @@ void AC_ThrowableWeaponBase::OnThrowThrowable()
 
 	if (!m_OwnerPlayer->IsLocallyControlled())
 		return;
+
+	// 투척 준비 도중 사망했다면 실제 투척 중단
+	if (!m_OwnerPlayer->IsAlive())
+	{
+		CancelThrowAction();
+		return;
+	}
+
 
 	if (m_ThrowableState == EThrowableState::Thrown || m_ThrowableState == EThrowableState::Exploded)
 		return;
@@ -1217,14 +1229,16 @@ void AC_ThrowableWeaponBase::UpdatePredictedPath()
 
 	PathParams.StartLocation = LaunchLocation;
 	PathParams.LaunchVelocity = LaunchVelocity;
+	
+	PathParams.MaxSimTime = m_PredictedPatchMaxTime; // 시뮬레이션 최대 시간 (초)
 	PathParams.bTraceWithCollision = true;
 	if (UCapsuleComponent* Capsule = Cast<UCapsuleComponent>(m_MainCollider))
 	{
 		PathParams.ProjectileRadius = Capsule->GetScaledCapsuleRadius();
 	}
-	PathParams.MaxSimTime = m_PredictedPatchMaxTime;
 	PathParams.bTraceWithChannel = true;
 	PathParams.TraceChannel = m_PredictedPatchTraceChannel;
+
 	PathParams.SimFrequency = m_PredictedPatchSimFrequency;
 	PathParams.OverrideGravityZ = m_ProjectileMovement->GetGravityZ();
 	PathParams.bTraceComplex = false; 
@@ -1269,17 +1283,24 @@ void AC_ThrowableWeaponBase::UpdatePredictedPath()
 
 	// ----------------- 예측 충돌 지점 표시 -----------------
 
-	if (bHit && m_PredictedEndPoint)
+	if (m_PredictedEndPoint)
 	{
-		// 실제 충돌한 위치
-		const FVector ImpactPoint = PathResult.HitResult.ImpactPoint;
+		if (bHit && m_PredictedEndPoint)
+		{
+			// 실제 충돌한 위치
+			const FVector ImpactPoint = PathResult.HitResult.ImpactPoint;
 
-		// 충돌한 Normal 벡터
-		const FVector ImpactNormal = PathResult.HitResult.ImpactNormal;
+			// 충돌한 Normal 벡터
+			const FVector ImpactNormal = PathResult.HitResult.ImpactNormal;
 
-		// 충돌 지점에서 약간 떨어진 위치에 PredictedEndPoint를 배치하고 보여줌
-		m_PredictedEndPoint->SetWorldLocation(ImpactPoint + ImpactNormal * 1.f);
-		m_PredictedEndPoint->SetVisibility(true);
+			// 충돌 지점에서 약간 떨어진 위치에 PredictedEndPoint를 배치하고 보여줌
+			m_PredictedEndPoint->SetWorldLocation(ImpactPoint + ImpactNormal * 1.f);
+			m_PredictedEndPoint->SetVisibility(true);
+		}
+	}
+	else
+	{
+		m_PredictedEndPoint->SetVisibility(false);
 	}
 
 	// StaticMesh 지정안되어 있으면 선 생성 X
