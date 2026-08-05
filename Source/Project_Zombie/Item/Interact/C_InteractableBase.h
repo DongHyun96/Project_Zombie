@@ -36,7 +36,7 @@ public:
 
 	//UFUNCTION(Server, Reliable)
 
-protected:
+protected:	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UStaticMeshComponent* m_MeshComp{};
 	

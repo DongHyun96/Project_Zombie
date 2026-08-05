@@ -33,12 +33,12 @@ struct FUpgradableData
 
 public:
     // 고정 장비 강화 정보 // TODO : 무기 티어를 사용한다면 필요하지만 아니라면 없애야 함.
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment")
-    int32 EnhanceLevel = 0;
+    //UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment")
+    //int32 EnhanceLevel = 0;
 
     // 실패 횟수인데 이게 꼭 필요할까? TODO : 강화 천장용인데 확률 강화를 사용할 것 인가?
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment")
-    int32 FailPityCount = 0;
+    //UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment")
+    //int32 FailPityCount = 0;
 
     // 동적 스탯 리스트 (TMap의 TArray 대안)
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment")
@@ -121,6 +121,10 @@ struct FItemData : public FTableRowBase
     // ── [비주얼 리소스 - 약참조 포인터] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Visual")
     TSoftObjectPtr<UTexture2D> IconTexture = nullptr;
+    
+    // ── [비주얼 리소스 - 포인터] ──
+    //UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Visual")
+    //TObjectPtr<UTexture2D> IconTexture = nullptr;    
 
     // ── [비주얼 리소스 - 약참조 포인터] ──
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Visual")
@@ -205,16 +209,7 @@ public:
     {
         return CustomData.GetMutablePtr<FUpgradableData>();
     }
-
-    int32 GetEnhanceLevel() const
-    {
-        if (const FUpgradableData* Data = GetEquipmentData())
-        {
-            return Data->EnhanceLevel;
-        }
-        return 0;
-    }
-
+    
     // 빈 슬롯인지 확인하는 함수.
     bool IsEmpty() const {return ItemRowName.IsNone() || CurCount == 0;}
     
@@ -281,32 +276,6 @@ struct FCursorItem
 // 아이템 CustomData 구조체 선언부
 // ******************************
 
-
-
-// TODO : FEquipmentCustomData로 통합 하면 삭제 예정.
-//USTRUCT(BlueprintType)
-//struct FGunCustomData
-//{
-//    GENERATED_BODY()
-//    
-//    // 데미지의 업그레이드의 레벨 혹은 추가 데미지
-//    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-//    int32 Upgrade_Damage = 0;
-//    
-//    // MaxAmmo의 업그레이드의 레벨 혹은 추가 MaxAmmo
-//    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-//    int32 Upgrade_MaxAmmo = 0;
-//    
-//    // FireRate의 업그레이드의 레벨 혹은 추가 FireRate
-//    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-//    int32 Upgrade_FireRate = 0;
-//    
-//    // 이건 인벤이나 ItemPickUp에서 총의 CurAmmo값을 저장하기 위해 존재.
-//    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-//    int32 CurAmmo = 0;
-//    
-//    
-//};
 
 // ******************************
 // 아이템 업그레이드 데이터 테이블 
@@ -552,9 +521,24 @@ struct FThrowableData : public FWeaponData
     float MinDamagePerUpgradeLevel = 5.f; // 레벨당 최대 데미지 증가량
 };
 
+// 포션 데이터 테이블
+USTRUCT(BlueprintType)
+struct FPotionData : public FWeaponData
+{
+    GENERATED_BODY()
+    
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Potion | Stats")
+    float Value{};
+    
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player_Animations")
+    TSoftObjectPtr<UAnimMontage> UsingMontage{};
+};
+
 // ******************************
 // 무기 데이터 테이블 구조체 선언부
 // ******************************
+
+
 
 
 // ******************************
@@ -685,8 +669,24 @@ namespace StatName
     const FName SprintSpeed  = TEXT("SprintSpeed");
     const FName MaxBoost     = TEXT("MaxBoost");
     const FName CurBoost     = TEXT("CurBoost");
-    const FName BoostCost    = TEXT("BoostCost");
-    const FName BoostRecover = TEXT("BoostRecover");
+    const FName BoostCost    = TEXT("SprintBoostUseCost");
+    const FName BoostRecover = TEXT("BoostRecoverCost");
     // 필요한 스탯 추가해서 사용하면 됨.
     // StatName::MaxHP == TEXT("MaxHP")
 }
+
+// Player의 강화가능 스탯과 Grade당 올라가는 Value
+// 스탯이름을 RowName으로 사용하고, 단계마다 필요한 재료 목록을 넣어주자.
+USTRUCT(BlueprintType)
+struct FPlayerStatUpgradeData : public FTableRowBase
+{
+    GENERATED_BODY()
+    
+    // 단계별 요구 재료
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    TArray<FGradeCostInfo> GradeCost{};
+    
+    // 단계별 상승 값
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    TArray<float> GradeValue{};    
+};

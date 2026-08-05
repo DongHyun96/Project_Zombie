@@ -15,10 +15,8 @@
 #include "Upgrade/C_PlayerStatUpgradeWidget.h"
 #include "Utility/C_Util.h"
 
-void UC_InventoryWidget::NativeConstruct()
+void UC_InventoryWidget::InitializeInventoryWidget()
 {
-	Super::NativeConstruct();
-	
 	AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(GetOwningPlayerPawn());
 	
 	UC_InvenComponent* PlayerInvenComponent = Player->GetInvenComponent();
@@ -30,8 +28,24 @@ void UC_InventoryWidget::NativeConstruct()
 	
 	// TODO : 오용되는 부분이 생길 수 있음.
 	StorageGridWidget->SetInvenComponent(nullptr);
+}
+
+void UC_InventoryWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
 	
+	/* TODO : InitializeInventoryWidget로 초기화를 바꾸어 줬는데 문제 생기면 이걸로 다시 대체해야 할 수 있음.
+	AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(GetOwningPlayerPawn());
 	
+	UC_InvenComponent* PlayerInvenComponent = Player->GetInvenComponent();
+
+	PlayerGridWidget ->SetParentWidget(this);
+	StorageGridWidget->SetParentWidget(this);
+	
+	PlayerGridWidget->SetInvenComponent(PlayerInvenComponent);
+	
+	// TODO : 오용되는 부분이 생길 수 있음.
+	StorageGridWidget->SetInvenComponent(nullptr);*/
 }
 
 bool UC_InventoryWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent,
@@ -109,11 +123,13 @@ void UC_InventoryWidget::CloseItemUpgradeWidget()
 void UC_InventoryWidget::ShowPlayerStatUpgradeWidget()
 {
 	PlayerStatUpgradeWidget->SetVisibility(ESlateVisibility::Visible);
+	PlayerStatUpgradeWidget->UpdateWidget();
 }
 
 void UC_InventoryWidget::ClosePlayerStatUpgradeWidget()
 {
 	PlayerStatUpgradeWidget->SetVisibility(ESlateVisibility::Collapsed);
+	PlayerStatUpgradeWidget->UpdateWidget();
 }
 
 void UC_InventoryWidget::SetVisibility(ESlateVisibility InVisibility)

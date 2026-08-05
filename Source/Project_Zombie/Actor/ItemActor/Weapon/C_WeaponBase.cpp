@@ -58,6 +58,7 @@ void AC_WeaponBase::OnRep_WeaponRowName()
 	if (WeaponData)
 	{
 		PRINT_LOCAL(GetWorld(), "LoadAssets :::::::::::::::::::::::::::", FColor::Cyan, 5.f);
+
 		InitializeItemData(WeaponData);
 		LoadAsyncAssets(WeaponData);
 	}

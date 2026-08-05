@@ -24,11 +24,31 @@ class PROJECT_ZOMBIE_API UC_PlayerStatUpgradeWidget : public UUserWidget
 	GENERATED_BODY()
 		
 public:
-	void SetSelectedStatName(const FText& InSelectedStatName);
+	void UpdateWidget();
+
+	
+	void InitWidget();
+	
+	// Stat 강화 요청
+	UFUNCTION(BlueprintCallable)
+	void RequestStatUpgrade();
+	
+public:
+	void SetSelectedStatName(const FName& InSelectedStatName);
+	
+	FName GetSelectedStatName() { return SelectedStatName; }
 	
 	void SetUsePlayer(AC_BasicPlayer* InUsePlayer) { m_UsePlayer = InUsePlayer; }
 	
-	void InitWidget();
+	void SetHasRequiredItems(bool InHasRequiredItems) {hasRequiredItems = InHasRequiredItems;}
+	
+	void SetIsUpgrading(bool InIsUpgrading)
+	{
+		bIsUpgrading = InIsUpgrading;
+		
+		UpdateWidget();
+	}
+	
 protected:
 	virtual void NativeOnInitialized() override;
 	
@@ -63,9 +83,9 @@ protected:
 	UC_SelectedStatWidget* SelectedStatRow = nullptr;
 	
 protected:
-	// 선택된 스탯의 이름.
+	// 선택된 스탯의 이름. // TODO : FText -> FName으로 바꾸기
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FText SelectedStatName{};
+	FName SelectedStatName{};
 	
 	// 로컬에서 현재 업그레이드 중인지 판단하는 변수.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)

@@ -87,9 +87,6 @@ void AC_MeleeWeaponBase::InitializeItemData(const FWeaponData* InRawData)
 	{
 		m_Damage = BaseDamage;
 	}
-	FString msg = FString::SanitizeFloat(m_Damage);
-	PRINT_LOCAL(GetWorld(), msg, FColor::Black, 20.f);
-
 }
 
 

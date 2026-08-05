@@ -3,6 +3,7 @@
 #include "C_InvenComponent.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/ItemActor/Weapon/C_WeaponBase.h"
+#include "Actor/ItemActor/Weapon/Potion/C_PotionBase.h"
 #include "Actor/ItemActor/Weapon/ThrowableWeapon/C_ThrowableWeaponBase.h"
 #include "GameModeAndManager/C_ItemManager.h"
 #include "GameModeAndManager/C_UIManager.h"
@@ -98,6 +99,8 @@ void UC_EquippedComponent::UpdateWeaponData(EWeaponSlot _TargetWeapon, FName InI
 	if (!ItemManager) return;
 
 	m_Weapons[Idx]->InitializeItemData(ItemManager->GetWeaponData(InItemRow));
+	
+	UpdateAmmoWidget();
 	
 	//AC_UIManager* UIManager = Cast<AC_UIManager>(Cast<AC_BasicPlayerController>(m_OwnerPlayer->GetController())->GetHUD());
 	//

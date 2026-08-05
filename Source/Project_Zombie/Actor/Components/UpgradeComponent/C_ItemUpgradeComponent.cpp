@@ -154,7 +154,7 @@ void UC_ItemUpgradeComponent::NotifyUpgradeFinished(AC_BasicPlayer* InPlayer)
     AC_BasicPlayerController* PC = Cast<AC_BasicPlayerController>(InPlayer->GetController());
     if (!PC) return;
 
-    PC->SetIsUpgrading(false);
+    PC->SetIsUpgradingItem(false);
 
     if (PC->IsLocalPlayerController())
     {

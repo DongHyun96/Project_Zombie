@@ -18,7 +18,7 @@ class PROJECT_ZOMBIE_API AC_StatUpgradeStation : public AC_InteractableBase
 public:
 	AC_StatUpgradeStation();
 	
-	// void RequestStatUpgrade(AC_BasicPlayer* InPlayer, int32 InItemIndex, EUpgradableStats TargetStat);
+	void RequestStatUpgrade(AC_BasicPlayer* InPlayer, const FName& UpStatName);
 protected:
 	virtual void BeginPlay() override;
 protected:

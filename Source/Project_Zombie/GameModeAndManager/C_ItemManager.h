@@ -91,6 +91,13 @@ public:
 		return ItemUpgradeCostData->FindRow<FItemUpgradeCostRow>(InRowName, TEXT("GetWeaponUpgradeCostData"));
 	}
 	
+	//무기 강화 단계별 필요 재료 데이터(FItemUpgradeCostRow) 반환 
+	const FPlayerStatUpgradeData* GetPlayerStatUpgradeData(FName InRowName) const
+	{
+		if (!PlayerStatUpgradeData || InRowName.IsNone()) return nullptr;
+		return PlayerStatUpgradeData->FindRow<FPlayerStatUpgradeData>(InRowName, TEXT("GetPlayerStatUpgradeData"));
+	}
+	
 	// [블루프린트 전용] Generic/BlueprintCallable 래퍼 함수
 	UFUNCTION(BlueprintCallable, Category = "ItemManager", meta = (DisplayName = "Get Item Data"))
 	bool GetItemDataBP(EItemTableType InTableType, FName InRowName, FInstancedStruct& OutData);
@@ -113,6 +120,10 @@ private:
 	// 강화 비용/재료 데이터 테이블
 	UPROPERTY()
 	TObjectPtr<UDataTable> ItemUpgradeCostData = nullptr;
+	
+	UPROPERTY()
+	TObjectPtr<UDataTable> PlayerStatUpgradeData = nullptr;
+			
 	
 	// 오브젝트 풀링 관련 멤버 변수.
 private:

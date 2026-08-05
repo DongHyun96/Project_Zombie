@@ -33,6 +33,8 @@ AC_InteractableBase::AC_InteractableBase()
 	//m_InteractionComp->SetUseTimer(false);
 	m_InteractionComp->SetAllowMultipleInteractor(true);
 
+	m_SphereComp->SetCollisionProfileName(FName("InteractionOnly"));
+	
 }
 
 // Called when the game starts or when spawned

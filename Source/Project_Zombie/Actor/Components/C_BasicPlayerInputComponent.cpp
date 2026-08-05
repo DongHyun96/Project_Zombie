@@ -96,6 +96,7 @@ void UC_BasicPlayerInputComponent::InitializePlayerInput(UInputComponent* Player
 	if (const UInputAction* IA = FindIAByName(TEXT("IA_EquipMainWeapon")))  EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::EquipMainWeapon);
 	if (const UInputAction* IA = FindIAByName(TEXT("IA_EquipMeleeWeapon"))) EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::EquipMeleeWeapon);
 	if (const UInputAction* IA = FindIAByName(TEXT("IA_EquipThrowable")))   EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::EquipThrowable);
+	if (const UInputAction* IA = FindIAByName(TEXT("IA_EquipPotion")))		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::EquipPotion);
 		
 	if (const UInputAction* IA = FindIAByName(TEXT("IA_PlayerInteract")))     EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::InteractionAction);
 	
@@ -296,6 +297,11 @@ void UC_BasicPlayerInputComponent::EquipMeleeWeapon()
 void UC_BasicPlayerInputComponent::EquipThrowable()
 {
 	Player->GetEquippedComponent()->ChangeCurWeapon(EWeaponSlot::ThrowableWeapon);
+}
+
+void UC_BasicPlayerInputComponent::EquipPotion()
+{
+	Player->GetEquippedComponent()->ChangeCurWeapon(EWeaponSlot::Potion);
 }
 
 void UC_BasicPlayerInputComponent::ToggleArmed()

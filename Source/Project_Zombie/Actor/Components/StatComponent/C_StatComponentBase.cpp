@@ -132,6 +132,9 @@ void UC_StatComponentBase::AddStat(const FName& _StatName, float _Amount)
 	// 이미 해당 이름의 스탯이 있으면 추가하지 않는다
 	if (m_Stats.Contains(_StatName)) return;
 	m_Stats.Add(_StatName, _Amount);
+	
+	// 스탯을 추가할 때 해당 스탯의 강화 단계도 추가.
+	m_StatGrades.Add(_StatName, 0);
 }
 
 float UC_StatComponentBase::GetStat(const FName& _StatName) const
@@ -140,6 +143,14 @@ float UC_StatComponentBase::GetStat(const FName& _StatName) const
 		return *pStatValue;
 	
 	return 0.f;
+}
+
+uint8 UC_StatComponentBase::GetStatGrade(const FName& _StatName) const
+{
+	if (const uint8* pStatGrade = m_StatGrades.Find(_StatName))
+		return *pStatGrade;
+	
+	return 0;
 }
 
 void UC_StatComponentBase::SetStat(const FName& _StatName, float _Value)
@@ -159,6 +170,11 @@ void UC_StatComponentBase::SetStat(const FName& _StatName, float _Value)
 	// 결론적으로, 아래의 한 줄로 모든 상황 해결이 된다
 	// TODO : 외부의 함수 Call도 Server~ 로 맞출 것(더 직관적 -> 어느 환경에서든, 서버가 Stat을 관리하는 주축이 된다)
 	Server_SetStat(_StatName, _Value);
+}
+
+void UC_StatComponentBase::IncreaseStatGrade(const FName& _StatName)
+{
+	Server_IncreaseStatGrade(_StatName);
 }
 
 bool UC_StatComponentBase::Local_SetStat(const FName& _StatName, float _Value)
@@ -188,6 +204,31 @@ bool UC_StatComponentBase::Local_SetStat(const FName& _StatName, float _Value)
 	}
 	return true;
 }
+
+bool UC_StatComponentBase::Local_IncreaseStatGrade(const FName& _StatName)
+{
+	//if (_IncreaseAmount < 0.f) return false;
+	
+	uint8* pTargetStatGrade = m_StatGrades.Find(_StatName);
+	if (!pTargetStatGrade) return false;
+	
+	++(*pTargetStatGrade);
+	
+	return true;
+}
+
+void UC_StatComponentBase::Server_IncreaseStatGrade_Implementation(const FName& _StatName)
+{
+	if (Local_IncreaseStatGrade(_StatName))
+		Multicast_IncreaseStatGrade(_StatName);
+}
+
+void UC_StatComponentBase::Multicast_IncreaseStatGrade_Implementation(const FName& _StatName)
+{
+	if (m_OwnerCharacter && m_OwnerCharacter->HasAuthority()) return;
+	Local_IncreaseStatGrade(_StatName);
+}
+
 
 void UC_StatComponentBase::Server_SetStat_Implementation(const FName& _StatName, float _Value)
 {

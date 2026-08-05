@@ -126,7 +126,7 @@ void AC_GunBase::InitializeItemData(const FWeaponData* InRawData)
 		int32 DamageGrade = CustomData->GetStatGrade(EUpgradableStats::AttackPower);
 		int32 AmmoGrade = CustomData->GetStatGrade(EUpgradableStats::MaxAmmo);
 
-		// 3. 최종 스탯 계산: BaseStat + (Grade * DataAsset의 레벨당 증가량)
+		// 3. 최종 스탯 계산: BaseStat + (Grade * DataAsset의 레벨당 증가량) // TODO : DT_WEaponUpgradeData를 사용하게 바꿔야 함. FWeaponUpgradeData 자체를 바꿔야 할 수 도 있음.
 		m_Damage = GunData->BaseDamage + (DamageGrade * GunData->DamagePerUpgradeLevel);
 		m_MaxAmmo = GunData->MaxAmmo + (AmmoGrade * GunData->MaxAmmoPerUpgradeLevel);
 		m_FireRate = GunData->AttackRate - (DamageGrade * GunData->AttackRatePerUpgradeLevel);
@@ -142,6 +142,10 @@ void AC_GunBase::InitializeItemData(const FWeaponData* InRawData)
 	}
 	//CurAmmo는 무조건 0으로 초기화 하기.
 	m_CurrentAmmo = 0;
+	
+	FString msg = FString::SanitizeFloat(m_Damage);
+	
+	PRINT_LOCAL(GetWorld(), msg, FColor::Black, 10.f);
 }
 
 void AC_GunBase::SwitchFireMode()

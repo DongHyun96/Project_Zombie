@@ -9,6 +9,8 @@
 #include "Net/UnrealNetwork.h"
 #include "UI/InvenUI/C_InventoryWidget.h"
 #include "UI/InvenUI/Upgrade/C_ItemUpgradeWidget.h"
+#include "UI/InvenUI/Upgrade/C_PlayerStatUpgradeWidget.h"
+#include "UI/MainHUD/C_GameMainHUD.h"
 
 
 void AC_BasicPlayerController::FinishItemUpgrade()
@@ -27,12 +29,47 @@ void AC_BasicPlayerController::FinishItemUpgrade()
 	
 	ItemUpgradeWidget->SetIsUpgrading(false);
 	
+	//UIManager->GetMainHUDWidget()->UpdateLeftAmmoTotalCount()
+	
 	//ItemUpgradeWidget->UpdateWidget();
 	
 	PRINT_LOCAL(GetWorld(), "FinishItemUpgrade", FColor::Red, 5.f);
 }
 
-void AC_BasicPlayerController::OnRep_IsUpgrading()
+void AC_BasicPlayerController::FinishPlayerStatUpgrade()
+{
+	AC_UIManager* UIManager = AC_UIManager::Get(GetWorld());
+	
+	if (!UIManager) return;
+	
+	UC_InventoryWidget* InvenWidget = UIManager->GetInventoryWidget();
+	
+	if (!InvenWidget) return;
+	
+	UC_PlayerStatUpgradeWidget* PlayerStatUpgradeWidget = InvenWidget->GetPlayerStatUpgradeWidget();
+	
+	if (!PlayerStatUpgradeWidget) return;
+	
+	PlayerStatUpgradeWidget->SetIsUpgrading(false);
+	
+	//UIManager->GetMainHUDWidget()->UpdateLeftAmmoTotalCount()
+	
+	//ItemUpgradeWidget->UpdateWidget();
+	
+	PRINT_LOCAL(GetWorld(), "FinishItemUpgrade", FColor::Red, 5.f);
+}
+
+void AC_BasicPlayerController::OnRep_IsUpgradingPlayerStat()
+{
+	FinishPlayerStatUpgrade();
+}
+
+void AC_BasicPlayerController::Client_FinishPlayerStatUpgrade_Implementation()
+{
+	FinishPlayerStatUpgrade();
+}
+
+void AC_BasicPlayerController::OnRep_IsUpgradingItem()
 {
 	FinishItemUpgrade();
 }
@@ -68,5 +105,5 @@ void AC_BasicPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProper
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
-	DOREPLIFETIME(AC_BasicPlayerController, bIsUpgrading);
+	DOREPLIFETIME(AC_BasicPlayerController, bIsUpgradingItem);
 }

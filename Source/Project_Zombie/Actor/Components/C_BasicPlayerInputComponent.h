@@ -84,6 +84,8 @@ private: // Equip Weapon input 관련
 	void EquipMainWeapon();
 	void EquipMeleeWeapon();
 	void EquipThrowable(); // TODO : Throwable Equip은 따로 처리를 안할수도
+	void EquipPotion(); // TODO : Throwable Equip은 따로 처리를 안할수도
+	
 	void ToggleArmed();
 
 private: // FreeLook 관련

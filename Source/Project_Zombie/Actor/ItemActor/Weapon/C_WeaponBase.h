@@ -41,6 +41,7 @@ public:
 	virtual void InitializeItemData(const FWeaponData* InRawData) PURE_VIRTUAL(AC_WeaponBase::InitializeItemData, );
 
 	// 클라이언트가 생성된 Weapon의 에셋들을 로드하기 위한 리플리케이션 함수.
+	// TODO 만약 이걸로 이 무기의 Owner가 아닌 클라들이 에셋을 로드하지 못한다면 멀티캐스트로 다 호출해줘야함.
 	UFUNCTION()
 	void OnRep_WeaponRowName();
 	
@@ -139,6 +140,7 @@ public:
 	
 	UC_ItemLinkComponent* GetLinkComp() {return ItemLinkComp;}
 
+	//
 	void SetItemRowName(FName InRowName) { m_WeaponRowName = InRowName; }
 	
 protected:

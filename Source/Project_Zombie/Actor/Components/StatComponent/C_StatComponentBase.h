@@ -71,13 +71,30 @@ public:
 	void AddStat(const FName& _StatName, float _Amount);
 	float GetStat(const FName& _StatName) const;
 	
+	uint8 GetStatGrade(const FName& _StatName) const;
+	
 	// UI쪽에서 스탯을 조회해야 해서 만듬.
 	const TMap<FName, float>& GetStatsMap() const { return m_Stats; }
+	const TMap<FName, uint8>& GetStatGradesMap() const { return m_StatGrades; }
+	
 public: /* 범용적으로 사용 가능한 Stat 처리 관련 함수 */
 
 	/// <returns> : 해당하는 Stat이 없거나 Value가 음수값인 경우(이건 좀 더 따져봐야할듯) </returns>
 	void SetStat(const FName& _StatName, float _Value);
 
+public:
+	
+	/// <summary>
+	/// 특정 StatGrade +1 처리
+	/// </summary>
+	void IncreaseStatGrade(const FName& _StatName);
+
+	/// <summary>
+	/// 특정 StatGrade -1 처리, 근데 아마 쓸일은 없을 듯. 
+	/// </summary>
+	//void DecreaseStatGrade(const FName& _StatName);
+
+	
 public:
 	
 	/// <summary>
@@ -124,7 +141,7 @@ private:
 	/// 자식 StatComponent쪽에서 더 추가할 Stat 내용이 있다면 해당 함수 override하여 추가할 것
 	/// </summary>
 	virtual void InitAdditionalStat();
-
+	
 private:
 	
 	/// <summary>
@@ -140,6 +157,16 @@ private:
 	
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_SetStat(const FName& _StatName, float _Value);
+	
+private: /* SetStat과 비슷한 일련의 과정으로 나머지 StatGrade 조정 함수들에 대한 처리 또한 해줌 */
+	
+	bool Local_IncreaseStatGrade(const FName& _StatName);
+	
+	UFUNCTION(Server, Reliable)
+	void Server_IncreaseStatGrade(const FName& _StatName);
+	
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_IncreaseStatGrade(const FName& _StatName);
 	
 private: /* SetStat과 비슷한 일련의 과정으로 나머지 Stat 조정 함수들에 대한 처리 또한 해줌 */
 	
@@ -203,6 +230,10 @@ protected:
 	// UPROPERTY(ReplicatedUsing = OnRep, VisibleAnywhere, BlueprintReadOnly, Category = "Stat") -> 사용 불가
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat")
 	TMap<FName, float> m_Stats{};
+	
+	// 보유 스탯 단계 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat")
+	TMap<FName, uint8> m_StatGrades{};
 
 public:
 
