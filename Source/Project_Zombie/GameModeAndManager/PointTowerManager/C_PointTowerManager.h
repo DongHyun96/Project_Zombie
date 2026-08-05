@@ -60,5 +60,9 @@ private:
 	
 	// 각 Sequence 마다 활성화될 거점들 (한 Sequence 내에 여러 거점이 동시에 활성화될 수 있음)
 	TArray<TSet<class AC_PointTower*>> m_PointTowers{};
+
+private:
+	
+	FTimerHandle m_TestTimerHandle{};
 	
 };

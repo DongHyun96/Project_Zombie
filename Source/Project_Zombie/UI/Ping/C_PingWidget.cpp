@@ -26,8 +26,6 @@ void UC_PingWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	UC_Util::Print("[UC_PingWidget::NativeConstruct]", FColor::Green, 10.f);
-	
 	// 시간 0으로 Animation 정지 처리(안보이게끔)
 	// NativeConstruct 호출되기 이전, 이미 보이게끔 처리를 했을 수 있음
 	if (!m_bCurrentShowingPingMarker)

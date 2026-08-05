@@ -109,7 +109,7 @@ UC_CompassMarkerWidget* UC_CompassBarWidget::RegisterPlayerCompassPingMarker(AC_
 	return TargetMarker;
 }
 
-bool UC_CompassBarWidget::SpawnGlobalPingMarker(EGamePingType _GamePingType, const FVector& _WorldPingLocation)
+UC_CompassMarkerWidget* UC_CompassBarWidget::SpawnGlobalPingMarker(EGamePingType _GamePingType, const FVector& _WorldPingLocation)
 {
 	for (UC_CompassMarkerWidget* GlobalPingMarker : m_GlobalCompassPingMarkers)
 	{
@@ -117,16 +117,21 @@ bool UC_CompassBarWidget::SpawnGlobalPingMarker(EGamePingType _GamePingType, con
 		
 		GlobalPingMarker->TogglePingMarker(true, _GamePingType);
 		GlobalPingMarker->SetWorldMarkerSpawnedLocation(_WorldPingLocation);
-		return true;
+		return GlobalPingMarker;
 	}
 
 	// 사용 가능한 GlobalPingMarker가 없음 (TODO : GlobalPingMarker 풀을 더 늘려주어야 함)
 	UC_Util::Print("[UC_CompassBarWidget::SpawnGlobalPingMarker] : Not enough pool count for Global CompassPingMarker", FColor::Red, 10.f);
-	return false;
+	return nullptr;
 }
 
 void UC_CompassBarWidget::HideAllGlobalPingMarkers()
 {
 	for (UC_CompassMarkerWidget* GlobalMarker : m_GlobalCompassPingMarkers)
 		GlobalMarker->TogglePingMarker(false);
+}
+
+void UC_CompassBarWidget::HideGlobalPingMarker(UC_CompassMarkerWidget* _TargetCompassMarkerWidget)
+{
+	if (_TargetCompassMarkerWidget) _TargetCompassMarkerWidget->TogglePingMarker(false);
 }

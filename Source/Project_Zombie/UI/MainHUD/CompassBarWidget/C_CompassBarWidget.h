@@ -42,14 +42,19 @@ public:
 	/// </summary>
 	/// <param name="_GamePingType"></param>
 	/// <param name="_WorldPingLocation"></param>
-	/// <returns></returns>
-	bool SpawnGlobalPingMarker(EGamePingType _GamePingType, const FVector& _WorldPingLocation);
+	/// <returns> : 스폰된 CompassMarkerWidget -> 없다면 return nullptr </returns>
+	UC_CompassMarkerWidget* SpawnGlobalPingMarker(EGamePingType _GamePingType, const FVector& _WorldPingLocation);
 
 	/// <summary>
 	/// 현재 표기중인 모든 CompassPingMarker 감추기 (TODO : 특정 GamePingType만 골라서 지우는 처리가 필요하다면 추가처리가 필요함)
 	/// 당장은 일괄적으로 모두 지워버림
 	/// </summary>
 	void HideAllGlobalPingMarkers();
+
+	/// <summary>
+	/// Param으로 넘긴 CompassMarkerWidget 숨김 처리 
+	/// </summary>
+	void HideGlobalPingMarker(UC_CompassMarkerWidget* _TargetCompassMarkerWidget);
 	
 protected:
 
