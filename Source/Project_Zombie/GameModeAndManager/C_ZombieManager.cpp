@@ -4,6 +4,7 @@
 #include "C_ZombieManager.h"
 
 #include "Actor/Character/NPC/Enemy/Zombie/C_Zombie.h"
+#include "Actor/Character/NPC/Enemy/Zombie/NurseZombie/C_NurseZombie.h"
 #include "Actor/Character/NPC/Enemy/Zombie/NurseZombie/C_HealingProjectile.h"
 #include "Utility/C_Util.h"
 
@@ -84,37 +85,48 @@ bool UC_ZombieManager::ReturnHealingProjectileToPool(AC_HealingProjectile* _Heal
 	return true;
 }
 
-/* 동기화 처리 이후 마무리
 bool UC_ZombieManager::ReturnZombieToPool(AC_Zombie* _Zombie)
 {
 	// 반환할 Zombie가 유효하지 않은 경우 실패
 	if (!IsValid(_Zombie))
-	{
-		UC_Util::Print("From UC_ZombieManager::ReturnZombieToPool : !! Zombie Return to pool Failed !!", FColor::Red, 10.f);
+		return false;
 
+	// 매니저는 서버에만 존재해야 하지만
+	// 잘못된 호출에 대한 안전 검사
+	UWorld* World = GetWorld();
+
+	if (!IsValid(World) || World->GetNetMode() == NM_Client)
+		return false;
+
+	const EZombieType ZombieType = _Zombie->GetZombieType();
+
+	// 해당 좀비타입의 대기 풀을 가져오거나 없으면 생성
+	TArray<AC_Zombie*>& pPool = m_ZombiePool.FindOrAdd(ZombieType);
+
+	// 동일 좀비 풀 중복 등록 방지
+	if (pPool.Contains(_Zombie))
+	{
+		UC_Util::Print("Zombie already exists in pool", FColor::Red, 10.f);
 		return false;
 	}
 
-	// Zombie 가 자신의 Type에 맞는 Pool로 돌아가도록 Type 확인
-	const EZombieType Type = _Zombie->GetZombieType();
+	// 좀비 자신 표시/충돌/Tick 상태 비활성화
+	_Zombie->DeactivateForPool();
 
-	// 해당 타입의 pool을 찾고, 없으면 새 배열 생성
-	TArray<AC_Zombie*>& ZombiePool = m_ZombiePool.FindOrAdd(Type);
+	// 좀비 활성 목록에서 제거
+	m_ActiveZombies.FindOrAdd(ZombieType).Remove(_Zombie);
 
-	// 동일한 zombie가 Pool에 중복 등록되는 것 방지
-	if (ZombiePool.Contains(_Zombie))
+	// NurseZombie는 전용 활성목록에서도 제거
+	if (ZombieType == EZombieType::NurseZombie)
 	{
-		UC_Util::Print("From UC_ZombieManager::ReturnZombieToPool : !! Zombie already exists in pool !!", FColor::Red, 10.f);
-		return false;
+		if (AC_NurseZombie* NurseZombie = Cast<AC_NurseZombie>(_Zombie))
+		{
+			m_ActiveNurseZombies.Remove(NurseZombie);
+		}
 	}
 
-	// Zombie를 재사용 대기 상태로 변경
-	_Zombie->SetActorHiddenInGame(true); // 대기중인 Zombie가 화면에 보이지 않도록 처리
-	_Zombie->SetActorEnableCollision(false); // 대기 중 충돌이나 피격이 발생하지 않도록 처리
-	_Zombie->SetActorTickEnabled(false); // 대기 중 Tick 실행 방지
-
-	// Type별로 대기 pool에 Zombie 등록
-	ZombiePool.Push(_Zombie);
+	// 타입별 풀에 다시 대기 등록
+	pPool.Add(_Zombie);
 
 	return true;
-}*/
+}

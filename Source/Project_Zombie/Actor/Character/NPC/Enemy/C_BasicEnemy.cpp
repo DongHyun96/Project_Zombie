@@ -10,6 +10,7 @@
 #include "Components/StatComponent/C_EnemyStatComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameModeAndManager/C_GameMode_GameLv.h"
+#include "Net/UnrealNetwork.h"
 #include "BrainComponent.h"
 #include "GameModeAndManager/C_ItemManager.h"
 #include "GameModeAndManager/C_ZombieManager.h"
@@ -43,6 +44,14 @@ AC_BasicEnemy::AC_BasicEnemy()
 	if (HealedEffect.Succeeded())
 		m_HealedEffectNGComponent->SetAsset(HealedEffect.Object.Get());
 	
+}
+
+void AC_BasicEnemy::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	// 서버가 결정한 죽음 상태와 몽타주 인덱스를 클라이언트에 복제
+	DOREPLIFETIME(AC_BasicEnemy, m_DeadRepData);
 }
 
 void AC_BasicEnemy::BeginPlay()
@@ -174,21 +183,37 @@ void AC_BasicEnemy::OnDead(AC_BasicCharacter* _DeadCharacter)
 {
 	// 서버 환경의 Enemy인 경우에만 호출처리됨
 	
-
 	// TODO : Dead에 필요한 처리가 더 필요하다면 여기서 이어서 처리해줄 것(ex 랙돌 처리 등)
 	// 아마 죽은 뒤에 죽은 모션이나 랙돌 처리를 보여준 후, 몇 초 뒤에 Pool로 돌아가게끔 처리를 해줄 듯
 	
 	if (!HasAuthority())
 		return;
 
-	if (m_bDead)
+	// 죽음 중복 실행 방지
+	if (m_DeadRepData.bDead)
 		return;
 
+	// 전달받은 정보에서 죽은 캐릭터가 자기 자신인지 확인
 	if (_DeadCharacter != this)
 		return;
 
-	m_bDead = true;
+	// 서버에서 사용할 죽음 몽타주 인덱스 선택
+	int32 SelectedDeadMontageIndex = INDEX_NONE;
+
+	if (!m_DeadMontages.IsEmpty())
+	{
+		SelectedDeadMontageIndex = FMath::RandRange(0, m_DeadMontages.Num() - 1);
+	}
+	else
+	{
+		UC_Util::Print("!!Dead Montage Array is Empty!!", FColor::Red, 10.f);
+	}
+
+	// 서버에서 죽음 상태와 선택한 몽타주 인덱스를 m_DeadRepData에 기록
+	m_DeadRepData.bDead = true;
+	m_DeadRepData.DeadMontageIndex = SelectedDeadMontageIndex;
 	
+	// 죽은 곳에 아이템 드랍
 	DropItemOnDead();
 
 	if (IsValid(m_HealedEffectNGComponent))
@@ -200,11 +225,30 @@ void AC_BasicEnemy::OnDead(AC_BasicCharacter* _DeadCharacter)
 	// 실행중이던 모든 행동(AI 정지, 스킬 및 이동..) 정지시키기
 	StopAllActionsForDead();
 
-	// 죽음 애니메이션 재생
-	PlayDeadAnimation();
+	// RepNotify는 서버에서 자동 호출되지 않으므로 
+	// 서버 화면에는 직접 죽음 시각 처리 적용
+	ApplyDeadVisual(m_DeadRepData.DeadMontageIndex);
 	
-	// TODO :  충돌 끄기. 혹시 오브젝트 풀링으로 사용중이거나 해서 나중에 켜야 된다면 켜주어야 함.
+	// TODO : 죽은동안 충돌 끄기. 혹시 오브젝트 풀링으로 사용중이거나 해서 나중에 켜야 된다면 켜주어야 함.
+	// 풀에서 꺼낼 때 복구하기
 	SetActorEnableCollision(false);
+
+	// 변경한 복제 정보를 가능한 빨리 클라에 전달
+	ForceNetUpdate();
+
+	// 죽음 뒤 일정시간 후 ZombieManager의 풀 반환
+	if (m_DeadRemainTime > 0.f)
+	{
+		// 서버의 OnDead에서만 타이머 생성
+		// 클라는 풀 반환을 직접 계산하지 않고 
+		// 서버가 복제한 풀 활성 상태를 따라가게
+		GetWorldTimerManager().SetTimer(m_DeadRemainTimer, this, &AC_BasicEnemy::FinishDead, m_DeadRemainTime, false);
+	}
+	else
+	{
+		// 유지시간이 0이면 바로 풀로 반환
+		FinishDead();
+	}
 }
 
 void AC_BasicEnemy::StopAllActionsForDead()
@@ -217,6 +261,8 @@ void AC_BasicEnemy::StopAllActionsForDead()
 		// 비헤이비어트리에서 완전히 정지시키기
 		if (UBrainComponent* Brain = pController->GetBrainComponent())
 		{
+			// 실행중인 useskill task가 abort 되면서
+			// ontaskfinished에서 endskillmanully() 호출
 			Brain->StopLogic(TEXT("Enemy Dead"));
 		}
 	}
@@ -228,46 +274,64 @@ void AC_BasicEnemy::StopAllActionsForDead()
 		MoveCom->DisableMovement();
 	}
 
-	// 현재 사용중인 스킬 상태와 몽타주 사망 처리
-	if (IsValid(m_SkillCom))
+	// BT가 Abort된 이후에도 스킬 상태가 남은 상태만 직접 정지 처리
+	if (IsValid(m_SkillCom) && m_SkillCom->IsUsingSkill())
 	{
-		m_SkillCom->CancelSkillForDead();
+		m_SkillCom->EndSkillManually();
 	}
 	else
 	{
-		// 스킬 컴포넌트가 없는 경우만 몽타주 직접정지
+		// 스킬을 사용중이지 않아도 다른 몽타주가 재생 중
+		// 일수도 있어서 정지
 		StopAnimMontage();
 	}
 }
 
-void AC_BasicEnemy::PlayDeadAnimation()
+void AC_BasicEnemy::ApplyDeadVisual(int32 _DeadMontageIndex)
 {
-	// 여러개의 죽음 몽타주 중 랜덤하게 play
-	if (m_DeadMontages.IsEmpty())
-	{
-		UC_Util::Print("!!Dead Montage is Empty!!", FColor::Red, 10.f);
+	// 클라에 남아있던 공격 또는 스킬 몽타주 정지
+	StopAnimMontage();
+
+	// 서버가 선택한 죽음 몽타주 재생
+	PlayDeadAnimation(_DeadMontageIndex);
+}
+
+void AC_BasicEnemy::PlayDeadAnimation(int32 _DeadMontageIndex)
+{
+	// 서버에서 전달한 인덱스가 배열 범위 안인지 검사
+	if (!m_DeadMontages.IsValidIndex(_DeadMontageIndex))
 		return;
-	}
 
-	const int32 RandomIndex = FMath::RandRange(0, m_DeadMontages.Num() - 1);
+	UAnimMontage* SelectedMontage = m_DeadMontages[_DeadMontageIndex];
 
-	UAnimMontage* SelectedMontage = m_DeadMontages[RandomIndex];
-
+	// 선택된 몽타주 유효성 검사
 	if (!IsValid(SelectedMontage))
-	{
-		UC_Util::Print("!!Selected Dead Montage is nullptr!!", FColor::Red, 10.f);
 		return;
-	}
 
+	// 서버와 클라에서 같은 죽음 몽타주 재생
 	PlayAnimMontage(SelectedMontage);
 }
 
-/* 동기화 처리 후 마무리
+void AC_BasicEnemy::OnRep_DeadData()
+{
+	// 죽음 상태가 된 경우만 처리
+	// 풀 재사용 시 초기화 처리도 이 함수에 추가
+	if (!m_DeadRepData.bDead)
+		return;
+	
+	// 서버가 선택한 죽음 몽타주를 클라이언트에서도 재생
+	ApplyDeadVisual(m_DeadRepData.DeadMontageIndex);
+}
+
+
 void AC_BasicEnemy::FinishDead()
 {
 	// 서버에서만 Zombie Pool 반환 처리
 	if (!HasAuthority())
 		return;
+
+	// 중복 타이머 실행방지 및 핸들 정리
+	GetWorldTimerManager().ClearTimer(m_DeadRemainTimer);
 
 	// C_Zombie 를 상속받은 계열만 ZombieManager Pool로 반환
 	AC_Zombie* Zombie = Cast<AC_Zombie>(this);
@@ -279,13 +343,23 @@ void AC_BasicEnemy::FinishDead()
 		return;
 	}
 
+	UC_ZombieManager* ZombieManager = ZOMBIE_MANAGER(this);
+
 	// 죽음 몽타주가 종료된 Zombie를 대기 Pool로 반환
-	if (!ZOMBIE_MANAGER->ReturnZombieToPool(Zombie))
+	if (!IsValid(ZombieManager))
+	{
+		UC_Util::Print("From AC_BasicEnemy::FinishDead : ZombieManager is nullptr !!", FColor::Red, 10.f);
+
+		return;
+	}
+
+	// 실제 비활성화와 풀 등록은 ZombieManager에 전달해서
+	// ZombieManager 가 처리
+	if (!ZombieManager->ReturnZombieToPool(Zombie))
 	{
 		UC_Util::Print("From AC_BasicEnemy::FinishDead : ReturnZombieToPool Failed !!", FColor::Red, 10.f);
-
 	}
-}*/
+}
 
 
 void AC_BasicEnemy::DecreaseHealRequestRegisterCount()

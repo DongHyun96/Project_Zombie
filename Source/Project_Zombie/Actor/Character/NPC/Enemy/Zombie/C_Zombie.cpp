@@ -7,6 +7,9 @@
 #include "../../../GlobalEnum.h"
 #include "Actor/Character/NPC/Enemy/Components/SkillComponent/C_EnemySkillComponent.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
+#include "Net/UnrealNetwork.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "Components/ShapeComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Utility/C_Util.h"
@@ -91,6 +94,71 @@ void AC_Zombie::OnNormalAttackColliderBeginOverlap
 		this,
 		nullptr
 	);
+}
+
+void AC_Zombie::ApplyPoolActiveState()
+{
+	if (m_bPoolActive)
+	{
+		// 재스폰 구현할때 활성화 처리 추가하기
+		SetActorHiddenInGame(false);
+		SetActorEnableCollision(true);
+		SetActorTickEnabled(true);
+
+		return;
+	}
+
+	// 풀 반환 시 남아있는 몽타주 정지
+	StopAnimMontage();
+
+	// 이동 정지
+	if (UCharacterMovementComponent* MoveCom = GetCharacterMovement())
+	{
+		MoveCom->StopMovementImmediately();
+		MoveCom->DisableMovement();
+	}
+
+	// 충돌 비활성화
+	SetActorEnableCollision(false);
+
+	// 화면 숨김처리
+	SetActorHiddenInGame(true);
+
+	// tick 비활성화
+	SetActorTickEnabled(false);
+}
+
+void AC_Zombie::OnRep_PoolActive()
+{
+	// 클라이언트도 서버랑 같은 상태 적용
+	ApplyPoolActiveState();
+}
+
+void AC_Zombie::DeactivateForPool()
+{
+	// 풀 상태 변경은 서버에서만 처리
+	if (!HasAuthority())
+		return;
+
+	// 중복 처리 방지
+	if (!m_bPoolActive)
+		return;
+
+	m_bPoolActive = false;
+
+	// 서버에 바로 비활성 상태 적용
+	ApplyPoolActiveState();
+
+	// 클라에 최대한 빨리 전달
+	ForceNetUpdate();
+}
+
+void AC_Zombie::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	// 풀 활성 여부를 클라에 복제
+	DOREPLIFETIME(AC_Zombie, m_bPoolActive);
 }
 
 void AC_Zombie::Tick(float DeltaTime)

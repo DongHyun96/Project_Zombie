@@ -124,12 +124,6 @@ public:
 	void EndSkillManually();
 
 	/// <summary>
-	/// 사망 시 현재 사용중인 스킬 상태를 강제로 종료
-	/// BT Task 완료 Delegate는 호출하지 않음
-	/// </summary>
-	void CancelSkillForDead();
-
-	/// <summary>
 	/// 스킬을 사용할 수 있는지 검사하는 함수
 	/// </summary>
 	/// <param name="_Slot"></param>

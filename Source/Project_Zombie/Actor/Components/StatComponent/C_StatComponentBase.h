@@ -101,7 +101,7 @@ public: /* 공용 Stat 처리 함수 */
 	
 	bool IsCurHPFull() const;
 	bool IsCurHPZero() const;
-	
+
 private:
 	 
 	/// <summary>
