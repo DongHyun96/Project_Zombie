@@ -29,11 +29,6 @@ void AC_WorldPingActor::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// SpawnActor Param을 BasicPlayer로 지정해줌
-	m_OwnerPlayer = Cast<AC_BasicPlayer>(GetOwner());
-	if (!m_OwnerPlayer)
-		UC_Util::Print("From AC_WorldPingActor::BeginPlay : OwnerPlayer casting failed", FColor::Red, 10.f);
-	
 	// PingWidget의 경우, NativeConstruct에서 안보이게끔 처리함
 	m_PingWidget = Cast<UC_PingWidget>(m_PingWidgetComponent->GetWidget());
 	
@@ -43,8 +38,6 @@ void AC_WorldPingActor::BeginPlay()
 		return;
 	}
 	
-	m_PingWidget->SetOwnerPlayer(m_OwnerPlayer); 
-
 	m_SplineMeshComponent->SetHiddenInGame(true);
 	
 	// Effect의 경우, 직접적인 Spawn 처리가 들어가야 실질적으로 Spawn 처리됨(처음에는 어차피 보이지 않음)

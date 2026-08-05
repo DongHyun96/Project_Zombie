@@ -28,6 +28,8 @@ public:
 	/// </summary>
 	void SetPrevOwnerPlayer(class AC_BasicPlayer* _PrevOwnerPlayer) { m_PrevOwnerPlayer = _PrevOwnerPlayer; }
 	
+	AC_BasicPlayer* GetPrevOwnerPlayer() const { return m_PrevOwnerPlayer; }
+	
 public:
 	
 	/// <summary>
@@ -53,7 +55,7 @@ public: /* Attachment 처리 관련 */
 	/// Detaching 진행과 동시에, Enemy 머리위로 SkeletalMeshComp 충돌 잠시 켜두어 Launch 처리
 	/// </summary>
 	/// <returns></returns>
-	bool DetachFromHand();
+	// bool DetachFromHand(); // not in used
 	
 private:
 	

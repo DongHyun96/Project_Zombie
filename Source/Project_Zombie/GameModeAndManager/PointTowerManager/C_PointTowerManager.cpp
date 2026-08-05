@@ -4,27 +4,45 @@
 #include "C_PointTowerManager.h"
 
 #include "Actor/PointTower/C_PointTower.h"
+#include "GameModeAndManager/C_UIManager.h"
+#include "Utility/C_Util.h"
 
 UC_PointTowerManager::UC_PointTowerManager()
 {
 	
 }
 
-void UC_PointTowerManager::StartFirstActivatePointsSequence()
+void UC_PointTowerManager::OnWorldBeginPlay()
 {
 	m_CurrentSequenceIndex = 0;
+	
+	// For Testing
+	GetWorld()->GetTimerManager().SetTimer
+	(
+		m_TestTimerHandle, this, &UC_PointTowerManager::StartActivateCurrentPointsSequence, 10.f, false
+	);
+}
 
-	// 첫 거점들 활성화
+void UC_PointTowerManager::StartActivateCurrentPointsSequence()
+{
+	if (!m_PointTowers.IsValidIndex(m_CurrentSequenceIndex))
+	{
+		UC_Util::Print("[UC_PointTowerManager::StartActivateCurrentPointsSequence] : Invalid Current Sequence index received!", FColor::Red, 10.f);
+		return;
+	}
+
 	for (AC_PointTower* PointTower : m_PointTowers[m_CurrentSequenceIndex])
-		PointTower->Activate();
+		PointTower->SetPointTowerState(EPointTowerState::Active);
 }
 
 bool UC_PointTowerManager::RegisterPointTower(AC_PointTower* _PointTower)
 {
+	PRINT_LOCAL(GetWorld(), "[UC_PointTowerManager::RegisterPointTower]", FColor::Red, 10.f);
+	
 	// 새로운 Sequence 신규 PointTower, size를 늘림과 동시에 넣어줌
 	if (!m_PointTowers.IsValidIndex(_PointTower->m_ActivateSequenceIdx))
 	{
-		m_PointTowers.SetNum(_PointTower->m_ActivateSequenceIdx);
+		m_PointTowers.SetNum(_PointTower->m_ActivateSequenceIdx + 1);
 		m_PointTowers[_PointTower->m_ActivateSequenceIdx].Add(_PointTower);
 		return true;
 	}
@@ -42,4 +60,21 @@ bool UC_PointTowerManager::RegisterPointTower(AC_PointTower* _PointTower)
 		PointTower->m_bCanDamagedAfterConquer = true;
 	
 	return true;
+}
+
+void UC_PointTowerManager::OnPointTowerConquered()
+{
+	// 이번 Sequence가 모두 끝났는지 체크
+	for (AC_PointTower* PointTower : m_PointTowers[m_CurrentSequenceIndex])
+		if (PointTower->GetPointTowerState() == EPointTowerState::Active) return; // 아직 해당 Sequence의 모든 PointTower가 점령되지는 않은 상황 -> Continue
+
+	// 다음 라운드로 index 넘기기 및 게임오버 체크
+	if (!m_PointTowers.IsValidIndex(++m_CurrentSequenceIndex))
+	{
+		// TODO : 게임 오버 처리할 것
+		return;
+	}
+	
+	// 아직 GameOver되지 않은 상황 -> 다음 라운드 진행
+	StartActivateCurrentPointsSequence();
 }

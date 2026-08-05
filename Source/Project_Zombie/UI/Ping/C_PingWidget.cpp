@@ -27,11 +27,16 @@ void UC_PingWidget::NativeConstruct()
 	Super::NativeConstruct();
 
 	// 시간 0으로 Animation 정지 처리(안보이게끔)
-	PlayAnimation(SpawnAnimation);
-	PauseAnimation(SpawnAnimation);
+	// NativeConstruct 호출되기 이전, 이미 보이게끔 처리를 했을 수 있음
+	if (!m_bCurrentShowingPingMarker)
+	{
+		PlayAnimation(SpawnAnimation);
+		PauseAnimation(SpawnAnimation);
+	}
 	
-	// CompassBarWidget에 대응되는 PingMarker 등록
-	m_TargetCompassMarkerWidget = UI_MANAGER(GetWorld())->GetMainHUDWidget()->GetCompassBarWidget()->RegisterPlayerCompassPingMarker(m_OwnerPlayer);
+	// m_OwnerPlayer가 제대로 잡힌 PingWidget의 경우(Player의 Ping), CompassBarWidget에 대응되는 PingMarker 등록
+	if (m_OwnerPlayer)
+		m_TargetCompassMarkerWidget = UI_MANAGER(GetWorld())->GetMainHUDWidget()->GetCompassBarWidget()->RegisterPlayerCompassPingMarker(m_OwnerPlayer);
 }
 
 void UC_PingWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
@@ -54,13 +59,8 @@ void UC_PingWidget::SetPingMarkerColor(const FColor& _Color) const
 {
 	PingMarkerImage->SetColorAndOpacity(_Color);
 	
-	if (!m_TargetCompassMarkerWidget)
-	{
-		UC_Util::Print("From UC_PingWidget::SetPingMarkerColor : m_TargetCompassMarkerWidget nullptr", FColor::Red, 10.f);
-		return;
-	}
-	
-	m_TargetCompassMarkerWidget->SetPingMarkerColor(_Color);
+	if (m_TargetCompassMarkerWidget)
+		m_TargetCompassMarkerWidget->SetPingMarkerColor(_Color);
 }
 
 void UC_PingWidget::ShowPingWidget(const FVector& _WorldPingSpawnedLocation, EGamePingType _PingType)
@@ -76,8 +76,12 @@ void UC_PingWidget::ShowPingWidget(const FVector& _WorldPingSpawnedLocation, EGa
 	
 	PlayAnimation(SpawnAnimation);
 
-	m_TargetCompassMarkerWidget->TogglePingMarker(true, _PingType);
-	m_TargetCompassMarkerWidget->SetWorldMarkerSpawnedLocation(m_SpawnedLocation);
+	// 이 PingWidget에 대응되는 CompassMarkerWidget이 존재한다면, 해당 Widget 또한 활성화
+	if (m_TargetCompassMarkerWidget)
+	{
+		m_TargetCompassMarkerWidget->TogglePingMarker(true, _PingType);
+		m_TargetCompassMarkerWidget->SetWorldMarkerSpawnedLocation(m_SpawnedLocation);
+	}
 }
 
 void UC_PingWidget::HidePingWidget()
@@ -86,6 +90,10 @@ void UC_PingWidget::HidePingWidget()
 	if (!m_bCurrentShowingPingMarker) return;
 	
 	PlayAnimation(SpawnAnimation, 0.f, 1, EUMGSequencePlayMode::Reverse);
-	m_TargetCompassMarkerWidget->TogglePingMarker(false);
+
+	// 이 PingWidget에 대응되는 CompassMarkerWidget이 존재한다면, 해당 Widget 또한 비활성화
+	if (m_TargetCompassMarkerWidget)
+		m_TargetCompassMarkerWidget->TogglePingMarker(false);
+	
 	m_bCurrentShowingPingMarker = false;
 }

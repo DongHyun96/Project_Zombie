@@ -67,7 +67,6 @@ void AC_GunBase::BeginPlay()
 	
 	//Gun_init();
 	m_Collision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	m_Collision->OnComponentBeginOverlap.AddDynamic(this, &AC_GunBase::OnMainColliderBeginOverlap);
 }
 
 void AC_GunBase::Tick(float DeltaTime)
@@ -703,42 +702,6 @@ void AC_GunBase::OnSheathStart()
 		}
 
 		Server_CancelReload();
-	}
-}
-
-void AC_GunBase::OnMainColliderBeginOverlap
-(
-	UPrimitiveComponent* _OverlapComponent,
-	AActor*				 _OtherActor,
-	UPrimitiveComponent* _OtherComp,
-	int32				 _OtherBodyIndex,
-	bool				 _bFromSweep,
-	const FHitResult&	 _SweepResult
-)
-{
-	if (m_OwnerPlayer) return;
-
-	AC_BasicPlayer* OverlappedPlayer = Cast<AC_BasicPlayer>(_OtherActor);
-	if (!OverlappedPlayer) return;
-	
-	// TODO : 리슨서버에서의 아이템 파밍 시퀀스를 따라서 처리를 할 것
-	// 일단은 LocalPlayer인 경우에만, 충돌처리를 하는 것으로 체킹함
-	if (!OverlappedPlayer->IsLocallyControlled()) return;
-	
-	// 해당 Player의 MainWeaponSlot에 이미 MainWeapon이 장착되어 있는 경우
-	if (OverlappedPlayer->GetEquippedComponent()->GetSlotWeapon(EWeaponSlot::MainWeapon)) return;
-	
-	OverlappedPlayer->GetEquippedComponent()->Server_SetSlotWeapon(EWeaponSlot::MainWeapon, this);
-	m_Collision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	
-	// Outline 비활성화(활성화 되어있건 이미 비활성이건)
-	m_WeaponMesh->SetCustomDepthStencilValue(0);
-
-	if (OverlappedPlayer->GetPingSystemComponent()->GetLastInstigator() == this)
-	{
-		// 아직 마지막으로 핑을 스폰한 LastInstigator가 이 총기일 경우 -> 아직 해당 정보의 Ping이 나온 상태
-		// Ping 정보를 가려준다
-		OverlappedPlayer->GetPingSystemComponent()->HidePing();
 	}
 }
 

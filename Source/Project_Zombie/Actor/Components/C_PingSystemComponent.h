@@ -66,6 +66,22 @@ private:
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_HidePing();
 	
+public: 
+
+	// 핑을 스폰시킨 주최자가 자기자신이 아닐 때 사용할 것 -> ex) CopZombie 빼앗긴 무기에 대한 핑 스폰 등
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_MustSpawnAll
+	(
+		const FVector&	_SpawnedLocation,
+		EGamePingType	_GamePingType,
+		EPingShapeType	_PingShapeType,
+		AActor*			_LastInstigator
+	);
+
+	// 핑을 Hide시킨 주최자가 자기자신이 아닐 때 사용할 것 -> ex) CopZombie 빼앗긴 무기에 대한 핑 스폰 등
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_MustHidePingAll();
+	
 public:
 	
 	// void SetPingColor(const FColor& _PingColor);
@@ -75,18 +91,22 @@ public:
 	UObject* GetLastInstigator() const { return m_LastInstigator; }
 
 private:
-	
+
+	UPROPERTY()
 	class AC_BasicPlayer* m_OwnerPlayer{};
 	
 private:
+
+	UPROPERTY()
+	class AC_PlayerWorldPingActor*	m_WorldPingActor{};
 	
-	class AC_WorldPingActor*	m_WorldPingActor{};
+	UPROPERTY()
 	class UC_CompassBarWidget*	m_CompassBarWidget{}; // CompassBar에 핑 정보 Spawn 시킬 때 필요
 	
 protected:
 	
 	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<AC_WorldPingActor> m_WorldPingActorClass{};
+	TSubclassOf<AC_PlayerWorldPingActor> m_WorldPingActorClass{};
 	
 	
 private:

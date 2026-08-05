@@ -87,6 +87,10 @@ public:
 
 private:
 	
+	virtual void OnDead(AC_BasicCharacter* _DeadCharacter) override;
+	
+private:
+	
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	
 protected:

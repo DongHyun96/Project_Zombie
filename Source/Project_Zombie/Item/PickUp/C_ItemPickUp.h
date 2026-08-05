@@ -67,6 +67,22 @@ public:
 	
 	UFUNCTION()
 	void OnRep_ItemEntry();
+	
+private:
+	
+	/// <summary>
+	/// 스폰 처리 후, 구르는 것 멈췄는지 체크
+	/// 멈췄다면 SimulatePhysics 비활성화 및 CopZombie가 떨군 ItemPickUp의 경우, Outline 그리기 처리 등 조치
+	/// </summary>
+	void CheckPhysicsStopped();
+	
+public:
+	
+	void SetStolenPlayerPingSystemComponent(class UC_PingSystemComponent* _TargetPingComponent) { m_StolenPlayerPingSystemComponent = _TargetPingComponent; }
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_ToggleOutline(bool _Visible);
+	
 public:
 	// 아이템 정보
 	UPROPERTY(ReplicatedUsing = OnRep_ItemEntry, EditAnywhere, BlueprintReadWrite)
@@ -105,4 +121,15 @@ protected:
 	// 자동 수거 시간 (초 단위)
 	UPROPERTY(EditAnywhere, Category = "Item | LifeTime")
 	float DefaultLifeTime = 100.0f;
+
+protected: /* CopZombie에 의한 Drop 처리 이후 관련 */
+	
+	FTimerHandle m_SimulatePhysicsStoppedCheckTimer{};
+
+	// CopZombie에 의해 빼앗긴 무기의 경우, 이 PingSystemComponent 등록할 것
+	// 만약 SimulatePhysics에 의한 움직임이 멈춘 시점에 해당 Component가 존재한다면
+	// 빼앗긴 무기에 대한 회수 시인성 정보 표시처리를 해줄 것임
+	UPROPERTY()
+	class UC_PingSystemComponent* m_StolenPlayerPingSystemComponent{};
+	
 };

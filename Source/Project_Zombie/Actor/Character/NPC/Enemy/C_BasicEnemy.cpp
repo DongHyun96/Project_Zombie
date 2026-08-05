@@ -58,6 +58,8 @@ void AC_BasicEnemy::BeginPlay()
 {
 	Super::BeginPlay();
 
+	UC_Util::Print("AC_BasicEnemy::BeginPlay", FColor::Red, 10.f);
+	
 	if (IsLocallyControlled())
 	{
 		// 죽었을 때 처리할 함수 Delegate 구독 처리 (죽은 이후로도 다음에 Spawn 처리가 될 수 있기 때문에 구독 해지는 처리하지 않는다)

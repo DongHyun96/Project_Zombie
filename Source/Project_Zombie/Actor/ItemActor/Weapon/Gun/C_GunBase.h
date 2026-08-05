@@ -248,19 +248,6 @@ public:
 	/// </summary>
 	virtual void OnSheathStart() override;
 	
-private:
-	
-	UFUNCTION()
-	void OnMainColliderBeginOverlap
-	(
-		UPrimitiveComponent* _OverlapComponent,
-		AActor*				 _OtherActor,
-		UPrimitiveComponent* _OtherComp,
-		int32				 _OtherBodyIndex,
-		bool				 _bFromSweep,
-		const FHitResult&	 _SweepResult
-	);
-	
 protected:
 	virtual void BeginPlay() override;
 

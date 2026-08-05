@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "C_CopZombie.h"
@@ -12,6 +12,7 @@
 #include "Components/BoxComponent.h"
 #include "GameFramework/GameSession.h"
 #include "GameModeAndManager/C_ItemManager.h"
+#include "Item/PickUp/C_ItemPickUp.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "Utility/C_Util.h"
@@ -175,9 +176,30 @@ void AC_CopZombie::DropWeapon()
 	
 	if (!ItemManager) return;
 	
-	ItemManager->DropItemByPlayer(Entry, this);
-	
+	AC_ItemPickUp* SpawnedItemPickUp = ItemManager->DropItemByPlayer(Entry, this);
+
 	Entry = FInventoryEntry();
+
+	if (SpawnedItemPickUp)
+	{
+		SpawnedItemPickUp->SetStolenPlayerPingSystemComponent
+		(
+			m_EquippedGun->GetAIGunUsageComponent()->GetPrevOwnerPlayer()->GetPingSystemComponent()
+		);
+	}
+	
+	m_EquippedGun->Destroy();
+	m_EquippedGun = nullptr;
+
+}
+
+void AC_CopZombie::OnDead(AC_BasicCharacter* _DeadCharacter)
+{
+	Super::OnDead(_DeadCharacter);
+	
+	// 죽었을 때, 만약 무기를 들고 있는 상황이라면 DropWeapon 처리
+	if (m_EquippedGun)
+		DropWeapon();
 }
 
 void AC_CopZombie::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
