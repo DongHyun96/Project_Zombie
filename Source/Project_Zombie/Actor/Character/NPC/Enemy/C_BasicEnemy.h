@@ -55,9 +55,13 @@ protected: /* Dead 관련 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dead")
 	TArray<TObjectPtr<UAnimMontage>> m_DeadMontages{};
 
-	// 죽은 뒤 월드에 남아있는 시간(FinishDead 구현 시 추가)
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dead")
+	// 죽은 뒤 풀 반환까지의 대기시간(월드에 남아있는 시간)
+	// ClampMin : 에디터에서 음수를 넣지 못하게 막는 설정
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Dead", meta = (ClampMin = "0.0"))
 	float m_DeadRemainTime = 3.f;
+
+	// 죽은 뒤 풀 반환까지 기다리는 타이머
+	FTimerHandle m_DeadRemainTimer;
 
 private:
 	
@@ -125,14 +129,11 @@ protected:
 	/// <param name="_DeadCharacter"> : 죽은 캐릭터 (자기자신) </param>
 	virtual void OnDead(AC_BasicCharacter* _DeadCharacter);
 
-
-	/* =============== 동기화 처리 후 마무리 ====================
 	/// <summary>
-	/// 죽음 몽타주 재생이 끝나고 ZombieManager에 Pool 반환 요청
+	/// 죽음 연출이 끝난 후(OnDead 가 끝난 후) ZombieManager에 Pool 반환 요청
 	/// </summary>
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION()
 	virtual void FinishDead();
-	===========================================================*/
 
 	/// <summary>
 	/// AI와 이동 정지

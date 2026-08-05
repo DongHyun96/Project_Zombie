@@ -183,7 +183,6 @@ void AC_BasicEnemy::OnDead(AC_BasicCharacter* _DeadCharacter)
 {
 	// 서버 환경의 Enemy인 경우에만 호출처리됨
 	
-
 	// TODO : Dead에 필요한 처리가 더 필요하다면 여기서 이어서 처리해줄 것(ex 랙돌 처리 등)
 	// 아마 죽은 뒤에 죽은 모션이나 랙돌 처리를 보여준 후, 몇 초 뒤에 Pool로 돌아가게끔 처리를 해줄 듯
 	
@@ -234,8 +233,22 @@ void AC_BasicEnemy::OnDead(AC_BasicCharacter* _DeadCharacter)
 	// 풀에서 꺼낼 때 복구하기
 	SetActorEnableCollision(false);
 
-	// 변경한 복제 정보를 가능한 빨리 전달
+	// 변경한 복제 정보를 가능한 빨리 클라에 전달
 	ForceNetUpdate();
+
+	// 죽음 뒤 일정시간 후 ZombieManager의 풀 반환
+	if (m_DeadRemainTime > 0.f)
+	{
+		// 서버의 OnDead에서만 타이머 생성
+		// 클라는 풀 반환을 직접 계산하지 않고 
+		// 서버가 복제한 풀 활성 상태를 따라가게
+		GetWorldTimerManager().SetTimer(m_DeadRemainTimer, this, &AC_BasicEnemy::FinishDead, m_DeadRemainTime, false);
+	}
+	else
+	{
+		// 유지시간이 0이면 바로 풀로 반환
+		FinishDead();
+	}
 }
 
 void AC_BasicEnemy::StopAllActionsForDead()
@@ -311,12 +324,14 @@ void AC_BasicEnemy::OnRep_DeadData()
 }
 
 
-/* 동기화 처리 후 마무리
 void AC_BasicEnemy::FinishDead()
 {
 	// 서버에서만 Zombie Pool 반환 처리
 	if (!HasAuthority())
 		return;
+
+	// 중복 타이머 실행방지 및 핸들 정리
+	GetWorldTimerManager().ClearTimer(m_DeadRemainTimer);
 
 	// C_Zombie 를 상속받은 계열만 ZombieManager Pool로 반환
 	AC_Zombie* Zombie = Cast<AC_Zombie>(this);
@@ -328,13 +343,23 @@ void AC_BasicEnemy::FinishDead()
 		return;
 	}
 
+	UC_ZombieManager* ZombieManager = ZOMBIE_MANAGER(this);
+
 	// 죽음 몽타주가 종료된 Zombie를 대기 Pool로 반환
-	if (!ZOMBIE_MANAGER->ReturnZombieToPool(Zombie))
+	if (!IsValid(ZombieManager))
+	{
+		UC_Util::Print("From AC_BasicEnemy::FinishDead : ZombieManager is nullptr !!", FColor::Red, 10.f);
+
+		return;
+	}
+
+	// 실제 비활성화와 풀 등록은 ZombieManager에 전달해서
+	// ZombieManager 가 처리
+	if (!ZombieManager->ReturnZombieToPool(Zombie))
 	{
 		UC_Util::Print("From AC_BasicEnemy::FinishDead : ReturnZombieToPool Failed !!", FColor::Red, 10.f);
-
 	}
-}*/
+}
 
 
 void AC_BasicEnemy::DecreaseHealRequestRegisterCount()

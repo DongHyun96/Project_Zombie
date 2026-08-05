@@ -25,6 +25,13 @@ protected:
 	
 	const EZombieType m_ZombieType{};
 
+	/// <summary>
+	/// 현재 좀비가 필드에서 활성상태인지 
+	/// false = 오브젝트 풀 대기상태
+	/// </summary>
+	UPROPERTY(Replicated = OnRep_PoolActive)
+	bool m_bPoolActive = true;
+
 public:
 	/// <summary>
 	/// 현재 Zombie 종류 반환
@@ -78,6 +85,35 @@ protected:
 	
 	void AddNormalAttackCollider(UShapeComponent* _NormalAttackCollider) { m_NormalAttackColliders.Add(_NormalAttackCollider); }
 	
+	// --------- 스폰관련 ------------ //
+
+protected:
+	/// <summary>
+	/// 서버 또는 클라에서 풀 활성 상태에 따라
+	/// 외형과 충돌을 적용
+	/// </summary>
+	void ApplyPoolActiveState();
+
+	/// <summary>
+	/// 클라가 풀 활성 상태를 받았을 때 호출
+	/// </summary>
+	void OnRep_PoolActive();
+
+public:
+	/// <summary>
+	/// 죽은 좀비를 레벨에서 제거하고 
+	/// 풀 대기상태로 전환
+	/// 서버에서만 호출
+	/// </summary>
+	void DeactivateForPool();
+
+	bool IsPoolActive() const
+	{
+		return m_bPoolActive;
+	}
+	
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 public:	
 	virtual void Tick(float DeltaTime) override;
 
