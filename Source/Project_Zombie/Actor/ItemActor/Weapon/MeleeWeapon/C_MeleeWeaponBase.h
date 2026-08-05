@@ -29,10 +29,13 @@ protected:
 	// 현재 공격 버튼을 누르고 있는 상태인지 확인
 	bool						m_bIsAttack = false;
 
-	//float						m_AttackRate;
+	bool						m_bSaveCombo = false;
 
 	UPROPERTY()
 	UAnimMontage*				m_PlayerAttackAnimation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hit|Effect")
+	class UNiagaraSystem*		HitEffect; // 타격시 재생시킬 이펙트
 
 	FVector						m_PrevHitBoxSockPos;
 
@@ -56,11 +59,19 @@ public:
 	virtual bool AttachToHolster(USceneComponent* _ParentMesh) override;
 	virtual bool AttachToHand(USceneComponent* _ParentMesh) override;
 
-protected:
-#if WITH_EDITOR
-	// 에디터에서 프로퍼티(속성)가 변경될 때마다 호출되는 엔진 함수입니다. TODO : 이제 init함수가 바뀌어서 사용하지 않음.
-	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
-#endif
+public: // 애님 노티파이 관련
+
+	/// <summary>
+	/// 근접공격 콤보 애님 노티파이 이벤트
+	/// </summary>
+	UFUNCTION(BlueprintCallable, Category = "Melee|AnimNotify")
+	void MeleeCombo();
+
+	/// <summary>
+	/// 스킬 공격판정 활성화 시 매프레임마다 호출
+	/// </summary>
+	UFUNCTION(BlueprintCallable, Category = "Melee|AnimNotify")
+	void HitBoxCheck();
 
 public:
 
@@ -68,11 +79,7 @@ public:
 	
 	virtual void InitializeItemData(const FWeaponData* InRawData) override;
 
-	/// <summary>
-	/// 멤버변수 초기화
-	/// </summary>
-	//void Melee_init();
-
+public:
 	/// <summary>
 	/// 마우스 왼쪽 버튼 클릭 (공격 시작)
 	/// </summary>
@@ -88,11 +95,30 @@ protected:
 	// 데이터 테이블의 에셋들을 비동기 로드하기 위한 함수, 무기마다 다를 수 있기 때문에 순수 가상 함수로 선언. return 값을 bool 처리 할까?
 	virtual void LoadAsyncAssets(const FWeaponData* InRawData) override;
 
+protected:
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 public:
 	
 	virtual void UpdateAmmoInfoHUDForDrawEnd() override;
 	
 	virtual void SetAmmoUIInfo(FAmmoUIInfo& _AmmoUIInfo) override;
+
+public:
+	void PlayAttackMotion(class AC_BasicPlayer* _WeaponUser);
+
+protected:
+	UFUNCTION(Server, Reliable)
+	void Server_ApplyHitDamage(AActor* HitActor, float Damage, FVector ImpactPoint, FVector ImpactNormal);
+
+	UFUNCTION(NetMulticast, Unreliable)
+	void Multicast_PlayHitEffect(FVector ImpactPoint, FVector ImpactNormal);
+
+	UFUNCTION(NetMulticast, Unreliable)
+	void Multicast_PlayAttackMotion(FName SectionName);
+
+	UFUNCTION(Server, Reliable)
+	void Server_ReqMeleeCombo();
 
 protected:
 
@@ -104,6 +130,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, meta = (DisplayName = "HolsterSocketName"))
 	FName m_HolsterSocketName{};
 	
+
 public:
 	AC_MeleeWeaponBase();
 

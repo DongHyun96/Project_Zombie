@@ -4,6 +4,8 @@
 #include "GameModeAndManager/C_UIManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystemComponent.h"
+#include "Actor/Character/NPC/Enemy/C_BasicEnemy.h"
+
 
 #include "TimerManager.h"
 #include "Animation/AnimMontage.h"
@@ -145,6 +147,8 @@ void AC_ShotGun::PullTrigger()
 {
 	if (m_bIsFiring || m_bIsReloading || !m_bCanFire || m_CurrentAmmo <= 0) return;
 
+	if (m_OwnerPlayer && m_OwnerPlayer->GetPlayerMoveState() == EPlayerPoseState::Sprint) return;
+
 	m_bIsFiring = true;
 	m_bCanFire = false;
 
@@ -161,14 +165,18 @@ void AC_ShotGun::ResetFireCooldown()
 
 void AC_ShotGun::Client_ExecuteFire()
 {
+	if (m_OwnerPlayer && m_OwnerPlayer->GetPlayerMoveState() == EPlayerPoseState::Sprint)
+	{
+		m_bIsFiring = false;
+		return;
+	}
+
 	if (m_CurrentAmmo <= 0 || m_bIsReloading)
 	{
 		m_bIsFiring = false;
 		return;
 	}
 
-	// ★ 핵심 수정: 서버(HasAuthority)에서는 아래 Server_ShotgunFireEffects에서 차감할 것이므로,
-	// 클라이언트(순수 클라)일 때만 여기서 로컬 탄약을 차감하고 UI를 올립니다.
 	if (!HasAuthority())
 	{
 		m_CurrentAmmo--;
@@ -224,13 +232,11 @@ void AC_ShotGun::Client_ExecuteFire()
 
 void AC_ShotGun::Server_ShotgunFireEffects_Implementation(const TArray<FVector_NetQuantize>& ImpactPoints)
 {
-	// 서버 메모리 탄약 차감 (서버 플레이어가 쐈든, 클라이언트가 RPC 보냈든 무조건 여기서 1발 차감)
 	if (m_CurrentAmmo > 0)
 	{
 		m_CurrentAmmo--;
 	}
 
-	// ★ 서버 플레이어가 직접 쏜 경우에도 UI를 최신 탄약 수로 갱신해줍니다.
 	if (HasAuthority() && m_OwnerPlayer && m_OwnerPlayer->IsLocallyControlled())
 	{
 		UpdateAmmoUI();
@@ -338,9 +344,8 @@ void AC_ShotGun::AIFire(const FVector& TargetLocation)
 
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(this);
-	if (GetOwner()) QueryParams.AddIgnoredActor(GetOwner());
+	if (m_OwnerEnemy) QueryParams.AddIgnoredActor(m_OwnerEnemy);
 
-	// ★ 추가
 	if (AActor* AttachParent = GetAttachParentActor())
 	{
 		QueryParams.AddIgnoredActor(AttachParent);
@@ -359,7 +364,11 @@ void AC_ShotGun::AIFire(const FVector& TargetLocation)
 
 		if (bHit && HitResult.GetActor())
 		{
-			AController* InstigatorController = GetOwner() ? Cast<APawn>(GetOwner())->GetController() : nullptr;
+			AActor* HitActor = HitResult.GetActor();
+
+			APawn* ShootingPawn = Cast<APawn>(GetAttachParentActor());
+
+			AController* InstigatorController = ShootingPawn ? ShootingPawn->GetController() : nullptr;
 			float PelletDamage = m_Damage / static_cast<float>(m_PelletCount);
 			UGameplayStatics::ApplyDamage(HitResult.GetActor(), PelletDamage, InstigatorController, this, nullptr);
 		}

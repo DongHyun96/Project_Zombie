@@ -9,10 +9,12 @@
 #include "Actor/Components/C_EquippedComponent.h"
 #include "Actor/Components/ItemLinkComponent/C_ItemLinkComponent.h"
 #include "Engine/AssetManager.h"
+#include "Kismet/GameplayStatics.h"
 #include "GameModeAndManager/C_UIManager.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
+#include "NiagaraFunctionLibrary.h"
+#include "Net/UnrealNetwork.h"
 #include "Utility/C_Util.h"
-
 
 AC_MeleeWeaponBase::AC_MeleeWeaponBase()
 {
@@ -21,7 +23,8 @@ AC_MeleeWeaponBase::AC_MeleeWeaponBase()
 	m_WeaponMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WeaponMesh"));
 	RootComponent = m_WeaponMesh;
 
-	//m_DataCom = CreateDefaultSubobject<UC_MeleeDataTableComponent>(TEXT("DataComponent"));
+	bReplicates = true;
+	SetReplicateMovement(true);
 }
 
 void AC_MeleeWeaponBase::BeginPlay()
@@ -34,13 +37,6 @@ void AC_MeleeWeaponBase::BeginPlay()
 void AC_MeleeWeaponBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-}
-
-void AC_MeleeWeaponBase::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
-{
-	Super::PostEditChangeProperty(PropertyChangedEvent);
-
-	//Melee_init();
 }
 
 bool AC_MeleeWeaponBase::InitializeItemActor(const FWeaponData* InRawData)
@@ -83,6 +79,7 @@ void AC_MeleeWeaponBase::InitializeItemData(const FWeaponData* InRawData)
 		// 3. 최종 스탯 계산: BaseStat + (Grade * DataAsset의 레벨당 증가량)
 		m_Damage = MeleeData->BaseDamage + (DamageGrade * MeleeData->DamagePerUpgradeLevel);
 
+
 		// TODO : 나중에 근접 무기의 공격속도 멤버 변수를 추가하면 사용할 것
 		//m_AttackRatio = MeleeData->AttackRate + (DamageGrade * MeleeData->AttackRatePerUpgradeLevel);
 	}
@@ -90,6 +87,9 @@ void AC_MeleeWeaponBase::InitializeItemData(const FWeaponData* InRawData)
 	{
 		m_Damage = BaseDamage;
 	}
+	FString msg = FString::SanitizeFloat(m_Damage);
+	PRINT_LOCAL(GetWorld(), msg, FColor::Black, 20.f);
+
 }
 
 
@@ -153,6 +153,11 @@ void AC_MeleeWeaponBase::LoadAsyncAssets(const FWeaponData* InRawData)
 	}
 }
 
+void AC_MeleeWeaponBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+}
+
 bool AC_MeleeWeaponBase::OnStartFire(AC_BasicPlayer* _WeaponUser)
 {
 	// TODO : LMB 첫 눌렸을 시, 동작 처리
@@ -172,6 +177,8 @@ bool AC_MeleeWeaponBase::AttachToHolster(USceneComponent* _ParentMesh)
 	if (!_ParentMesh) return false;
 	AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(_ParentMesh->GetOwner());
 	if (!Player) return false; // 장착 시도하는 Owner Character가 Player형이 아닌 경우, return false
+
+	SetOwner(Player);
 
 	const bool bIsAttached = AttachToComponent
 	(
@@ -193,6 +200,7 @@ bool AC_MeleeWeaponBase::AttachToHand(USceneComponent* _ParentMesh)
 
 	PRINT_LOCAL(GetWorld(), "Melee - AttachingToHand", FColor::Red, 10.f);
 	
+	SetOwner(Player);
 	m_OwnerPlayer = Player;
 
 	const bool bIsAttached = AttachToComponent
@@ -211,46 +219,198 @@ bool AC_MeleeWeaponBase::AttachToHand(USceneComponent* _ParentMesh)
 	return bIsAttached;
 }
 
-/*void AC_MeleeWeaponBase::Melee_init()
+void AC_MeleeWeaponBase::Attack(AC_BasicPlayer* _WeaponUser)
 {
-	if (!m_DataCom) return;
+	if (!_WeaponUser) return;
 
-	// 외형(Mesh) 로드
-	if (UStaticMesh* WeaponMeshAsset = Cast<UStaticMesh>(m_DataCom->GetAssetData("WeaponStaticMesh").LoadSynchronous()))
+	PlayAttackMotion(_WeaponUser);
+}
+
+void AC_MeleeWeaponBase::PlayAttackMotion(AC_BasicPlayer* _WeaponUser)
+{
+	if (!_WeaponUser || !m_PlayerAttackAnimation) return;
+
+	UAnimInstance* AnimInstance = _WeaponUser->GetMesh() ? _WeaponUser->GetMesh()->GetAnimInstance() : nullptr;
+	if (!AnimInstance) return;
+
+	if (!AnimInstance->Montage_IsPlaying(m_PlayerAttackAnimation))
 	{
-		if (m_WeaponMesh)
+		m_bSaveCombo = false;
+		m_HitActors.Empty();
+		m_PrevHitBoxSockPos = m_WeaponMesh->GetSocketLocation(TEXT("HitBoxSock"));
+
+		if (_WeaponUser->IsLocallyControlled() && !HasAuthority())
 		{
-			m_WeaponMesh->SetStaticMesh(WeaponMeshAsset);
+			AnimInstance->Montage_Play(m_PlayerAttackAnimation);
+			Server_ReqMeleeCombo();
+		}
+		else if (HasAuthority())
+		{
+			Server_ReqMeleeCombo_Implementation();
 		}
 	}
 	else
 	{
-		// 테이블에 에셋이 없을 때만 경고
-		UE_LOG(LogTemp, Warning, TEXT("데이터 테이블에 WeaponStaticMesh가 없음!"));
+		m_bSaveCombo = true;
 	}
+}
 
-	// 에디터 뷰포트에서 총기를 드래그해 움직일 때는 아래 '무거운 로직/수치 계산'을 패스
-	// HasActorBegunPlay()는 실제 게임 플레이 버튼을 눌렀을 때만 true
-	if (!HasActorBegunPlay())
-	{
-		return;
-	}
-
-	m_Damage = m_DataCom->GetData("BaseDamage");
-
-	m_PlayerAttackAnimation = Cast<UAnimMontage>(m_DataCom->GetAssetData("PlayerAttackAnimation").LoadSynchronous());
-
-	if (!m_PlayerAttackAnimation) { UE_LOG(LogTemp, Warning, TEXT("PlayerAttackAnimation 로드 실패")); }
-}*/
-
-void AC_MeleeWeaponBase::Attack(AC_BasicPlayer* _WeaponUser)
+void AC_MeleeWeaponBase::Server_ReqMeleeCombo_Implementation()
 {
-	if (!_WeaponUser || !m_PlayerAttackAnimation) return;
+	if (!m_OwnerPlayer || !m_OwnerPlayer->GetMesh()) return;
+
+	UAnimInstance* AnimInstance = m_OwnerPlayer->GetMesh()->GetAnimInstance();
+	if (!AnimInstance || !m_PlayerAttackAnimation) return;
+
+	FName TargetSection = NAME_None;
+
+	if (!AnimInstance->Montage_IsPlaying(m_PlayerAttackAnimation))
+	{
+		AnimInstance->Montage_Play(m_PlayerAttackAnimation);
+	}
+	else
+	{
+		TargetSection = FName("Combo");
+		AnimInstance->Montage_JumpToSection(TargetSection, m_PlayerAttackAnimation);
+	}
+
+	Multicast_PlayAttackMotion(TargetSection);
+}
+
+void AC_MeleeWeaponBase::Multicast_PlayAttackMotion_Implementation(FName SectionName)
+{
+	// 서버 본인이나 공격을 시도한 로컬 플레이어는 이미 재생했으므로 중복 재생 방지
+	if (!m_OwnerPlayer || m_OwnerPlayer->IsLocallyControlled()) return;
+
+	UAnimInstance* AnimInstance = nullptr;
+		
+	if (m_OwnerPlayer->GetMesh())
+		AnimInstance = m_OwnerPlayer->GetMesh()->GetAnimInstance();
+
+	if (!AnimInstance || !m_PlayerAttackAnimation) return;
+
+	if (SectionName == FName("Combo"))
+	{
+		AnimInstance->Montage_JumpToSection(FName("Combo"), m_PlayerAttackAnimation);
+	}
+	else
+	{
+		AnimInstance->Montage_Play(m_PlayerAttackAnimation);
+	}
+}
+
+void AC_MeleeWeaponBase::Server_ApplyHitDamage_Implementation(AActor* HitActor, float Damage, FVector ImpactPoint, FVector ImpactNormal)
+{
+	if (!HasAuthority() || !HitActor) return;
+
+	AController* InstigatorController = nullptr;
+	if (m_OwnerPlayer)
+	{
+		InstigatorController = m_OwnerPlayer->GetController();
+		if (!InstigatorController)
+		{
+			InstigatorController = m_OwnerPlayer->GetInstigatorController();
+		}
+	}
+	float ActualDamage = UGameplayStatics::ApplyDamage(
+		HitActor,
+		Damage,
+		InstigatorController,
+		this,
+		UDamageType::StaticClass()
+	);
+
+	Multicast_PlayHitEffect(ImpactPoint, ImpactNormal);
+}
+
+void AC_MeleeWeaponBase::Multicast_PlayHitEffect_Implementation(FVector ImpactPoint, FVector ImpactNormal)
+{
+	if (m_OwnerPlayer && m_OwnerPlayer->IsLocallyControlled()) return;
+
+	if (HitEffect)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			GetWorld(),
+			HitEffect,
+			ImpactPoint,
+			ImpactNormal.Rotation()
+		);
+	}
+}
+
+void AC_MeleeWeaponBase::HitBoxCheck()
+{
+	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled()) return;
 
 	FVector CurSockPos = m_WeaponMesh->GetSocketLocation(TEXT("HitBoxSock"));
 
-	_WeaponUser->PlayAnimMontage(m_PlayerAttackAnimation);
+	TArray<FHitResult> HitResults;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(GetOwner()); // 공격자 본인 제외
 
+	FCollisionShape ColShape = FCollisionShape::MakeSphere(50.f);
+
+	bool bHit = GetWorld()->SweepMultiByChannel(
+		HitResults,
+		m_PrevHitBoxSockPos,
+		CurSockPos,
+		FQuat::Identity,
+		ECC_Visibility,
+		ColShape,
+		Params
+	);
+
+	if (bHit)
+	{
+		for (const auto& Result : HitResults)
+		{
+			AActor* HitActor = Result.GetActor();
+			if (HitActor && !m_HitActors.Contains(HitActor))
+			{
+				m_HitActors.Add(HitActor);
+
+				if (HitEffect)
+				{
+					UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+						GetWorld(), HitEffect, Result.ImpactPoint, Result.ImpactNormal.Rotation()
+					);
+				}
+
+				Server_ApplyHitDamage(HitActor, m_Damage, Result.ImpactPoint, Result.ImpactNormal);
+			}
+		}
+	}
+
+	m_PrevHitBoxSockPos = CurSockPos;
+}
+
+
+void AC_MeleeWeaponBase::MeleeCombo()
+{
+	if (m_bSaveCombo)
+	{
+		m_bSaveCombo = false;
+
+		if (!m_OwnerPlayer) return;
+
+		m_HitActors.Empty();
+
+		// 로컬 실행
+		UAnimInstance* AnimInstance = m_OwnerPlayer->GetMesh()->GetAnimInstance();
+		if (AnimInstance && m_PlayerAttackAnimation)
+		{
+			AnimInstance->Montage_JumpToSection(FName("Combo"), m_PlayerAttackAnimation);
+		}
+
+		if (m_OwnerPlayer->IsLocallyControlled() && !HasAuthority())
+		{
+			Server_ReqMeleeCombo();
+		}
+		else if (HasAuthority())
+		{
+			Server_ReqMeleeCombo_Implementation();
+		}
+	}
 }
 
 void AC_MeleeWeaponBase::UpdateAmmoInfoHUDForDrawEnd()
@@ -265,3 +425,4 @@ void AC_MeleeWeaponBase::SetAmmoUIInfo(FAmmoUIInfo& _AmmoUIInfo)
 {
 	_AmmoUIInfo.Visible = false;
 }
+

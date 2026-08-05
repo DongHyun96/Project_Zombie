@@ -46,6 +46,10 @@ void UC_BasicPlayerAimComponent::OnAimPressed()
 	bIsAiming = true;
 	bIsTransitioningCamera = true;
 
+	// 조준 시 달리기 강제 중단
+	if (m_CurPlayer->GetPlayerMoveState() == EPlayerPoseState::Sprint)
+		m_CurPlayer->StopSprint();
+
 	if (AC_UIManager* UIManager = Cast<AC_UIManager>(GetWorld()->GetFirstPlayerController()->GetHUD()))
 		UIManager->GetMainHUDWidget()->GetCrosshairWidget()->ZoomIn();
 
@@ -55,6 +59,9 @@ void UC_BasicPlayerAimComponent::OnAimReleased()
 {
 	bIsAiming = false;
 	bIsTransitioningCamera = true;
+
+	if (m_CurPlayer)
+		m_CurPlayer->SetPlayerMoveState(EPlayerPoseState::Walk);
 
 	if (AC_UIManager* UIManager = Cast<AC_UIManager>(GetWorld()->GetFirstPlayerController()->GetHUD()))
 		UIManager->GetMainHUDWidget()->GetCrosshairWidget()->ZoomOut();

@@ -121,6 +121,8 @@ protected:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Status")
 	EHandState			m_HandState;
 
+	UPROPERTY(Replicated)
+	float ReplicatedAimYaw = 0.0f;
 
 	
 
@@ -233,6 +235,8 @@ public:
 
 	EHandState GetHandState() const { return m_HandState; }
 	void SetHandState(EHandState _HandState);
+
+	float GetReplicatedAimYaw() const { return ReplicatedAimYaw; }
 
 	UC_EquippedComponent* GetEquippedComponent() const { return m_EquippedComponent; }
 	
@@ -388,6 +392,8 @@ protected:
 	// 서버에서 자세 변경 처리
 	void SetPoseStateOnServer(EPlayerPoseState _NewPoseState);
 
+	UFUNCTION(Server, Unreliable)
+	void Server_SetAimYaw(float InAimYaw);
 
 	// Server함수 
 public:

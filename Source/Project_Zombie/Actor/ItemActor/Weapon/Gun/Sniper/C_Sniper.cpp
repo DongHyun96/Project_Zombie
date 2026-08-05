@@ -2,6 +2,7 @@
 
 #include "C_Sniper.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
+#include "Actor/Character/NPC/Enemy/C_BasicEnemy.h"
 
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
@@ -50,9 +51,8 @@ void AC_Sniper::AIFire(const FVector& TargetLocation)
 	FHitResult HitResult;
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(this);
-	if (GetOwner()) QueryParams.AddIgnoredActor(GetOwner());
+	if (m_OwnerEnemy) QueryParams.AddIgnoredActor(m_OwnerEnemy);
 
-	// ★ AI 캐릭터(CopZombie) Ignore 처리
 	if (AActor* AttachParent = GetAttachParentActor())
 	{
 		QueryParams.AddIgnoredActor(AttachParent);
@@ -66,7 +66,6 @@ void AC_Sniper::AIFire(const FVector& TargetLocation)
 		AActor* HitActor = HitResult.GetActor();
 
 		APawn* ShootingPawn = Cast<APawn>(GetAttachParentActor());
-		if (!ShootingPawn && GetOwner()) ShootingPawn = Cast<APawn>(GetOwner());
 
 		AController* InstigatorController = ShootingPawn ? ShootingPawn->GetController() : nullptr;
 

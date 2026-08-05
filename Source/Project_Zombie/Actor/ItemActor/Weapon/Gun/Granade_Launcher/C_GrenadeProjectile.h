@@ -16,58 +16,49 @@ class PROJECT_ZOMBIE_API AC_GrenadeProjectile : public AActor
 {
 	GENERATED_BODY()
 
-private:
-	// 충돌체 (Root)
-	UPROPERTY(VisibleAnywhere, Category = "Components")
-	USphereComponent* CollisionComp;
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	class USphereComponent* CollisionComp;
 
-	// 유탄 외형 메시
-	UPROPERTY(VisibleAnywhere, Category = "Components")
-	UStaticMeshComponent* ProjectileMesh;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	class UStaticMeshComponent* ProjectileMesh;
 
-	// 투사체 이동 컴포넌트
-	UPROPERTY(VisibleAnywhere, Category = "Components")
-	UProjectileMovementComponent* ProjectileMovement;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	class UProjectileMovementComponent* ProjectileMovement;
 
-	// 최대 데미지
-	UPROPERTY(VisibleAnywhere, Category = "Explosion")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Damage")
 	float m_MaxDamage;
 
-	// 최소 데미지
-	UPROPERTY(VisibleAnywhere, Category = "Explosion")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Damage")
 	float m_MinDamage;
 
-	// 폭발 전략 클래스
-	UPROPERTY(VisibleAnywhere, Category = "Explosion")
-	TSubclassOf<UC_GrenadeExplode> ExplosionStrategyClass;
-
-	// 폭발 반경
-	UPROPERTY(VisibleAnywhere, Category = "Explosion")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Damage")
 	float m_ExplosionRadius;
 
-	// 폭발 이펙트 
-	UPROPERTY(VisibleAnywhere, Category = "Effect")
-	TObjectPtr<UParticleSystem> m_ExplosionEffect{};
-	
-	// 폭발 이펙트 크기 (1.0 = 기본 크기)
-	UPROPERTY(VisibleAnywhere, Category = "Effect")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects")
+	class UParticleSystem* m_ExplosionEffect;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects")
 	float m_ExplosionEffectScale;
 
 	bool m_bHasExploded = false;
 
-public:
-	UProjectileMovementComponent* GetProjectileMovement() { return ProjectileMovement; }
-
 protected:
 	virtual void BeginPlay() override;
+
+	class UProjectileMovementComponent* GetProjectileMovement() const { return ProjectileMovement; }
 
 	UFUNCTION()
 	void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
-	UFUNCTION(NetMulticast, Reliable)
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_RequestExplode(FVector ExplosionLocation);
+
+	UFUNCTION(NetMulticast, Unreliable)
 	void Multicast_PlayExplosionFX(FVector ExplosionLocation);
+
+	void ExplodeInternal(FVector ExplosionLocation);
 
 public:
 	AC_GrenadeProjectile();
-
 };
