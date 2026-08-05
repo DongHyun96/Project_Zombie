@@ -3,6 +3,7 @@
 #include "C_InvenComponent.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/ItemActor/Weapon/C_WeaponBase.h"
+#include "Actor/ItemActor/Weapon/Potion/C_PotionBase.h"
 #include "Actor/ItemActor/Weapon/ThrowableWeapon/C_ThrowableWeaponBase.h"
 #include "GameModeAndManager/C_ItemManager.h"
 #include "GameModeAndManager/C_UIManager.h"

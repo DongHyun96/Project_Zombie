@@ -142,6 +142,10 @@ void AC_GunBase::InitializeItemData(const FWeaponData* InRawData)
 	}
 	//CurAmmo는 무조건 0으로 초기화 하기.
 	m_CurrentAmmo = 0;
+	
+	FString msg = FString::SanitizeFloat(m_Damage);
+	
+	PRINT_LOCAL(GetWorld(), msg, FColor::Black, 10.f);
 }
 
 void AC_GunBase::SwitchFireMode()
