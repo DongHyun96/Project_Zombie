@@ -521,6 +521,19 @@ struct FThrowableData : public FWeaponData
     float MinDamagePerUpgradeLevel = 5.f; // 레벨당 최대 데미지 증가량
 };
 
+// 포션 데이터 테이블
+USTRUCT(BlueprintType)
+struct FPotionData : public FWeaponData
+{
+    GENERATED_BODY()
+    
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Potion | Stats")
+    float Value{};
+    
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player_Animations")
+    TSoftObjectPtr<UAnimMontage> UsingMontage{};
+};
+
 // ******************************
 // 무기 데이터 테이블 구조체 선언부
 // ******************************

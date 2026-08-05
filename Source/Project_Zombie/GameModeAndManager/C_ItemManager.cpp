@@ -32,6 +32,7 @@ void UC_ItemManager::Initialize(FSubsystemCollectionBase& Collection)
     RegisterTable(EItemTableType::Gun, Settings->GunDataTableConfig);
     RegisterTable(EItemTableType::Melee, Settings->MeleeDataTableConfig);
     RegisterTable(EItemTableType::Throwable, Settings->ThrowableDataTableConfig);
+    RegisterTable(EItemTableType::Potion, Settings->PotionDataTableConfig);
 
     // 강화 데이터 테이블 캐싱 (ItemManager가 계속 관리)
     if (!Settings->WeaponUpgradePerValueTableConfig.IsNull())
@@ -291,10 +292,17 @@ AC_WeaponBase* UC_ItemManager::SpawnEquippedActor(FName InRowName, AActor* InOwn
             InRawData = ThrowableData;
         }
         break;
-
+        
+    case EItemType::POTION:
+        if (const FPotionData* PotionData = GetItemData<FPotionData>(EItemTableType::Potion, InRowName))
+        {
+            TargetClass = PotionData->EquippedActorClass;
+            SlotIdx = 3;
+            InRawData = PotionData;
+        }
+        break;
     case EItemType::CONSUMABLE:
     case EItemType::MATTER:
-    case EItemType::POTION:
     default:
         break;
     }
@@ -322,8 +330,13 @@ AC_WeaponBase* UC_ItemManager::SpawnEquippedActor(FName InRowName, AActor* InOwn
         LinkComp->InitializeLink(InvenComp, SlotIdx);
         
         // 무기의 초기화
+        if (Player->IsLocallyControlled())
+            SpawnedWeapon->SetItemRowName(InRowName);    
+        
         SpawnedWeapon->InitializeItemActor(InRawData);
-        SpawnedWeapon->SetItemRowName(InRowName);
+        
+        if (!Player->IsLocallyControlled())
+            SpawnedWeapon->SetItemRowName(InRowName);
     }
 
     return SpawnedWeapon;
@@ -348,6 +361,9 @@ const FWeaponData* UC_ItemManager::GetWeaponData(FName InRowName) const
         break;
     case EItemType::THROWABLE:
         WeaponData = GetItemData<FThrowableData>(EItemTableType::Throwable, InRowName);
+        break;
+    case EItemType::POTION:
+        WeaponData = GetItemData<FPotionData>(EItemTableType::Potion, InRowName);
         break;
     default:
         break;
@@ -390,6 +406,11 @@ bool UC_ItemManager::GetItemDataBP(EItemTableType InTableType, FName InRowName, 
             return true;
         }
         break;
+    case EItemTableType::Potion:
+        if (const FPotionData* Ptr = GetItemData<FPotionData>(InTableType, InRowName))
+        {
+            OutData.InitializeAs<FPotionData>(*Ptr);
+        }
     }
     return false;
 }

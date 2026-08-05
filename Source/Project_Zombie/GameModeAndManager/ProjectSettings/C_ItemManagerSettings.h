@@ -38,6 +38,10 @@ public:
 	UPROPERTY(Config, EditAnywhere, Category = "DataTables")
 	TSoftObjectPtr<UDataTable> ThrowableDataTableConfig{};
 	
+	// 포션류
+	UPROPERTY(Config, EditAnywhere, Category = "DataTables")
+	TSoftObjectPtr<UDataTable> PotionDataTableConfig{};
+	
 	// WeaponUpgradePerValue
 	UPROPERTY(Config, EditAnywhere, Category = "DataTables")
 	TSoftObjectPtr<UDataTable> WeaponUpgradePerValueTableConfig{};
