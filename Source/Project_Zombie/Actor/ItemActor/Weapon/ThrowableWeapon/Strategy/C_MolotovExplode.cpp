@@ -17,18 +17,6 @@ bool UC_MolotovExplode::UseStrategy_Implementation(AC_ThrowableWeaponBase* _Thro
 	if (!World)
 		return false;
 
-	// 화염 장판 클래스 가져오기
-	const TSubclassOf<AC_FireDamageArea> FireDamageAreaClass = _ThrowableWeapon->GetFireDamageAreaClass();
-
-	if (!FireDamageAreaClass)
-	{
-		UC_Util::Print("[C_MolotovExplode] FireDamageAreaClass is not assigned");
-		return false;
-	}
-
-	// 투척한 플레이어 가져오기
-	AC_BasicPlayer* ThrowableUser = _ThrowableWeapon->GetOwnerPlayer();
-
 	// 폭발이 발생한 위치
 	FVector ExplosionLocation = _ThrowableWeapon->GetActorLocation();
 
@@ -89,24 +77,8 @@ bool UC_MolotovExplode::UseStrategy_Implementation(AC_ThrowableWeaponBase* _Thro
 		return true;
 	}
 
-	// 항상 스폰하도록 설정 (충돌 무시)
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	// BeginPlay가 호출되기 전에 ThrowableUser 를 전달하기위해 SpawnActorDeferred 사용
-	AC_FireDamageArea* FireDamageArea = World->SpawnActor<AC_FireDamageArea>(
-		FireDamageAreaClass,
-		GroundHit.ImpactPoint,	// 바닥 충돌 지점에 장판 생성
-		FRotator::ZeroRotator,	// 회전 없음
-		SpawnParams				// 스폰 파라미터 설정
-	);
-
-
-	if (!FireDamageArea)
-	{
-		UC_Util::Print("[C_MolotovExplode] Failed to spawn FireDamageArea");
-		return false;
-	}
+	// 클라이언트가 판정한 바닥 위치를 서버에 전달하여 화염 장판 생성
+	_ThrowableWeapon->Server_SpawnFireDamageArea(GroundHit.ImpactPoint);
 
 	return true;
 }

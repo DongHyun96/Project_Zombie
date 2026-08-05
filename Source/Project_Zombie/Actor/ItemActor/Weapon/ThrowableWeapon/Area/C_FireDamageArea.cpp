@@ -30,7 +30,7 @@ AC_FireDamageArea::AC_FireDamageArea()
 	m_GroundTraceDistance = 150.f;
 	m_GroundNormalZ = 0.5f;
 
-
+	m_DamageHalfHeight = 150.f;
 	m_DamageRadius = 300.f;
 	m_Duration = 5.f;
 	m_DamagePerSecond = 10.f;
@@ -301,6 +301,9 @@ void AC_FireDamageArea::ApplyPointDamage()
 	if (!World)
 		return;
 
+	// 화염병 던진 플레이어 Controller
+	AController* InstigatorController = GetInstigatorController();
+
 	const FVector AreaLocation = GetActorLocation();
 
 	// 찾을 액터의 충돌 채널 설정
@@ -336,22 +339,22 @@ void AC_FireDamageArea::ApplyPointDamage()
 	);
 
 	// -------- 디버그용 --------------
-	DrawDebugCylinder(
-		World,
-		// 원기둥 아래쪽 중심
-		AreaLocation -
-		FVector(0.f, 0.f, m_DamageHalfHeight),
-		// 원기둥 위쪽 중심
-		AreaLocation +
-		FVector(0.f, 0.f, m_DamageHalfHeight),
-		m_DamageRadius,         // 원기둥 XY 반경
-		32,                     // 원 둘레 분할 수
-		FColor::Red,
-		false,
-		m_DamageInterval,
-		0,
-		2.f
-	);
+	if (m_bDebugDraw)
+	{
+		DrawDebugCylinder
+		(
+			World,
+			AreaLocation - FVector(0.f, 0.f, m_DamageHalfHeight),
+			AreaLocation + FVector(0.f, 0.f, m_DamageHalfHeight),
+			m_DamageRadius,
+			32,
+			FColor::Red,
+			false,
+			m_DamageInterval,
+			0,
+			2.f
+		);
+	}
 	// -------------------------------
 
 	// 아무도 충돌하지 않으면 폭발만 발생
@@ -360,6 +363,7 @@ void AC_FireDamageArea::ApplyPointDamage()
 
 	// 중복 제거를 위해 Set 사용
 	TSet<AActor*> DamagedActors;
+
 
 	//TSubclassOf<UDamageType> AppliedDamageType =
 	//	m_DamageTypeClass;
@@ -375,7 +379,7 @@ void AC_FireDamageArea::ApplyPointDamage()
 	{
 		AActor* Target = Result.GetActor();
 
-		if (!Target)
+		if (!IsValid(Target))
 			continue;
 
 		if (!Target->CanBeDamaged())
@@ -388,12 +392,6 @@ void AC_FireDamageArea::ApplyPointDamage()
 		// 2. 위치 구하기
 		FVector TargetLocation = Target->GetActorLocation();
 
-
-		/*
-		 * 대상과 장판 중심 사이의 XY 차이만 구한다.
-		 *
-		 * Z축 높이는 현재 단계에서 검사하지 않는다.
-		 */
 		const FVector2D HorizontalOffset(
 			TargetLocation.X - AreaLocation.X,
 			TargetLocation.Y - AreaLocation.Y
@@ -403,51 +401,33 @@ void AC_FireDamageArea::ApplyPointDamage()
 		const float HorizontalDistanceSquared =
 			HorizontalOffset.SizeSquared();
 
-
-		/*
-		 * XY 평면상에서 원형 장판 반경 밖이면 제외
-		 *
-		 * 실제 거리 계산에 제곱근을 사용하지 않도록
-		 * 거리 제곱값끼리 비교한다.
-		 */
 		if (HorizontalDistanceSquared >
 			FMath::Square(m_DamageRadius))
 		{
 			continue;
 		}
 
-		/*
-		장판 중심과 대상 사이의 Z 축 거리 검사
+		const float Damage = m_DamagePerSecond * m_DamageInterval;
 
-		Abs 를 사용하므로 장판 중심보다 위쪽/아래쪽 을 동일하게 검사
-		*/
-		const float VerticalDistance = FMath::Abs(
-			TargetLocation.Z - AreaLocation.Z
+		UGameplayStatics::ApplyDamage(
+			Target,
+			Damage,
+			InstigatorController,
+			this,
+			UDamageType::StaticClass()
 		);
 
-		if (VerticalDistance > m_DamageHalfHeight)
-		{
-			continue;
-		}
+		// 중복방지 위해 데미지 입은 액터 Set 에 추가
+		DamagedActors.Add(Target);
 
-		UC_Util::Print("[AC_FireDamageArea::ApplyPointDamage] Hit");
-
-		// 나중에 데미지 적용 시 InstigatorController 를 가져와야 함
-		// MolotovExplode.cpp 에서 처리해야할지...
-
-		// 3. 데미지 적용 
-		///// InstigatorController 는 어떻게 가져올지 고민 필요
-		//UGameplayStatics::ApplyDamage(
-		//	Target,
-		//	m_DamagePerSecond * m_DamageInterval,	// 초당 데미지 * 간격
-		//	nullptr,								// InstigatorController
-		//	this,									// DamageCauser
-		//	m_DamageType							// DamageTypeClass
-		//);
-
-		//// 데미지를 입은 액터를 Set에 추가하여 중복 방지
-		//DamagedActors.Add(Target);
-
+		UE_LOG
+		(
+			LogTemp,
+			Warning,
+			TEXT("[Fire Area Damage] Target=%s / Damage=%.2f"),
+			*GetNameSafe(Target),
+			Damage
+		);
 	}
 }
 

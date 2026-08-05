@@ -20,6 +20,7 @@
 #include "Engine/StaticMesh.h"
 
 #include "Kismet/GameplayStatics.h"
+#include "GameFramework/DamageType.h"
 #include "Particles/ParticleSystem.h"
 
 #include "GameModeAndManager/C_UIManager.h"
@@ -551,6 +552,9 @@ void AC_ThrowableWeaponBase::Multicast_PlayExplosionFX_Implementation(bool _bSto
 		{
 			AnimInstance->Montage_Stop(0.2f, m_ThrowMontage);
 		}
+
+		// 다른 클라이언트에서도 맨손 Idle로 보이게 처리
+		m_OwnerPlayer->SetHandState(EHandState::UnArmed);
 	}
 
 	if (m_ExplosionEffect)
@@ -621,6 +625,81 @@ bool AC_ThrowableWeaponBase::OnFireEnd(AC_BasicPlayer* _WeaponUser)
 }
 
 // ----------------- 애님 노티파이 관련 처리 -----------------
+
+void AC_ThrowableWeaponBase::Server_ApplyExplosionDamage_Implementation(const TArray<AActor*>& _HitActors, FVector_NetQuantize _ExplosionLocation)
+{
+	UE_LOG
+	(
+		LogTemp,
+		Warning,
+		TEXT("[Server Explosion] Location: %s / Actor Count: %d"),
+		*_ExplosionLocation.ToString(),
+		_HitActors.Num()
+	);
+
+	const float ExplosionRadius = GetExplosionRadius();
+	if (ExplosionRadius <= 0.0f)
+		return;
+
+	const float MaxDamage = GetMaxDamage();
+	const float MinDamage = GetMinDamage();
+
+	AController* InstigatorController = nullptr;
+	if (m_OwnerPlayer)
+	{
+		InstigatorController = m_OwnerPlayer->GetController();
+	}
+
+	for (AActor* Target : _HitActors)
+	{
+		if (!IsValid(Target))
+			continue;
+
+		const float Distance = FVector::Distance(_ExplosionLocation, Target->GetActorLocation());
+		const float Damage = FMath::Lerp(GetMaxDamage(), GetMinDamage(), Distance / ExplosionRadius);
+
+		UGameplayStatics::ApplyDamage(
+			Target,						// 데미지 받는 대상
+			50,							// 거리 비례 데미지 계산
+			InstigatorController,		// 데미지를 입힌 주체
+			this,						// 데미지를 입힌 무기
+			UDamageType::StaticClass()	// 데미지 타입
+		);
+	}
+}
+
+void AC_ThrowableWeaponBase::Server_SpawnFireDamageArea_Implementation(FVector_NetQuantize _SpawnLocation)
+{
+	if (!m_FireDamageAreaClass)
+		return;
+
+	UWorld* World = GetWorld();
+	if (!World)
+		return;
+
+	FActorSpawnParameters SpawnParams;
+	
+	// 항상 스폰하도록 설정 (충돌 무시)
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	
+	// 소유자 및 인스티게이터 설정
+	SpawnParams.Owner = m_OwnerPlayer; 
+	SpawnParams.Instigator = m_OwnerPlayer;
+
+	// BeginPlay가 호출되기 전에 ThrowableUser 를 전달하기위해 SpawnActorDeferred 사용
+	AC_FireDamageArea* FireDamageArea = World->SpawnActor<AC_FireDamageArea>(
+		m_FireDamageAreaClass,
+		_SpawnLocation,	// 바닥 충돌 지점에 장판 생성
+		FRotator::ZeroRotator,	// 회전 없음
+		SpawnParams				// 스폰 파라미터 설정
+	);
+
+	if (!FireDamageArea)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[Server Molotov] FireDamageArea Spawn Failed"));
+		return;
+	}
+}
 
 void AC_ThrowableWeaponBase::OnRemovePin()
 {
@@ -785,6 +864,12 @@ void AC_ThrowableWeaponBase::Explode()
 	const EThrowableState PrevState = m_ThrowableState;
 	
 	const bool bStopThrowMontage = (PrevState != EThrowableState::Thrown && PrevState != EThrowableState::Throwing);
+
+	// 손에 들고 있는 상태에서 터졌다면 맨손 Idle로 전환
+	if (bStopThrowMontage)
+	{
+		m_OwnerPlayer->SetHandState(EHandState::UnArmed);
+	}
 
 	m_ThrowableState = EThrowableState::Exploded;
 

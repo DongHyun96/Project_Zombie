@@ -3,7 +3,7 @@
 
 #include "C_GrenadeExplode.h"
 #include "Engine/OverlapResult.h"
-#include "Kismet/GameplayStatics.h"
+//#include "Kismet/GameplayStatics.h"
 #include "DrawDebugHelpers.h"
 
 #include "../../../../Character/Player/C_BasicPlayer.h"
@@ -16,6 +16,14 @@ bool UC_GrenadeExplode::UseStrategy_Implementation(AC_ThrowableWeaponBase* _Thro
 {
 	if (!_ThrowableWeapon)
 		return false;
+
+	AC_BasicPlayer* OwnerPlayer = _ThrowableWeapon->GetOwnerPlayer();
+	if (!OwnerPlayer)
+		return false;
+
+	// 수류탄을 던진 로컬만 폭발 처리, 서버는 클라이언트에서 폭발 처리 후 서버에 알림
+	if (!OwnerPlayer->IsLocallyControlled())
+		return true;
 
 	// 폭발이 발생한 위치
 	const FVector ExplosionLocation = _ThrowableWeapon->GetActorLocation();
@@ -83,26 +91,13 @@ bool UC_GrenadeExplode::UseStrategy_Implementation(AC_ThrowableWeaponBase* _Thro
 		QueryParams
 	);
 
-
-	// ------------ 디버그용 ------------- 
-	DrawDebugSphere(
-		GetWorld(),
-		ExplosionLocation,
-		ExplosionRadius,
-		32,
-		FColor::Red,
-		false,
-		2.0f
-	);
-	// -----------------------------------
+	// 중복 제거를 위해 Set 사용
+	TSet<AActor*> HitActors;
 
 	// 아무도 충돌하지 않으면 폭발만 발생
 	if (!bHasOverlap)
 		return true; 
 
-	// 중복 제거를 위해 Set 사용
-	TSet<AActor*> DamagedActors;
-	
 	for (const FOverlapResult& Result : OverlapResults)
 	{
 		AActor* Target = Result.GetActor();
@@ -111,7 +106,7 @@ bool UC_GrenadeExplode::UseStrategy_Implementation(AC_ThrowableWeaponBase* _Thro
 			continue;
 
 		// 이미 데미지를 입은 타겟은 건너뜀
-		if (DamagedActors.Contains(Target))
+		if (HitActors.Contains(Target))
 			continue;
 		
 		// 2. 위치 구하기
@@ -193,50 +188,22 @@ bool UC_GrenadeExplode::UseStrategy_Implementation(AC_ThrowableWeaponBase* _Thro
 		);
 		// -----------------------------------
 
+		HitActors.Add(Target);
 
-
-		// 4. 데미지를 입히기
-		AController* InstigatorController = nullptr;
-		if (_ThrowableWeapon->GetOwnerPlayer())
-		{
-			InstigatorController = _ThrowableWeapon->GetOwnerPlayer()->GetController();
-		}
-
-		const float Damage =
-			FMath::Lerp
-			(
-				MaxDamage,
-				MinDamage,
-				Distance / ExplosionRadius
-			);
-
-		// 데미지 이벤트 전달
-		const float AppliedDamage = UGameplayStatics::ApplyDamage(
-			Target,						// 데미지 받는 대상
-			Damage, // 거리 비례 데미지 계산
-			InstigatorController,		// 데미지를 입힌 주체
-			_ThrowableWeapon,			// 데미지를 입힌 무기
-			UDamageType::StaticClass()	// 데미지 타입
-		);
-
-		// 5. 데미지를 입은 액터를 Set에 추가하여 중복 방지
-		DamagedActors.Add(Target);
-
-		UE_LOG
-		(
-			LogTemp,
-			Warning,
-			TEXT
-			(
-				"[Grenade ApplyDamage] Target=%s / Damage=%.2f / Applied=%.2f / Authority=%d"
-			),
-			*GetNameSafe(Target),
-			Damage,
-			AppliedDamage,
-			_ThrowableWeapon->HasAuthority()
-		);
+		UE_LOG(LogTemp, Warning, TEXT("[Client Grenade Hit] Target=%s"), *GetNameSafe(Target));
 
 		UC_Util::Print("[UC_GrenadeExplode::UseStrategy_Implementation] Hit");
+	}
+
+
+	// 4. 서버에 RPC 호출하여 데미지 적용 (대상이 있을 때만)
+	if (HitActors.Num() > 0)
+	{
+		// RPC 로 전달하기 위해 배열로 변환
+		const TArray<AActor*> HitActorArray = HitActors.Array();
+
+		_ThrowableWeapon->Server_ApplyExplosionDamage(HitActorArray, ExplosionLocation);
+
 	}
 	
 	return true;

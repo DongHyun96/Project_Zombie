@@ -93,6 +93,20 @@ private: // 동기화 관련
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_PlayExplosionFX(bool _bStopThrowMontage, FVector_NetQuantize _ExplosionLocation, FRotator _ExplosionRotation);
 
+public:
+	/// <summary>
+	/// 클라이언트에서 맞은 폭발 대상 목록 서버로 전달
+	/// </summary>
+	UFUNCTION(Server, Reliable)
+	void Server_ApplyExplosionDamage(const TArray<AActor*>& _HitActors, FVector_NetQuantize _ExplosionLocation);
+
+	/// <summary>
+	///	클라이언트가 판정한 위치에 화염 장판 생성
+	/// </summary>
+	/// 지금은 화염 장판을 기준으로
+	UFUNCTION(Server, Reliable)
+	void Server_SpawnFireDamageArea(FVector_NetQuantize _SpawnLocation);
+
 
 public: // 애님 노티파이 관련
 
