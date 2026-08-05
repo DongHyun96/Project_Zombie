@@ -257,6 +257,16 @@ void AC_BasicPlayer::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (HasAuthority() && m_StatComponent)
+	{
+		const float CurHP = m_StatComponent->GetStat(StatName::CurHP);
+
+		if (CurHP <= 0.f && !IsDead() && !IsGettingUp() && !m_IsPendingDead)
+		{
+			Server_EnterDownedState();
+		}
+	}
+
 	/// 나중에 스탯 컴포넌트로 분리할 예정
 	// 달리기 중이면 부스트 소모
 	if (m_PlayerPoseState == EPlayerPoseState::Sprint)
@@ -514,8 +524,6 @@ void AC_BasicPlayer::StopSprint()
 
 void AC_BasicPlayer::ToggleCrouch()
 {
-	// Server_EnterDownedState();
-
 	if (!IsAlive())
 		return;
 
@@ -743,8 +751,19 @@ void AC_BasicPlayer::DeactivateInteractionTimerUI()
 
 void AC_BasicPlayer::Server_EnterDownedState_Implementation()
 {
+	if (!HasAuthority())
+		return;
+
 	// 이미 사망 상태라면 처리하지 않음
-	if (!IsAlive())
+	//if (!IsAlive())
+	//	return;
+
+	// 체력이 남아 있으면 사망 처리하지 않음
+	if (m_StatComponent->GetStat(StatName::CurHP) > 0.f)
+		return;
+
+	// 사망 관련 상태 중복 처리 방지
+	if (IsDead() || IsGettingUp() || m_IsPendingDead)
 		return;
 
 	m_IsSprintInput = false;
