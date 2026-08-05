@@ -44,7 +44,7 @@ bool UC_ItemUpgradeWidget::NativeOnDrop(const FGeometry& InGeometry, const FDrag
 	
 	const FItemData* Data = ItemManager->GetItemData<FItemData>(EItemTableType::General, Entry.ItemRowName);
 	
-	if (static_cast<uint8>(Data->ItemType) >= static_cast<uint8>(EItemType::POTION) || !DragOperation->GetItemEntry().HasEquipmentData())
+	if (static_cast<uint8>(Data->ItemType) >= static_cast<uint8>(EItemType::CONSUMABLE) || !DragOperation->GetItemEntry().HasEquipmentData())
 	{
 		DroppedItemSlotIdx = -1;
 		UpdateWidget();
