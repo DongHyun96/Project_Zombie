@@ -78,12 +78,10 @@ void UC_PlayerAnimInstance::NativeUpdateAnimation(float _DT)
 		}
 	}
 
-	FRotator TargetAimRotation = FRotator::ZeroRotator;
-
 	// 1. 내가 직접 조종하는 로컬 캐릭터인 경우 (0ms 반응속도)
 	if (m_Character->IsLocallyControlled())
 	{
-		TargetAimRotation = m_Character->GetControlRotation();
+		FRotator TargetAimRotation = m_Character->GetControlRotation();
 
 		const FRotator ActorRotation = m_Character->GetActorRotation();
 		const FRotator DeltaRotation = UKismetMathLibrary::NormalizedDeltaRotator(TargetAimRotation, ActorRotation);
