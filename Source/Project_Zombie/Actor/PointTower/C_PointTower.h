@@ -185,6 +185,7 @@ protected:
 	TSubclassOf<AC_WorldPingActor> m_WorldPingActorClass{};
 
 	// Activate 상태 시, 본인이 활성화시킨 CompassMarkerWidget
+	UPROPERTY()
 	UC_CompassMarkerWidget* m_ActivatedCompassMarkerWidget{};
 	
 protected:

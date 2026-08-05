@@ -304,7 +304,11 @@ USceneComponent* AC_PointTower::FindSceneComponentByName(const FName& _ComName)
 
 void AC_PointTower::Multicast_Activate_Implementation()
 {
-	if (!HasActorBegunPlay()) return;
+	if (!HasActorBegunPlay())
+	{
+		PRINT_LOCAL(GetWorld(), "[AC_PointTower::Multicast_Activate] : PointTower is not yet BeginPlayed.", FColor::Red, 10.f);
+		return;
+	}
 
 	m_State = EPointTowerState::Active;
 	
@@ -339,7 +343,11 @@ void AC_PointTower::Multicast_Activate_Implementation()
 
 void AC_PointTower::Multicast_Conquered_Implementation()
 {
-	if (!HasActorBegunPlay()) return;
+	if (!HasActorBegunPlay())
+	{
+		PRINT_LOCAL(GetWorld(), "[AC_PointTower::Multicast_Conquered] : PointTower is not yet BeginPlayed.", FColor::Red, 10.f);
+		return;
+	}
 
 	m_State = EPointTowerState::Conquered;
 
