@@ -87,8 +87,14 @@ void UC_MattersWidget::UpdateWidget(const FInventoryEntry& InEntry)
 				HasRequiredItems = false;
 			}
 			
+			UTexture2D* LoadedTexture = ItemData->IconTexture.Get();
+			if (!LoadedTexture && !ItemData->IconTexture.IsNull())
+			{
+				LoadedTexture = ItemData->IconTexture.LoadSynchronous(); // 동기 로드
+			}
+			
 			MatterRow->UpdateWidget(
-				ItemData->IconTexture.Get(),
+				LoadedTexture,
 				ItemData->ItemName,
 				HasCount,
 				RequiredCost.RequiredCount
