@@ -25,7 +25,9 @@ public class Project_Zombie : ModuleRules
 			"NetCore",
 			"Niagara",
 			"StructUtils",
-			"DeveloperSettings"
+			"DeveloperSettings",
+            "OnlineSubsystem",
+            "OnlineSubsystemUtils"
         });
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });

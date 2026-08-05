@@ -501,8 +501,11 @@ void AC_BasicPlayer::StartSprint()
 		return;
 
 	// 조준 상태일 때도 달리기 불가
-	if (m_PlayerPoseState == EPlayerPoseState::Aim)
+	if (m_PlayerPoseState == EPlayerPoseState::Aim || m_BasicPlayerAimComponent->IsAiming())
+	{
 		return;
+	}
+		
 
 	// 부스트가 없으면 달리기 불가
 	if (m_StatComponent->GetStat(StatName::CurBoost) <= 0.f)

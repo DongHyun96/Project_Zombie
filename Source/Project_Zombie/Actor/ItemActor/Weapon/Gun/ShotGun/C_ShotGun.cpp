@@ -177,8 +177,6 @@ void AC_ShotGun::Client_ExecuteFire()
 		return;
 	}
 
-	// ★ 핵심 수정: 서버(HasAuthority)에서는 아래 Server_ShotgunFireEffects에서 차감할 것이므로,
-	// 클라이언트(순수 클라)일 때만 여기서 로컬 탄약을 차감하고 UI를 올립니다.
 	if (!HasAuthority())
 	{
 		m_CurrentAmmo--;
@@ -234,13 +232,11 @@ void AC_ShotGun::Client_ExecuteFire()
 
 void AC_ShotGun::Server_ShotgunFireEffects_Implementation(const TArray<FVector_NetQuantize>& ImpactPoints)
 {
-	// 서버 메모리 탄약 차감 (서버 플레이어가 쐈든, 클라이언트가 RPC 보냈든 무조건 여기서 1발 차감)
 	if (m_CurrentAmmo > 0)
 	{
 		m_CurrentAmmo--;
 	}
 
-	// ★ 서버 플레이어가 직접 쏜 경우에도 UI를 최신 탄약 수로 갱신해줍니다.
 	if (HasAuthority() && m_OwnerPlayer && m_OwnerPlayer->IsLocallyControlled())
 	{
 		UpdateAmmoUI();

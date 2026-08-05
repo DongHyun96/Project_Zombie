@@ -216,8 +216,6 @@ void AC_GunBase::LoadAsyncAssets(const FWeaponData* InRawData)
 	}
 }
 
-
-// 사용하는 함수? : 희민
 void AC_GunBase::SetAmmoUIInfo(FAmmoUIInfo& _AmmoUIInfo)
 {
 	_AmmoUIInfo.Visible            = true;
@@ -619,7 +617,6 @@ void AC_GunBase::Client_ExecuteFire()
 		ImpactPoint = LineTraceDamage(CameraLoc, CameraRot, HitActor);
 	}
 
-	// 4. 클라이언트 판정 결과를 서버로 전송
 	Server_ExecuteFire(ImpactPoint, HitActor);
 }
 
