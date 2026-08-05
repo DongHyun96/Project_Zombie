@@ -30,6 +30,11 @@ void UC_EquipmentWidget::NativeConstruct()
         EquipmentSlots.Add(Slot_Throwable);
     }
     
+    if (Slot_Potion)
+    {
+        Slot_Potion->SetAllowedItemType(EItemType::POTION);
+        EquipmentSlots.Add(Slot_Potion);
+    }
     /*AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(GetOwningPlayerPawn());
 	
     if (!Player) return;
@@ -62,7 +67,7 @@ void UC_EquipmentWidget::InitEquipmentWidget(UC_InvenComponent* InInvenComp)
         RefreshEquipmentAllSlots();
     }
     
-    // 약속된 장비 인덱스 매핑: 0 = MAINWEAPON, 1 = MELEEWEAPON, 2 = THROWABLE
+    // 약속된 장비 인덱스 매핑: 0 = MAINWEAPON, 1 = MELEEWEAPON, 2 = THROWABLE, 3 = POTION
     if (Slot_MainGun)
     {
         Slot_MainGun->SetAssociatedComponent(AssociatedInvenComp);
@@ -79,6 +84,12 @@ void UC_EquipmentWidget::InitEquipmentWidget(UC_InvenComponent* InInvenComp)
         Slot_Throwable->SetSlotIndex(2);
     }
 
+    if (Slot_Potion)
+    {
+        Slot_Potion->SetAssociatedComponent(AssociatedInvenComp);
+        Slot_Potion->SetSlotIndex(3);
+    }
+    
     RefreshEquipmentAllSlots();
 }
 

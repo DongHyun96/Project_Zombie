@@ -43,10 +43,13 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget))
 	UC_EquipmentItemSlotWidget* Slot_Throwable;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (BindWidget))
+	UC_EquipmentItemSlotWidget* Slot_Potion;
+	
 	//UPROPERTY(meta = (BindWidget))
 	//UC_ItemSlotWidget* Slot_SubWeapon;
 
 	// 빠른 관리를 위한 슬롯 배열
 	UPROPERTY()
-	TArray<UC_EquipmentItemSlotWidget*> EquipmentSlots;
+	TArray<UC_EquipmentItemSlotWidget*> EquipmentSlots{};
 };
