@@ -29,9 +29,9 @@ public:
 private:
 	
 	/// <summary>
-	/// 등록된 첫 거점들 활성화 처리 
+	/// 현재 Sequence의 거점들 모두 활성화 
 	/// </summary>
-	void StartFirstActivatePointsSequence();
+	void StartActivateCurrentPointsSequence();
 	
 public:
 	
@@ -45,13 +45,10 @@ public:
 
 public:
 	
-	void StartNextSequence();
-	
 	/// <summary>
-	/// 활성화시킬 거점 Sequence를 받아, 해당 Sequence의 거점들 모두 활성화
+	/// 현재 진행중인 Sequence의 PointTower 점령되었을 때 호출됨 -> 다음 Sequence로 넘어가야 하는지 체크 + 넘어가야 하는 상황이라면 다음 라운드 Sequence로 넘어감 
 	/// </summary>
-	/// <param name="_PointSequenceIndex"> : 활성화할 Sequence index </param>
-	void StartPointSequence(uint8 _PointSequenceIndex);
+	void OnPointTowerConquered();
 	
 private:
 

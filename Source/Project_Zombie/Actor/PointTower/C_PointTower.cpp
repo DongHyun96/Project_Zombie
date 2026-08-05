@@ -42,6 +42,8 @@ AC_PointTower::AC_PointTower()
 	m_StaticMeshComGenerator->SetComponentTickEnabled(false);
 	m_ApproachEffectTogglerCollider->SetComponentTickEnabled(false);
 	
+	m_InteractionTestingCollider = CreateDefaultSubobject<USphereComponent>(TEXT("InteractionTestingCollider"));
+	m_InteractionTestingCollider->SetupAttachment(GetRootComponent());
 }
 
 void AC_PointTower::BeginPlay()
@@ -70,6 +72,14 @@ void AC_PointTower::BeginPlay()
 	m_ApproachEffectTogglerCollider->OnComponentBeginOverlap.AddDynamic(this, &AC_PointTower::OnApproachEffectTogglerColliderBeginOverlap);
 	m_ApproachEffectTogglerCollider->OnComponentEndOverlap.AddDynamic(this, &AC_PointTower::OnApproachEffectTogglerColliderEndOverlap);
 	
+	m_InteractionTestingCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	
+	if (HasAuthority()) // 오로지 서버 쪽에서만 이벤트 처리 (간단하게 그냥 함)
+	{
+		m_InteractionTestingCollider->OnComponentBeginOverlap.AddDynamic(this, &AC_PointTower::OnInteractionColliderBeginOverlap);
+		m_InteractionTestingCollider->OnComponentEndOverlap.AddDynamic(this, &AC_PointTower::OnInteractionColliderEndOverlap);
+	}
+	
 	// For Testing
 	/*if (HasAuthority())
 	{
@@ -97,17 +107,33 @@ void AC_PointTower::Tick(float DeltaTime)
 
 	/* 현재 거점이 열린 상태 */
 
-	if (m_ConqueringPlayer) return; // 점령을 하는 중인 Player가 있을 때 -> Damage 처리는 각자의 Local에서 실시간으로 처리할 것
+	if (m_ConqueringPlayer) // Conquering interaction 하는 Player가 존재
+	{
+		/* 지속적으로 거점 게이지를 활성화한다 */
+
+		m_CurConquerAmount += DeltaTime * m_IncreaseAmountPerSec;
+		
+		// TODO : 거점을 활성화하는 Player의 Damage 처리는 본인의 Local 환경에서 지속적인 도트데미지 입히기
+	}
+	else // Conquering interaction 하는 Player가 한 명도 없음
+	{
+		/* 거점을 점령하는 Player가 없는 경우, 지속적으로 거점 게이지를 떨군다 */
+		m_CurConquerAmount -= DeltaTime * m_DefaultDecreasingAmountOfConquerAmountPerSec;
+	}
 	
-	/* 거점을 점령하는 Player가 없는 경우, 지속적으로 거점 게이지를 떨군다 */
-	m_CurConquerAmount -= DeltaTime * m_DefaultDecreasingAmountOfConquerAmountPerSec;	
-	m_CurConquerAmount = FMath::Max(0.f, m_CurConquerAmount);
+	m_CurConquerAmount = FMath::Clamp(m_CurConquerAmount, 0.f, m_MaxConquerAmount);
 	
 	const uint8 CurrentIntConquerAmount = static_cast<uint8>(m_CurConquerAmount);
 	if (CurrentIntConquerAmount != m_CurConquerAmountInt)
 	{
 		Multicast_UpdateConquerAmountInt(CurrentIntConquerAmount); // 감소된 Int값 동기화
-		// if (CurrentIntConquerAmount == m_MaxConquerAmount)
+		
+		if (CurrentIntConquerAmount >= m_MaxConquerAmount) // 거점 게이지를 모두 채운 상황 
+		{
+			// 이 거점 Conquered 처리 및 다음 거점 Round 활성화를 해야하는지 체크
+			SetPointTowerState(EPointTowerState::Conquered);
+			POINT_TOWER_MANAGER(this)->OnPointTowerConquered();
+		}
 	}
 }
 
@@ -131,10 +157,14 @@ void AC_PointTower::SetPointTowerState(EPointTowerState _PointTowerState)
 	case EPointTowerState::Active:
 	{
 		Multicast_Activate(); // 방장을 포함한 모든 사람들 Activate 상태로 변경
+		m_InteractionTestingCollider->SetCollisionEnabled(ECollisionEnabled::QueryOnly); // 서버 쪽 환경에서만 Collision On 처리됨
 		break;
 	}
 	case EPointTowerState::Conquered:
 		Multicast_Conquered();
+		m_InteractionTestingCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		m_ConquerTestAreaEnteredPlayers.Empty();
+		m_ConqueringPlayer = nullptr; // 마지막으로 거점 활성화 처리를 했었던 Player의 도트데미지 제거하는 알림을 Client_~ 뭐시기로 쏠 것
 	}
 }
 
@@ -192,6 +222,70 @@ void AC_PointTower::OnApproachEffectTogglerColliderEndOverlap
 	
 	// MainMesh의 Outline 재활성화
 	m_StaticMeshComTower->SetCustomDepthStencilValue(2);
+}
+
+void AC_PointTower::OnInteractionColliderBeginOverlap
+(
+	UPrimitiveComponent* OverlappedComponent,
+	AActor*				 OtherActor,
+	UPrimitiveComponent* OtherComp,
+	int32				 OtherBodyIndex,
+	bool			  	 bFromSweep,
+	const FHitResult& 	 SweepResult
+)
+{
+	// 활성화 상태가 아님
+	if (m_State != EPointTowerState::Active) return;
+	
+	AC_BasicPlayer* EnteredPlayer = Cast<AC_BasicPlayer>(OtherActor);
+	if (!EnteredPlayer) return;
+
+	if (!m_ConqueringPlayer) m_ConqueringPlayer = EnteredPlayer; // 가장 먼저 들어온 Player의 경우, 해당 Player를 ConqueringPlayer로 등록 -> TODO : 이 친구 도트데미지 처리해 줄 것
+	
+	// 이 Area안에 들어온 모든 Player를 일단 저장해둠 (추후 후보군을 두기 위함)
+	m_ConquerTestAreaEnteredPlayers.Add(EnteredPlayer);
+}
+
+void AC_PointTower::OnInteractionColliderEndOverlap
+(
+	UPrimitiveComponent* OverlappedComponent,
+	AActor*				 OtherActor,
+	UPrimitiveComponent* OtherComp,
+	int32				 OtherBodyIndex
+)
+{
+	// 활성화 상태가 아님
+	if (m_State != EPointTowerState::Active) return;
+	
+	AC_BasicPlayer* ExitPlayer = Cast<AC_BasicPlayer>(OtherActor);
+	if (!ExitPlayer) return;
+
+	m_ConquerTestAreaEnteredPlayers.Remove(ExitPlayer);
+
+	// 거점 활성화 대상자가 나간 건 아닌 경우
+	if (ExitPlayer != m_ConqueringPlayer)  return;
+	
+	// 방금 전까지 거점 활성화 대상자가 나간 상황
+	m_ConqueringPlayer = nullptr; // TODO : 이전 대상자 도트데미지 제거해주어야 함
+	// -> TODO : Local Player에게 거점 활성화 중이 아니라고 알려주어야 함 (도트데미지 적용 효과 제거)
+	// Client_~~~ 로 알려주기
+	
+	// 아직 나가지 않은 거점 점령 대상 후보군 중 가장 가까운 후보군으로 다음 거점 점령자 등록
+	float MinDistSqr = FLT_MAX;
+	AC_BasicPlayer* PickedPlayer{};
+	const FVector InteractionTestingColliderLocation = m_InteractionTestingCollider->GetComponentLocation();
+	for (AC_BasicPlayer* EnteredPlayer : m_ConquerTestAreaEnteredPlayers)
+	{
+		const float DistSqr = FVector::DistSquared(EnteredPlayer->GetActorLocation(), InteractionTestingColliderLocation);
+		if (DistSqr < MinDistSqr)
+		{
+			MinDistSqr = DistSqr;
+			PickedPlayer = EnteredPlayer;
+		}
+	}
+	
+	// 가장 가까운 플레이어를 다음 점령자로 등록
+	m_ConqueringPlayer = PickedPlayer;
 }
 
 USceneComponent* AC_PointTower::FindSceneComponentByName(const FName& _ComName)

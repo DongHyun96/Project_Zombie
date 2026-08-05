@@ -43,6 +43,7 @@ public:
 public:
 
 	void SetPointTowerState(EPointTowerState _PointTowerState);
+	EPointTowerState GetPointTowerState() const { return m_State; }
 	
 	void TestFunction();
 	void TestFunction2();
@@ -88,8 +89,34 @@ private:
 
 private:
 	
-	
-	
+	/// <summary>
+	/// Active한 거점의 경우, Local player가 근접하면 Generator만 Outline 표시 처리 (서버 쪽에서만 Overlap 이벤트 활성화됨)
+	/// TODO : InteractionComponent를 직접 사용할 예정
+	/// </summary>
+	UFUNCTION()
+	void OnInteractionColliderBeginOverlap
+	(
+		UPrimitiveComponent* OverlappedComponent,
+		AActor*				 OtherActor,
+		UPrimitiveComponent* OtherComp,
+		int32				 OtherBodyIndex,
+		bool			  	 bFromSweep,
+		const FHitResult& 	 SweepResult
+	);
+
+	/// <summary>
+	/// Active한 거점의 경우, Local Player가 빠져나가면 모두 Outline 표시 처리 (서버 쪽에서만 Overlap 이벤트 활성화됨)
+	/// TODO : InteractionComponent를 직접 사용할 예정
+	/// </summary>
+	UFUNCTION()
+	void OnInteractionColliderEndOverlap
+	(
+		UPrimitiveComponent* OverlappedComponent,
+		AActor*				 OtherActor,
+		UPrimitiveComponent* OtherComp,
+		int32				 OtherBodyIndex
+	);
+
 private:
 	
 	USceneComponent* FindSceneComponentByName(const FName& _ComName);
@@ -104,7 +131,7 @@ protected:
 
 	// 현재 점령한 점령 게이지 (서버 쪽에서만 유효)
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	float m_CurConquerAmount = 50.f; // TODO : 이 값 다시 0으로 세팅해줄 것
+	float m_CurConquerAmount = 0.f;
 	
 	// 현재 점령한 점령 게이지 int값 (이걸로 실시간 게이지량을 맞춤 -> 매 Tick마다 RPC Call이나 Replicate 처리는 무거움)
 	// UI Display 처리 또한 이 값으로 진행한다
@@ -131,9 +158,16 @@ protected:
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
 	float m_ZombieDamageRatio = 0.25f;
 
+protected:
+	
 	// 현재 Active 상태에서 Conquering 중인 Player -> 얘의 Damage 처리를 주는 처리를 어떤식으로 해야할지...
+	// 이 Player가 Setting되면, 실질적인 거점 활성화 처리
 	UPROPERTY()
 	AC_BasicPlayer* m_ConqueringPlayer{};
+
+	// 얘는 Main이 아님
+	UPROPERTY()
+	TSet<AC_BasicPlayer*> m_ConquerTestAreaEnteredPlayers{}; // ConquerTest 영역에 들어온 Player들 저장 -> 추후 ConqueringPlayer가 빠져나가는 시점에 이미 들어온 Player들 추려서 Conquer처리 다시금 실행
 	
 private:
 	
@@ -167,6 +201,11 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	class USphereComponent* m_ApproachEffectTogglerCollider{};
 
+	// TODO : 이 Collider 단순히 Testing을 위한 Collider -> 지울 것
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	USphereComponent* m_InteractionTestingCollider{};
+
+	
 private:
 
 	// Electronic 이펙트들 부모
