@@ -221,6 +221,7 @@ void AC_ThrowableWeaponBase::InitializeItemData(const FWeaponData* InRawData)
 
 		//m_MaxAmmo = ThrowableData->MaxAmmo + (AmmoGrade * GunData->MaxAmmoPerUpgradeLevel);
 		m_ExplosionRadius = ThrowableData->m_ExplosionRadius + (ExplosionRadiusGrade * ThrowableData->ExplosionRadiusPerUpgradeLevel);
+		m_LeftCount = EntryPtr->CurCount;
 	}
 	else
 	{
@@ -582,9 +583,11 @@ void AC_ThrowableWeaponBase::Server_DecreaseCurCount_Implementation()
 		if (FInventoryEntry* SlotEntry = ItemLinkComp->GetItemEntryPtr())
 		{
 			--SlotEntry->CurCount;
+			m_LeftCount = SlotEntry->CurCount;
 			int32 Idx = ItemLinkComp->GetSlotIndex();
 			if (SlotEntry->CurCount <= 0)
 			{
+				m_LeftCount = 0;
 				SlotEntry->Clear();
 				SlotEntry->SlotIndex = Idx;
 			}
@@ -1494,18 +1497,7 @@ void AC_ThrowableWeaponBase::UpdateAmmoInfoHUDForDrawEnd()
 {
 	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled()) return;
 	
-	int32 LeftAmmoTotalCount = 0;
-	
-	if (!ItemLinkComp->IsLinkValid())
-	{
-		FInventoryEntry* Entry = ItemLinkComp->GetItemEntryPtr();
-		
-		if (!Entry->IsEmpty())
-			LeftAmmoTotalCount = Entry->CurCount;
-	}
-		
-	
-	UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility(true, EFireMode::Single, 1, LeftAmmoTotalCount);
+	UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility(true, EFireMode::Single, 1, m_LeftCount);
 }
 
 void AC_ThrowableWeaponBase::SetAmmoUIInfo(FAmmoUIInfo& _AmmoUIInfo)
@@ -1513,6 +1505,6 @@ void AC_ThrowableWeaponBase::SetAmmoUIInfo(FAmmoUIInfo& _AmmoUIInfo)
 	_AmmoUIInfo.Visible            = true;
 	_AmmoUIInfo.FireMode           = EFireMode::Single;
 	_AmmoUIInfo.MagazineAmmo       = 1;
-	_AmmoUIInfo.LeftAmmoTotalCount = 1;
+	_AmmoUIInfo.LeftAmmoTotalCount = m_LeftCount;
 	
 }

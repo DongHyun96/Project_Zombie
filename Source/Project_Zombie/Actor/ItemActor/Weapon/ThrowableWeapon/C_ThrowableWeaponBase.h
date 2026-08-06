@@ -450,7 +450,8 @@ protected: // 예상 투척 경로 TODO : 이 부분은 일단은 데이터 테�
 protected:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Mesh", meta = (AllowPrivateAccess = "true"))
 	class UStaticMeshComponent* m_WeaponMesh;
-
+	
+	int32 m_LeftCount = 0;
 private:
 
 	// 투척류의 Fuse Timer (핀 제거 후, 폭발까지 걸리는 시간)

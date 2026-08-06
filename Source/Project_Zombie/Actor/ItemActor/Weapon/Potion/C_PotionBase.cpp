@@ -14,6 +14,7 @@
 #include "Engine/AssetManager.h"
 #include "GameModeAndManager/C_ItemManager.h"
 #include "GameModeAndManager/C_UIManager.h"
+#include "Net/UnrealNetwork.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
 #include "UI/MainHUD/PlayerStatHUD/C_PlayerStatWidget.h"
 #include "Utility/C_Util.h"
@@ -32,6 +33,14 @@ AC_PotionBase::AC_PotionBase()
 	StaticMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMeshComponent"));
 	StaticMeshComponent->SetupAttachment(RootComponent);
 	
+	
+}
+
+void AC_PotionBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	
+	DOREPLIFETIME(AC_PotionBase, LeftTotalCount);
 	
 }
 
@@ -97,12 +106,10 @@ void AC_PotionBase::InitializeItemData(const FWeaponData* InRawData)
 	
 	//if (!ItemLinkComp->IsLinkValid()) return;
 	
-	FInventoryEntry* EntryPtr = ItemLinkComp->GetItemEntryPtr();
 	
-	UC_Util::Print(Potion_value);
 	
 	// 동적 데이터(CustomData) 처리
-	if (EntryPtr)
+	if (FInventoryEntry* EntryPtr = ItemLinkComp->GetItemEntryPtr())
 	{
 		// 1. 없으면 데이터 안전하게 생성
 		FUpgradableData* CustomData = EntryPtr->GetOrCreateEquipmentData();
@@ -113,14 +120,12 @@ void AC_PotionBase::InitializeItemData(const FWeaponData* InRawData)
 			ValueGrade = CustomData->GetStatGrade(EUpgradableStats::HPRecovery);
 		
 		Potion_value = BaseValue + ValueGrade * UpgradeData->GradePerValue[EUpgradableStats::HPRecovery];
+		LeftTotalCount = EntryPtr->CurCount;
 	}
 	else
 	{
 		Potion_value = BaseValue;
 	}
-	
-	UC_Util::Print(Potion_value);
-	
 }
 
 void AC_PotionBase::LoadAsyncAssets(const FWeaponData* InRawData)
@@ -248,24 +253,25 @@ void AC_PotionBase::SetAmmoUIInfo(FAmmoUIInfo& _AmmoUIInfo)
 	_AmmoUIInfo.Visible            = true;
 	_AmmoUIInfo.FireMode           = EFireMode::Single;
 	_AmmoUIInfo.MagazineAmmo       = 1;
-	_AmmoUIInfo.LeftAmmoTotalCount = 1;
+	_AmmoUIInfo.LeftAmmoTotalCount = LeftTotalCount;
+	UC_Util::Print("Potion : SetAmmoUIInfo");
+	
 }
 
 void AC_PotionBase::UpdateAmmoInfoHUDForDrawEnd()
 {
 	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled()) return;
 
-	int32 LeftAmmoTotalCount = 0;
+	UC_Util::Print("Potion : DrawEnd");
 	
-	if (!ItemLinkComp->IsLinkValid())
-	{
-		FInventoryEntry* Entry = ItemLinkComp->GetItemEntryPtr();
-		
-		if (!Entry->IsEmpty())
-			LeftAmmoTotalCount = Entry->CurCount;
-	}
+	UC_Util::Print(LeftTotalCount);
 	
-	UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility(true, EFireMode::Single, 1, LeftAmmoTotalCount);
+	UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility(true, EFireMode::Single, 1, LeftTotalCount);
+}
+
+void AC_PotionBase::OnRep_UpdateAmmoWidget()
+{
+	UpdateAmmoInfoHUDForDrawEnd();
 }
 
 void AC_PotionBase::PlayUsingMontageSynced()
@@ -307,9 +313,11 @@ void AC_PotionBase::Server_DecreaseCurCount_Implementation()
 		if (FInventoryEntry* SlotEntry = ItemLinkComp->GetItemEntryPtr())
 		{
 			--SlotEntry->CurCount;
+			LeftTotalCount = SlotEntry->CurCount;
 			int32 Idx = ItemLinkComp->GetSlotIndex();
 			if (SlotEntry->CurCount <= 0)
 			{
+				LeftTotalCount = 0;
 				SlotEntry->Clear();
 				SlotEntry->SlotIndex = Idx;
 			}
