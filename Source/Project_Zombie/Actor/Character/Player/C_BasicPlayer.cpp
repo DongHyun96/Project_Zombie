@@ -53,6 +53,9 @@
 #include "Item/Interact/ItemUpgrade/C_ItemUpgradeStation.h"
 #include "UI/InvenUI/Upgrade/C_PlayerStatUpgradeWidget.h"
 
+#define RECHARGED_BOOST 20.f
+
+
 AC_BasicPlayer::AC_BasicPlayer()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -178,7 +181,7 @@ void AC_BasicPlayer::BeginPlay()
 			->OnPoseTransitionFinished.AddUObject(this, &AC_BasicPlayer::OnPoseTransitionFinished);
 	}
 
-	UpdateBoostBarHUD();
+	//UpdateBoostBarHUD();
 	// InventoryWidget에 Player의 InvenComponent 초기화 및 델리게이트 진행
 	APlayerController* PC = Cast<APlayerController>(GetController());
 	
@@ -279,7 +282,7 @@ void AC_BasicPlayer::Tick(float DeltaTime)
 
 	/// 나중에 스탯 컴포넌트로 분리할 예정
 	// 달리기 중이면 부스트 소모
-	if (m_PlayerPoseState == EPlayerPoseState::Sprint)
+	/*if (m_PlayerPoseState == EPlayerPoseState::Sprint && m_StatComponent->GetStat(StatName::CurBoost) > 0.f)
 	{
 		UseBoost( m_StatComponent->GetStat(StatName::BoostCost) * DeltaTime);
 		
@@ -290,6 +293,12 @@ void AC_BasicPlayer::Tick(float DeltaTime)
 	}
 	// 달리기 중이 아니면 부스트 회복
 	else
+	{
+		RecoverBoost(m_StatComponent->GetStat(StatName::BoostRecover) * DeltaTime);
+	}*/
+	
+	// 달리기가 아닌 상태일 때 부스트 회복
+	if (m_PlayerPoseState != EPlayerPoseState::Sprint && m_StatComponent)
 	{
 		RecoverBoost(m_StatComponent->GetStat(StatName::BoostRecover) * DeltaTime);
 	}
@@ -462,6 +471,13 @@ bool AC_BasicPlayer::UseBoost(float _UseAmount)
 	if (_UseAmount <= 0.f || m_StatComponent->GetStat(StatName::MaxBoost) <= 0.f || m_StatComponent->GetStat(StatName::CurBoost) <= 0.f)
 		return false;
 	
+	
+	float test = m_StatComponent->GetStat(StatName::CurBoost);
+
+	FString msg = FString::SanitizeFloat(_UseAmount);
+		
+	PRINT_LOCAL(GetWorld(), msg, FColor::Black, 10.f); // 줄어드는 것 확인 했음.
+	
 	float CurBoost = m_StatComponent->GetStat(StatName::CurBoost);
 
 	float PrevBoost = CurBoost;
@@ -472,9 +488,12 @@ bool AC_BasicPlayer::UseBoost(float _UseAmount)
 		// 부스트 사용 
 		m_StatComponent->SetStat(StatName::CurBoost, FMath::Max(0.f, CurBoost - _UseAmount));
 
+		
 		// 값이 변경되었을 경우 HUD 업데이트
 		if (!FMath::IsNearlyEqual(PrevBoost, m_StatComponent->GetStat(StatName::CurBoost)))
+		{
 			UpdateBoostBarHUD();
+		}
 	}
 	
 	return bHasBoost;
@@ -498,6 +517,13 @@ void AC_BasicPlayer::RecoverBoost(float _RecoverAmount)
 	// 값이 변경되었을 경우 HUD 업데이트
 	if (!FMath::IsNearlyEqual(PrevBoost, CurBoost))
 		UpdateBoostBarHUD();
+	
+	// 탈진상태에서 다시 달릴 수 있게 하려면 부스트 20.f는 필요.
+	if (m_bIsBoostExhausted && CurBoost >= RECHARGED_BOOST)
+	{
+		m_bIsBoostExhausted = false;
+		// TODO : 만약 이 때 부스트바의 색을 다른색으로 바꿨었다면 원래 색으로 복귀. 
+	}
 }
 
 void AC_BasicPlayer::StartSprint()
@@ -505,6 +531,12 @@ void AC_BasicPlayer::StartSprint()
 	if (!IsAlive())
 		return;
 
+	// 방전 상태이면 달리기 불가.
+	if (m_bIsBoostExhausted && m_StatComponent->GetStat(StatName::CurBoost) >= RECHARGED_BOOST)
+		m_bIsBoostExhausted = false;
+	
+	if (m_bIsBoostExhausted) return;
+	
 	// 공중일 때는 달리기 불가
 	if (!GetCharacterMovement() || GetCharacterMovement()->IsFalling())
 		return;
@@ -536,11 +568,40 @@ void AC_BasicPlayer::StartSprint()
 		SetPoseStateOnServer(EPlayerPoseState::Sprint);
 		return;
 	}
-
+	
 	// 클라이언트에서 먼저 적용
 	ApplyPoseStateLocally(EPlayerPoseState::Sprint);
 
 	Server_RequestSetPoseState(EPlayerPoseState::Sprint);
+}
+
+void AC_BasicPlayer::ProcessSprint(float DeltaTime)
+{
+	// 부스트 방전 상태이거나 스탯 컴포넌트가 없으면 처리 안 함
+	if (m_bIsBoostExhausted || !m_StatComponent) 
+	{
+		StopSprint();
+		return;
+	}
+
+	// 이동 중일 때만 부스트 소모 (제자리에 서서 Shift만 누르고 있을 때 소모 방지)
+	if (GetVelocity().SizeSquared() > 10.f)
+	{
+		float test = m_StatComponent->GetStat(StatName::BoostCost) * DeltaTime;
+
+		FString msg = FString::SanitizeFloat(test);
+		
+		PRINT_LOCAL(GetWorld(), msg, FColor::Red, 10.f); // 줄어드는 것 확인 했음.
+		
+		UseBoost(m_StatComponent->GetStat(StatName::BoostCost) * DeltaTime * 100);
+
+		// 부스트가 다 달았으면 방전 처리 및 달리기 중단
+		if (m_StatComponent->GetStat(StatName::CurBoost) <= 0.f)
+		{
+			m_bIsBoostExhausted = true; // 방전 플래그
+			StopSprint();
+		}
+	}
 }
 
 void AC_BasicPlayer::StopSprint()
@@ -661,7 +722,7 @@ void AC_BasicPlayer::ApplyMovementSpeed()
 void AC_BasicPlayer::UpdateBoostBarHUD() const
 {
 	// 자기 자신의 Player인 경우에만 자신의 BoostBar 업데이트 처리
-	if (!IsLocallyControlled()) return;
+	//if (!IsLocallyControlled()) return;
 	
 	if (APlayerController* PC = GetController<APlayerController>())
 	{
