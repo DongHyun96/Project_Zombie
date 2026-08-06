@@ -17,10 +17,20 @@ class PROJECT_ZOMBIE_API UC_ItemManager : public UGameInstanceSubsystem
 public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	
+	// Subsystem 종료 시 배열 비우기.
+	virtual void Deinitialize() override;
+	
 	// 사용이 끝난 아이템을 풀로 반환
 	UFUNCTION(BlueprintCallable, Category = "ItemManager|Pool")
 	void ReturnToPool(AC_ItemPickUp* ItemToReturn);
+	
+	/** 지정된 수량만큼 풀에 액터를 미리 스폰하여 보관 (서버 전용) */
+	UFUNCTION(BlueprintCallable, Category = "ItemManager|Pool")
+	void WarmupPool(int32 SpawnCount);
 
+	/** 레벨 이동 시 유효하지 않은 액터 포인터 정리 */
+	void CleanUpPools();
+	
 	// Item Spawn Functions
 public:
 	// --- SpawnItemPickUp 오버로딩 ---  바닥에 주울 수 있는 아이템으로 생성.
