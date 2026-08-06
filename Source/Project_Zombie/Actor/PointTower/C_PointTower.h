@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GenericTeamAgentInterface.h"
 #include "GameFramework/Actor.h"
 #include "UI/MainHUD/CompassBarWidget/C_CompassBarWidget.h"
 #include "UI/MainHUD/CompassBarWidget/CompassMarkerWidget/C_CompassMarkerWidget.h"
@@ -20,7 +21,7 @@ enum class EPointTowerState : uint8
 /// 주의 : 인게임 레벨에 배치 시, EditInstanceOnly 되어있는 멤버변수 초기화 시켜줄 것 (어떤 값인지 주석 확인할 것)
 /// </summary>
 UCLASS()
-class PROJECT_ZOMBIE_API AC_PointTower : public AActor
+class PROJECT_ZOMBIE_API AC_PointTower : public AActor, public IGenericTeamAgentInterface
 {
 	GENERATED_BODY()
 
@@ -36,11 +37,13 @@ public:
 	
 	virtual void Tick(float DeltaTime) override;
 
-public:
-
-	float GetZombieDamageRatio() const { return m_ZombieDamageRatio; }
+	virtual void SetGenericTeamId(const FGenericTeamId& TeamID) override { m_TeamId = TeamID; }
+	virtual FGenericTeamId GetGenericTeamId() const override { return m_TeamId; }
+	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const override;
 	
 public:
+	
+	float GetZombieDamageRatio() const { return m_ZombieDamageRatio; }
 
 	void SetPointTowerState(EPointTowerState _PointTowerState);
 	EPointTowerState GetPointTowerState() const { return m_State; }
@@ -223,5 +226,9 @@ private:
 	
 	FTimerHandle m_TestTimerHandle{};
 	FTimerHandle m_TestTimerHandle2{};
+	
+private:
+	
+	FGenericTeamId m_TeamId{};
 	
 };

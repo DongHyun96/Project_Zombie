@@ -17,20 +17,19 @@
 AC_Zombie::AC_Zombie()
 	: m_ZombieType(EZombieType::NormalZombie)
 {
+	m_TeamId = static_cast<uint8>(ETeamType::Enemy);
 }
 
 AC_Zombie::AC_Zombie(EZombieType _ZombieType)
 	: m_ZombieType(_ZombieType)
 {
+	m_TeamId = static_cast<uint8>(ETeamType::Enemy);
 }
 
 void AC_Zombie::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	// 팀 설정
-	SetGenericTeamId(static_cast<uint8>(ETeamType::Enemy));
-
 	// 등록된 모든 NormalAttackCollider의 ComponentBeginOverlap 이벤트 바인딩 및 첫 시작 시, 비활성화 처리
 	for (UShapeComponent* NormalAttackCollider : m_NormalAttackColliders)
 	{

@@ -51,6 +51,7 @@
 #include "UI/InvenUI/Upgrade/C_ItemUpgradeWidget.h"
 #include "Item/Interact/C_InteractableBase.h"
 #include "Item/Interact/ItemUpgrade/C_ItemUpgradeStation.h"
+
 AC_BasicPlayer::AC_BasicPlayer()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -103,7 +104,8 @@ AC_BasicPlayer::AC_BasicPlayer()
 	m_IsJumpInput = false;
 
 	// TeamId
-	SetGenericTeamId((uint8)ETeamType::Player);
+	// SetGenericTeamId((uint8)ETeamType::Player); // 생성자 가상함수 호출 금지
+	m_TeamId = static_cast<uint8>(ETeamType::Player);
 
 	// 우리가 만든 InputComponent 클래스를 Player에게 추가.
 	m_PlayerInputComponent = CreateDefaultSubobject<UC_BasicPlayerInputComponent>(TEXT("PlayerInputComponent"));

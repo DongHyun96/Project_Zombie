@@ -17,6 +17,7 @@
 #include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 #include "Item/DataAsset/C_DropTableDataAsset.h"
 #include "Kismet/GameplayStatics.h"
+#include "Perception/AISense_Damage.h"
 #include "Utility/C_Util.h"
 #include "Zombie/NurseZombie/C_NurseZombie.h"
 #include "Zombie/Controller/C_ZombieController.h"
@@ -105,7 +106,19 @@ float AC_BasicEnemy::TakeDamage
 	const float DamageAmount = Super::TakeDamage(_DamageAmount, _DamageEvent, _EventInstigator, _DamageCauser);
 	if (DamageAmount <= 0.f) return 0.f; // Damage가 들어오지 않음 (클라이언트단, TakeDamage 로컬 호출인 경우에 그럴 수 있음 -> 알아서 서버 쪽으로 Damage 입은 사실 전달)
 	
-	// UC_Util::Print("Zombie Damaged", FColor::Red, 10.f);
+	/* PerceptionComponent에 Damage를 받았다고 보고 처리 */
+	ACharacter* DamageInstigator = _EventInstigator->GetCharacter();
+	const FVector DamageInstigatorPos = (DamageInstigator != nullptr) ? DamageInstigator->GetActorLocation() : this->GetActorLocation();
+	
+	UAISense_Damage::ReportDamageEvent
+	(
+		GetWorld(),				 // 히트 이벤트가 발생한 월드 
+		this,					 // 맞은 놈 
+		DamageInstigator,		 // 때린 놈 
+		DamageAmount,			 // 최종 데미지
+		DamageInstigatorPos,	 // 때린놈 위치 
+		this->GetActorLocation() // 맞은놈 위치
+	);
 
 	/* 힐 요청 처리 관련 */
 

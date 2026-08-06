@@ -23,6 +23,7 @@
 
 #include "../C_Zombie.h"
 #include "Actor/Character/NPC/Enemy/Components/StatComponent/C_EnemyStatComponent.h"
+#include "GameModeAndManager/C_UIManager.h"
 
 AC_ZombieController::AC_ZombieController()
 {
@@ -33,7 +34,7 @@ AC_ZombieController::AC_ZombieController()
 	// 시각정보 설정
 	m_SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("Sight"));
 
-	m_HearingConfig = CreateDefaultSubobject<UAISenseConfig_Hearing>(TEXT("Hearing"));
+	// m_HearingConfig = CreateDefaultSubobject<UAISenseConfig_Hearing>(TEXT("Hearing"));
 
 	if (m_SightConfig)
 	{
@@ -49,7 +50,7 @@ AC_ZombieController::AC_ZombieController()
 		m_PerceptionCom->SetDominantSense(m_SightConfig->GetSenseImplementation()); // 시각정보를 최우선 감각으로 사용할 것
 	}
 
-	if (m_HearingConfig)
+	/*if (m_HearingConfig)
 	{
 		// 청각 기본값 세팅
 		m_HearingConfig->HearingRange = 2000.f;
@@ -59,11 +60,10 @@ AC_ZombieController::AC_ZombieController()
 		m_HearingConfig->DetectionByAffiliation.bDetectNeutrals   = false;
 
 		m_PerceptionCom->ConfigureSense(*m_HearingConfig); // 인지 컴포넌트에 청각정보 추가
-	}
+	}*/
 
 	m_DamageConfig = CreateDefaultSubobject<UAISenseConfig_Damage>(TEXT("Damage"));
 	m_PerceptionCom->ConfigureSense(*m_DamageConfig); // 인지 컴포넌트에 데미지정보 추가
-
 
 }
 
@@ -75,11 +75,9 @@ void AC_ZombieController::OnPossess(APawn* _Pawn)
 
 	// 빙의한 대상과 같은 팀으로 설정
 	const IGenericTeamAgentInterface* pPawnTeam = Cast<IGenericTeamAgentInterface>(_Pawn);
-	if (pPawnTeam)
-		SetGenericTeamId(pPawnTeam->GetGenericTeamId());
-	// 공용헤더에 팀 설정 후 처리
-	else
-		SetGenericTeamId((uint8)ETeamType::None);
+	
+	if (pPawnTeam) SetGenericTeamId(pPawnTeam->GetGenericTeamId());
+	else SetGenericTeamId(static_cast<uint8>(ETeamType::None));
 
 	// 빙의 대상의 스탯 컴포넌트를 가져온다
 	UC_EnemyStatComponent* pStatCom = _Pawn->FindComponentByClass<UC_EnemyStatComponent>();
@@ -91,7 +89,8 @@ void AC_ZombieController::OnPossess(APawn* _Pawn)
 	// 인지 컴포넌트 갱신
 	m_PerceptionCom->ConfigureSense(*m_SightConfig);
 	m_PerceptionCom->ConfigureSense(*m_DamageConfig);
-	m_PerceptionCom->ConfigureSense(*m_HearingConfig);
+	// m_PerceptionCom->ConfigureSense(*m_HearingConfig);
+	m_PerceptionCom->RequestStimuliListenerUpdate();
 
 	// 비헤이비어트리, 블랙보드 세팅
 	if (m_BTAsset && m_BBAsset)
@@ -172,7 +171,7 @@ void AC_ZombieController::OnTargetDetected(AActor* _Target, FAIStimulus _Stimulu
 		// 인지정보가 어떤 감각으로 발생한 정보인지 구별
 		static FAISenseID SightID = UAISense::GetSenseID<UAISense_Sight>();
 		static FAISenseID DmgID = UAISense::GetSenseID<UAISense_Damage>();
-		static FAISenseID HearingID = UAISense::GetSenseID<UAISense_Hearing>();
+		// static FAISenseID HearingID = UAISense::GetSenseID<UAISense_Hearing>();
 
 		if (_Stimulus.Type == SightID)
 		{
@@ -181,12 +180,13 @@ void AC_ZombieController::OnTargetDetected(AActor* _Target, FAIStimulus _Stimulu
 		}
 		else if (_Stimulus.Type == DmgID)
 		{
+			PRINT_LOCAL(GetWorld(), "DAMAGE SENSED RECEIVED CALCULATING AGGROVALUE", FColor::Red, 10.f);
 			pInfo->AggroValue += 20.f;
 		}
-		else
+		/*else // Not in used (Hearing 자극은 판단 x)
 		{
 			pInfo->AggroValue += 15.f;
-		}
+		}*/
 	}
 }
 

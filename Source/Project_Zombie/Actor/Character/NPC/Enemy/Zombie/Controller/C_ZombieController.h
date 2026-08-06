@@ -51,9 +51,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "AI")
 	class UAISenseConfig_Damage*	m_DamageConfig{};
 
-	// 청각 정보
+	/*// 청각 정보 // Not in used
 	UPROPERTY(VisibleAnywhere, Category = "AI")
-	class UAISenseConfig_Hearing*	m_HearingConfig{};
+	class UAISenseConfig_Hearing*	m_HearingConfig{};*/
 
 	// 비헤이비어트리
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")

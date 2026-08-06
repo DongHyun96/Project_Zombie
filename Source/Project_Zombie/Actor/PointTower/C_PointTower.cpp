@@ -44,6 +44,9 @@ AC_PointTower::AC_PointTower()
 	
 	m_InteractionTestingCollider = CreateDefaultSubobject<USphereComponent>(TEXT("InteractionTestingCollider"));
 	m_InteractionTestingCollider->SetupAttachment(GetRootComponent());
+	
+	// Agent TeamId (Enemy만 이 Team ID로 적인지 아닌지 구분하기 때문에 Player Team으로 부여시킴)
+	m_TeamId = static_cast<uint8>(ETeamType::Player);
 }
 
 void AC_PointTower::BeginPlay()
@@ -135,6 +138,14 @@ void AC_PointTower::Tick(float DeltaTime)
 			POINT_TOWER_MANAGER(this)->OnPointTowerConquered();
 		}
 	}
+}
+
+ETeamAttitude::Type AC_PointTower::GetTeamAttitudeTowards(const AActor& Other) const
+{
+	const IGenericTeamAgentInterface* OtherTeamAgent = Cast<IGenericTeamAgentInterface>(&Other);
+	
+	if (!OtherTeamAgent) return ETeamAttitude::Neutral;
+	return m_TeamId == OtherTeamAgent->GetGenericTeamId() ? ETeamAttitude::Friendly : ETeamAttitude::Hostile;	
 }
 
 void AC_PointTower::SetPointTowerState(EPointTowerState _PointTowerState)
