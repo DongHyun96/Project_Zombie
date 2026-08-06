@@ -108,7 +108,6 @@ void UC_BasicPlayerInputComponent::InitializePlayerInput(UInputComponent* Player
 	if (const UInputAction* IA = FindIAByName(TEXT("IA_PlayerSprint")))
 	{
 		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::SprintStart);
-		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Triggered, this, &UC_BasicPlayerInputComponent::SprintOngoing);
 		
 		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Completed, this, &UC_BasicPlayerInputComponent::SprintEnd);
 		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Canceled, this, &UC_BasicPlayerInputComponent::SprintEnd);
@@ -181,18 +180,6 @@ void UC_BasicPlayerInputComponent::SprintStart()
 	Player->StartSprint();
 }
 
-void UC_BasicPlayerInputComponent::SprintOngoing(const FInputActionValue& Value)
-{
-	if (!Player) return;
-
-	// GetDeltaSeconds()를 이용해 입력 매 프레임마다 부스트 소모
-	if (UWorld* World = GetWorld())
-	{
-		float DeltaTime = World->GetDeltaSeconds();
-		Player->ProcessSprint(DeltaTime);
-	}
-}
-
 void UC_BasicPlayerInputComponent::SprintEnd()
 {
 	if (!Player)
@@ -226,6 +213,10 @@ void UC_BasicPlayerInputComponent::JumpAction()
 	}
 
 	Player->SetIsJumpInput(true);
+	
+	if (Player->IsSprinting()) 
+		Player->StopSprint();
+	
 	Player->Jump();
 }
 

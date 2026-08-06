@@ -162,6 +162,12 @@ bool AC_BasicPlayer::Server_RequestItemUpgrade_Validate(AC_ItemUpgradeStation* I
 	return true;
 }
 
+void AC_BasicPlayer::OnRep_CurBoost()
+{
+	if (IsLocallyControlled())
+		UpdateBoostBarHUD(); 
+}
+
 void AC_BasicPlayer::BeginPlay()
 {
 	Super::BeginPlay();
@@ -264,6 +270,8 @@ void AC_BasicPlayer::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	
 	DOREPLIFETIME(AC_BasicPlayer, m_HandState);
 	DOREPLIFETIME(AC_BasicPlayer, ReplicatedAimYaw);
+	DOREPLIFETIME(AC_BasicPlayer, m_CurBoost);
+	DOREPLIFETIME(AC_BasicPlayer, m_bIsBoostExhausted);
 }
 
 void AC_BasicPlayer::Tick(float DeltaTime)
@@ -282,26 +290,28 @@ void AC_BasicPlayer::Tick(float DeltaTime)
 
 	/// 나중에 스탯 컴포넌트로 분리할 예정
 	// 달리기 중이면 부스트 소모
-	/*if (m_PlayerPoseState == EPlayerPoseState::Sprint && m_StatComponent->GetStat(StatName::CurBoost) > 0.f)
+	if (HasAuthority() && !IsFalling()) // TODO : 점프중에는 실행하면 안되고 달리던 속도를 유지 혹은 점차 감소 해야 한다.
 	{
-		UseBoost( m_StatComponent->GetStat(StatName::BoostCost) * DeltaTime);
-		
-		if (m_StatComponent->GetStat(StatName::CurBoost) <= 0.f)
+		// 부스트 소모 및 회복 (서버에서만 한 번에 처리)
+		const bool bIsMoving = GetVelocity().SizeSquared() > 10.f;
+		const bool bIsSprinting = (m_PlayerPoseState == EPlayerPoseState::Sprint);
+
+		if (bIsSprinting && bIsMoving && !m_bIsBoostExhausted)
 		{
-			StopSprint();
+			ProcessSprint(DeltaTime);
+		}
+		else
+		{
+			// 이동 중이 아니거나 달리기가 아니면 부스트 회복
+			RecoverBoost(m_StatComponent->GetStat(StatName::BoostRecover) * DeltaTime);
 		}
 	}
-	// 달리기 중이 아니면 부스트 회복
-	else
-	{
-		RecoverBoost(m_StatComponent->GetStat(StatName::BoostRecover) * DeltaTime);
-	}*/
 	
 	// 달리기가 아닌 상태일 때 부스트 회복
-	if (m_PlayerPoseState != EPlayerPoseState::Sprint && m_StatComponent)
-	{
-		RecoverBoost(m_StatComponent->GetStat(StatName::BoostRecover) * DeltaTime);
-	}
+	//if (m_PlayerPoseState != EPlayerPoseState::Sprint && m_StatComponent)
+	//{
+	//	RecoverBoost(m_StatComponent->GetStat(StatName::BoostRecover) * DeltaTime);
+	//}
 
 	// [Aim] 카메라 변환 중일 때만 함수 호출
 	if (m_BasicPlayerAimComponent->IsTransitioningCamera())
@@ -409,6 +419,27 @@ bool AC_BasicPlayer::SetCurDraggedItem(struct FInventoryEntry InEntry, UC_InvenC
 	return false;
 }
 
+void AC_BasicPlayer::SetCurBoost(float NewBoost)
+{
+	if (HasAuthority() && m_StatComponent)
+	{
+		const float MaxBoost = m_StatComponent->GetStat(StatName::MaxBoost);
+       
+		// 0.01f보다 작은 미세 수치는 완전히 0.f로 보정
+		if (NewBoost < 0.01f)
+		{
+			NewBoost = 0.f;
+		}
+
+		const float ClampedBoost = FMath::Clamp(NewBoost, 0.f, MaxBoost);
+
+		m_StatComponent->SetStat(StatName::CurBoost, ClampedBoost);
+		m_CurBoost = ClampedBoost; 
+
+		OnRep_CurBoost();
+	}
+}
+
 void AC_BasicPlayer::Server_SetAimYaw_Implementation(float InAimYaw)
 {
 	ReplicatedAimYaw = FMath::Clamp(InAimYaw, -90.f, 90.f);
@@ -468,61 +499,42 @@ void AC_BasicPlayer::Landed(const FHitResult& Hit)
 
 bool AC_BasicPlayer::UseBoost(float _UseAmount)
 {
-	if (_UseAmount <= 0.f || m_StatComponent->GetStat(StatName::MaxBoost) <= 0.f || m_StatComponent->GetStat(StatName::CurBoost) <= 0.f)
-		return false;
-	
-	
-	float test = m_StatComponent->GetStat(StatName::CurBoost);
+	if (_UseAmount <= 0.f || !m_StatComponent) return false;
 
-	FString msg = FString::SanitizeFloat(_UseAmount);
-		
-	PRINT_LOCAL(GetWorld(), msg, FColor::Black, 10.f); // 줄어드는 것 확인 했음.
-	
 	float CurBoost = m_StatComponent->GetStat(StatName::CurBoost);
+	if (CurBoost <= 0.f) return false;
 
-	float PrevBoost = CurBoost;
 	bool bHasBoost = (CurBoost >= _UseAmount);
-
 	if (bHasBoost)
-	{	
-		// 부스트 사용 
-		m_StatComponent->SetStat(StatName::CurBoost, FMath::Max(0.f, CurBoost - _UseAmount));
-
-		
-		// 값이 변경되었을 경우 HUD 업데이트
-		if (!FMath::IsNearlyEqual(PrevBoost, m_StatComponent->GetStat(StatName::CurBoost)))
-		{
-			UpdateBoostBarHUD();
-		}
+	{  
+		// UI 직접 호출(UpdateBoostBarHUD)을 제거하고 SetCurBoost 사용!
+		SetCurBoost(CurBoost - _UseAmount);
 	}
-	
+    
 	return bHasBoost;
 }
 
 void AC_BasicPlayer::RecoverBoost(float _RecoverAmount)
 {
+	if (!m_StatComponent) return;
+
 	float MaxBoost = m_StatComponent->GetStat(StatName::MaxBoost);
 	float CurBoost = m_StatComponent->GetStat(StatName::CurBoost);
-	
+    
 	if (_RecoverAmount <= 0.f || MaxBoost <= 0.f || CurBoost >= MaxBoost)
 		return;
 
-	float PrevBoost = CurBoost;
-	
-	// 부스트 회복
-	CurBoost = FMath::Min(MaxBoost, CurBoost + _RecoverAmount);
+	// 부스트 회복 계산
+	float NewBoost = FMath::Min(MaxBoost, CurBoost + _RecoverAmount);
 
-	m_StatComponent->SetStat(StatName::CurBoost, CurBoost);
+	// SetCurBoost를 사용하여 서버/클라이언트 UI 동기화 일원화!
+	SetCurBoost(NewBoost);
 	
-	// 값이 변경되었을 경우 HUD 업데이트
-	if (!FMath::IsNearlyEqual(PrevBoost, CurBoost))
-		UpdateBoostBarHUD();
-	
-	// 탈진상태에서 다시 달릴 수 있게 하려면 부스트 20.f는 필요.
-	if (m_bIsBoostExhausted && CurBoost >= RECHARGED_BOOST)
+	// 탈진상태 해제 조건 체크 (서버에서만 실행됨)
+	if (m_bIsBoostExhausted && NewBoost >= RECHARGED_BOOST)
 	{
 		m_bIsBoostExhausted = false;
-		// TODO : 만약 이 때 부스트바의 색을 다른색으로 바꿨었다면 원래 색으로 복귀. 
+		// TODO: 만약 방전 해제 시 UI 색상을 복구해야 한다면, RepNotify나 Delegate로 클라이언트에 전파
 	}
 }
 
@@ -587,19 +599,19 @@ void AC_BasicPlayer::ProcessSprint(float DeltaTime)
 	// 이동 중일 때만 부스트 소모 (제자리에 서서 Shift만 누르고 있을 때 소모 방지)
 	if (GetVelocity().SizeSquared() > 10.f)
 	{
-		float test = m_StatComponent->GetStat(StatName::BoostCost) * DeltaTime;
+		float Cost = m_StatComponent->GetStat(StatName::BoostCost) * DeltaTime;
+		float CurBoost = m_StatComponent->GetStat(StatName::CurBoost);
 
-		FString msg = FString::SanitizeFloat(test);
-		
-		PRINT_LOCAL(GetWorld(), msg, FColor::Red, 10.f); // 줄어드는 것 확인 했음.
-		
-		UseBoost(m_StatComponent->GetStat(StatName::BoostCost) * DeltaTime * 100);
-
-		// 부스트가 다 달았으면 방전 처리 및 달리기 중단
-		if (m_StatComponent->GetStat(StatName::CurBoost) <= 0.f)
+		// 남아있는 부스트보다 차감량이 크면, 남은 만큼 깔끔하게 다 쓰고 0으로 만든 뒤 방전!
+		if (CurBoost <= Cost)
 		{
-			m_bIsBoostExhausted = true; // 방전 플래그
+			UseBoost(CurBoost); // 남은 수치 완충 소모 (0으로 만듦)
+			m_bIsBoostExhausted = true;
 			StopSprint();
+		}
+		else
+		{
+			UseBoost(Cost);
 		}
 	}
 }

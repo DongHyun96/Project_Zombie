@@ -57,7 +57,6 @@ private:
 	void MoveAction(const FInputActionValue& Value);
 	
 	void SprintStart();
-	void SprintOngoing(const FInputActionValue& Value);
 	void SprintEnd();
 
 	void LookAction(const FInputActionValue& Value);

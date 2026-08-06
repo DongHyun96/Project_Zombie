@@ -10,6 +10,7 @@
 #include "C_BasicPlayer.generated.h"
 
 
+class AC_ItemUpgradeStation;
 // TODO: PlayerState 랑 PlayerLifeState 를 하나로 통합할지...
 // 캐릭터 상태
 UENUM(BlueprintType)
@@ -124,7 +125,13 @@ protected:
 	UPROPERTY(Replicated)
 	float ReplicatedAimYaw = 0.0f;
 
-	
+protected:
+	// StatComponent의 CurBoost가 변경될 때 서버에서 클라이언트로 복제할 변수
+	// (또는 StatComponent 내부 변수에 ReplicatedUsing을 걸어도 됩니다)
+	UPROPERTY(ReplicatedUsing = OnRep_CurBoost)
+	float m_CurBoost;
+
+
 
 
 
@@ -177,7 +184,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
 	bool m_IsSprintInput;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadOnly, Category = "Movement")
 	bool m_bIsBoostExhausted = false;
 	
 	// 이 값 이상 회복되어야 다시 달리기 가능
@@ -266,6 +273,9 @@ public:
 	// 드래그중인 아이템 관련 정보 저장
 	bool SetCurDraggedItem(struct FInventoryEntry InEntry, UC_InvenComponent* SrcInvenComp, int32 SrcSlotIdx);
 
+public:
+	void SetCurBoost(float NewBoost);
+	
 private:
 
 	UFUNCTION(Server, Reliable, WithValidation)
@@ -284,6 +294,7 @@ public:
 	bool IsGettingUp() const { return m_PlayerState == EPlayerState::GettingUp; }
 	bool IsDead() const { return m_PlayerState == EPlayerState::Dead; }
 
+	// TODO : bPressedJump를 안쓰고 이걸 쓰는 이유는?
 	bool IsJumpInput() const { return m_IsJumpInput; }
 	void SetIsJumpInput(bool _IsJumpInput) { m_IsJumpInput = _IsJumpInput; }
 	
@@ -308,8 +319,25 @@ public:
 	void Landed(const FHitResult& Hit) override;
 
 	/// <summary>
+	/// 웅크리기 토글
+	/// </summary>
+	void ToggleCrouch();
+	
+	/// <summary>
+	/// 달리기 시작
+	/// </summary>
+	void StartSprint();
+	
+	/// <summary>
+	///	달리기 종료
+	/// </summary>
+	void StopSprint();
+	
+private:
+	/// <summary>
 	/// 후에 스탯 컴포넌트 쪽으로
 	/// 부스트를 사용하고 HUD를 갱신한다.
+	/// Server에서만 호출
 	/// </summary>
 	/// <param name="_UseAmount"> : 사용할 부스트 양 </param>
 	/// <returns> : 사용 성공 여부 </returns>
@@ -318,30 +346,16 @@ public:
 	/// <summary>
 	/// 후에 스탯 컴포넌트 쪽으로
 	/// 부스트를 회복하고 HUD를 갱신한다.
+	/// Server에서만 호출
 	/// </summary>
 	/// <param name="_RecoverAmount"> : 회복할 부스트 양 </param>
 	void RecoverBoost(float _RecoverAmount);
 
 	/// <summary>
-	/// 달리기 시작
-	/// </summary>
-	void StartSprint();
-	
-	/// <summary>
-	/// 달리기 시작
+	/// 달리기 중
+	/// Server에서만 호출
 	/// </summary>
 	void ProcessSprint(float DeltaTime);
-	
-	/// <summary>
-	///	달리기 종료
-	/// </summary>
-	void StopSprint();
-
-	/// <summary>
-	/// 웅크리기 토글
-	/// </summary>
-	void ToggleCrouch();
-
 
 	// 캐릭터 그로기 처리
 public:
@@ -446,6 +460,9 @@ public:
 	
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_RequestItemUpgrade(AC_ItemUpgradeStation* InInteractableActor, int32 InItemIndex, EUpgradableStats TargetStat);
+	
+	UFUNCTION()
+	void OnRep_CurBoost();
 
 protected:
 	virtual void BeginPlay() override;
