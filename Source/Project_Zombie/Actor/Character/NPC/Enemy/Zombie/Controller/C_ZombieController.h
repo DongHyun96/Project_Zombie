@@ -40,8 +40,8 @@ class PROJECT_ZOMBIE_API AC_ZombieController : public AAIController
 	
 protected:
 	// 인지기능
-	UPROPERTY(VisibleAnywhere, Category = "AI")
-	class UAIPerceptionComponent*	m_PerceptionCom{}; 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
+	class UAIPerceptionComponent*	m_PerceptionComponent{}; 
 
 	// 시야, 시각정보
 	UPROPERTY(VisibleAnywhere, Category = "AI")
@@ -98,7 +98,7 @@ public:
 	/// <param name="_Target"></param>
 	/// <param name="_Stimulus"></param>
 	UFUNCTION()
-	void OnTargetDetected(AActor* _Target, FAIStimulus _Stimulus);
+	void OnTargetUpdated(AActor* _Target, FAIStimulus _Stimulus);
 
 protected:
 	/// <summary>

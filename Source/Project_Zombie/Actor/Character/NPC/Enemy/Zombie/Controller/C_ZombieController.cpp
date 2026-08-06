@@ -31,8 +31,8 @@ AC_ZombieController::AC_ZombieController()
 	PrimaryActorTick.bCanEverTick = true;
 	
 	// 인지기능 컴포넌트 생성 및 Controller에 등록 
-	m_PerceptionCom = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("PerceptionComponent"));
-	SetPerceptionComponent(*m_PerceptionCom); 
+	m_PerceptionComponent = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("PerceptionComp"));
+	SetPerceptionComponent(*m_PerceptionComponent); 
 
 	// 시각정보 설정
 	m_SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("Sight"));
@@ -49,11 +49,11 @@ AC_ZombieController::AC_ZombieController()
 	}
 	m_DamageConfig = CreateDefaultSubobject<UAISenseConfig_Damage>(TEXT("Damage"));
 	
-	m_PerceptionCom->ConfigureSense(*m_SightConfig);
+	m_PerceptionComponent->ConfigureSense(*m_SightConfig);
 	// 인지 컴포넌트에 시각정보 추가 및 반영 (추후 SightConfig 값을 변경하고 싶다면, 변경한 다음 ConfigureSense 호출을 해주어야 적용된다)
-	m_PerceptionCom->ConfigureSense(*m_DamageConfig);
+	m_PerceptionComponent->ConfigureSense(*m_DamageConfig);
 
-	m_PerceptionCom->SetDominantSense(m_SightConfig->GetSenseImplementation()); // 시각정보를 최우선 감각으로 설정	
+	m_PerceptionComponent->SetDominantSense(m_SightConfig->GetSenseImplementation()); // 시각정보를 최우선 감각으로 설정	
 }
 
 void AC_ZombieController::OnPossess(APawn* _Pawn)
@@ -78,9 +78,9 @@ void AC_ZombieController::OnPossess(APawn* _Pawn)
 	m_SightConfig->LoseSightRadius = pStatCom->GetStat(TEXT("LoseDetectRange"));
 
 	// 인지 컴포넌트 갱신
-	m_PerceptionCom->ConfigureSense(*m_SightConfig);
-	m_PerceptionCom->ConfigureSense(*m_DamageConfig);
-	m_PerceptionCom->RequestStimuliListenerUpdate();
+	m_PerceptionComponent->ConfigureSense(*m_SightConfig);
+	m_PerceptionComponent->ConfigureSense(*m_DamageConfig);
+	m_PerceptionComponent->RequestStimuliListenerUpdate();
 
 	// 비헤이비어트리, 블랙보드 세팅
 	if (m_BTAsset && m_BBAsset)
@@ -99,7 +99,7 @@ void AC_ZombieController::OnPossess(APawn* _Pawn)
 }
 
 
-void AC_ZombieController::OnTargetDetected(AActor* _Target, FAIStimulus _Stimulus)
+void AC_ZombieController::OnTargetUpdated(AActor* _Target, FAIStimulus _Stimulus)
 {
 	if (UAISense::GetSenseID<UAISense_Sight>() == _Stimulus.Type)
 	{
@@ -176,7 +176,7 @@ void AC_ZombieController::BeginPlay()
 	Super::BeginPlay();
 	
 	// 탐지가 발생하면 호출받을 Delegate 등록
-	m_PerceptionCom->OnTargetPerceptionUpdated.AddDynamic(this, &AC_ZombieController::OnTargetDetected);
+	m_PerceptionComponent->OnTargetPerceptionUpdated.AddDynamic(this, &AC_ZombieController::OnTargetUpdated);
 }
 
 void AC_ZombieController::Tick(float DeltaSeconds)
@@ -195,6 +195,8 @@ void AC_ZombieController::Tick(float DeltaSeconds)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("  %s"), *Actor->GetName());
 	}*/
+	TArray<UObject*> Temp = m_PerceptionComponent->OnTargetPerceptionUpdated.GetAllObjects();
+	UC_Util::Print(Temp.Num(), FColor::Red, 1.f);
 }
 
 FSensedTargetInfo& AC_ZombieController::AddSensedTarget(AActor* _Target)
@@ -261,7 +263,7 @@ bool AC_ZombieController::IsCurrentlyOnSight(AActor* _TargetActor) const
 {
 	if (!_TargetActor) return false;
 	
-	if (const FActorPerceptionInfo* ActorPerceptionInfo = m_PerceptionCom->GetActorInfo(*_TargetActor))
+	if (const FActorPerceptionInfo* ActorPerceptionInfo = m_PerceptionComponent->GetActorInfo(*_TargetActor))
 		for (const FAIStimulus& Stimulus : ActorPerceptionInfo->LastSensedStimuli)
 		{
 			const TSubclassOf<UAISense> SenseClass = UAIPerceptionSystem::GetSenseClassForStimulus(GetWorld(), Stimulus);
