@@ -91,10 +91,8 @@ bool UC_ZombieManager::ReturnZombieToPool(AC_Zombie* _Zombie)
 	if (!IsValid(_Zombie))
 		return false;
 
-	// 매니저는 서버에만 존재해야 하지만
-	// 잘못된 호출에 대한 안전 검사
+	// 매니저는 서버에서만 관리
 	UWorld* World = GetWorld();
-
 	if (!IsValid(World) || World->GetNetMode() == NM_Client)
 		return false;
 
@@ -110,11 +108,20 @@ bool UC_ZombieManager::ReturnZombieToPool(AC_Zombie* _Zombie)
 		return false;
 	}
 
-	// 좀비 자신 표시/충돌/Tick 상태 비활성화
-	_Zombie->DeactivateForPool();
+	// 좀비 자신을 풀 대기상태로 전환
+	// 표시/충돌/Tick 상태 비활성화
+	if (!_Zombie->DeactivateForPool())
+	{
+		UC_Util::Print("DeactivateForPool Failed !!", FColor::Red, 10.f);
+
+		return false;
+	}
 
 	// 좀비 활성 목록에서 제거
-	m_ActiveZombies.FindOrAdd(ZombieType).Remove(_Zombie);
+	if (TSet<AC_Zombie*>* ActiveSet = m_ActiveZombies.Find(ZombieType))
+	{
+		ActiveSet->Remove(_Zombie);
+	}
 
 	// NurseZombie는 전용 활성목록에서도 제거
 	if (ZombieType == EZombieType::NurseZombie)
@@ -127,6 +134,107 @@ bool UC_ZombieManager::ReturnZombieToPool(AC_Zombie* _Zombie)
 
 	// 타입별 풀에 다시 대기 등록
 	pPool.Add(_Zombie);
+
+	return true;
+}
+
+AC_Zombie* UC_ZombieManager::SpawnZombieFromPool(EZombieType _ZombieType, const FTransform& _SpawnTransform)
+{
+	UWorld* World = GetWorld();
+
+	// 풀 관리는 서버에서만 
+	if (!IsValid(World) || World->GetNetMode() == NM_Client)
+		return nullptr;
+
+	// 지정된 타입의 풀 검색
+	TArray<AC_Zombie*>* pPool = m_ZombiePool.Find(_ZombieType);
+
+	if (!pPool || pPool->IsEmpty())
+	{
+		UC_Util::Print("From UC_ZombieManager::SpawnZombieFromPool : Pool is empty!!", FColor::Red, 10.f);
+		return nullptr;
+	}
+
+	// 풀의 마지막 좀비를 확인
+	AC_Zombie* Zombie = pPool->Last();
+
+	if (!IsValid(Zombie))
+	{
+		// 잘못된 포인터는 풀에서 제거
+		pPool->Pop();
+
+		return nullptr;
+	}
+
+	// 활성화 성공 후에만 풀에서 제거
+	if (!Zombie->ActivateFromPool(_SpawnTransform))
+	{
+		return nullptr;
+	}
+
+	// 대기 풀에서 제거
+	pPool->Pop();
+
+	// 필드 활성 목록에 등록
+	m_ActiveZombies.FindOrAdd(_ZombieType).Add(Zombie);
+
+	// NurseZombie 라면 전용 활성 목록에도 등록
+	if (_ZombieType == EZombieType::NurseZombie)
+	{
+		if (AC_NurseZombie* NurseZombie = Cast<AC_NurseZombie>(Zombie))
+		{
+			m_ActiveNurseZombies.Add(NurseZombie);
+		}
+	}
+
+	return Zombie;
+}
+
+bool UC_ZombieManager::TestSpawnNormalZombie()
+{
+	UWorld* World = GetWorld();
+
+	// 서버에서만 테스트 스폰 처리
+	if (!IsValid(World) ||
+		World->GetNetMode() == NM_Client)
+	{
+		return false;
+	}
+
+	// 임시 고정 스폰 위치
+	const FVector SpawnLocation(
+		0.f,
+		0.f,
+		300.f);
+
+	const FRotator SpawnRotation(
+		0.f,
+		180.f,
+		0.f);
+
+	const FTransform SpawnTransform(
+		SpawnRotation,
+		SpawnLocation);
+
+	AC_Zombie* SpawnedZombie =
+		SpawnZombieFromPool(
+			EZombieType::NormalZombie,
+			SpawnTransform);
+
+	if (!IsValid(SpawnedZombie))
+	{
+		UC_Util::Print(
+			"From UC_ZombieManager::TestSpawnNormalZombie : Spawn Failed",
+			FColor::Red,
+			10.f);
+
+		return false;
+	}
+
+	UC_Util::Print(
+		"Zombie Spawn From Pool Success",
+		FColor::Green,
+		5.f);
 
 	return true;
 }

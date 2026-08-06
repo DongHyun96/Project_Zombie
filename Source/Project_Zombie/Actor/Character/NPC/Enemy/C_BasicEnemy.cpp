@@ -46,6 +46,49 @@ AC_BasicEnemy::AC_BasicEnemy()
 	
 }
 
+void AC_BasicEnemy::ResetEnemyForPoolSpawn()
+{
+	// 좀비 상태는 서버에서만 처리
+	if (!HasAuthority())
+		return;
+
+	// 죽음 상태 초기화
+	m_DeadRepData.bDead = false;
+	m_DeadRepData.DeadMontageIndex = INDEX_NONE;
+
+	// 이전의 죽음 타이머가 남아있다면 제거
+	GetWorldTimerManager().ClearTimer(m_DeadRemainTimer);
+
+	// 몽타주 종료
+	StopAnimMontage();
+
+	// HP 초기화
+	if (IsValid(m_StatComponent))
+	{
+		m_StatComponent->SetCurHP(m_StatComponent->GetStat(StatName::MaxHP));
+	}
+
+	// 이동 복구
+	if (UCharacterMovementComponent* MoveCom = GetCharacterMovement())
+	{
+		MoveCom->SetMovementMode(EMovementMode::MOVE_Walking);
+
+		MoveCom->StopMovementImmediately();
+	}
+
+	// 힐 요청 상태 초기화
+	m_HealRequestRegisterCount = 0;
+
+	// 힐 이펙트 초기화
+	if (IsValid(m_HealedEffectNGComponent))
+	{
+		m_HealedEffectNGComponent->DeactivateImmediate();
+	}
+
+	// 죽음 상태 변경을 클라에 빠르게 전달
+	ForceNetUpdate();
+}
+
 void AC_BasicEnemy::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -229,11 +272,11 @@ void AC_BasicEnemy::OnDead(AC_BasicCharacter* _DeadCharacter)
 
 	// RepNotify는 서버에서 자동 호출되지 않으므로 
 	// 서버 화면에는 직접 죽음 시각 처리 적용
-	ApplyDeadVisual(m_DeadRepData.DeadMontageIndex);
+	ApplyDeadState(m_DeadRepData.DeadMontageIndex);
 	
 	// TODO : 죽은동안 충돌 끄기. 혹시 오브젝트 풀링으로 사용중이거나 해서 나중에 켜야 된다면 켜주어야 함.
 	// 풀에서 꺼낼 때 복구하기
-	SetActorEnableCollision(false);
+	//SetActorEnableCollision(false);
 
 	// 변경한 복제 정보를 가능한 빨리 클라에 전달
 	ForceNetUpdate();
@@ -289,13 +332,16 @@ void AC_BasicEnemy::StopAllActionsForDead()
 	}
 }
 
-void AC_BasicEnemy::ApplyDeadVisual(int32 _DeadMontageIndex)
+void AC_BasicEnemy::ApplyDeadState(int32 _DeadMontageIndex)
 {
 	// 클라에 남아있던 공격 또는 스킬 몽타주 정지
 	StopAnimMontage();
 
 	// 서버가 선택한 죽음 몽타주 재생
 	PlayDeadAnimation(_DeadMontageIndex);
+
+	// 서버와 클라 동시 즉시 충돌 비활성화
+	SetActorEnableCollision(false);
 }
 
 void AC_BasicEnemy::PlayDeadAnimation(int32 _DeadMontageIndex)
@@ -316,13 +362,15 @@ void AC_BasicEnemy::PlayDeadAnimation(int32 _DeadMontageIndex)
 
 void AC_BasicEnemy::OnRep_DeadData()
 {
-	// 죽음 상태가 된 경우만 처리
-	// 풀 재사용 시 초기화 처리도 이 함수에 추가
-	if (!m_DeadRepData.bDead)
+	if (m_DeadRepData.bDead)
+	{
+		ApplyDeadState(m_DeadRepData.DeadMontageIndex);
+
 		return;
-	
-	// 서버가 선택한 죽음 몽타주를 클라이언트에서도 재생
-	ApplyDeadVisual(m_DeadRepData.DeadMontageIndex);
+	}
+
+	// 풀에서 다시 활성화 된 경우
+	StopAnimMontage();
 }
 
 

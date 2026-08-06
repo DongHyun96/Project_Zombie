@@ -8,6 +8,8 @@
 #include "Actor/Character/NPC/Enemy/Components/SkillComponent/C_EnemySkillComponent.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Net/UnrealNetwork.h"
+#include "AIController.h"
+#include "BrainComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/ShapeComponent.h"
@@ -35,7 +37,7 @@ void AC_Zombie::BeginPlay()
 	for (UShapeComponent* NormalAttackCollider : m_NormalAttackColliders)
 	{
 		// 서버 쪽에서만 실질적인 피격 판정 및 피격 처리가 들어갈 것임
-		if (IsLocallyControlled())
+		if (HasAuthority())
 			NormalAttackCollider->OnComponentBeginOverlap.AddDynamic(this, &AC_Zombie::OnNormalAttackColliderBeginOverlap);
 		
 		NormalAttackCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -100,10 +102,15 @@ void AC_Zombie::ApplyPoolActiveState()
 {
 	if (m_bPoolActive)
 	{
-		// 재스폰 구현할때 활성화 처리 추가하기
 		SetActorHiddenInGame(false);
 		SetActorEnableCollision(true);
 		SetActorTickEnabled(true);
+
+		if (UCharacterMovementComponent* MoveCom = GetCharacterMovement())
+		{
+			MoveCom->StopMovementImmediately();
+			MoveCom->SetMovementMode(EMovementMode::MOVE_Walking);
+		}
 
 		return;
 	}
@@ -134,15 +141,15 @@ void AC_Zombie::OnRep_PoolActive()
 	ApplyPoolActiveState();
 }
 
-void AC_Zombie::DeactivateForPool()
+bool AC_Zombie::DeactivateForPool()
 {
 	// 풀 상태 변경은 서버에서만 처리
 	if (!HasAuthority())
-		return;
+		return false;
 
 	// 중복 처리 방지
 	if (!m_bPoolActive)
-		return;
+		return false;
 
 	m_bPoolActive = false;
 
@@ -151,6 +158,49 @@ void AC_Zombie::DeactivateForPool()
 
 	// 클라에 최대한 빨리 전달
 	ForceNetUpdate();
+
+	return true;
+}
+
+bool AC_Zombie::ActivateFromPool(const FTransform& _SpawnTransform)
+{
+	// 풀 활성 상태는 서버에서만 처리
+	if (!HasAuthority())
+		return false;
+
+	// 이미 활성화 되어잇는 좀비는 중복처리 x
+	if (m_bPoolActive)
+		return false;
+
+	// 스폰 위치 먼저 설정
+	// 숨김 상태가 풀리기 전에 먼저 옮겨두려고 미리 설정
+	SetActorTransform(_SpawnTransform, false, nullptr, ETeleportType::TeleportPhysics);
+
+	// 좀비 공통 상태 초기화
+	ResetEnemyForPoolSpawn();
+
+	// 풀 활성 상태로 변경
+	m_bPoolActive = true;
+
+	// 서버에 활성 상태 적용
+	ApplyPoolActiveState();
+
+	// 죽은 이후 StopLogic으로 정지된 BT 다시 시작
+	if (AAIController* pController = Cast<AAIController>(GetController()))
+	{
+		// 이전 이동 요청 제거
+		pController->StopMovement();
+
+		if (UBrainComponent* Brain = pController->GetBrainComponent())
+		{
+			Brain->RestartLogic();
+		}
+	}
+
+	// 클라에 상태와 위치를 빠르게 전달
+	ForceNetUpdate();
+
+	return true;
 }
 
 void AC_Zombie::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

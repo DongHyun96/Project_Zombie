@@ -58,11 +58,30 @@ public: /* Spawn 관련 함수들 */
 	/// <returns> : 반환에 실패하면 false </returns> 
 	bool ReturnZombieToPool(class AC_Zombie* _Zombie);
 
+	/// <summary>
+	/// 지정한 타입의 좀비를 풀에서 꺼내
+	/// 전달받은 위치에서 스폰
+	/// </summary>
+	/// <param name="_ZombieType"></param>
+	/// <param name="_SpawnTransform"></param>
+	/// <returns>
+	/// 활성화된 좀비
+	/// 실패하면 nullptr
+	/// </returns>
+	AC_Zombie* SpawnZombieFromPool(EZombieType _ZombieType, const FTransform& _SpawnTransform);
+
+
 public: /* For testing TODO : 이 Block 밑 지울 함수들 모두 지워버릴 것 */
 
 	// TODO : 이 함수 테스트 때문에 넣어둠 지워버릴 것
 	void AddNurseZombieToActivePool(AC_NurseZombie* _NurseZombie) { m_ActiveNurseZombies.Add(_NurseZombie); } 
 	
+	/// <summary>
+	/// 테스트함수
+	/// </summary>
+	/// <returns></returns>
+	bool TestSpawnNormalZombie();
+
 	
 protected: /* 좀비 스폰 기반 클래스 정보 및 PoolCount 정보 -> TODO : ZombieManager 블루프린트에 해당값 초기화시킬 것 */
 
