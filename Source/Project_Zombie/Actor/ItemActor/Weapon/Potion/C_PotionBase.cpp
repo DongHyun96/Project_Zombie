@@ -255,7 +255,17 @@ void AC_PotionBase::UpdateAmmoInfoHUDForDrawEnd()
 {
 	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled()) return;
 
-	UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility(true, EFireMode::Single, 1, 1);
+	int32 LeftAmmoTotalCount = 0;
+	
+	if (!ItemLinkComp->IsLinkValid())
+	{
+		FInventoryEntry* Entry = ItemLinkComp->GetItemEntryPtr();
+		
+		if (!Entry->IsEmpty())
+			LeftAmmoTotalCount = Entry->CurCount;
+	}
+	
+	UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility(true, EFireMode::Single, 1, LeftAmmoTotalCount);
 }
 
 void AC_PotionBase::PlayUsingMontageSynced()

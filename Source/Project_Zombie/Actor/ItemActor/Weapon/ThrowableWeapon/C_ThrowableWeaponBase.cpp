@@ -216,8 +216,8 @@ void AC_ThrowableWeaponBase::InitializeItemData(const FWeaponData* InRawData)
 		int32 ExplosionRadiusGrade = CustomData->GetStatGrade(EUpgradableStats::ExplosionRadius);
 
 		// 3. 최종 스탯 계산: BaseStat + (Grade * DataAsset의 레벨당 증가량)
-		m_MaxDamage = ThrowableData->BaseDamage + (DamageGrade * ThrowableData->DamagePerUpgradeLevel);
-		m_MinDamage = ThrowableData->BaseDamage + (DamageGrade * ThrowableData->DamagePerUpgradeLevel);
+		m_MaxDamage += (DamageGrade * ThrowableData->DamagePerUpgradeLevel);
+		m_MinDamage += (DamageGrade * ThrowableData->DamagePerUpgradeLevel);
 
 		//m_MaxAmmo = ThrowableData->MaxAmmo + (AmmoGrade * GunData->MaxAmmoPerUpgradeLevel);
 		m_ExplosionRadius = ThrowableData->m_ExplosionRadius + (ExplosionRadiusGrade * ThrowableData->ExplosionRadiusPerUpgradeLevel);
@@ -1493,7 +1493,19 @@ void AC_ThrowableWeaponBase::ClearPredictedPath()
 void AC_ThrowableWeaponBase::UpdateAmmoInfoHUDForDrawEnd()
 {
 	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled()) return;
-	UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility(true, EFireMode::Single, 1, 1);
+	
+	int32 LeftAmmoTotalCount = 0;
+	
+	if (!ItemLinkComp->IsLinkValid())
+	{
+		FInventoryEntry* Entry = ItemLinkComp->GetItemEntryPtr();
+		
+		if (!Entry->IsEmpty())
+			LeftAmmoTotalCount = Entry->CurCount;
+	}
+		
+	
+	UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility(true, EFireMode::Single, 1, LeftAmmoTotalCount);
 }
 
 void AC_ThrowableWeaponBase::SetAmmoUIInfo(FAmmoUIInfo& _AmmoUIInfo)
