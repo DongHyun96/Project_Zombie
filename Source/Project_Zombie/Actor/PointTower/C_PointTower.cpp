@@ -3,7 +3,6 @@
 
 #include "C_PointTower.h"
 
-#include "ToolBuilderUtil.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/Ping/C_WorldPingActor.h"
 #include "Components/SphereComponent.h"
@@ -13,7 +12,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
 #include "UI/MainHUD/CompassBarWidget/C_CompassBarWidget.h"
-#include "UI/MainHUD/CompassBarWidget/CompassMarkerWidget/C_CompassMarkerWidget.h"
+
 #include "UI/Misc/C_PointTowerWidget.h"
 #include "Utility/C_Util.h"
 
@@ -58,9 +57,11 @@ void AC_PointTower::BeginPlay()
 	if (m_ElectroSplinesParent)
 		m_ElectroSplinesParent->SetHiddenInGame(true, true);
 
-	// 서버 환경에서의 PointTower만 PointTowerManager(서버 쪽에만 존재) 에 등록 처리를 할 것임
 	if (HasAuthority())
+	{
+		// 서버 환경에서의 PointTower만 PointTowerManager(서버 쪽에만 존재) 에 등록 처리를 할 것임
 		POINT_TOWER_MANAGER(this)->RegisterPointTower(this);
+	}
 
 	if (m_WorldPingActorClass)
 	{

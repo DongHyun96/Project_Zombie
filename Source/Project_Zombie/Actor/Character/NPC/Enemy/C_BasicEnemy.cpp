@@ -44,6 +44,10 @@ AC_BasicEnemy::AC_BasicEnemy()
 	
 	if (HealedEffect.Succeeded())
 		m_HealedEffectNGComponent->SetAsset(HealedEffect.Object.Get());
+
+	GetCharacterMovement()->RotationRate = FRotator(0.f, 240.f, 0.f);
+	GetCharacterMovement()->bOrientRotationToMovement = true;
+	bUseControllerRotationYaw = false;
 	
 }
 
@@ -76,7 +80,7 @@ void AC_BasicEnemy::BeginPlay()
 			m_ItemManager = GI->GetSubsystem<UC_ItemManager>();
 		}
 	}
-	else // 클라이언트 환경
+	/*else // 클라이언트 환경
 	{
 		// 클라이언트단 화면에서는 Controller가 없기에, Controller Rotation (0, 0, 0) 값을 사용ㄴ
 		// 따라서 끊겨보이는 버그가 있었음
@@ -85,7 +89,7 @@ void AC_BasicEnemy::BeginPlay()
 		GetCharacterMovement()->bUseControllerDesiredRotation = false;
 		GetCharacterMovement()->RotationRate                  = FRotator(0.f, 360.f, 0.f);
 		
-	}
+	}*/
 
 	// HealEffect 재생 속도 조절
 	m_HealedEffectNGComponent->SetCustomTimeDilation(2.f);

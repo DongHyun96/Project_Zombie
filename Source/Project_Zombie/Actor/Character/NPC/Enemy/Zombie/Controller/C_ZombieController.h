@@ -67,10 +67,16 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
 	TArray<FSensedTargetInfo>		m_SensedTargets{};
 
+private:
 
+	UPROPERTY()
+	class AC_Zombie* m_OwnerZombie{}; 
+	
 public:
 	
 	virtual void BeginPlay() override;
+
+	virtual void Tick(float DeltaSeconds) override;
 	
 public:
 	const TArray<FSensedTargetInfo>& GetSensedTargets() { return m_SensedTargets; }

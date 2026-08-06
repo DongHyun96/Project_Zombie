@@ -24,17 +24,18 @@
 #include "../C_Zombie.h"
 #include "Actor/Character/NPC/Enemy/Components/StatComponent/C_EnemyStatComponent.h"
 #include "GameModeAndManager/C_UIManager.h"
+#include "Utility/C_Util.h"
 
 AC_ZombieController::AC_ZombieController()
 {
+	PrimaryActorTick.bCanEverTick = true;
+	
 	// 인지기능 컴포넌트 생성 및 Controller에 등록 
 	m_PerceptionCom = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("PerceptionComponent"));
 	SetPerceptionComponent(*m_PerceptionCom); 
 
 	// 시각정보 설정
 	m_SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("Sight"));
-
-	// m_HearingConfig = CreateDefaultSubobject<UAISenseConfig_Hearing>(TEXT("Hearing"));
 
 	if (m_SightConfig)
 	{
@@ -43,33 +44,23 @@ AC_ZombieController::AC_ZombieController()
 		m_SightConfig->LoseSightRadius                          = 3500.f; // AI 가 대상을 처음 감지할 수 있는 거리
 		m_SightConfig->PeripheralVisionAngleDegrees             = 60.f; // 시전 정면방향을 기준으로, 반경 각도, 최대시야각은 x2 
 		m_SightConfig->DetectionByAffiliation.bDetectEnemies    = true; // 감지대상이 적대관계인경우 탐지한것으로 인정
-		m_SightConfig->DetectionByAffiliation.bDetectFriendlies = true; // 감지대상이 우호관계인경우 탐지한것으로 인정
-		m_SightConfig->DetectionByAffiliation.bDetectNeutrals   = true; // 감지대상이 중립관계인경우 탐지한것으로 인정
-
-		m_PerceptionCom->ConfigureSense(*m_SightConfig); // 인지 컴포넌트에 시각정보 추가
-		m_PerceptionCom->SetDominantSense(m_SightConfig->GetSenseImplementation()); // 시각정보를 최우선 감각으로 사용할 것
+		m_SightConfig->DetectionByAffiliation.bDetectFriendlies = false; // 감지대상이 우호관계인경우 탐지 x
+		m_SightConfig->DetectionByAffiliation.bDetectNeutrals   = false; // 감지대상이 중립관계인경우 탐지 x
 	}
-
-	/*if (m_HearingConfig)
-	{
-		// 청각 기본값 세팅
-		m_HearingConfig->HearingRange = 2000.f;
-
-		m_HearingConfig->DetectionByAffiliation.bDetectEnemies    = true;
-		m_HearingConfig->DetectionByAffiliation.bDetectFriendlies = false;
-		m_HearingConfig->DetectionByAffiliation.bDetectNeutrals   = false;
-
-		m_PerceptionCom->ConfigureSense(*m_HearingConfig); // 인지 컴포넌트에 청각정보 추가
-	}*/
-
 	m_DamageConfig = CreateDefaultSubobject<UAISenseConfig_Damage>(TEXT("Damage"));
-	m_PerceptionCom->ConfigureSense(*m_DamageConfig); // 인지 컴포넌트에 데미지정보 추가
+	
+	m_PerceptionCom->ConfigureSense(*m_SightConfig);
+	// 인지 컴포넌트에 시각정보 추가 및 반영 (추후 SightConfig 값을 변경하고 싶다면, 변경한 다음 ConfigureSense 호출을 해주어야 적용된다)
+	m_PerceptionCom->ConfigureSense(*m_DamageConfig);
 
+	m_PerceptionCom->SetDominantSense(m_SightConfig->GetSenseImplementation()); // 시각정보를 최우선 감각으로 설정	
 }
 
 void AC_ZombieController::OnPossess(APawn* _Pawn)
 {
 	Super::OnPossess(_Pawn);
+
+	m_OwnerZombie = Cast<AC_Zombie>(GetPawn());
 
 	//UE_LOG(LogTemp, Warning, TEXT("OnPossess Success"));
 
@@ -89,7 +80,6 @@ void AC_ZombieController::OnPossess(APawn* _Pawn)
 	// 인지 컴포넌트 갱신
 	m_PerceptionCom->ConfigureSense(*m_SightConfig);
 	m_PerceptionCom->ConfigureSense(*m_DamageConfig);
-	// m_PerceptionCom->ConfigureSense(*m_HearingConfig);
 	m_PerceptionCom->RequestStimuliListenerUpdate();
 
 	// 비헤이비어트리, 블랙보드 세팅
@@ -111,38 +101,29 @@ void AC_ZombieController::OnPossess(APawn* _Pawn)
 
 void AC_ZombieController::OnTargetDetected(AActor* _Target, FAIStimulus _Stimulus)
 {
-	//UE_LOG(LogTemp, Warning, TEXT("Perception Triggered"));
-
-	/*if (!_Target)
-		return;
-
-	if (_Stimulus.WasSuccessfullySensed())
+	if (UAISense::GetSenseID<UAISense_Sight>() == _Stimulus.Type)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Detected : %s"), *_Target->GetName());
-
-		if (Blackboard)
-		{
-			Blackboard->SetValueAsObject(TEXT("Target"), _Target);
-		}
+		if (_Stimulus.WasSuccessfullySensed())
+			UC_Util::Print("DETECTED(Stim -> Sight)" + _Target->GetName(), FColor::Red, 10.f);
+		else 
+			UC_Util::Print("Get Out (Stim -> Sight)" + _Target->GetName(), FColor::Red, 10.f);
 	}
-
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Lost : %s"), *_Target->GetName());
-
-		if (Blackboard)
-		{
-			Blackboard->ClearValue(TEXT("Target"));
-		}
-	}*/
-
-	// 감지한 대상이 적인지 아닌지 판단
-	AC_Zombie* pZombie = Cast<AC_Zombie>(GetPawn());
-	if (nullptr == pZombie)
+		
+		UC_Util::Print("DETECTED(Stim -> Other)" + _Target->GetName(), FColor::Red, 10.f);
+	}
+	
+	
+	if (!m_OwnerZombie)
+	{
+		UC_Util::Print("[AC_ZombieController::OnTargetDetected] : m_OwnerZombie nullptr", FColor::Red, 10.f);
 		return;
-
+	}
+	
+	
 	// 감지대상의 우호관계 가져오기
-	ETeamAttitude::Type type = pZombie->GetTeamAttitudeTowards(*_Target);
+	ETeamAttitude::Type type = m_OwnerZombie->GetTeamAttitudeTowards(*_Target);
 
 	// 감지 대상이 적(플레이어)이라면
 	if (ETeamAttitude::Hostile == type)
@@ -196,6 +177,24 @@ void AC_ZombieController::BeginPlay()
 	
 	// 탐지가 발생하면 호출받을 Delegate 등록
 	m_PerceptionCom->OnTargetPerceptionUpdated.AddDynamic(this, &AC_ZombieController::OnTargetDetected);
+}
+
+void AC_ZombieController::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	
+	/*TArray<AActor*> Actors;
+
+	m_PerceptionCom->GetKnownPerceivedActors(
+		UAISense_Sight::StaticClass(),
+		Actors);
+
+	UE_LOG(LogTemp, Warning, TEXT("Known : %d"), Actors.Num());
+
+	for (AActor* Actor : Actors)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("  %s"), *Actor->GetName());
+	}*/
 }
 
 FSensedTargetInfo& AC_ZombieController::AddSensedTarget(AActor* _Target)

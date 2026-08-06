@@ -21,7 +21,7 @@ enum class EPointTowerState : uint8
 /// 주의 : 인게임 레벨에 배치 시, EditInstanceOnly 되어있는 멤버변수 초기화 시켜줄 것 (어떤 값인지 주석 확인할 것)
 /// </summary>
 UCLASS()
-class PROJECT_ZOMBIE_API AC_PointTower : public AActor, public IGenericTeamAgentInterface
+class PROJECT_ZOMBIE_API AC_PointTower : public APawn, public IGenericTeamAgentInterface
 {
 	GENERATED_BODY()
 
@@ -227,7 +227,7 @@ private:
 	FTimerHandle m_TestTimerHandle{};
 	FTimerHandle m_TestTimerHandle2{};
 	
-private:
+private: /* Enemy AI 인지 관련 TeamAgent 등 */
 	
 	FGenericTeamId m_TeamId{};
 	

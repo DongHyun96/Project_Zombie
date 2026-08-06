@@ -39,6 +39,17 @@ void AC_Zombie::BeginPlay()
 		
 		NormalAttackCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
+	
+	if (HasAuthority())
+	{
+		// PerceptionComp을 위한 특단의 조치 -> 한 번 움직임 처리를 해주어야 Mobility static인 다른 감지 대상이 PerceptionComponent에 제대로 잡힌다 -> 이거 스폰 시에도 살짝 들어야 할수도 있음
+		/*GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
+		{
+			LaunchCharacter(FVector::UnitZ() * 10.f, false, false);
+			
+		});*/
+	}
+		
 }
 
 void AC_Zombie::ANS_OnNormalAttackStart()
