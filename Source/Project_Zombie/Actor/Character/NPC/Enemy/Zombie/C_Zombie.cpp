@@ -58,8 +58,6 @@ void AC_Zombie::ANS_OnNormalAttackEnd()
 {
 	if (!HasAuthority()) return;
 
-	UC_Util::Print("On ANSNormalAttack End", FColor::MakeRandomColor(), 20.f);
-	
 	m_SetNormalAttackColliderEntered.Empty();
 
 	for (UShapeComponent* AttackCollider : m_NormalAttackColliders)
@@ -78,6 +76,7 @@ void AC_Zombie::OnNormalAttackColliderBeginOverlap
 {
 	// Client 쪽은 Event 바인딩 처리 자체를 안해서 검사하지 않아도 됨
 	AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(OtherActor);
+	if (!Player) return; // Player인 경우에만 피격 처리 -> TODO : PointTower에 대한 검사도 처리를 할 것
 	
 	// 이미 이번 휘두르기에 피격처리가 한 번 들어감
 	if (m_SetNormalAttackColliderEntered.Contains(Player)) return;

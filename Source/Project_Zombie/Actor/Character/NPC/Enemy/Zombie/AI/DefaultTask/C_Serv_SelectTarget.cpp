@@ -83,7 +83,7 @@ void UC_Serv_SelectTarget::TickNode(UBehaviorTreeComponent& _OwnCom, uint8* _Nod
 		return;
 	}
 
-	/*// BestTarget이 나오지 않은 상황
+	// BestTarget이 나오지 않은 상황
 	//  -> 가장 가까운 플레이어 또는 거점을 찾는다
 	float MinDistSqr = FLT_MAX;
 
@@ -105,7 +105,8 @@ void UC_Serv_SelectTarget::TickNode(UBehaviorTreeComponent& _OwnCom, uint8* _Nod
 			pBestTarget = pPlayer;
 		}
 	}
-	
+
+	// 현재 sequence의 PointTower들 또한 확인
 	for (AC_PointTower* PointTower : POINT_TOWER_MANAGER(pZombie)->GetCurPointTowers())
 	{
 		const float DistSqr = FVector::DistSquared(PointTower->GetActorLocation(), pZombie->GetActorLocation());
@@ -121,5 +122,5 @@ void UC_Serv_SelectTarget::TickNode(UBehaviorTreeComponent& _OwnCom, uint8* _Nod
 	UBlackboardComponent* pBBCom = _OwnCom.GetBlackboardComponent();
 	if (!pBBCom) return;
 	
-	pBBCom->SetValueAsObject(m_Target.SelectedKeyName, pBestTarget);*/
+	pBBCom->SetValueAsObject(m_Target.SelectedKeyName, pBestTarget);
 }

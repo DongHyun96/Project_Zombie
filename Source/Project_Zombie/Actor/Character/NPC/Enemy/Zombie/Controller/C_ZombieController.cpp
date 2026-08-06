@@ -115,8 +115,6 @@ void AC_ZombieController::OnTargetUpdated(AActor* _Target, FAIStimulus _Stimulus
 		return;
 	}
 
-	UC_Util::Print("OnTargetUpdated", FColor::Cyan, 10.f);
-	
 	// 감지대상의 우호관계 가져오기
 	ETeamAttitude::Type type = m_OwnerZombie->GetTeamAttitudeTowards(*_Target);
 
