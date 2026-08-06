@@ -207,12 +207,18 @@ bool UC_StatComponentBase::Local_SetStat(const FName& _StatName, float _Value)
 
 bool UC_StatComponentBase::Local_IncreaseStatGrade(const FName& _StatName)
 {
-	//if (_IncreaseAmount < 0.f) return false;
-	
 	uint8* pTargetStatGrade = m_StatGrades.Find(_StatName);
 	if (!pTargetStatGrade) return false;
-	
+    
+	// MAX_GRADE(5) 이상이면 더 이상 올려주지 않음 (원천 차단)
+	if (*pTargetStatGrade >= MAX_GRADE)
+	{
+		return false;
+	}
+    
 	++(*pTargetStatGrade);
+	
+	OnStatGradeUpdatedDelegate.Broadcast(_StatName, *pTargetStatGrade);
 	
 	return true;
 }

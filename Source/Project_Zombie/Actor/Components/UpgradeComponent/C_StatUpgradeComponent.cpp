@@ -29,7 +29,79 @@ void UC_StatUpgradeComponent::TickComponent(float DeltaTime, ELevelTick TickType
 
 }
 
-void UC_StatUpgradeComponent::UpgradeItem(AC_BasicPlayer* InPlayer, const FName& UpStatName)
+void UC_StatUpgradeComponent::UpgradeStat(AC_BasicPlayer* InPlayer, const FName& UpStatName)
+{
+    if (!InPlayer || UpStatName.IsNone()) return;
+
+    UC_PlayerStatComponent* PlayerStatComp = Cast<UC_PlayerStatComponent>(InPlayer->GetStatComponent());
+    if (!PlayerStatComp) return;
+
+    UC_ItemManager* ItemManager = InPlayer->GetGameInstance()->GetSubsystem<UC_ItemManager>();
+    if (!ItemManager) return;
+
+    const FPlayerStatUpgradeData* PSUData = ItemManager->GetPlayerStatUpgradeData(UpStatName);
+    if (!PSUData) return; // 데이터 테이블 Null 안전장치 추가
+
+    const uint8 curGrade = PlayerStatComp->GetStatGrade(UpStatName);
+
+    // 1. 등급 체크
+    if (curGrade >= MAX_GRADE)
+    {
+        FinishUpgradeState(InPlayer);
+        return;
+    }
+
+    // 2. 스탯 증가 및 등급 상승
+    if (PSUData->GradeValue.IsValidIndex(curGrade))
+    {
+        PlayerStatComp->IncreaseStat(UpStatName, PSUData->GradeValue[curGrade]);
+		PlayerStatComp->IncreaseStatGrade(UpStatName);
+    }
+	
+
+    // 3. 재료 소모 처리
+    if (PSUData->GradeCost.IsValidIndex(curGrade))
+    {
+        ConsumeUpgradeMaterials(InPlayer->GetInvenComponent(), PSUData->GradeCost[curGrade]);
+    }
+
+    // 4. 상태 종료
+    FinishUpgradeState(InPlayer);
+}
+
+void UC_StatUpgradeComponent::ConsumeUpgradeMaterials(UC_InvenComponent* InvenComp, const FGradeCostInfo& CostInfo)
+{
+    if (!InvenComp) return;
+
+    for (const FUpgradeMaterialInfo& RequiredCost : CostInfo.RequiredMaterials)
+    {
+        if (RequiredCost.MatterItemID.IsNone() || RequiredCost.RequiredCount <= 0) continue;
+
+        InvenComp->Server_RemoveItemByRowName(RequiredCost.MatterItemID, RequiredCost.RequiredCount);
+    }
+}
+
+void UC_StatUpgradeComponent::FinishUpgradeState(AC_BasicPlayer* InPlayer)
+{
+    if (!InPlayer) return;
+
+    AC_BasicPlayerController* PC = Cast<AC_BasicPlayerController>(InPlayer->GetController());
+    if (!PC) return;
+
+    PC->SetIsUpgradingPlayerStat(false);
+
+    if (PC->IsLocalPlayerController())
+    {
+        PC->FinishPlayerStatUpgrade();
+    }
+    else
+    {
+        PC->Client_FinishPlayerStatUpgrade();
+    }
+}
+
+/*
+void UC_StatUpgradeComponent::UpgradeStat(AC_BasicPlayer* InPlayer, const FName& UpStatName)
 {
 	//InPlayer->GetStatComponent()->
 	if (!InPlayer || UpStatName.IsNone()) return;
@@ -43,6 +115,25 @@ void UC_StatUpgradeComponent::UpgradeItem(AC_BasicPlayer* InPlayer, const FName&
 	const FPlayerStatUpgradeData* PSUData = ItemManager->GetPlayerStatUpgradeData(UpStatName);
 	
 	const uint8& curGrade = PlayerStatComp->GetStatGrade(UpStatName);
+	
+	if (curGrade >= MAX_GRADE)
+	{
+		AC_BasicPlayerController* PC = Cast<AC_BasicPlayerController>(InPlayer->GetController());
+	
+		if (!PC) return;
+
+		PC->SetIsUpgradingPlayerStat(false);
+
+		if (PC->IsLocalPlayerController())
+		{
+			PC->FinishPlayerStatUpgrade();
+		}
+		else
+		{
+			PC->Client_FinishPlayerStatUpgrade();
+		}
+		return;
+	}
 	
 	// 스탯 상승 : TODO 아마 여기서 동기화까지 다 되고 있을 것
 	PlayerStatComp->IncreaseStat(UpStatName, PSUData->GradeValue[curGrade]);
@@ -78,5 +169,4 @@ void UC_StatUpgradeComponent::UpgradeItem(AC_BasicPlayer* InPlayer, const FName&
 	{
 		PC->Client_FinishPlayerStatUpgrade();
 	}
-}
-
+}*/

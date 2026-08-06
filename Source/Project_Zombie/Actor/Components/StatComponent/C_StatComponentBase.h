@@ -11,6 +11,9 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnCurHPReachedZero, class AC_BasicCharacter
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnCurHPReachedFull, AC_BasicCharacter*);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnIncreaseCurHP, AC_BasicCharacter*);
 
+// StatUpgrade쪽에서 UI 업데이트 동기화 문제로 사용. 
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnStatGradeUpdated, const FName& /*StatName*/, uint8 /*NewGrade*/);
+
 /// <summary>
 /// Param - Ratio
 /// </summary>
@@ -248,4 +251,7 @@ public:
 
 	// HP 가 업데이트 되었을 시, 호출
 	FOnCurHPUpdated OnCurHPUpdatedDelegate{};
+	
+	// Stat의 Grade가 바뀔 때, 호출
+	FOnStatGradeUpdated OnStatGradeUpdatedDelegate{};
 };

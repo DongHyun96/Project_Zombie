@@ -52,6 +52,8 @@ void AC_BasicPlayerController::FinishPlayerStatUpgrade()
 	
 	PlayerStatUpgradeWidget->SetIsUpgrading(false);
 	
+	//PlayerStatUpgradeWidget->UpdateWidget();
+	
 	//UIManager->GetMainHUDWidget()->UpdateLeftAmmoTotalCount()
 	
 	//ItemUpgradeWidget->UpdateWidget();

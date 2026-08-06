@@ -51,6 +51,8 @@
 #include "UI/InvenUI/Upgrade/C_ItemUpgradeWidget.h"
 #include "Item/Interact/C_InteractableBase.h"
 #include "Item/Interact/ItemUpgrade/C_ItemUpgradeStation.h"
+#include "UI/InvenUI/Upgrade/C_PlayerStatUpgradeWidget.h"
+
 AC_BasicPlayer::AC_BasicPlayer()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -202,7 +204,11 @@ void AC_BasicPlayer::BeginPlay()
 	if (m_InvenComponent && m_EquippedComponent)
 	{
 		m_EquippedComponent->SetupInventoryComponent(m_InvenComponent);
+		
 	}
+	
+	if (m_StatComponent)
+		UIManager->GetInventoryWidget()->GetPlayerStatUpgradeWidget()->BindStatEvents(m_StatComponent);
 	
 	// GameLevelManager에 해당 Player 등록
 	if (UC_GameLevelManager* LevelManager = GetWorld()->GetSubsystem<UC_GameLevelManager>())
