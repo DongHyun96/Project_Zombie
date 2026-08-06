@@ -23,7 +23,11 @@
 
 #include "../C_Zombie.h"
 #include "Actor/Character/NPC/Enemy/Components/StatComponent/C_EnemyStatComponent.h"
+#include "Actor/PointTower/C_PointTower.h"
+#include "GameModeAndManager/C_GameMode_GameLv.h"
 #include "GameModeAndManager/C_UIManager.h"
+#include "GameModeAndManager/PointTowerManager/C_PointTowerManager.h"
+#include "Kismet/GameplayStatics.h"
 #include "Utility/C_Util.h"
 
 AC_ZombieController::AC_ZombieController()
@@ -101,19 +105,8 @@ void AC_ZombieController::OnPossess(APawn* _Pawn)
 
 void AC_ZombieController::OnTargetUpdated(AActor* _Target, FAIStimulus _Stimulus)
 {
-	if (UAISense::GetSenseID<UAISense_Sight>() == _Stimulus.Type)
-	{
-		if (_Stimulus.WasSuccessfullySensed())
-			UC_Util::Print("DETECTED(Stim -> Sight)" + _Target->GetName(), FColor::Red, 10.f);
-		else 
-			UC_Util::Print("Get Out (Stim -> Sight)" + _Target->GetName(), FColor::Red, 10.f);
-	}
-	else
-	{
-		
-		UC_Util::Print("DETECTED(Stim -> Other)" + _Target->GetName(), FColor::Red, 10.f);
-	}
-	
+	// 자극의 근원지를 추적할 수 없음
+	if (!_Target) return;
 	
 	if (!m_OwnerZombie)
 	{
@@ -121,54 +114,59 @@ void AC_ZombieController::OnTargetUpdated(AActor* _Target, FAIStimulus _Stimulus
 		return;
 	}
 	
-	
 	// 감지대상의 우호관계 가져오기
 	ETeamAttitude::Type type = m_OwnerZombie->GetTeamAttitudeTowards(*_Target);
 
-	// 감지 대상이 적(플레이어)이라면
-	if (ETeamAttitude::Hostile == type)
+	// 감지 대상이 적대관계인 경우만 처리
+	if (type != ETeamAttitude::Hostile) return;
+	
+	// PointTower인 경우, 현재 공격 가능한 PointTower인지에 따라 넘어갈 처리 넘어갈 것
+	AC_PointTower* PointTower = Cast<AC_PointTower>(_Target);
+	if (PointTower)
 	{
-		// 이미 감지됐던 타겟인지 확인
-		FSensedTargetInfo* pInfo = FindSensedTarget(_Target);
-
-		// 없다면 목록에 추가
-		if (nullptr == pInfo)
-		{
-			pInfo = &AddSensedTarget(_Target);
-		}
-
-		pInfo->bSensed = _Stimulus.WasSuccessfullySensed();
-
-		// 인지범위에서 벗어난 경우
-		if (false == pInfo->bSensed)
-		{
-			// 놓친 위치 저장
-			pInfo->LosePos = _Stimulus.StimulusLocation;
-
-			// 놓쳤을 때 시간 저장
-			pInfo->LoseTime = GetWorld()->GetTimeSeconds();
-		}
-
-		// 인지정보가 어떤 감각으로 발생한 정보인지 구별
-		static FAISenseID SightID = UAISense::GetSenseID<UAISense_Sight>();
-		static FAISenseID DmgID = UAISense::GetSenseID<UAISense_Damage>();
-		// static FAISenseID HearingID = UAISense::GetSenseID<UAISense_Hearing>();
-
-		if (_Stimulus.Type == SightID)
-		{
-			if (pInfo->bSensed)
-				pInfo->AggroValue += 10.f;
-		}
-		else if (_Stimulus.Type == DmgID)
-		{
-			PRINT_LOCAL(GetWorld(), "DAMAGE SENSED RECEIVED CALCULATING AGGROVALUE", FColor::Red, 10.f);
-			pInfo->AggroValue += 20.f;
-		}
-		/*else // Not in used (Hearing 자극은 판단 x)
-		{
-			pInfo->AggroValue += 15.f;
-		}*/
+		// 공격 불가능한 거점 타워인 경우
+		if (!PointTower->CanCurrentlyAttackedByZombie()) return;
 	}
+	
+	// 이미 감지됐던 타겟인지 확인
+	FSensedTargetInfo* pInfo = FindSensedTarget(_Target);
+	if (!pInfo)
+	{
+		pInfo = &AddSensedTarget(_Target); // 없다면 목록에 추가
+		if (PointTower)
+		{
+			PointTower->m_OnCurPointTowerSequenceOver.AddUObject
+			(
+				this,
+				&AC_ZombieController::OnCurPointSeqOver,
+				pInfo // Payload -> 구독을 걸어둘 Info 정보를 Payload로 Delegate 구독자에게 알려놓음
+			);
+		}
+	}
+
+	// 감지 여부를 기록한다
+	pInfo->bSensed = _Stimulus.WasSuccessfullySensed();
+
+	/* 인지범위에서 벗어난 경우 */
+	if (!pInfo->bSensed)
+	{
+		pInfo->LosePos  = _Stimulus.StimulusLocation;	// 놓친 위치 저장
+		pInfo->LoseTime = GetWorld()->GetTimeSeconds(); // 놓쳤을 때 시간 저장
+		return;
+	}
+
+	/* 인지범위에 잡힌 경우 */
+	
+	// 인지정보가 어떤 감각으로 발생한 정보인지 구별
+	static FAISenseID SightID = UAISense::GetSenseID<UAISense_Sight>();
+	static FAISenseID DmgID   = UAISense::GetSenseID<UAISense_Damage>();
+	// static FAISenseID HearingID = UAISense::GetSenseID<UAISense_Hearing>();
+
+	if (_Stimulus.Type == SightID)
+	{
+		if (pInfo->bSensed) pInfo->AggroValue += 10.f; // 이 Target에 대한 어그로수치 10점 추가
+	}
+	else if (_Stimulus.Type == DmgID) pInfo->AggroValue += 20.f;
 }
 
 void AC_ZombieController::BeginPlay()
@@ -248,6 +246,10 @@ void AC_ZombieController::ClearSensedTarget(float _LimitTime)
 
 		if (bRemove)
 		{
+			// 제거대상이 PointTower인 경우, Delegate 구독 취소
+			if (AC_PointTower* PointTower = Cast<AC_PointTower>(iter->Target))
+				PointTower->m_OnCurPointTowerSequenceOver.RemoveAll(this);
+			
 			// iter 가 가리키는 대상을 삭제하고, 하나 이전을 가리킨다
 			iter.RemoveCurrent();
 		}
@@ -273,4 +275,10 @@ bool AC_ZombieController::IsCurrentlyOnSight(AActor* _TargetActor) const
 		}
 	
 	return false;
+}
+
+void AC_ZombieController::OnCurPointSeqOver(FSensedTargetInfo* _TargetInfo)
+{
+	// SensedTarget 컨테이너에서 해당 Info 제거 처리
+	m_SensedTargets.Remove(*_TargetInfo);
 }

@@ -31,6 +31,13 @@ public:
 	// 인지를 놓친 시간
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	float					LoseTime{};
+	
+public:
+	
+	bool operator==(const FSensedTargetInfo& Other) const
+	{
+		return Target == Other.Target;
+	}
 };
 
 UCLASS()
@@ -115,6 +122,13 @@ public:
 	/// <param name="_TargetActor"> 검사해 볼 Actor </param>
 	/// <returns> : 시야에 들어와 있는 상황(SightConfig에 잡힌 보이는 상황) 이면 return true </returns>
 	bool IsCurrentlyOnSight(AActor* _TargetActor) const;
+
+private:
+	
+	/// <summary>
+	/// m_SensedTargets에 들어가 있던 SensedInfo가 PointTower였을 때, 현재 Point sequence가 비활성화 되었을 때 호출될 함수
+	/// </summary>
+	void OnCurPointSeqOver(FSensedTargetInfo* _TargetInfo);
 	
 public:
 	AC_ZombieController();

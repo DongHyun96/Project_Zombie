@@ -43,6 +43,10 @@ public:
 	/// <returns> : 제대로 등록 처리되었다면 return true </returns>
 	bool RegisterPointTower(class AC_PointTower* _PointTower);
 
+	uint8 GetCurrentSequenceIdx() const { return m_CurrentSequenceIndex; }
+	
+	const TSet<AC_PointTower*>& GetCurPointTowers() const { return m_PointTowers[m_CurrentSequenceIndex]; }
+	
 public:
 	
 	/// <summary>

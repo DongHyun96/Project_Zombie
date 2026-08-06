@@ -9,6 +9,10 @@
 #include "UI/MainHUD/CompassBarWidget/CompassMarkerWidget/C_CompassMarkerWidget.h"
 #include "C_PointTower.generated.h"
 
+
+// Enemy에 의해 감지된 경우, 현재 Sequence가 끝날 때 EController SensedContainer에서 일괄 삭제하기 위한 Delegate
+DECLARE_MULTICAST_DELEGATE(FOnCurPointTowerSequenceOver);
+
 UENUM(BlueprintType)
 enum class EPointTowerState : uint8
 {
@@ -47,6 +51,11 @@ public:
 
 	void SetPointTowerState(EPointTowerState _PointTowerState);
 	EPointTowerState GetPointTowerState() const { return m_State; }
+
+	/// <summary>
+	/// 현재 라운드 및, 다중  
+	/// </summary>
+	bool CanCurrentlyAttackedByZombie();
 	
 	void TestFunction();
 	void TestFunction2();
@@ -230,5 +239,9 @@ private:
 private: /* Enemy AI 인지 관련 TeamAgent 등 */
 	
 	FGenericTeamId m_TeamId{};
+	
+public:
+	
+	FOnCurPointTowerSequenceOver m_OnCurPointTowerSequenceOver{};
 	
 };

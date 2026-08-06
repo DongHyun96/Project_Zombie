@@ -6,9 +6,13 @@
 #include "Actor/Character/NPC/Enemy/Zombie/C_Zombie.h"
 #include "Actor/Character/NPC/Enemy/Zombie/Controller/C_ZombieController.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
+#include "Actor/PointTower/C_PointTower.h"
 
 #include "BehaviorTree/BlackboardComponent.h"
+#include "GameModeAndManager/C_GameMode_GameLv.h"
 #include "GameModeAndManager/GameLevelmanager/C_GameLevelManager.h"
+#include "GameModeAndManager/PointTowerManager/C_PointTowerManager.h"
+#include "Kismet/GameplayStatics.h"
 
 UC_Serv_SelectTarget::UC_Serv_SelectTarget()
 {
@@ -77,7 +81,8 @@ void UC_Serv_SelectTarget::TickNode(UBehaviorTreeComponent& _OwnCom, uint8* _Nod
 		return;
 	}
 
-	/*// BestTarget이 나오지 않은 상황 -> 가장 가까운 플레이어를 찾는다 ( TODO : 추후 거점 Actor 까지 포함해서 따질 것)
+	// BestTarget이 나오지 않은 상황
+	//  -> 가장 가까운 플레이어 또는 거점을 찾는다
 	float MinDist = FLT_MAX;
 
 	if (!m_GameLevelManager)
@@ -98,10 +103,15 @@ void UC_Serv_SelectTarget::TickNode(UBehaviorTreeComponent& _OwnCom, uint8* _Nod
 			pBestTarget = pPlayer;
 		}
 	}
+	
+	for (AC_PointTower* PointTower : POINT_TOWER_MANAGER(pZombie)->GetCurPointTowers())
+	{
+		
+	}
 
 	// 가장 가까운 플레이어를 블랙보드에 타겟으로 설정
 	UBlackboardComponent* pBBCom = _OwnCom.GetBlackboardComponent();
 	if (!pBBCom) return;
 	
-	pBBCom->SetValueAsObject(m_Target.SelectedKeyName, pBestTarget);*/
+	pBBCom->SetValueAsObject(m_Target.SelectedKeyName, pBestTarget);
 }
