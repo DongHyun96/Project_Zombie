@@ -29,10 +29,11 @@
 #include "GameModeAndManager/PointTowerManager/C_PointTowerManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Utility/C_Util.h"
+#include "WorldPartition/HLOD/HLODRuntimeSubsystem.h"
 
 AC_ZombieController::AC_ZombieController()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 	
 	// 인지기능 컴포넌트 생성 및 Controller에 등록 
 	m_PerceptionComponent = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("PerceptionComp"));
@@ -113,6 +114,8 @@ void AC_ZombieController::OnTargetUpdated(AActor* _Target, FAIStimulus _Stimulus
 		UC_Util::Print("[AC_ZombieController::OnTargetDetected] : m_OwnerZombie nullptr", FColor::Red, 10.f);
 		return;
 	}
+
+	UC_Util::Print("OnTargetUpdated", FColor::Cyan, 10.f);
 	
 	// 감지대상의 우호관계 가져오기
 	ETeamAttitude::Type type = m_OwnerZombie->GetTeamAttitudeTowards(*_Target);
@@ -120,13 +123,9 @@ void AC_ZombieController::OnTargetUpdated(AActor* _Target, FAIStimulus _Stimulus
 	// 감지 대상이 적대관계인 경우만 처리
 	if (type != ETeamAttitude::Hostile) return;
 	
-	// PointTower인 경우, 현재 공격 가능한 PointTower인지에 따라 넘어갈 처리 넘어갈 것
+	// PointTower인 경우, 현재 SensedInfo로 넣을 수 있는 상태인지 체크 -> 빼버리는건 Delegate 호출에 의해 알아서 처리가 됨
 	AC_PointTower* PointTower = Cast<AC_PointTower>(_Target);
-	if (PointTower)
-	{
-		// 공격 불가능한 거점 타워인 경우
-		if (!PointTower->CanCurrentlyAttackedByZombie()) return;
-	}
+	if (PointTower && !PointTower->CanBeInsertedToSensedTarget()) return;
 	
 	// 이미 감지됐던 타겟인지 확인
 	FSensedTargetInfo* pInfo = FindSensedTarget(_Target);
@@ -180,6 +179,8 @@ void AC_ZombieController::BeginPlay()
 void AC_ZombieController::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+
+	DrawDebugSightRange();
 	
 	/*TArray<AActor*> Actors;
 
@@ -199,7 +200,7 @@ void AC_ZombieController::Tick(float DeltaSeconds)
 
 FSensedTargetInfo& AC_ZombieController::AddSensedTarget(AActor* _Target)
 {
-	FSensedTargetInfo info;
+	FSensedTargetInfo info{};
 
 	info.Target = _Target;
 
@@ -256,6 +257,18 @@ void AC_ZombieController::ClearSensedTarget(float _LimitTime)
 	}
 }
 
+void AC_ZombieController::ClearAllSensedTarget()
+{
+	// 모든 SensedTarget을 지우기 이전 PointTower Target의 경우, Delegate 구독 해지 처리를 해준다
+	for (const FSensedTargetInfo& _Info : m_SensedTargets)
+	{
+		if (AC_PointTower* PointTower = Cast<AC_PointTower>( _Info.Target))
+			PointTower->m_OnCurPointTowerSequenceOver.RemoveAll(this);
+	}
+	
+	m_SensedTargets.Empty();
+}
+
 AActor* AC_ZombieController::GetCurrentBBTarget() const
 {
 	return Blackboard ? Cast<AActor>(Blackboard->GetValueAsObject(TEXT("Target"))) : nullptr;
@@ -279,6 +292,43 @@ bool AC_ZombieController::IsCurrentlyOnSight(AActor* _TargetActor) const
 
 void AC_ZombieController::OnCurPointSeqOver(FSensedTargetInfo* _TargetInfo)
 {
-	// SensedTarget 컨테이너에서 해당 Info 제거 처리
-	m_SensedTargets.Remove(*_TargetInfo);
+	if (!_TargetInfo) return;
+
+	const int32 Index = _TargetInfo - m_SensedTargets.GetData();
+
+	if (m_SensedTargets.IsValidIndex(Index))
+		m_SensedTargets.RemoveAt(Index);
+}
+
+void AC_ZombieController::DrawDebugSightRange()
+{
+	FVector Center = GetPawn()->GetActorLocation();
+
+	DrawDebugCircle
+	(
+		GetWorld(),
+		Center,
+		m_SightConfig->SightRadius,
+		300,
+		FColor::Green,
+		false,
+		-1.f, 0, 0,
+		GetPawn()->GetActorRightVector(),
+		GetPawn()->GetActorForwardVector()
+	);
+
+	/*Center.Z += 1.f;
+
+	DrawDebugCircle
+	(
+		GetWorld(),
+		Center,
+		BehaviorRange,
+		300,
+		FColor::Red,
+		false,
+		-1.f, 0, 0,
+		GetPawn()->GetActorRightVector(),
+		GetPawn()->GetActorForwardVector()
+	);*/
 }

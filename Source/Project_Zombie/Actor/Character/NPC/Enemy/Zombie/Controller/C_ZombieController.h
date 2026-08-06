@@ -72,7 +72,7 @@ protected:
 
 	// 감지된 타겟들
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
-	TArray<FSensedTargetInfo>		m_SensedTargets{};
+	TArray<FSensedTargetInfo>			m_SensedTargets{};
 
 private:
 
@@ -91,6 +91,11 @@ public:
 	FSensedTargetInfo& AddSensedTarget(AActor* _Target);
 	FSensedTargetInfo* FindSensedTarget(const AActor* _Target);
 	void ClearSensedTarget(float _LimitTime);
+
+	/// <summary>
+	/// 모든 SensedTarget 날리기 (Pool에 돌아갈 때 호출처리할 것)
+	/// </summary>
+	void ClearAllSensedTarget();
 
 	/// <summary>
 	/// 현재 BB에 세팅된 Target Get
@@ -129,6 +134,10 @@ private:
 	/// m_SensedTargets에 들어가 있던 SensedInfo가 PointTower였을 때, 현재 Point sequence가 비활성화 되었을 때 호출될 함수
 	/// </summary>
 	void OnCurPointSeqOver(FSensedTargetInfo* _TargetInfo);
+
+private:
+	
+	void DrawDebugSightRange();
 	
 public:
 	AC_ZombieController();

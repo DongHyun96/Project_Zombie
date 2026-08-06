@@ -56,6 +56,11 @@ public:
 	/// 현재 라운드 및, 다중  
 	/// </summary>
 	bool CanCurrentlyAttackedByZombie();
+
+	/// <summary>
+	/// SensedTarget에 삽입가능한 상황인지 체크 
+	/// </summary>
+	bool CanBeInsertedToSensedTarget();
 	
 	void TestFunction();
 	void TestFunction2();

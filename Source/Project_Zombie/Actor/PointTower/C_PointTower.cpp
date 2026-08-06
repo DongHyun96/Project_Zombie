@@ -182,11 +182,21 @@ void AC_PointTower::SetPointTowerState(EPointTowerState _PointTowerState)
 
 bool AC_PointTower::CanCurrentlyAttackedByZombie()
 {
-	UC_PointTowerManager* PointTowerManager = POINT_TOWER_MANAGER(this);
-	if (!PointTowerManager) return false; // 아직 게임 시작도 전에 물어본 상황 (또는 Client 환경에서 물어본 상황)
-	
 	if (m_State == EPointTowerState::Waiting) return false;
-	if (PointTowerManager->GetCurrentSequenceIdx() != m_ActivateSequenceIdx) return false; // 현재 활성화된 sequence가 아님
+	
+	// 현재 활성화된 시퀀스의 PointTower일 경우에만 공격 가능
+	return POINT_TOWER_MANAGER(this)->GetCurrentSequenceIdx() == m_ActivateSequenceIdx;  
+}
+
+bool AC_PointTower::CanBeInsertedToSensedTarget()
+{
+	UC_PointTowerManager* PointTowerManager = POINT_TOWER_MANAGER(this);
+	if (!PointTowerManager) return false; // 아직 게임 시작도 전에 물어본 상황 (또는 Client 환경에서 물어본 상황)	
+
+	// 이미 이전 라운드에 해당되는 PointTower인 경우
+	if (m_ActivateSequenceIdx < PointTowerManager->GetCurrentSequenceIdx()) return false;
+
+	// 이번 라운드 또는, 다음 라운드에 활성화될 거점인 경우 -> SensedInfo로 들어갈 수 있는 상황
 	return true;
 }
 
