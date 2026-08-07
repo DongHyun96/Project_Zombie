@@ -134,6 +134,24 @@ void UC_InventoryWidget::ClosePlayerStatUpgradeWidget()
 
 void UC_InventoryWidget::SetVisibility(ESlateVisibility InVisibility)
 {
+	bool bIsDragging = FSlateApplication::Get().IsDragDropping();
+	
+	if (bIsDragging)
+	{
+		// TODO : 현재 드래그 중인 상태일 때의 처리
+		AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(GetOwningPlayerPawn());
+		if (Player)
+		{
+			AC_BasicPlayerController* PC = Cast<AC_BasicPlayerController>(Player->GetController());
+		
+			if (PC)
+			{
+				FSlateApplication::Get().CancelDragDrop();
+				Player->Server_CancelDragItemSlot(PC->Server_ActiveDraggedSlotIndex, PC->Server_ActiveDraggedInven);
+			}
+		}
+	}
+	
 	Super::SetVisibility(InVisibility);
 	
 	if (InVisibility == ESlateVisibility::Visible)
