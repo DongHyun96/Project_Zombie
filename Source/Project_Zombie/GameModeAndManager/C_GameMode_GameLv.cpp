@@ -1,12 +1,13 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "C_GameMode_GameLv.h"
 
-#include "C_ZombieManager.h"
 #include "Actor/Components/C_InvenComponent.h"
 #include "PlayerState/C_PlayerState.h"
 #include "PointTowerManager/C_PointTowerManager.h"
+#include "Actor/Character/NPC/Enemy/Zombie/Spawn/C_SpawnArea.h"
+#include "Kismet/GameplayStatics.h"
 #include "Utility/C_Util.h"
 
 AC_GameMode_GameLv::AC_GameMode_GameLv()
@@ -28,6 +29,41 @@ void AC_GameMode_GameLv::BeginPlay()
 
 	if (m_ZombieManager) m_ZombieManager->OnWorldBeginPlay();
 	
+	// 스폰 테스트
+	if (m_ZombieManager)
+	{
+		TArray<AActor*> FoundActors;
+
+		// 맵에 배치된 모든 SpawnArea 검색
+		UGameplayStatics::GetAllActorsOfClass(
+			GetWorld(),
+			AC_SpawnArea::StaticClass(),
+			FoundActors);
+
+		TArray<AC_SpawnArea*> SpawnAreas;
+
+		for (AActor* Actor : FoundActors)
+		{
+			if (AC_SpawnArea* SpawnArea =
+				Cast<AC_SpawnArea>(Actor))
+			{
+				SpawnAreas.Add(SpawnArea);
+			}
+		}
+
+		// 지속 스폰 시작
+		if (!m_ZombieManager->StartSpawnLoop(
+			SpawnAreas,
+			m_TestWaveSetting))
+		{
+			UC_Util::Print(
+				"StartSpawnLoop Failed !!",
+				FColor::Red,
+				10.f);
+		}
+	}
+
+
 	m_PointTowerManager = NewObject<UC_PointTowerManager>(this);
 	m_PointTowerManager->OnWorldBeginPlay();
 }	

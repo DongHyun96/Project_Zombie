@@ -6,7 +6,57 @@
 #include "UObject/Object.h"
 #include "C_ZombieManager.generated.h"
 
+class AC_SpawnArea;
 enum class EZombieType : uint8;
+
+USTRUCT(BlueprintType)
+struct FZombieTypeSpawnSetting
+{
+	GENERATED_BODY()
+
+public:
+	// 스폰할 좀비 타입
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	EZombieType ZombieType;
+
+	// 다른 타입과 비교한 스폰 선택 가중치
+	// 숫자가 높을수록 선택될 가능성이 높음
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0.0"))
+	float SpawnWeight = 1.f;
+
+	// 해당 타입 스폰 쿨타임
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0.0"))
+	float SpawnCoolDown = 0.f;
+
+	// 해당 타입이 필드에 동시에 존재할 수 있는 최대 수
+	// 0이면 타입별 제한 x
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0"))
+	int32 MaxActiveCount = 0;
+};
+
+USTRUCT(BlueprintType)
+struct FZombieWaveSetting
+{
+	GENERATED_BODY()
+
+public:
+	// 좀비 스폰 시도 간격
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0.1"))
+	float SpawnInterval = 2.f;
+
+	// 한번에 Spawn Tick에서 꺼낼 좀비 수 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "1"))
+	int32 SpawnCountPerTick = 1;
+
+	// 동시에 필드에 존재할 수 있는 최대 좀비 수
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "1"))
+	int32 MaxActiveZombieCount = 5;
+
+	// 웨이브에서 등장 가능한 타입별 설정
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TArray<FZombieTypeSpawnSetting> ZombieTypeSetting;
+};
+
 /**
  * Zombie 스폰 및 Zombie 객체 Holder (서버 쪽에서만 유효, 애초에 스폰과 풀로 돌아가는 처리는 서버 쪽 기반에서 판단을 함)
  * Zombie가 날리는 Projectile도 마찬가지
@@ -52,6 +102,13 @@ public: /* Spawn 관련 함수들 */
 	const TSet<AC_NurseZombie*>& GetActiveNurseZombies() const { return m_ActiveNurseZombies; }
 	
 	/// <summary>
+	/// 게임 시작 시 설정된 좀비 타입, 수량만큼 미리 생성하여
+	/// 비활성 초기 풀 구성
+	/// 서버에서만 실행
+	/// </summary>
+	void InitializeZombiePool();
+
+	/// <summary>
 	/// 죽음 처리가 끝난 Zombie를 대기 Pool로 반환
 	/// </summary>
 	/// <param name="_Zombie"> : Pool로 반환할 Zombie </param>
@@ -62,25 +119,92 @@ public: /* Spawn 관련 함수들 */
 	/// 지정한 타입의 좀비를 풀에서 꺼내
 	/// 전달받은 위치에서 스폰
 	/// </summary>
-	/// <param name="_ZombieType"></param>
-	/// <param name="_SpawnTransform"></param>
-	/// <returns>
+	/// <param name="_ZombieType">
 	/// 활성화된 좀비
+	/// </param>
+	/// <param name="_SpawnTransform">
+	/// 스폰 위치
+	/// </param>
+	/// <returns>
 	/// 실패하면 nullptr
 	/// </returns>
 	AC_Zombie* SpawnZombieFromPool(EZombieType _ZombieType, const FTransform& _SpawnTransform);
+
+	/// <summary>
+	/// 현재 거점 웨이브 좀비 스폰 루프 시작
+	/// </summary>
+	/// <param name="_SpawnArea">
+	/// 이번 웨이브에서 사용할 SpawnArea 목록
+	/// </param>
+	/// <param name="_Settings"></param>
+	/// 스폰간격, 최대 활성 수 등,, 웨이브 설정
+	/// <returns></returns>
+	bool StartSpawnLoop(const TArray<AC_SpawnArea*>& _SpawnArea, const FZombieWaveSetting& _Settings);
+
+	/// <summary>
+	/// 현재 진행중인 웨이브 좀비스폰 루프 중지
+	/// 이미 나와있는 좀비는 그대로 두고 신규 스폰만 중지
+	/// </summary>
+	void StopSpawnLoop();
+
+	/// <summary>
+	/// 현재 웨이브 스폰구역 중
+	/// 해당 좀비타입을 허용하는 영역 중 하나를 랜덤으로 선택
+	/// </summary>
+	/// <returns> 사용 가능한 스폰 구역이 없으면 nullptr </returns>
+	AC_SpawnArea* SelectSpawnAreaForZombieType(EZombieType _ZombieType) const;
+
+	/// <summary>
+	/// 지정된 SpawnArea에서 안전한 위치를 찾아
+	/// 지정된 타입의 좀비를 Pool에서 활성화
+	/// </summary>
+	/// <returns></returns>
+	bool TrySpawnZombieFromArea(EZombieType _ZombieType, AC_SpawnArea* _SpawnArea);
+
+protected:
+	/// <summary>
+	/// SpawnInterval마다 호출
+	/// 실제 좀비 스폰 시도
+	/// </summary>
+	void HandleSpawnLoopTick();
+
+	/// <summary>
+	/// 여러가지 상황을 다 검사해서
+	/// 해당 좀비 타입이 지금 스폰 가능한지 반환
+	/// </summary>
+	bool CanSpawnZombieType(const FZombieTypeSpawnSetting& _Setting) const;
+
+	/// <summary>
+	/// 현재 스폰 가능한 좀비 타입 중
+	/// 스폰 가중치를 기준으로 하나 선택
+	/// </summary>
+	/// <returns>
+	/// 성공시 Setting 주소,
+	/// 후보가 없으면 nullptr
+	/// </returns>
+	const FZombieTypeSpawnSetting* SelectZombieTypeToSpawn() const;
+
+	/// <summary>
+	/// 타입이 실제 스폰에 성공 시 다음 스폰 시간을 기록
+	/// </summary>
+	void StartZombieSpawnCooldown(const FZombieTypeSpawnSetting& _Setting);
+
+	/// <summary>
+	/// 현재 필드에 활성화 된 전체 좀비수를 반환
+	/// </summary>
+	/// <returns></returns>
+	int32 GetActiveZombieCount() const;
+
+	/// <summary>
+	/// 현재 필드에 활성화 된 특정 타입의 좀비 수 반환
+	/// </summary>
+	int32 GetActiveZombieCount(EZombieType _ZombieType) const;
 
 
 public: /* For testing TODO : 이 Block 밑 지울 함수들 모두 지워버릴 것 */
 
 	// TODO : 이 함수 테스트 때문에 넣어둠 지워버릴 것
 	void AddNurseZombieToActivePool(AC_NurseZombie* _NurseZombie) { m_ActiveNurseZombies.Add(_NurseZombie); } 
-	
-	/// <summary>
-	/// 테스트함수
-	/// </summary>
-	/// <returns></returns>
-	bool TestSpawnNormalZombie();
 
 	
 protected: /* 좀비 스폰 기반 클래스 정보 및 PoolCount 정보 -> TODO : ZombieManager 블루프린트에 해당값 초기화시킬 것 */
@@ -100,6 +224,27 @@ private:
 
 	// 현재 필드에 활성화 된 좀비 목록
 	TMap<EZombieType, TSet<AC_Zombie*>> m_ActiveZombies;
+
+
+protected: /* Wave Spawn 관련 */
+
+	// 현재 Spawnloop가 진행중인지
+	bool m_bSpawnLoopActive = false;
+
+	// 현재 진행중인 스폰 설정
+	FZombieWaveSetting m_CurrentWaveSetting;
+
+	// 현재 웨이브에서 사용할 SpawnArea 목록
+	UPROPERTY()
+	TArray<TObjectPtr<class AC_SpawnArea>>
+		m_CurrentSpawnAreas;
+
+	// 정해진 간격마다 Spawn을 실행할 타이머
+	FTimerHandle m_SpawnLoopTimer;
+
+	// 각 ZombieType이 다시 스폰 가능해지는 시간
+	// 쿨타임 이후 스폰 가능해지는 시간
+	TMap<EZombieType, float> m_NextZombieSpawnTime;
 
 	
 protected: /* Healer 좀비 관련 */
