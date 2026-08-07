@@ -13,13 +13,13 @@ UC_FeetComponent::UC_FeetComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 	
-	m_LeftFootSocketName = FName(TEXT("foot_l"));
-	m_RightFootSocketName = FName(TEXT("foot_r"));
+	m_LeftFootSocketName = FName(TEXT("left_foot"));
+	m_RightFootSocketName = FName(TEXT("right_foot"));
 
 	m_LocalVolume = 1.f;
 	m_RemoteVolume = 0.6f;
 
-	m_CrouchPitch = 0.8f;
+	m_CrouchPitch = 0.4f;
 
 	m_FootstepAttenuation = nullptr;
 	m_FootstepConcurrency = nullptr;
