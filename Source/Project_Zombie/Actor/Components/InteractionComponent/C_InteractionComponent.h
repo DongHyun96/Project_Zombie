@@ -101,6 +101,9 @@ public:
 
 	
 	bool GetbUseTimer() {return bUseTimer;}
+	
+	UFUNCTION(BlueprintCallable)
+	UC_InteractionStrategyBase* GetInteractionStrategy() { return m_InteractionStrategyObject; }
 public:
 
 	/// <summary>
