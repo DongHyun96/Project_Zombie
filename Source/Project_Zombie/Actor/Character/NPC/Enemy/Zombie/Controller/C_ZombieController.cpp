@@ -33,7 +33,7 @@
 
 AC_ZombieController::AC_ZombieController()
 {
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 	
 	// 인지기능 컴포넌트 생성 및 Controller에 등록 
 	m_PerceptionComponent = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("PerceptionComp"));
@@ -179,7 +179,7 @@ void AC_ZombieController::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	DrawDebugSightRange();
+	// DrawDebugSightRange();
 	
 	/*TArray<AActor*> Actors;
 

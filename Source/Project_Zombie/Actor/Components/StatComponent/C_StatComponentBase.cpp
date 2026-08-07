@@ -10,6 +10,7 @@
 #include "UI/MainHUD/C_GameMainHUD.h"
 #include "Utility/C_Util.h"
 #include "GlobalData.h"
+#include "Actor/Character/Player/C_BasicPlayer.h"
 
 
 UC_StatComponentBase::UC_StatComponentBase()
@@ -432,7 +433,10 @@ bool UC_StatComponentBase::Local_DecreaseCurHP(float _DecreaseAmount)
 	if (_DecreaseAmount < 0.f) return false;
 
 	float* pCurHP = m_Stats.Find(StatName::CurHP);
-	*pCurHP       = FMath::Max(1.f, *pCurHP - _DecreaseAmount); // TODO : 다시 0.f로 수정할 것
+	
+	if (Cast<AC_BasicPlayer>(m_OwnerCharacter))
+		*pCurHP = FMath::Max(1.f, *pCurHP - _DecreaseAmount); // TODO : 다시 0.f로 수정할 것
+	else *pCurHP = FMath::Max(0.f, *pCurHP - _DecreaseAmount); // TODO : 다시 0.f로 수정할 것
 
 	// CurHP 0을 찍었으면 Delegate 호출 처리
 	if (*pCurHP == 0.f) OnCurHPReachedZeroDelegate.Broadcast(m_OwnerCharacter);
