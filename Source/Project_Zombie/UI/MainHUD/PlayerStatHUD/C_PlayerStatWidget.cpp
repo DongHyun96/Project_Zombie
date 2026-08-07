@@ -45,6 +45,26 @@ void UC_PlayerStatWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaT
 	LerpProgressBar(BoostBar, 12.f, m_BoostBarPercentLerpDest, InDeltaTime);
 }
 
+void UC_PlayerStatWidget::ToggleBoostBarColor(bool BoostExhausted)
+{
+	if (BoostExhausted)
+	{
+		FProgressBarStyle CurrentStyle = BoostBar->WidgetStyle;
+
+		CurrentStyle.FillImage.TintColor = FSlateColor(FLinearColor(1, 0.02, 0, 1));
+
+		BoostBar->SetWidgetStyle(CurrentStyle);
+	}
+	else
+	{
+		FProgressBarStyle CurrentStyle = BoostBar->WidgetStyle;
+
+		CurrentStyle.FillImage.TintColor = FSlateColor(FLinearColor(1, 0.534041, 0, 1));
+
+		BoostBar->SetWidgetStyle(CurrentStyle);
+	}
+}
+
 bool UC_PlayerStatWidget::UpdateHPBar(float _HP, float _MaxHP)
 {
 	// 0 나누기	방어 및 MaxHP 값보다 현재 체력이 크다고 Input이 들어온 상황
