@@ -3,13 +3,16 @@
 
 #include "C_PointTower.h"
 
+#include "C_PointTowerElectroEffect.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
+#include "Actor/Components/StatComponent/C_StatComponentBase.h"
 #include "Actor/Ping/C_WorldPingActor.h"
 #include "Components/SphereComponent.h"
 #include "GameModeAndManager/C_GameMode_GameLv.h"
 #include "GameModeAndManager/C_UIManager.h"
 #include "GameModeAndManager/PointTowerManager/C_PointTowerManager.h"
 #include "Kismet/GameplayStatics.h"
+#include "Net/UnrealNetwork.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
 #include "UI/MainHUD/CompassBarWidget/C_CompassBarWidget.h"
 
@@ -88,6 +91,14 @@ void AC_PointTower::BeginPlay()
 	{
 		m_InteractionTestingCollider->OnComponentBeginOverlap.AddDynamic(this, &AC_PointTower::OnInteractionColliderBeginOverlap);
 		m_InteractionTestingCollider->OnComponentEndOverlap.AddDynamic(this, &AC_PointTower::OnInteractionColliderEndOverlap);
+	}
+
+	if (HasAuthority() && m_PointTowerElectroEffectClass)
+	{
+		FActorSpawnParameters Param{};
+		Param.Owner = this;
+		m_PointTowerInteractEffect = GetWorld()->SpawnActor<AC_PointTowerElectroEffect>(m_PointTowerElectroEffectClass, Param);
+		if (m_PointTowerInteractEffect) m_PointTowerInteractEffect->SetActorLocation(m_StaticMeshComGenerator->GetComponentLocation());
 	}
 	
 	// For Testing
@@ -185,7 +196,8 @@ void AC_PointTower::SetPointTowerState(EPointTowerState _PointTowerState)
 		Multicast_Conquered();
 		m_InteractionTestingCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		m_ConquerTestAreaEnteredPlayers.Empty();
-		m_ConqueringPlayer = nullptr; // 마지막으로 거점 활성화 처리를 했었던 Player의 도트데미지 제거하는 알림을 Client_~ 뭐시기로 쏠 것
+		
+		SetConqueringPlayer(nullptr);
 	}
 }
 
@@ -211,7 +223,7 @@ bool AC_PointTower::CanBeInsertedToSensedTarget()
 
 void AC_PointTower::TestFunction()
 {
-	SetPointTowerState(EPointTowerState::Active);
+	// SetPointTowerState(EPointTowerState::Active);
 }
 
 void AC_PointTower::TestFunction2()
@@ -281,7 +293,10 @@ void AC_PointTower::OnInteractionColliderBeginOverlap
 	AC_BasicPlayer* EnteredPlayer = Cast<AC_BasicPlayer>(OtherActor);
 	if (!EnteredPlayer) return;
 
-	if (!m_ConqueringPlayer) m_ConqueringPlayer = EnteredPlayer; // 가장 먼저 들어온 Player의 경우, 해당 Player를 ConqueringPlayer로 등록 -> TODO : 이 친구 도트데미지 처리해 줄 것
+	if (!m_ConqueringPlayer)
+	{
+		SetConqueringPlayer(EnteredPlayer);
+	}
 	
 	// 이 Area안에 들어온 모든 Player를 일단 저장해둠 (추후 후보군을 두기 위함)
 	m_ConquerTestAreaEnteredPlayers.Add(EnteredPlayer);
@@ -307,9 +322,7 @@ void AC_PointTower::OnInteractionColliderEndOverlap
 	if (ExitPlayer != m_ConqueringPlayer)  return;
 	
 	// 방금 전까지 거점 활성화 대상자가 나간 상황
-	m_ConqueringPlayer = nullptr; // TODO : 이전 대상자 도트데미지 제거해주어야 함
-	// -> TODO : Local Player에게 거점 활성화 중이 아니라고 알려주어야 함 (도트데미지 적용 효과 제거)
-	// Client_~~~ 로 알려주기
+	SetConqueringPlayer(nullptr);
 	
 	// 아직 나가지 않은 거점 점령 대상 후보군 중 가장 가까운 후보군으로 다음 거점 점령자 등록
 	float MinDistSqr = FLT_MAX;
@@ -326,7 +339,7 @@ void AC_PointTower::OnInteractionColliderEndOverlap
 	}
 	
 	// 가장 가까운 플레이어를 다음 점령자로 등록
-	m_ConqueringPlayer = PickedPlayer;
+	SetConqueringPlayer(PickedPlayer);
 }
 
 USceneComponent* AC_PointTower::FindSceneComponentByName(const FName& _ComName)
@@ -371,6 +384,42 @@ void AC_PointTower::GetActorEyesViewPoint(FVector& OutLocation, FRotator& OutRot
 
 	// 소켓이 없는 경우 기본 C++ 구현(Actor Location) 호출
 	Super::GetActorEyesViewPoint(OutLocation, OutRotation);
+}
+
+void AC_PointTower::OnConqueringPlayerDead(AC_BasicCharacter*)
+{
+	SetConqueringPlayer(nullptr);
+}
+
+void AC_PointTower::SetConqueringPlayer(AC_BasicPlayer* InConqueringPlayer)
+{
+	if (m_ConqueringPlayer == InConqueringPlayer) return;
+
+	if (m_PointTowerInteractEffect) m_PointTowerInteractEffect->SetTargetPlayer(InConqueringPlayer);
+	
+	if (!InConqueringPlayer)
+	{
+		m_ConqueringPlayer->GetStatComponent()->OnCurHPReachedZeroDelegate.RemoveAll(this);
+		m_ConqueringPlayer->Client_NotifyConqueringPointTower(false);
+		m_ConqueringPlayer = nullptr;
+
+		// TODO : 이전 대상자 도트데미지 제거해주어야 함
+		// -> TODO : Local Player에게 거점 활성화 중이 아니라고 알려주어야 함 (도트데미지 적용 효과 제거)
+		// Client_~~~ 로 알려주기
+		
+		return;
+	}
+	
+	m_ConqueringPlayer = InConqueringPlayer;
+	m_ConqueringPlayer->GetStatComponent()->OnCurHPReachedZeroDelegate.AddUObject(this, &AC_PointTower::OnConqueringPlayerDead);
+	m_ConqueringPlayer->Client_NotifyConqueringPointTower(true);
+}
+
+void AC_PointTower::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	
+	DOREPLIFETIME(AC_PointTower, m_PointTowerInteractEffect);
 }
 
 void AC_PointTower::Multicast_Activate_Implementation()

@@ -152,6 +152,19 @@ public:
 
 
 	virtual void GetActorEyesViewPoint(FVector& OutLocation, FRotator& OutRotation) const override;
+
+private:
+
+	
+	void OnConqueringPlayerDead(class AC_BasicCharacter*);
+	
+	void SetConqueringPlayer(AC_BasicPlayer* InConqueringPlayer);
+
+public:
+	
+	UStaticMeshComponent* GetGenerator() const { return m_StaticMeshComGenerator; }
+	
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	
 protected:
 
@@ -256,6 +269,14 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	class UC_PointTowerWidget* m_PointTowerWidget{};
 	
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	TSubclassOf<class AC_PointTowerElectroEffect> m_PointTowerElectroEffectClass{};
+	
+private:
+
+	UPROPERTY(Replicated)
+	AC_PointTowerElectroEffect* m_PointTowerInteractEffect{};
 	
 private:
 	
