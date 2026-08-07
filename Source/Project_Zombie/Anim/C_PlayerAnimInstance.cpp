@@ -78,12 +78,9 @@ void UC_PlayerAnimInstance::NativeUpdateAnimation(float _DT)
 		}
 	}
 
-	FRotator TargetAimRotation = FRotator::ZeroRotator;
-
-	// 1. 내가 직접 조종하는 로컬 캐릭터인 경우 (0ms 반응속도)
 	if (m_Character->IsLocallyControlled())
 	{
-		TargetAimRotation = m_Character->GetControlRotation();
+		FRotator TargetAimRotation = m_Character->GetControlRotation();
 
 		const FRotator ActorRotation = m_Character->GetActorRotation();
 		const FRotator DeltaRotation = UKismetMathLibrary::NormalizedDeltaRotator(TargetAimRotation, ActorRotation);
@@ -91,17 +88,14 @@ void UC_PlayerAnimInstance::NativeUpdateAnimation(float _DT)
 		m_Pitch = FMath::Clamp(DeltaRotation.Pitch, -90.f, 90.f);
 		m_Yaw = FMath::Clamp(DeltaRotation.Yaw, -90.f, 90.f);
 	}
-	// 2. 남을 바라보는 경우 (서버 플레이어 포함 remote proxies)
 	else
 	{
-		// Pitch는 내장된 GetBaseAimRotation 사용
 		const FRotator BaseAimRot = m_Character->GetBaseAimRotation();
 		const FRotator ActorRotation = m_Character->GetActorRotation();
 		const FRotator DeltaRotation = UKismetMathLibrary::NormalizedDeltaRotator(BaseAimRot, ActorRotation);
 
 		m_Pitch = FMath::Clamp(DeltaRotation.Pitch, -90.f, 90.f);
 
-		// Yaw는 캐릭터에서 동기화해준 Custom ReplicatedYaw 사용
 		m_Yaw = m_Character->GetReplicatedAimYaw();
 	}
 	
