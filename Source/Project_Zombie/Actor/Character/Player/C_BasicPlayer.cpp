@@ -24,6 +24,7 @@
 #include "Actor/Components/C_BasicPlayerAimComponent.h"
 #include "Actor/Components/C_PoseColliderHandlerComponent.h"
 #include "Actor/Components/InteractionComponent/C_InteractionComponent.h"
+#include "Actor/Components/C_FeetComponent.h"
 
 #include "GameFramework/PlayerState.h"
 #include "Actor/Components/C_PlayerStatComponent.h"
@@ -136,6 +137,7 @@ AC_BasicPlayer::AC_BasicPlayer()
 
 	m_InteractionComponent = CreateDefaultSubobject<UC_InteractionComponent>(TEXT("InteractionComponent"));
 
+	m_FeetComponent = CreateDefaultSubobject<UC_FeetComponent>(TEXT("FeetComponent"));
 }
 
 
