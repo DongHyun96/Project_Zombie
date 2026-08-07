@@ -14,6 +14,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/ShapeComponent.h"
+#include "Controller/C_ZombieController.h"
 #include "Kismet/GameplayStatics.h"
 #include "Utility/C_Util.h"
 
@@ -151,6 +152,10 @@ void AC_Zombie::ApplyPoolActiveState()
 
 	// tick 비활성화
 	SetActorTickEnabled(false);
+	
+	// BrainComponent 비활성화
+	if (UBrainComponent* Brain = m_ZombieController->GetBrainComponent())
+		Brain->StopLogic(TEXT("FirstInitPooling"));
 }
 
 void AC_Zombie::OnRep_PoolActive()
