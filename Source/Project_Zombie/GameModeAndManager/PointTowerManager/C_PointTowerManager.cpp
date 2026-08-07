@@ -33,6 +33,8 @@ void UC_PointTowerManager::StartActivateCurrentPointsSequence()
 
 	for (AC_PointTower* PointTower : m_PointTowers[m_CurrentSequenceIndex])
 		PointTower->SetPointTowerState(EPointTowerState::Active);
+	
+	// -> m_CurrentSequenceIndex에 해당하는 sequence의 스폰 지점을 활성화 해야한다면 여기서 continue
 }
 
 bool UC_PointTowerManager::RegisterPointTower(AC_PointTower* _PointTower)
@@ -85,6 +87,8 @@ void UC_PointTowerManager::OnPointTowerConquered()
 		PointTower->m_OnCurPointTowerSequenceOver.Broadcast();
 		PointTower->m_OnCurPointTowerSequenceOver.Clear();
 	}
+	
+	/* TODO : 라운드 끝나고 이전 라운드에 배치되어 있는 스폰 지점 비활성화 처리할 것 */
 	
 	// 다음 라운드로 넘기기
 	++m_CurrentSequenceIndex;
