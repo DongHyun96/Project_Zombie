@@ -124,7 +124,11 @@ void AC_PointTower::Tick(float DeltaTime)
 	// 매 Tick 업데이트될 거점 게이지 정확한 퍼센티지 등은 서버 쪽에서만 처리
 	if (!HasAuthority()) return;
 	
-	if (m_State != EPointTowerState::Active) return;
+	if (m_State != EPointTowerState::Active)
+	{
+		m_DamageTimer = 0.f;
+		return;
+	}
 
 	/* 현재 거점이 열린 상태 */
 
@@ -134,7 +138,19 @@ void AC_PointTower::Tick(float DeltaTime)
 
 		m_CurConquerAmount += DeltaTime * m_IncreaseAmountPerSec;
 		
-		// TODO : 거점을 활성화하는 Player의 Damage 처리는 본인의 Local 환경에서 지속적인 도트데미지 입히기
+		m_DamageTimer += DeltaTime;
+		if (m_DamageTimer > 1.f) // 1초 간격으로 데미지 입히기
+		{
+			m_DamageTimer -= 1.f;
+			UGameplayStatics::ApplyDamage
+			(
+				m_ConqueringPlayer,
+				m_DPSWhileConquering,
+				GetController(),
+				this,
+				nullptr
+			);
+		}
 	}
 	else // Conquering interaction 하는 Player가 한 명도 없음
 	{

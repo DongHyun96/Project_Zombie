@@ -283,6 +283,8 @@ private:
 	FTimerHandle m_TestTimerHandle{};
 	FTimerHandle m_TestTimerHandle2{};
 	
+	float m_DamageTimer{}; // 1초 간격으로 Damage 입힐 것
+	
 private: /* Enemy AI 인지 관련 TeamAgent 등 */
 	
 	FGenericTeamId m_TeamId{};
