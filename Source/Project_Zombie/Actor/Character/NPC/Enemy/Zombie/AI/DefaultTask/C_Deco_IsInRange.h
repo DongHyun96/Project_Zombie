@@ -22,6 +22,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Skill")
 	ESkillSlot	m_SkillSlot{};
 	
+	UPROPERTY(EditAnywhere)
+	bool m_bSUsePointTowerRangeIfTargetIsPointTower = true;
+	
 public:
 	/// <summary>
 	/// 공격 사거리에 들어왔는지 판단하는 함수

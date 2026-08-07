@@ -43,6 +43,10 @@ public:
 	/// <returns> : 제대로 등록 처리되었다면 return true </returns>
 	bool RegisterPointTower(class AC_PointTower* _PointTower);
 
+	uint8 GetCurrentSequenceIdx() const { return m_CurrentSequenceIndex; }
+	
+	const TSet<AC_PointTower*>& GetCurPointTowers() const;
+	
 public:
 	
 	/// <summary>
@@ -57,6 +61,9 @@ private:
 	
 	// 각 Sequence 마다 활성화될 거점들 (한 Sequence 내에 여러 거점이 동시에 활성화될 수 있음)
 	TArray<TSet<class AC_PointTower*>> m_PointTowers{};
+
+	UPROPERTY()
+	TSet<AC_PointTower*> m_Dummy{};
 
 private:
 	

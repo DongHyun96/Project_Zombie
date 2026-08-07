@@ -47,9 +47,9 @@ protected: /* 공통 NormalAttack 피격판정 및 피격처리 (해당 기능�
 
 private:
 	
-	// 이미 이번 NormalAttack 휘두르기에 피격판정이 들어간 Player들
+	// 이미 이번 NormalAttack 휘두르기에 피격판정이 들어간 Player나 PointTower들
 	UPROPERTY()
-	TSet<class AC_BasicPlayer*> m_SetNormalAttackColliderEntered{};
+	TSet<AActor*> m_SetNormalAttackColliderEntered{};
 	
 protected:
 	virtual void BeginPlay() override;

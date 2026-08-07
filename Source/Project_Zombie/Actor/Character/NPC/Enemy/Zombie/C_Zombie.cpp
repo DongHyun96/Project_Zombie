@@ -7,6 +7,7 @@
 #include "../../../GlobalEnum.h"
 #include "Actor/Character/NPC/Enemy/Components/SkillComponent/C_EnemySkillComponent.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
+#include "Actor/PointTower/C_PointTower.h"
 #include "Net/UnrealNetwork.h"
 #include "AIController.h"
 #include "BrainComponent.h"
@@ -19,20 +20,19 @@
 AC_Zombie::AC_Zombie()
 	: m_ZombieType(EZombieType::NormalZombie)
 {
+	m_TeamId = static_cast<uint8>(ETeamType::Enemy);
 }
 
 AC_Zombie::AC_Zombie(EZombieType _ZombieType)
 	: m_ZombieType(_ZombieType)
 {
+	m_TeamId = static_cast<uint8>(ETeamType::Enemy);
 }
 
 void AC_Zombie::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	// 팀 설정
-	SetGenericTeamId(static_cast<uint8>(ETeamType::Enemy));
-
 	// 등록된 모든 NormalAttackCollider의 ComponentBeginOverlap 이벤트 바인딩 및 첫 시작 시, 비활성화 처리
 	for (UShapeComponent* NormalAttackCollider : m_NormalAttackColliders)
 	{
@@ -61,8 +61,6 @@ void AC_Zombie::ANS_OnNormalAttackEnd()
 {
 	if (!HasAuthority()) return;
 
-	UC_Util::Print("On ANSNormalAttack End", FColor::MakeRandomColor(), 20.f);
-	
 	m_SetNormalAttackColliderEntered.Empty();
 
 	for (UShapeComponent* AttackCollider : m_NormalAttackColliders)
@@ -81,16 +79,18 @@ void AC_Zombie::OnNormalAttackColliderBeginOverlap
 {
 	// Client 쪽은 Event 바인딩 처리 자체를 안해서 검사하지 않아도 됨
 	AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(OtherActor);
+	AC_PointTower* PointTower = Cast<AC_PointTower>(OtherActor);
+	if (!Player && !PointTower) return; // PointTower나 Player가 아닌 경우
 	
 	// 이미 이번 휘두르기에 피격처리가 한 번 들어감
 	if (m_SetNormalAttackColliderEntered.Contains(Player)) return;
 	
 	m_SetNormalAttackColliderEntered.Add(Player);
 
-	// 현재 Skill의 피격량을 구해와서, 대상 Player에게 ApplyDamage 처리
+	// 현재 Skill의 피격량을 구해와서, 대상 Target에게 ApplyDamage 처리
 	UGameplayStatics::ApplyDamage
 	(
-		Player,
+		OtherActor,
 		m_SkillCom->GetCurSkillDamage(),
 		GetController(),
 		this,

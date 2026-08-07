@@ -17,6 +17,7 @@
 #include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 #include "Item/DataAsset/C_DropTableDataAsset.h"
 #include "Kismet/GameplayStatics.h"
+#include "Perception/AISense_Damage.h"
 #include "Utility/C_Util.h"
 #include "Zombie/NurseZombie/C_NurseZombie.h"
 #include "Zombie/Controller/C_ZombieController.h"
@@ -43,6 +44,10 @@ AC_BasicEnemy::AC_BasicEnemy()
 	
 	if (HealedEffect.Succeeded())
 		m_HealedEffectNGComponent->SetAsset(HealedEffect.Object.Get());
+
+	GetCharacterMovement()->RotationRate = FRotator(0.f, 240.f, 0.f);
+	GetCharacterMovement()->bOrientRotationToMovement = true;
+	bUseControllerRotationYaw = false;
 	
 }
 
@@ -118,7 +123,7 @@ void AC_BasicEnemy::BeginPlay()
 			m_ItemManager = GI->GetSubsystem<UC_ItemManager>();
 		}
 	}
-	else // 클라이언트 환경
+	/*else // 클라이언트 환경
 	{
 		// 클라이언트단 화면에서는 Controller가 없기에, Controller Rotation (0, 0, 0) 값을 사용ㄴ
 		// 따라서 끊겨보이는 버그가 있었음
@@ -127,7 +132,7 @@ void AC_BasicEnemy::BeginPlay()
 		GetCharacterMovement()->bUseControllerDesiredRotation = false;
 		GetCharacterMovement()->RotationRate                  = FRotator(0.f, 360.f, 0.f);
 		
-	}
+	}*/
 
 	// HealEffect 재생 속도 조절
 	m_HealedEffectNGComponent->SetCustomTimeDilation(2.f);
@@ -148,7 +153,19 @@ float AC_BasicEnemy::TakeDamage
 	const float DamageAmount = Super::TakeDamage(_DamageAmount, _DamageEvent, _EventInstigator, _DamageCauser);
 	if (DamageAmount <= 0.f) return 0.f; // Damage가 들어오지 않음 (클라이언트단, TakeDamage 로컬 호출인 경우에 그럴 수 있음 -> 알아서 서버 쪽으로 Damage 입은 사실 전달)
 	
-	// UC_Util::Print("Zombie Damaged", FColor::Red, 10.f);
+	/* PerceptionComponent에 Damage를 받았다고 보고 처리 */
+	ACharacter* DamageInstigator = _EventInstigator->GetCharacter();
+	const FVector DamageInstigatorPos = (DamageInstigator != nullptr) ? DamageInstigator->GetActorLocation() : this->GetActorLocation();
+	
+	UAISense_Damage::ReportDamageEvent
+	(
+		GetWorld(),				 // 히트 이벤트가 발생한 월드 
+		this,					 // 맞은 놈 
+		DamageInstigator,		 // 때린 놈 
+		DamageAmount,			 // 최종 데미지
+		DamageInstigatorPos,	 // 때린놈 위치 
+		this->GetActorLocation() // 맞은놈 위치
+	);
 
 	/* 힐 요청 처리 관련 */
 
@@ -260,6 +277,9 @@ void AC_BasicEnemy::OnDead(AC_BasicCharacter* _DeadCharacter)
 	
 	// 죽은 곳에 아이템 드랍
 	DropItemOnDead();
+	
+	// ZombieController의 인식된 Target 후보군 Actor 정보들 비우기
+	m_ZombieController->ClearAllSensedTarget();
 
 	if (IsValid(m_HealedEffectNGComponent))
 	{
