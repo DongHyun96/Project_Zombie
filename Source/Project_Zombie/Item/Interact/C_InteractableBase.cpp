@@ -25,13 +25,13 @@ AC_InteractableBase::AC_InteractableBase()
 
 	m_MeshComp->SetupAttachment(m_SphereComp);
 
-	m_InteractionComp = CreateDefaultSubobject<UC_InteractionComponent>(TEXT("InteractionComp"));
+	InteractionComp = CreateDefaultSubobject<UC_InteractionComponent>(TEXT("InteractionComp"));
 
 	// TODO : 여기서 해도 괜찮나? -> ㄱㅊ
-	m_InteractionComp->SetInteractionNetType(EInteractionNetType::Local);
+	InteractionComp->SetInteractionNetType(EInteractionNetType::Local);
 
 	//m_InteractionComp->SetUseTimer(false);
-	m_InteractionComp->SetAllowMultipleInteractor(true);
+	InteractionComp->SetAllowMultipleInteractor(true);
 
 	m_SphereComp->SetCollisionProfileName(FName("InteractionOnly"));
 	
@@ -41,7 +41,7 @@ AC_InteractableBase::AC_InteractableBase()
 void AC_InteractableBase::BeginPlay()
 {
 	Super::BeginPlay();
-	m_InteractionComp->SetupInteraction(m_SphereComp);
+	InteractionComp->SetupInteraction(m_SphereComp);
 }
 
 // Called every frame

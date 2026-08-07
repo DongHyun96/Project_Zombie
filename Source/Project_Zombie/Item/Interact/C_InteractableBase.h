@@ -32,7 +32,7 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	virtual UC_InteractionComponent* GetInteractionComponent() const override { return m_InteractionComp; } 
+	virtual UC_InteractionComponent* GetInteractionComponent() const override { return InteractionComp; } 
 
 	//UFUNCTION(Server, Reliable)
 
@@ -41,7 +41,7 @@ protected:
 	UStaticMeshComponent* m_MeshComp{};
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UC_InteractionComponent* m_InteractionComp{}; 
+	UC_InteractionComponent* InteractionComp{}; 
 	
 	// TODO : Sphere가 아니라 Cube로?
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
