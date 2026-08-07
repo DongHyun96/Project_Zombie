@@ -451,7 +451,7 @@ protected:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Mesh", meta = (AllowPrivateAccess = "true"))
 	class UStaticMeshComponent* m_WeaponMesh;
 	
-	int32 m_LeftCount = 0;
+	//int32 m_LeftCount = 0;
 private:
 
 	// 투척류의 Fuse Timer (핀 제거 후, 폭발까지 걸리는 시간)

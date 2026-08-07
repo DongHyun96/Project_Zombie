@@ -36,14 +36,6 @@ AC_PotionBase::AC_PotionBase()
 	
 }
 
-void AC_PotionBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	
-	DOREPLIFETIME(AC_PotionBase, LeftTotalCount);
-	
-}
-
 void AC_PotionBase::OnAction()
 {
 	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled())
@@ -120,7 +112,7 @@ void AC_PotionBase::InitializeItemData(const FWeaponData* InRawData)
 			ValueGrade = CustomData->GetStatGrade(EUpgradableStats::HPRecovery);
 		
 		Potion_value = BaseValue + ValueGrade * UpgradeData->GradePerValue[EUpgradableStats::HPRecovery];
-		LeftTotalCount = EntryPtr->CurCount;
+		//LeftTotalCount = EntryPtr->CurCount;
 	}
 	else
 	{
@@ -253,20 +245,25 @@ void AC_PotionBase::SetAmmoUIInfo(FAmmoUIInfo& _AmmoUIInfo)
 	_AmmoUIInfo.Visible            = true;
 	_AmmoUIInfo.FireMode           = EFireMode::Single;
 	_AmmoUIInfo.MagazineAmmo       = 1;
-	_AmmoUIInfo.LeftAmmoTotalCount = LeftTotalCount;
-	UC_Util::Print("Potion : SetAmmoUIInfo");
 	
+	int32 Count = 1;
+	
+	if (FInventoryEntry* Entry = ItemLinkComp->GetItemEntryPtr())
+		Count = Entry->CurCount;
+	
+	_AmmoUIInfo.LeftAmmoTotalCount = Count;
 }
 
 void AC_PotionBase::UpdateAmmoInfoHUDForDrawEnd()
 {
 	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled()) return;
-
-	UC_Util::Print("Potion : DrawEnd");
 	
-	UC_Util::Print(LeftTotalCount);
+	int32 Count = 1;
 	
-	UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility(true, EFireMode::Single, 1, LeftTotalCount);
+	if (FInventoryEntry* Entry = ItemLinkComp->GetItemEntryPtr())
+		Count = Entry->CurCount;
+	
+	UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility(true, EFireMode::Single, 1, Count);
 }
 
 void AC_PotionBase::OnRep_UpdateAmmoWidget()
@@ -312,12 +309,14 @@ void AC_PotionBase::Server_DecreaseCurCount_Implementation()
 	{
 		if (FInventoryEntry* SlotEntry = ItemLinkComp->GetItemEntryPtr())
 		{
+			UC_Util::Print("Potion Decrease");
+			
 			--SlotEntry->CurCount;
-			LeftTotalCount = SlotEntry->CurCount;
+			//LeftTotalCount = SlotEntry->CurCount;
 			int32 Idx = ItemLinkComp->GetSlotIndex();
 			if (SlotEntry->CurCount <= 0)
 			{
-				LeftTotalCount = 0;
+				//LeftTotalCount = 0;
 				SlotEntry->Clear();
 				SlotEntry->SlotIndex = Idx;
 			}

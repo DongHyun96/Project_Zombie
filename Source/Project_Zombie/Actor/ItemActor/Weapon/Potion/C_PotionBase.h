@@ -18,8 +18,6 @@ class PROJECT_ZOMBIE_API AC_PotionBase : public AC_WeaponBase
 public:
 	AC_PotionBase();
 	
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-	
 	// UsingMontage에서 호출될 실제 기능을 하는  Anim Notify 함수. 
 	// 서버와 사용자만 알고 있으면 된다. 혹은 한쪽만 알고 나중에 알려주는 방식.
 	UFUNCTION(BlueprintCallable, Category = "Potion|AnimNotify")
@@ -103,8 +101,8 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 CurCount = 0;
 	
-	UPROPERTY(ReplicatedUsing = OnRep_UpdateAmmoWidget, EditAnywhere, BlueprintReadWrite)
-	int32 LeftTotalCount = 0;
+	//UPROPERTY(ReplicatedUsing = OnRep_UpdateAmmoWidget, EditAnywhere, BlueprintReadWrite)
+	//int32 LeftTotalCount = 0;
 	
 	// Collision이 필요한가?
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
