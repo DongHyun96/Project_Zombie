@@ -1,9 +1,10 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GenericTeamAgentInterface.h"
+#include "GlobalData.h"
 #include "GameFramework/Actor.h"
 #include "Perception/AIPerceptionListenerInterface.h"
 #include "Perception/AISightTargetInterface.h"
@@ -166,6 +167,8 @@ public:
 	
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	
+	const FZombieWaveSetting& GetZombieWaveSetting() const { return m_ZombieWaveSetting; }
+
 protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
@@ -292,5 +295,11 @@ private: /* Enemy AI 인지 관련 TeamAgent 등 */
 public:
 	
 	FOnCurPointTowerSequenceOver m_OnCurPointTowerSequenceOver{};
+
+public:
+
+	// 거점 Sequence에서 사용할 좀비 웨이브 설정
+	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "ZombieWave")
+	FZombieWaveSetting m_ZombieWaveSetting;
 	
 };

@@ -30,22 +30,25 @@ protected: /* 스폰 세팅 */
 
 	// 현재 해당 SpawnArea를 사용할 수 있는지
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Spawn")
-	bool m_bEnabled = true;
+	bool m_bEnabled = false;
+
+	// 이 SpawnArea가 사용될 거점 Sequence
+	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Spawn")
+	uint8 m_ActivateSequenceIdx = 0;
 
 	// 이 영역에서 스폰을 허용할 좀비 타입
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Spawn")
 	TArray<EZombieType> m_AllowedZombieType;
 
-	// 한 번의 요청에서 유효한 위치를 찾기위해 반복할 최대 횟수
-	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Spawn", meta = (ClampMin = "1", UMin = "1"))
-	int32 m_MaxSpawnAttempts = 15;
+	// 안전한 위치를 찾을 최대 반복값
+	static constexpr int32 MaxSpawnAttempts = 15;
 
 	// NavMesh 위로 위치를 찾을 때 사용할 탐색 범위
-	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Spawn|Navigation")
+	//UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Spawn|Navigation")
 	FVector m_NavProjectionExtent = FVector(150.f, 150.f, 500.f);
 
 	// 바닥과 캡슐이 너무 정확히 붙어서 겹침 판정이 나는 것을 방지하는 여유 높이
-	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Spawn|Collision", meta = (ClampMin = "0.0"))
+	//UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Spawn|Collision", meta = (ClampMin = "0.0"))
 	float m_GroundOffset = 2.f;
 
 public:
@@ -60,6 +63,8 @@ public:
 	/// 거점 활성화/완료 시 사용 가능
 	/// </summary>
 	void SetEnabled(bool _Enabled) { m_bEnabled = _Enabled; }
+
+	uint8 GetActivateSequenceIdx() const { return m_ActivateSequenceIdx; }
 
 	/// <summary>
 	/// 전달받은 좀비 타입이 이 영역에서 스폰 가능한지 확인
@@ -118,7 +123,14 @@ protected:
 		float			_CapsuleHalfHeight
 	) const;
 
+private:
+	void TryRegisterPointTowerManager();
+
 public:	
 	AC_SpawnArea();
+
+public:
+
+	virtual void BeginPlay() override;
 
 };

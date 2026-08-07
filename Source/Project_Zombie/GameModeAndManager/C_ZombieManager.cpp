@@ -338,18 +338,9 @@ void UC_ZombieManager::HandleSpawnLoopTick()
 	if (m_CurrentSpawnAreas.IsEmpty())
 		return;
 
-	// 이미 최대 활성 좀비 수에 도달한 경우
-	if (GetActiveZombieCount() >= m_CurrentWaveSetting.MaxActiveZombieCount)
-		return;
-
 	// Tick에서 설정된 수만큼 Spawn 시도
 	for (int32 i = 0; i < m_CurrentWaveSetting.SpawnCountPerTick; ++i)
 	{
-		// 여러마리 설정 시
-		// 꺼내는 도중 최대 활성수에 도달할 수 있으므로 다시 검사
-		if (GetActiveZombieCount() >= m_CurrentWaveSetting.MaxActiveZombieCount)
-			break;
-
 		// 현재 스폰 가능한 타입 중 하나 선택
 		const FZombieTypeSpawnSetting* SpawnSetting = SelectZombieTypeToSpawn();
 
@@ -385,13 +376,9 @@ bool UC_ZombieManager::CanSpawnZombieType(const FZombieTypeSpawnSetting& _Settin
 		return false;
 
 	// 타입별 최대 활성 수 검사
-	// 0은 제한헚음
-	if (_Setting.MaxActiveCount > 0)
+	if (GetActiveZombieCount(_Setting.ZombieType) >= _Setting.MaxActiveCount)
 	{
-		if (GetActiveZombieCount(_Setting.ZombieType) >= _Setting.MaxActiveCount)
-		{
-			return false;
-		}
+		return false;
 	}
 
 	// 해당 타입 Pool이 존재하고 꺼낼 좀비가 남아있는지 확인
@@ -468,7 +455,7 @@ const FZombieTypeSpawnSetting* UC_ZombieManager::SelectZombieTypeToSpawn() const
 		return nullptr;
 
 	// 0 ~ TotalWeight 사이 랜덤 값
-	const float RandomWeighet = FMath::FRandRange(0.f, TotalWeight);
+	const float RandomWeight = FMath::FRandRange(0.f, TotalWeight);
 
 	float AccumulatedWeight = 0.f;
 
@@ -479,7 +466,7 @@ const FZombieTypeSpawnSetting* UC_ZombieManager::SelectZombieTypeToSpawn() const
 
 		AccumulatedWeight += Setting->SpawnWeight;
 
-		if (RandomWeighet <= AccumulatedWeight)
+		if (RandomWeight <= AccumulatedWeight)
 			return Setting;
 	}
 
@@ -501,18 +488,6 @@ void UC_ZombieManager::StartZombieSpawnCooldown(const FZombieTypeSpawnSetting& _
 	const float NextSpawnTime = World->GetTimeSeconds() + _Setting.SpawnCoolDown;
 
 	m_NextZombieSpawnTime.Add(_Setting.ZombieType, NextSpawnTime);
-}
-
-int32 UC_ZombieManager::GetActiveZombieCount() const
-{
-	int32 ActiveCount = 0;
-
-	for (const TPair<EZombieType, TSet<AC_Zombie*>>& Pair : m_ActiveZombies)
-	{
-		ActiveCount += Pair.Value.Num();
-	}
-
-	return ActiveCount;
 }
 
 int32 UC_ZombieManager::GetActiveZombieCount(EZombieType _ZombieType) const
@@ -540,7 +515,7 @@ bool UC_ZombieManager::TrySpawnZombieFromArea(EZombieType _ZombieType, AC_SpawnA
 	if (!IsValid(_SpawnArea))
 	{
 		UC_Util::Print(
-			"From TestSpawnNormalZombieFromArea : SpawnArea is nullptr",
+			"From TrySpawnZombieFromArea : SpawnArea is nullptr",
 			FColor::Red,
 			5.f);
 
@@ -557,7 +532,7 @@ bool UC_ZombieManager::TrySpawnZombieFromArea(EZombieType _ZombieType, AC_SpawnA
 	if (!ZombieClass || !(*ZombieClass))
 	{
 		UC_Util::Print(
-			"From TestSpawnNormalZombieFromArea : ZombieClass not found",
+			"From TrySpawnZombieFromArea : ZombieClass not found",
 			FColor::Red,
 			5.f);
 
@@ -590,7 +565,7 @@ bool UC_ZombieManager::TrySpawnZombieFromArea(EZombieType _ZombieType, AC_SpawnA
 		SpawnTransform))
 	{
 		UC_Util::Print(
-			"From TestSpawnNormalZombieFromArea : Valid Spawn Transform not found",
+			"From TrySpawnZombieFromArea : Valid Spawn Transform not found",
 			FColor::Red,
 			5.f);
 

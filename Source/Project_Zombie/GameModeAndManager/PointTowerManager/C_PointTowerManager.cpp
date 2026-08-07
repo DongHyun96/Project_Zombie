@@ -1,8 +1,9 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "C_PointTowerManager.h"
-
+#include "../C_ZombieManager.h"
+#include "Actor/Character/NPC/Enemy/Zombie/Spawn/C_SpawnArea.h"
 #include "Actor/PointTower/C_PointTower.h"
 #include "GameModeAndManager/C_UIManager.h"
 #include "Utility/C_Util.h"
@@ -35,6 +36,69 @@ void UC_PointTowerManager::StartActivateCurrentPointsSequence()
 		PointTower->SetPointTowerState(EPointTowerState::Active);
 	
 	// -> m_CurrentSequenceIndex에 해당하는 sequence의 스폰 지점을 활성화 해야한다면 여기서 continue
+
+	// ============ 현재 Sequence SpawnArea 가져오기 ===============
+
+	TArray<AC_SpawnArea*> CurrentSpawnAreas = GetCurrentSequenceSpawnAreas();
+
+	if (CurrentSpawnAreas.IsEmpty())
+	{
+		UC_Util::Print("[UC_PointTowerManager::StartActivateCurrentPointsSequence] : Current Sequence SpawnArea not found", FColor::Red, 10.f);
+		return;
+	}
+
+	// 현재 Sequence SpawnArea 활성화
+	for (AC_SpawnArea* SpawnArea : CurrentSpawnAreas)
+	{
+		if (!IsValid(SpawnArea))
+			continue;
+
+		SpawnArea->SetEnabled(true);
+	}
+
+	// ========== 현재 Sequence WaveSetting ============
+
+	const FZombieWaveSetting* WaveSetting = GetCurrentWaveSetting();
+
+	if (!WaveSetting)
+	{
+		UC_Util::Print("[UC_PointTowerManager::StartActivateCurrentPointsSequence] : Current Sequence WaveSetting not found", FColor::Red, 10.f);
+		return;
+	}
+
+	//========= Zombie Spawn 시작 ==================
+
+	if (!IsValid(m_ZombieManager))
+	{
+		UC_Util::Print("[UC_PointTowerManager::StartActivateCurrentPointsSequence] : ZombieManager is nullptr", FColor::Red, 10.f);
+		return;
+	}
+
+	if (!m_ZombieManager->StartSpawnLoop(CurrentSpawnAreas, *WaveSetting))
+	{
+		UC_Util::Print("[UC_PointTowerManager::StartActivateCurrentPointsSequence] : StartSpawnLoop Failed!!", FColor::Red, 10.f);
+	}
+}
+
+const FZombieWaveSetting* UC_PointTowerManager::GetCurrentWaveSetting() const
+{
+	if (!m_PointTowers.IsValidIndex(m_CurrentSequenceIndex))
+		return nullptr;
+
+	const TSet<AC_PointTower*>& CurrentTowers = m_PointTowers[m_CurrentSequenceIndex];
+
+	if (CurrentTowers.IsEmpty())
+		return nullptr;
+
+	for (AC_PointTower* PointTower : CurrentTowers)
+	{
+		if (!IsValid(PointTower))
+			continue;
+
+		return &PointTower->GetZombieWaveSetting();
+	}
+
+	return nullptr;
 }
 
 bool UC_PointTowerManager::RegisterPointTower(AC_PointTower* _PointTower)
@@ -89,7 +153,20 @@ void UC_PointTowerManager::OnPointTowerConquered()
 	}
 	
 	/* TODO : 라운드 끝나고 이전 라운드에 배치되어 있는 스폰 지점 비활성화 처리할 것 */
-	
+	if (IsValid(m_ZombieManager))
+	{
+		m_ZombieManager->StopSpawnLoop();
+	}
+
+	// 현재 Sequence SpawnArea 비활성화
+	for (AC_SpawnArea* SpawnArea : GetCurrentSequenceSpawnAreas())
+	{
+		if (!IsValid(SpawnArea))
+			continue;
+
+		SpawnArea->SetEnabled(false);
+	}
+
 	// 다음 라운드로 넘기기
 	++m_CurrentSequenceIndex;
 	
@@ -103,4 +180,46 @@ void UC_PointTowerManager::OnPointTowerConquered()
 	
 	// 아직 GameOver되지 않은 상황 -> 다음 라운드 진행
 	StartActivateCurrentPointsSequence();
+}
+
+bool UC_PointTowerManager::RegisterSpawnArea(AC_SpawnArea* _SpawnArea)
+{
+	if (!IsValid(_SpawnArea))
+		return false;
+
+	const uint8 SequenceIdx = _SpawnArea->GetActivateSequenceIdx();
+
+	// 만약에 배열 크기가 부족하면 Sequence에 맞게 확장
+	if (!m_SpawnArea.IsValidIndex(SequenceIdx))
+	{
+		m_SpawnArea.SetNum(SequenceIdx + 1);
+	}
+
+	TSet<AC_SpawnArea*>& TargetArea = m_SpawnArea[SequenceIdx];
+
+	// 중복 등록 방지
+	if (TargetArea.Contains(_SpawnArea))
+		return false;
+
+	TargetArea.Add(_SpawnArea);
+
+	return true;
+}
+
+TArray<AC_SpawnArea*> UC_PointTowerManager::GetCurrentSequenceSpawnAreas() const
+{
+	TArray<AC_SpawnArea*> Result;
+
+	if (!m_SpawnArea.IsValidIndex(m_CurrentSequenceIndex))
+		return Result;
+
+	for (AC_SpawnArea* SpawnArea : m_SpawnArea[m_CurrentSequenceIndex])
+	{
+		if (!IsValid(SpawnArea))
+			continue;
+
+		Result.Add(SpawnArea);
+	}
+
+	return Result;
 }

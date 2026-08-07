@@ -2,8 +2,11 @@
 
 
 #include "C_SpawnArea.h"
+#include "GameModeAndManager/C_GameMode_GameLv.h"
+#include "GameModeAndManager/PointTowerManager/C_PointTowerManager.h"
 #include "Components/BoxComponent.h"
 #include "NavigationSystem.h"
+#include "Utility/C_Util.h"
 
 AC_SpawnArea::AC_SpawnArea()
 {
@@ -28,6 +31,16 @@ AC_SpawnArea::AC_SpawnArea()
 	m_SpawnBox->SetGenerateOverlapEvents(false);
 
 	m_SpawnBox->SetHiddenInGame(true);
+}
+
+void AC_SpawnArea::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (!HasAuthority())
+		return;
+
+	TryRegisterPointTowerManager();
 }
 
 bool AC_SpawnArea::IsZombieTypeAllowed(EZombieType _ZombieType) const
@@ -68,7 +81,7 @@ bool AC_SpawnArea::FindValidSpawnTransform(EZombieType _ZombieType, float _Capsu
 		return false;
 
 	//최대 시도 횟수만큼 안전한 위치 탐색
-	for (int32 Attempt = 0; Attempt < m_MaxSpawnAttempts; ++Attempt)
+	for (int32 Attempt = 0; Attempt < MaxSpawnAttempts; ++Attempt)
 	{
 		// 박스 안에서 무작위 후보위치 생성
 		const FVector RandomPoint = GetRandomPointInSpawnBox();
@@ -157,5 +170,30 @@ bool AC_SpawnArea::IsSpawnLocationBlocked(const FVector& _CapsuleCenter, float _
 	// 해당 위치에 Pawn 캡슐을 놨을때
 	// Blocking 충돌이 발생하는지 검사
 	return World->OverlapBlockingTestByChannel(_CapsuleCenter, FQuat::Identity, ECC_Pawn, CapsuleShape, QueryParams);
+}
+
+void AC_SpawnArea::TryRegisterPointTowerManager()
+{
+	// 현재 게임모드 가져오기
+	AC_GameMode_GameLv* GameMode = GetWorld()->GetAuthGameMode<AC_GameMode_GameLv>();
+
+	if (!IsValid(GameMode))
+		return;
+
+	// 게임모드가 가지고 있는 PointTowerManager 가져오기
+	UC_PointTowerManager* PointTowerManager = GameMode->GetPointTowerManager();
+
+	if (!IsValid(PointTowerManager))
+	{
+		GetWorldTimerManager().SetTimerForNextTick(this, &AC_SpawnArea::TryRegisterPointTowerManager);
+
+		return;
+	}
+
+	// 자기 자신을 Sequence에 맞게 등록
+	if (!PointTowerManager->RegisterSpawnArea(this))
+	{
+		UC_Util::Print("From AC_SpawnArea::BeginPlay : RegisterSpawnArea Failed", FColor::Red, 10.f);
+	}
 }
 

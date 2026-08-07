@@ -3,10 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "C_ZombieManager.h"
 #include "GameFramework/GameModeBase.h"
 #include "C_GameMode_GameLv.generated.h"
-
 
 
 /**
@@ -53,10 +51,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UC_PointTowerManager* m_PointTowerManager{};
 	
-
-	// 테스트용 웨이브 설정
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Zombie|Test")
-	FZombieWaveSetting m_TestWaveSetting;
 };
 
 #define GAME_LV_GAME_MODE(WorldContext) \

@@ -106,15 +106,33 @@ void AC_Zombie::ApplyPoolActiveState()
 		SetActorEnableCollision(true);
 		SetActorTickEnabled(true);
 
+		// 이동 활성화
 		if (UCharacterMovementComponent* MoveCom = GetCharacterMovement())
 		{
 			MoveCom->StopMovementImmediately();
 			MoveCom->SetMovementMode(EMovementMode::MOVE_Walking);
 		}
-
+		
 		return;
 	}
 
+	// =====================풀 비활성화 상태=========================
+
+	// AI 정지
+	if (HasAuthority())
+	{
+		if (AAIController* pController = Cast<AAIController>(GetController()))
+		{
+			// 이전 이동 요청 제거
+			pController->StopMovement();
+
+			if (UBrainComponent* Brain = pController->GetBrainComponent())
+			{
+				Brain->StopLogic(TEXT("Zombie in Pool"));
+			}
+		}
+	}
+	
 	// 풀 반환 시 남아있는 몽타주 정지
 	StopAnimMontage();
 

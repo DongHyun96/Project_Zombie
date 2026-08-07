@@ -179,7 +179,7 @@ void AC_ZombieController::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	DrawDebugSightRange();
+	//DrawDebugSightRange();
 	
 	/*TArray<AActor*> Actors;
 

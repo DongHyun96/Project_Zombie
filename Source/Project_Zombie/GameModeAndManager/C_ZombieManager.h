@@ -3,59 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GlobalData.h"
 #include "UObject/Object.h"
 #include "C_ZombieManager.generated.h"
 
 class AC_SpawnArea;
-enum class EZombieType : uint8;
-
-USTRUCT(BlueprintType)
-struct FZombieTypeSpawnSetting
-{
-	GENERATED_BODY()
-
-public:
-	// 스폰할 좀비 타입
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	EZombieType ZombieType;
-
-	// 다른 타입과 비교한 스폰 선택 가중치
-	// 숫자가 높을수록 선택될 가능성이 높음
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0.0"))
-	float SpawnWeight = 1.f;
-
-	// 해당 타입 스폰 쿨타임
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0.0"))
-	float SpawnCoolDown = 0.f;
-
-	// 해당 타입이 필드에 동시에 존재할 수 있는 최대 수
-	// 0이면 타입별 제한 x
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0"))
-	int32 MaxActiveCount = 0;
-};
-
-USTRUCT(BlueprintType)
-struct FZombieWaveSetting
-{
-	GENERATED_BODY()
-
-public:
-	// 좀비 스폰 시도 간격
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0.1"))
-	float SpawnInterval = 2.f;
-
-	// 한번에 Spawn Tick에서 꺼낼 좀비 수 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "1"))
-	int32 SpawnCountPerTick = 1;
-
-	// 동시에 필드에 존재할 수 있는 최대 좀비 수
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "1"))
-	int32 MaxActiveZombieCount = 5;
-
-	// 웨이브에서 등장 가능한 타입별 설정
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	TArray<FZombieTypeSpawnSetting> ZombieTypeSetting;
-};
 
 /**
  * Zombie 스폰 및 Zombie 객체 Holder (서버 쪽에서만 유효, 애초에 스폰과 풀로 돌아가는 처리는 서버 쪽 기반에서 판단을 함)
@@ -188,12 +140,6 @@ protected:
 	/// 타입이 실제 스폰에 성공 시 다음 스폰 시간을 기록
 	/// </summary>
 	void StartZombieSpawnCooldown(const FZombieTypeSpawnSetting& _Setting);
-
-	/// <summary>
-	/// 현재 필드에 활성화 된 전체 좀비수를 반환
-	/// </summary>
-	/// <returns></returns>
-	int32 GetActiveZombieCount() const;
 
 	/// <summary>
 	/// 현재 필드에 활성화 된 특정 타입의 좀비 수 반환

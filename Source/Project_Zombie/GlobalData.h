@@ -690,3 +690,51 @@ struct FPlayerStatUpgradeData : public FTableRowBase
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     TArray<float> GradeValue{};    
 };
+
+enum class EZombieType : uint8;
+
+// 좀비 타입마다 설정해줄 스폰값
+USTRUCT(BlueprintType)
+struct FZombieTypeSpawnSetting
+{
+    GENERATED_BODY()
+
+public:
+    // 스폰할 좀비 타입
+    UPROPERTY(EditAnywhere, BlueprintReadOnly)
+    EZombieType ZombieType;
+
+    // 다른 타입과 비교한 스폰 선택 가중치
+    // 숫자가 높을수록 선택될 가능성이 높음
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0.0"))
+    float SpawnWeight = 1.f;
+
+    // 해당 타입 스폰 쿨타임
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0.0"))
+    float SpawnCoolDown = 0.f;
+
+    // 해당 타입이 필드에 동시에 존재할 수 있는 최대 수
+    // 0이면 타입별 제한 x
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0"))
+    int32 MaxActiveCount = 1;
+};
+
+// 좀비 웨이브마다 설정해줄 값
+USTRUCT(BlueprintType)
+struct FZombieWaveSetting
+{
+    GENERATED_BODY()
+
+public:
+    // 좀비 스폰 시도 간격
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0.1"))
+    float SpawnInterval = 2.f;
+
+    // 한번에 Spawn Tick에서 꺼낼 좀비 수 
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "1"))
+    int32 SpawnCountPerTick = 1;
+
+    // 웨이브에서 등장 가능한 타입별 설정
+    UPROPERTY(EditAnywhere, BlueprintReadOnly)
+    TArray<FZombieTypeSpawnSetting> ZombieTypeSetting;
+};
