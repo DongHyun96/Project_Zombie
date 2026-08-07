@@ -63,10 +63,12 @@ protected: /* Dead 관련 */
 	// 죽은 뒤 풀 반환까지 기다리는 타이머
 	FTimerHandle m_DeadRemainTimer;
 
-private:
+protected:
 	
 	UPROPERTY()
 	class AC_ZombieController* m_ZombieController{};
+
+private:
 	
 	// ItemManager Subsystem 캐싱 
 	UPROPERTY()

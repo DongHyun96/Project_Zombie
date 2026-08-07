@@ -30,7 +30,7 @@ void AC_GameMode_GameLv::BeginPlay()
 	if (m_ZombieManager) m_ZombieManager->OnWorldBeginPlay();
 	
 	// 스폰 테스트
-	if (m_ZombieManager)
+	/*if (m_ZombieManager)
 	{
 		TArray<AActor*> FoundActors;
 
@@ -61,7 +61,7 @@ void AC_GameMode_GameLv::BeginPlay()
 				FColor::Red,
 				10.f);
 		}
-	}
+	}*/
 
 
 	m_PointTowerManager = NewObject<UC_PointTowerManager>(this);

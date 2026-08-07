@@ -432,7 +432,7 @@ bool UC_StatComponentBase::Local_DecreaseCurHP(float _DecreaseAmount)
 	if (_DecreaseAmount < 0.f) return false;
 
 	float* pCurHP = m_Stats.Find(StatName::CurHP);
-	*pCurHP       = FMath::Max(0.f, *pCurHP - _DecreaseAmount); // TODO : 다시 0.f로 수정할 것
+	*pCurHP       = FMath::Max(1.f, *pCurHP - _DecreaseAmount); // TODO : 다시 0.f로 수정할 것
 
 	// CurHP 0을 찍었으면 Delegate 호출 처리
 	if (*pCurHP == 0.f) OnCurHPReachedZeroDelegate.Broadcast(m_OwnerCharacter);
