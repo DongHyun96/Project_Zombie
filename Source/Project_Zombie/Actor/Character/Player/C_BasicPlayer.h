@@ -109,6 +109,10 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, Category = "Components", meta = (DisplayName = "PlayerProfileComponent"))
 	class UC_PlayerProfileComponent* m_PlayerProfileComponent{};
+
+	UPROPERTY(VisibleAnywhere, Category = "Components", meta = (DisplayName = "FeetComponent"))
+	class UC_FeetComponent* m_FeetComponent{};
+
 	
 // [Status]
 protected:
@@ -253,6 +257,8 @@ public:
 
 	// interface II_Interactable 구현
 	virtual UC_InteractionComponent* GetInteractionComponent() const override;
+
+	UC_FeetComponent* GetFeetComponent() const { return m_FeetComponent; }
 
 	FCursorItem GetCurDraggedItem() {return curDraggedItem;}
 	
