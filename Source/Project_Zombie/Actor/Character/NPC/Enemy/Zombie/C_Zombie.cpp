@@ -16,6 +16,8 @@
 #include "Components/ShapeComponent.h"
 #include "Controller/C_ZombieController.h"
 #include "Kismet/GameplayStatics.h"
+#include "Perception/AIPerceptionComponent.h"
+#include "Perception/AISense_Damage.h"
 #include "Utility/C_Util.h"
 
 AC_Zombie::AC_Zombie()
@@ -120,18 +122,21 @@ void AC_Zombie::ApplyPoolActiveState()
 	// =====================풀 비활성화 상태=========================
 
 	// AI 정지
-	if (HasAuthority())
+	if (AC_ZombieController* pController = Cast<AC_ZombieController>(GetController()))
 	{
-		if (AAIController* pController = Cast<AAIController>(GetController()))
-		{
-			// 이전 이동 요청 제거
-			pController->StopMovement();
+		// 이전 이동 요청 제거
+		pController->StopMovement();
 
-			if (UBrainComponent* Brain = pController->GetBrainComponent())
-			{
-				Brain->StopLogic(TEXT("Zombie in Pool"));
-			}
-		}
+		if (UBrainComponent* Brain = pController->GetBrainComponent())
+			Brain->StopLogic(TEXT("Zombie in Pool"));
+		
+		// 인지 기능 비활성화
+		pController->GetAIPerceptionComponent()->ForgetAll();
+		pController->GetAIPerceptionComponent()->SetSenseEnabled(UAISense_Sight::StaticClass(), false);
+		pController->GetAIPerceptionComponent()->SetSenseEnabled(UAISense_Damage::StaticClass(), false);
+		
+		// ZombieController에서 기록한 인식된 Target 후보군 Actor 정보들 비우기
+		pController->ClearAllSensedTarget();
 	}
 	
 	// 풀 반환 시 남아있는 몽타주 정지
@@ -153,9 +158,6 @@ void AC_Zombie::ApplyPoolActiveState()
 	// tick 비활성화
 	SetActorTickEnabled(false);
 	
-	// BrainComponent 비활성화
-	if (UBrainComponent* Brain = m_ZombieController->GetBrainComponent())
-		Brain->StopLogic(TEXT("FirstInitPooling"));
 }
 
 void AC_Zombie::OnRep_PoolActive()
@@ -215,9 +217,11 @@ bool AC_Zombie::ActivateFromPool(const FTransform& _SpawnTransform)
 		pController->StopMovement();
 
 		if (UBrainComponent* Brain = pController->GetBrainComponent())
-		{
 			Brain->RestartLogic();
-		}
+		
+		// 인지 기능 활성화
+		pController->GetAIPerceptionComponent()->SetSenseEnabled(UAISense_Sight::StaticClass(), true);
+		pController->GetAIPerceptionComponent()->SetSenseEnabled(UAISense_Damage::StaticClass(), true);
 	}
 
 	// 클라에 상태와 위치를 빠르게 전달

@@ -14,8 +14,8 @@ void UC_CompassBarWidget::NativeOnInitialized()
 	Super::NativeOnInitialized();
 	
 	// Init CompassPingMarkers
-	// 맥시멈 4명의 플레이어로 판단, CompassPingMarker 
-	for (int i = 0; i < 4; ++i)
+	// 맥시멈 5명의 플레이어로 판단, CompassPingMarker 
+	for (int i = 0; i < 5; ++i)
 	{
 		const FString CompassPingMarkerName = FString::Printf(TEXT("CompassPingMarker_%d"), i);
 		const FName WidgetName(*CompassPingMarkerName);

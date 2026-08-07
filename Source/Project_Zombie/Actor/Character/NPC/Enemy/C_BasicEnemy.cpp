@@ -278,9 +278,6 @@ void AC_BasicEnemy::OnDead(AC_BasicCharacter* _DeadCharacter)
 	// 죽은 곳에 아이템 드랍
 	DropItemOnDead();
 	
-	// ZombieController의 인식된 Target 후보군 Actor 정보들 비우기
-	m_ZombieController->ClearAllSensedTarget();
-
 	if (IsValid(m_HealedEffectNGComponent))
 	{
 		m_HealedEffectNGComponent->DeactivateImmediate();
