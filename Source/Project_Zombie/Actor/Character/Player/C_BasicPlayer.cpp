@@ -534,6 +534,7 @@ void AC_BasicPlayer::RecoverBoost(float _RecoverAmount)
 	if (m_bIsBoostExhausted && NewBoost >= RECHARGED_BOOST)
 	{
 		m_bIsBoostExhausted = false;
+		OnRep_ChangedBoostExhausted();
 		// TODO: 만약 방전 해제 시 UI 색상을 복구해야 한다면, RepNotify나 Delegate로 클라이언트에 전파
 	}
 }
@@ -545,7 +546,10 @@ void AC_BasicPlayer::StartSprint()
 
 	// 방전 상태이면 달리기 불가.
 	if (m_bIsBoostExhausted && m_StatComponent->GetStat(StatName::CurBoost) >= RECHARGED_BOOST)
+	{
 		m_bIsBoostExhausted = false;
+		OnRep_ChangedBoostExhausted();
+	}
 	
 	if (m_bIsBoostExhausted) return;
 	
@@ -606,7 +610,11 @@ void AC_BasicPlayer::ProcessSprint(float DeltaTime)
 		if (CurBoost <= Cost)
 		{
 			UseBoost(CurBoost); // 남은 수치 완충 소모 (0으로 만듦)
+			
 			m_bIsBoostExhausted = true;
+			
+			OnRep_ChangedBoostExhausted();
+			
 			StopSprint();
 		}
 		else
@@ -753,6 +761,23 @@ void AC_BasicPlayer::OnPoseTransitionFinished(bool _bIsCrouched)
 
 	// 웅크리기 전환 완료 후 이동 속도 갱신
 	ApplyMovementSpeed();
+}
+
+void AC_BasicPlayer::OnRep_ChangedBoostExhausted()
+{
+	if (!IsLocallyControlled())
+		return;
+
+	if (APlayerController* PC = GetController<APlayerController>())
+	{
+		if (AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD()))
+		{
+			if (UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget())
+			{
+				MainHUD->ChangeBoostBarColor(m_bIsBoostExhausted);
+			}
+		}
+	}
 }
 
 ETeamAttitude::Type AC_BasicPlayer::GetTeamAttitudeTowards(const AActor& _Other) const

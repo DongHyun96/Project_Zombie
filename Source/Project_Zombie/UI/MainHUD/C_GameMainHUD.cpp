@@ -27,6 +27,11 @@ bool UC_GameMainHUD::UpdateBoostBar(float _Boost, float _MaxBoost)
 	return PlayerStatWidget->UpdateBoostBar(_Boost, _MaxBoost);
 }
 
+void UC_GameMainHUD::ChangeBoostBarColor(bool IsExhausted)
+{
+	PlayerStatWidget->ToggleBoostBarColor(IsExhausted);
+}
+
 bool UC_GameMainHUD::ToggleAmmoInfoVisibility(bool _Visible, EFireMode _FireMode, int32 _MagazineAmmo, int32 _LeftAmmoTotalCount)
 {
 	return PlayerStatWidget->ToggleAmmoInfoVisibility(_Visible, _FireMode, _MagazineAmmo, _LeftAmmoTotalCount);

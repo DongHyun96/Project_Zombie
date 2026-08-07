@@ -32,6 +32,9 @@ public: // HP Bar 및 BoostBar 정보 업데이트 관련
 	/// <returns> : 잘못된 값이 들어왔을 경우 return false </returns>
 	UFUNCTION(BlueprintCallable)
 	bool UpdateBoostBar(float _Boost, float _MaxBoost);
+	
+	UFUNCTION(BlueprintCallable)
+	void ChangeBoostBarColor(bool IsExhausted);	
 
 public: // 무기 상태 정보 업데이트 관련
 	
