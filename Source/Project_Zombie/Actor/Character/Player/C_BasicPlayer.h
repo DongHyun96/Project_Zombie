@@ -184,7 +184,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
 	bool m_IsSprintInput;
 	
-	UPROPERTY(Replicated, EditAnywhere, BlueprintReadOnly, Category = "Movement")
+	UPROPERTY(ReplicatedUsing = OnRep_ChangedBoostExhausted, EditAnywhere, BlueprintReadOnly, Category = "Movement")
 	bool m_bIsBoostExhausted = false;
 	
 	// 이 값 이상 회복되어야 다시 달리기 가능
@@ -493,6 +493,9 @@ private:
 	// 웅크리기 상태 전환이 끝났을 때 실행되는 함수
 	void OnPoseTransitionFinished(bool _bIsCrouched);
 
+	UFUNCTION()
+	void OnRep_ChangedBoostExhausted();
+	
 private:
 	/// <summary>
 	/// 입력 클라이언트가 자세 상태를 즉시 로컬에서 적용
