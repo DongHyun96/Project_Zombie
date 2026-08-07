@@ -19,7 +19,7 @@ void UC_PointTowerManager::OnWorldBeginPlay()
 	// For Testing
 	GetWorld()->GetTimerManager().SetTimer
 	(
-		m_TestTimerHandle, this, &UC_PointTowerManager::StartActivateCurrentPointsSequence, 10.f, false
+		m_TestTimerHandle, this, &UC_PointTowerManager::StartActivateCurrentPointsSequence, 2.5f, false
 	);
 }
 
@@ -40,7 +40,8 @@ bool UC_PointTowerManager::RegisterPointTower(AC_PointTower* _PointTower)
 	PRINT_LOCAL(GetWorld(), "[UC_PointTowerManager::RegisterPointTower]", FColor::Red, 10.f);
 	
 	// 새로운 Sequence 신규 PointTower, size를 늘림과 동시에 넣어줌
-	if (!m_PointTowers.IsValidIndex(_PointTower->m_ActivateSequenceIdx))
+	if (!m_PointTowers.IsValidIndex(_PointTower->m_ActivateSequenceIdx) ||
+		m_PointTowers[_PointTower->m_ActivateSequenceIdx].IsEmpty())
 	{
 		m_PointTowers.SetNum(_PointTower->m_ActivateSequenceIdx + 1);
 		m_PointTowers[_PointTower->m_ActivateSequenceIdx].Add(_PointTower);
@@ -61,6 +62,12 @@ bool UC_PointTowerManager::RegisterPointTower(AC_PointTower* _PointTower)
 		PointTower->m_bCanDamagedAfterConquer = true;
 	
 	return true;
+}
+
+const TSet<AC_PointTower*>& UC_PointTowerManager::GetCurPointTowers() const
+{
+	if (!m_PointTowers.IsValidIndex(m_CurrentSequenceIndex)) return m_Dummy;
+	return m_PointTowers[m_CurrentSequenceIndex];
 }
 
 void UC_PointTowerManager::OnPointTowerConquered()

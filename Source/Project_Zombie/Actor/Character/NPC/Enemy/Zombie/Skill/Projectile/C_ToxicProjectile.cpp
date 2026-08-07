@@ -174,13 +174,13 @@ void AC_ToxicProjectile::SpawnPoolAtGround(const FVector& _ImpactLocation, AActo
 
 	if (bFoundGround)
 	{
-		//UC_Util::Print("!! PoolGround Found !!");
+		UC_Util::Print("!! PoolGround Found !!");
 
 		SpawnToxicPool(PoolSpawnLocation, PoolSpawnRotation);
 	}
 	else
 	{
-		//UC_Util::Print("PoolGround not Found");
+		UC_Util::Print("PoolGround not Found");
 	}
 
 	Destroy();

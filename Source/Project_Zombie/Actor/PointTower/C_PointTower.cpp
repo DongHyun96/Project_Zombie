@@ -57,6 +57,12 @@ void AC_PointTower::BeginPlay()
 	if (m_ElectroSplinesParent)
 		m_ElectroSplinesParent->SetHiddenInGame(true, true);
 
+	// Damage Detector 초기화
+	m_DamageDetector = Cast<UShapeComponent>(FindSceneComponentByName(TEXT("DamageDetector")));
+	if (m_DamageDetector)
+		m_DamageDetector->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	else UC_Util::Print("Damage Detector init failed!", FColor::Red, 10.f);
+	
 	if (HasAuthority())
 	{
 		// 서버 환경에서의 PointTower만 PointTowerManager(서버 쪽에만 존재) 에 등록 처리를 할 것임
@@ -165,14 +171,17 @@ void AC_PointTower::SetPointTowerState(EPointTowerState _PointTowerState)
 	switch (_PointTowerState)
 	{
 	case EPointTowerState::Waiting: // 당장에는 Nothing to do
+		m_DamageDetector->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		break;
 	case EPointTowerState::Active:
 	{
 		Multicast_Activate(); // 방장을 포함한 모든 사람들 Activate 상태로 변경
 		m_InteractionTestingCollider->SetCollisionEnabled(ECollisionEnabled::QueryOnly); // 서버 쪽 환경에서만 Collision On 처리됨
+		m_DamageDetector->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 		break;
 	}
 	case EPointTowerState::Conquered:
+		m_DamageDetector->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		Multicast_Conquered();
 		m_InteractionTestingCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		m_ConquerTestAreaEnteredPlayers.Empty();
@@ -332,6 +341,36 @@ USceneComponent* AC_PointTower::FindSceneComponentByName(const FName& _ComName)
 	}
 
 	return nullptr;
+}
+
+float AC_PointTower::TakeDamage
+(
+	float				DamageAmount,
+	FDamageEvent const& DamageEvent,
+	AController*		EventInstigator,
+	AActor*				DamageCauser
+)
+{
+	// 현재 데미지를 입을 수 없는 상황인데 공격을 당한 경우
+	if (!CanCurrentlyAttackedByZombie()) return 0.f;
+	
+	float ReceivedDamageAmount = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+	const float Damage = ReceivedDamageAmount * m_ZombieDamageRatio; // Damage 만큼 현재 Conquered 펀센트에서 제거
+	m_CurConquerAmount -= Damage;
+	return Damage;
+}
+
+void AC_PointTower::GetActorEyesViewPoint(FVector& OutLocation, FRotator& OutRotation) const
+{
+	// 예: 메시의 'head' 소켓 위치를 AI 감지 포인트로 지정
+	/*if (m_StaticMeshComTower->DoesSocketExist(TEXT("SightViewSocket")))
+	{
+		OutLocation = m_StaticMeshComTower->GetSocketLocation(TEXT("SightViewSocket"));
+		OutRotation = m_StaticMeshComTower->GetSocketRotation(TEXT("SightViewSocket"));
+	}*/
+
+	// 소켓이 없는 경우 기본 C++ 구현(Actor Location) 호출
+	Super::GetActorEyesViewPoint(OutLocation, OutRotation);
 }
 
 void AC_PointTower::Multicast_Activate_Implementation()

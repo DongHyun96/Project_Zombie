@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "GenericTeamAgentInterface.h"
 #include "GameFramework/Actor.h"
+#include "Perception/AIPerceptionListenerInterface.h"
+#include "Perception/AISightTargetInterface.h"
 #include "UI/MainHUD/CompassBarWidget/C_CompassBarWidget.h"
 #include "UI/MainHUD/CompassBarWidget/CompassMarkerWidget/C_CompassMarkerWidget.h"
 #include "C_PointTower.generated.h"
@@ -47,10 +49,10 @@ public:
 	
 public:
 	
-	float GetZombieDamageRatio() const { return m_ZombieDamageRatio; }
-
 	void SetPointTowerState(EPointTowerState _PointTowerState);
 	EPointTowerState GetPointTowerState() const { return m_State; }
+	
+	float GetZombieAttackRange() const { return m_ZombieAttackRange; }
 
 	/// <summary>
 	/// 현재 라운드 및, 다중  
@@ -138,6 +140,19 @@ private:
 	
 	USceneComponent* FindSceneComponentByName(const FName& _ComName);
 	
+public:
+	
+	virtual float TakeDamage
+	(
+		float				DamageAmount,
+		FDamageEvent const& DamageEvent,
+		AController*		EventInstigator,
+		AActor*				DamageCauser
+	) override;
+
+
+	virtual void GetActorEyesViewPoint(FVector& OutLocation, FRotator& OutRotation) const override;
+	
 protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
@@ -174,6 +189,10 @@ protected:
 	// 좀비에게 공격당했을 시, 좀비 공격력 x Ratio(해당 변수) 만큼 거점 게이지 즉각 하락 처리
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
 	float m_ZombieDamageRatio = 0.25f;
+
+	// 좀비가 판단하기에 Attack 반경이다라고 판단할 반경
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	float m_ZombieAttackRange = 200.f;
 
 protected:
 	
@@ -223,6 +242,8 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	USphereComponent* m_InteractionTestingCollider{};
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	UShapeComponent* m_DamageDetector{};	
 	
 private:
 

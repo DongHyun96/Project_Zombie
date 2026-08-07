@@ -7,6 +7,7 @@
 #include "../../../GlobalEnum.h"
 #include "Actor/Character/NPC/Enemy/Components/SkillComponent/C_EnemySkillComponent.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
+#include "Actor/PointTower/C_PointTower.h"
 #include "Net/UnrealNetwork.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -76,17 +77,18 @@ void AC_Zombie::OnNormalAttackColliderBeginOverlap
 {
 	// Client 쪽은 Event 바인딩 처리 자체를 안해서 검사하지 않아도 됨
 	AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(OtherActor);
-	if (!Player) return; // Player인 경우에만 피격 처리 -> TODO : PointTower에 대한 검사도 처리를 할 것
+	AC_PointTower* PointTower = Cast<AC_PointTower>(OtherActor);
+	if (!Player && !PointTower) return; // PointTower나 Player가 아닌 경우
 	
 	// 이미 이번 휘두르기에 피격처리가 한 번 들어감
 	if (m_SetNormalAttackColliderEntered.Contains(Player)) return;
 	
 	m_SetNormalAttackColliderEntered.Add(Player);
 
-	// 현재 Skill의 피격량을 구해와서, 대상 Player에게 ApplyDamage 처리
+	// 현재 Skill의 피격량을 구해와서, 대상 Target에게 ApplyDamage 처리
 	UGameplayStatics::ApplyDamage
 	(
-		Player,
+		OtherActor,
 		m_SkillCom->GetCurSkillDamage(),
 		GetController(),
 		this,
