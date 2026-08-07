@@ -148,17 +148,6 @@ public:
 protected:
 	void InitWeaponDataFromStruct(UScriptStruct* _InStruct, const void* _StrctPtr);
 
-#if WITH_EDITOR
-	virtual void PostEditChangeProperty(FPropertyChangedEvent& _Event) override;
-#endif
-
-protected:
-	virtual void BeginPlay() override;
-
-	virtual void InitData();
-
-	virtual void OnRegister() override;
-
 public:
 	UC_WeaponDataTableComponent();
 		

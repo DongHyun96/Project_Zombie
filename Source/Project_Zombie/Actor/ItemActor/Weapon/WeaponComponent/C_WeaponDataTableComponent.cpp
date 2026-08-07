@@ -41,29 +41,4 @@ void UC_WeaponDataTableComponent::InitWeaponDataFromStruct(UScriptStruct* _InStr
 	}
 }
 
-void UC_WeaponDataTableComponent::BeginPlay()
-{
-	Super::BeginPlay();
-
-	InitData();
-}
-
-void UC_WeaponDataTableComponent::PostEditChangeProperty(FPropertyChangedEvent& _Event)
-{
-	Super::PostEditChangeProperty(_Event);
-
-	InitData();
-}
-
-void UC_WeaponDataTableComponent::OnRegister()
-{
-	Super::OnRegister();
-
-	InitData();
-}
-
-void UC_WeaponDataTableComponent::InitData()
-{
-	Modify();
-}
 

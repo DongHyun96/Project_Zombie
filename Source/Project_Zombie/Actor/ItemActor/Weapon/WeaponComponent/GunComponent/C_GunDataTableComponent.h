@@ -19,7 +19,7 @@ protected:
 	
 public:
 	virtual void BeginPlay() override;
-	virtual void InitData() override;
+	//virtual void InitData() override;
 
 public:
 	UC_GunDataTableComponent();

@@ -1,9 +1,9 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "C_PointTower.h"
 
-#include "ToolBuilderUtil.h"
+//#include "ToolBuilderUtil.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/Ping/C_WorldPingActor.h"
 #include "Components/SphereComponent.h"

@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -19,7 +19,7 @@ class PROJECT_ZOMBIE_API UC_MontagePrioritySettings : public UDeveloperSettings
 public:
 	UC_MontagePrioritySettings();
 
-	virtual FText GetSectionDescription() const override;
+	//virtual FText GetSectionDescription() const override;
 	
 #if WITH_EDITOR
 	virtual void PostInitProperties() override;

@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "C_MontagePrioritySettings.h"
@@ -15,16 +15,16 @@ UC_MontagePrioritySettings::UC_MontagePrioritySettings()
     SectionName  = TEXT("MontagePrioritySettings");
 }
 
-FText UC_MontagePrioritySettings::GetSectionDescription() const
-{
-    return FText::FromString
-    (
-        TEXT
-        (
-            "몽타주 Priority 카테고리 '추가/삭제' 는 GameplayTags 탭에서 수정할 것\n0-255 까지의 우선순위 부여 가능 (더 높은 숫자가 우선적으로 재생처리)"
-        )
-    );
-}
+//FText UC_MontagePrioritySettings::GetSectionDescription() const
+//{
+//    return FText::FromString
+//    (
+//        TEXT
+//        (
+//            "몽타주 Priority 카테고리 '추가/삭제' 는 GameplayTags 탭에서 수정할 것\n0-255 까지의 우선순위 부여 가능 (더 높은 숫자가 우선적으로 재생처리)"
+//        )
+//    );
+//}
 
 #if WITH_EDITOR
 

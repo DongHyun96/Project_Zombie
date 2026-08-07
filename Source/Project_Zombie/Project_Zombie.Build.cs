@@ -27,7 +27,8 @@ public class Project_Zombie : ModuleRules
 			"StructUtils",
 			"DeveloperSettings",
             "OnlineSubsystem",
-            "OnlineSubsystemUtils"
+            "OnlineSubsystemUtils",
+            "SteamSockets"
         });
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });
