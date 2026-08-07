@@ -100,18 +100,26 @@ protected:
 	void OnRep_PoolActive();
 
 public:
+	bool IsPoolActive() const
+	{
+		return m_bPoolActive;
+	}
+
 	/// <summary>
 	/// 죽은 좀비를 레벨에서 제거하고 
 	/// 풀 대기상태로 전환
 	/// 서버에서만 호출
 	/// </summary>
-	void DeactivateForPool();
+	bool DeactivateForPool();
 
-	bool IsPoolActive() const
-	{
-		return m_bPoolActive;
-	}
-	
+	/// <summary>
+	/// 대기 풀의 좀비를 지정한 위치에서 다시 활성화
+	/// 서버에서만 호출
+	/// </summary>
+	/// <param name="_SpawnTransform"> : 스폰위치 </param>
+	/// <returns></returns>
+	bool ActivateFromPool(const FTransform& _SpawnTransform);
+
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 public:	
