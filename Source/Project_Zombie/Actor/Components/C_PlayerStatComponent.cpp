@@ -11,7 +11,9 @@
 #include "Item/Interact/ItemUpgrade/C_ItemUpgradeStation.h"
 #include "Item/Interact/StatUpgrade/C_StatUpgradeStation.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
+#include "UI/MainHUD/PlayerStatHUD/C_OtherPlayerStatWidget.h"
 #include "UI/MainHUD/PlayerStatHUD/C_PlayerStatWidget.h"
+#include "Utility/C_Util.h"
 
 
 UC_PlayerStatComponent::UC_PlayerStatComponent()
@@ -37,9 +39,7 @@ void UC_PlayerStatComponent::BeginPlay()
 		if (StatWidget)
 			this->OnCurHPUpdatedDelegate.AddUObject(StatWidget, &UC_PlayerStatWidget::UpdateHPBarRatio);
 	}
-	// TODO : 이거 다른 사람 Stat을 표기하려면, 여기에 이런식으로 처리를 해주면 됨 (다른 팀원 체력 확인은 해야할 듯)
-	else OnCurHPUpdatedDelegate.AddUObject(m_OwnerPlayer, &AC_BasicCharacter::UpdatePlayerHPOnAboveHeadTest);
-	
+	else OnCurHPUpdatedDelegate.AddUObject(this, &UC_PlayerStatComponent::UpdateOtherPlayerHPBar);
 }
 
 void UC_PlayerStatComponent::Server_RequestStatUpgrade(AC_StatUpgradeStation* InInteractableActor,
@@ -59,6 +59,18 @@ void UC_PlayerStatComponent::Server_RequestStatUpgrade(AC_StatUpgradeStation* In
 UScriptStruct* UC_PlayerStatComponent::GetStatDataStruct() const
 {
 	return FPlayerStatData::StaticStruct();
+}
+
+void UC_PlayerStatComponent::UpdateOtherPlayerHPBar(float _Ratio)
+{
+	AC_UIManager* UIManager = UI_MANAGER(GetWorld());
+	if (!UIManager)
+	{
+		UC_Util::Print("[UC_PlayerStatComponent::UpdateOtherPlayerHPBar] : UI Manager not inited", FColor::Red, 10.f);
+		return;
+	}
+	
+	UIManager->GetMainHUDWidget()->GetOtherPlayerStatWidget()->UpdateHPBar(m_OwnerPlayer, _Ratio);
 }
 
 /*
