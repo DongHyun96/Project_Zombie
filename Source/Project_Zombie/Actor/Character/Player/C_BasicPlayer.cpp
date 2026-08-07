@@ -441,6 +441,11 @@ void AC_BasicPlayer::Landed(const FHitResult& Hit)
 {
 	Super::Landed(Hit);
 
+	if (m_FeetComponent)
+	{
+		m_FeetComponent->PlayLandingSound(Hit);
+	}
+
 	if (!HasAuthority())
 		return;
 

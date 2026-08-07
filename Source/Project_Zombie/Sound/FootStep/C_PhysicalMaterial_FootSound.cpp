@@ -9,4 +9,5 @@ UC_PhysicalMaterial_FootSound::UC_PhysicalMaterial_FootSound()
 	m_RightWalkSound = nullptr;
 	m_LeftSprintSound = nullptr;
 	m_RightSprintSound = nullptr;
+	m_LandingSound = nullptr;
 }
