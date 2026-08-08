@@ -386,6 +386,7 @@ float AC_PointTower::TakeDamage
 	float ReceivedDamageAmount = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 	const float Damage = ReceivedDamageAmount * m_ZombieDamageRatio; // Damage 만큼 현재 Conquered 펀센트에서 제거
 	m_CurConquerAmount -= Damage;
+	Multicast_OnTakeDamage(); // % 위젯 색상 잠시 빨간색으로 변경	
 	return Damage;
 }
 
@@ -436,6 +437,11 @@ void AC_PointTower::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
 	DOREPLIFETIME(AC_PointTower, m_PointTowerInteractEffect);
+}
+
+void AC_PointTower::Multicast_OnTakeDamage_Implementation()
+{
+	m_PointTowerWidget->OnDamaged();
 }
 
 void AC_PointTower::Multicast_Activate_Implementation()

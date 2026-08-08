@@ -147,14 +147,12 @@ void AC_ZombieController::OnTargetUpdated(AActor* _Target, FAIStimulus _Stimulus
 	/* 인지범위에서 벗어난 경우 */
 	if (!pInfo->bSensed)
 	{
-		UC_Util::Print("OUT", FColor::Red, 10.f);
 		pInfo->LosePos  = _Stimulus.StimulusLocation;	// 놓친 위치 저장
 		pInfo->LoseTime = GetWorld()->GetTimeSeconds(); // 놓쳤을 때 시간 저장
 		return;
 	}
 
 	/* 인지범위에 잡힌 경우 */
-	UC_Util::Print("IN", FColor::Red, 10.f);
 	// 인지정보가 어떤 감각으로 발생한 정보인지 구별
 	static FAISenseID SightID = UAISense::GetSenseID<UAISense_Sight>();
 	static FAISenseID DmgID   = UAISense::GetSenseID<UAISense_Damage>();

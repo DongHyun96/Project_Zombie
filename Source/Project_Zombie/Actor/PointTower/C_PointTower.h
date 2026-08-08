@@ -169,6 +169,14 @@ public:
 	
 	const FZombieWaveSetting& GetZombieWaveSetting() const { return m_ZombieWaveSetting; }
 
+private:
+	
+	/// <summary>
+	/// Damage를 입었을 때 처리 
+	/// </summary>
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_OnTakeDamage();
+
 protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
