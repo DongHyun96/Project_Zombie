@@ -6,12 +6,17 @@
 #include "GameFramework/Actor.h"
 #include "C_FireDamageArea.generated.h"
 
+
 // 각 장판의 위치와 Normal 정보를 담는 구조체
 struct FFirePatchInfo
 {
 	FVector PatchLocation; // 장판 위치
 	FVector PatchNormal;   // 장판이 바닥에 닿았을 때의 Normal
 };
+
+class USoundBase;
+class USoundAttenuation;
+class UAudioComponent;
 
 UCLASS()
 class PROJECT_ZOMBIE_API AC_FireDamageArea : public AActor
@@ -138,6 +143,17 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Fire Area|Debug")
 	bool m_bDebugDraw; 
+
+protected:
+	// ==================== Sound 관련 변수 ===================
+	UPROPERTY(EditDefaultsOnly, Category = "Fire Area|Sound")
+	USoundBase* m_FireSound;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Fire Area|Sound")
+	USoundAttenuation* m_FireSoundAttenuation;
+
+	UPROPERTY()
+	UAudioComponent* m_FireAudioComponent;
 
 private:
 

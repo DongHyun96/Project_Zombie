@@ -18,6 +18,7 @@ class USplineComponent;
 class USplineMeshComponent;
 class UStaticMeshComponent;
 
+class USoundBase;
 
 UCLASS()
 class PROJECT_ZOMBIE_API AC_ThrowableWeaponBase : public AC_WeaponBase
@@ -270,7 +271,8 @@ public:
 	virtual void UpdateAmmoInfoHUDForDrawEnd() override;
 	
 	virtual void SetAmmoUIInfo(FAmmoUIInfo& _AmmoUIInfo) override;
-	
+
+
 	/* Socket Name 관련 */
 protected: 
 
@@ -450,6 +452,25 @@ protected: // 예상 투척 경로 TODO : 이 부분은 일단은 데이터 테�
 protected:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Mesh", meta = (AllowPrivateAccess = "true"))
 	class UStaticMeshComponent* m_WeaponMesh;
+
+	// 사운드
+protected:
+
+	// 처음 핀 뽑는 효과음
+	UPROPERTY(EditDefaultsOnly, Category = "Sound")
+	TObjectPtr<USoundBase> m_PinpullSound;
+
+	// Input 핀 뽑는 효과음
+	UPROPERTY(EditDefaultsOnly, Category = "Sound")
+	TObjectPtr<USoundBase> m_PinpullInputSound;
+
+	// 폭발 효과음
+	UPROPERTY(EditDefaultsOnly, Category = "Sound")
+	TObjectPtr<USoundBase> m_ExplosionSound;
+
+	// 폭발 효과음의 Attenuation 설정
+	UPROPERTY(EditDefaultsOnly, Category = "Sound")
+	USoundAttenuation* m_ExplosionSoundAttenuation;
 
 private:
 

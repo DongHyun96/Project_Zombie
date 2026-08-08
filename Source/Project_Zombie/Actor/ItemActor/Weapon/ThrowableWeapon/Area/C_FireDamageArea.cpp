@@ -5,7 +5,7 @@
 #include "Particles/ParticleSystemComponent.h"
 #include "DrawDebugHelpers.h"
 
-
+#include "Components/AudioComponent.h"
 #include "Engine/OverlapResult.h"
 
 #include "Utility/C_Util.h"
@@ -48,6 +48,21 @@ void AC_FireDamageArea::BeginPlay()
 	// 장판 생성
 	GenerateFirePatches();
 
+	// 장판 생성 시 사운드 재생
+	if (m_FireSound)
+	{
+		m_FireAudioComponent = UGameplayStatics::SpawnSoundAtLocation(
+			GetWorld(),
+			m_FireSound,
+			GetActorLocation(),
+			GetActorRotation(),
+			1.f,	// Volume
+			1.f,	// Pitch
+			0.f,	// StartTime
+			m_FireSoundAttenuation
+		);
+	}
+
 	// 서버에서 수명 & 데미지 관리
 	if (!HasAuthority())
 		return;
@@ -72,6 +87,13 @@ void AC_FireDamageArea::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	// 장판 제거 시 타이머 제거
 	GetWorldTimerManager().ClearTimer(m_DamageTimerHandle);
+
+	// 화염 장판 제거 시 사운드 제거
+	if (IsValid(m_FireAudioComponent))
+	{
+		m_FireAudioComponent->Stop();
+		m_FireAudioComponent->DestroyComponent();
+	}
 
 	// 장판 제거 시 파티클 제거
 	for (UParticleSystemComponent* Effect : m_FirePatchEffects)
@@ -108,11 +130,15 @@ bool AC_FireDamageArea::FindGroundAtLocation(const FVector& _StartLocation, FHit
 		this	// Trace 검사에서 자기 자신을 무시
 	);
 
-	const bool bHitGround = World->LineTraceSingleByChannel(
+	FCollisionObjectQueryParams ObjectQueryParams;
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldStatic);
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+
+	const bool bHitGround = World->LineTraceSingleByObjectType(
 		_OutGroundHit,
 		StartTrace,
 		EndTrace,
-		ECC_Visibility,	// 지형과 충돌하는 채널
+		ObjectQueryParams,	// 지형과 충돌하는 채널
 		QueryParams
 	);
 
@@ -159,11 +185,15 @@ bool AC_FireDamageArea::IsSpreadBlock(const FFirePatchInfo& _FromPatch, const FF
 
 	FHitResult ObstacleHit;
 
-	const bool bBlocked = World->LineTraceSingleByChannel(
+	FCollisionObjectQueryParams ObjectQueryParams;
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldStatic);
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+
+	const bool bBlocked = World->LineTraceSingleByObjectType(
 		ObstacleHit,
 		StartTrace,
 		EndTrace,
-		ECC_Visibility,	// 지형과 충돌하는 채널 /// 나중에 추가해야함
+		ObjectQueryParams,	// 지형과 충돌하는 채널 /// 나중에 추가해야함
 		QueryParams
 	);
 
