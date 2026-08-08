@@ -4,6 +4,10 @@
 #include "C_GameMode_GameLv.h"
 
 #include "Actor/Components/C_InvenComponent.h"
+#include "Actor/Components/StatComponent/C_StatComponentBase.h"
+#include "Components/CapsuleComponent.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "PlayerState/C_PlayerState.h"
 #include "C_ZombieManager.h"
 #include "PointTowerManager/C_PointTowerManager.h"
@@ -17,55 +21,20 @@ AC_GameMode_GameLv::AC_GameMode_GameLv()
 	PrimaryActorTick.bCanEverTick = true;
 	
 	PlayerStateClass = AC_PlayerState::StaticClass();
+
+   bUseSeamlessTravel = true;
 }
 
 void AC_GameMode_GameLv::BeginPlay()
 {
-	Super::BeginPlay();
+    Super::BeginPlay();
 
-	if (m_ZombieManagerClass)
-		m_ZombieManager = NewObject<UC_ZombieManager>(this, m_ZombieManagerClass);
-	else
-	{
-		UC_Util::Print("From AC_GameMode_GameLv::BeginPlay : Please Init ZombieManager class in GameMode_GameLv!", FColor::Red, 10.f);
-		m_ZombieManager = NewObject<UC_ZombieManager>(this);
-	}
+    if (m_ZombieManagerClass)
+       m_ZombieManager = NewObject<UC_ZombieManager>(this, m_ZombieManagerClass);
+    else
+       m_ZombieManager = NewObject<UC_ZombieManager>(this);
 
 	if (m_ZombieManager) m_ZombieManager->OnWorldBeginPlay();
-	
-	// 스폰 테스트
-	/*if (m_ZombieManager)
-	{
-		TArray<AActor*> FoundActors;
-
-		// 맵에 배치된 모든 SpawnArea 검색
-		UGameplayStatics::GetAllActorsOfClass(
-			GetWorld(),
-			AC_SpawnArea::StaticClass(),
-			FoundActors);
-
-		TArray<AC_SpawnArea*> SpawnAreas;
-
-		for (AActor* Actor : FoundActors)
-		{
-			if (AC_SpawnArea* SpawnArea =
-				Cast<AC_SpawnArea>(Actor))
-			{
-				SpawnAreas.Add(SpawnArea);
-			}
-		}
-
-		// 지속 스폰 시작
-		if (!m_ZombieManager->StartSpawnLoop(
-			SpawnAreas,
-			m_TestWaveSetting))
-		{
-			UC_Util::Print(
-				"StartSpawnLoop Failed !!",
-				FColor::Red,
-				10.f);
-		}
-	}*/
 
 	m_PointTowerManager = NewObject<UC_PointTowerManager>(this);
 
@@ -80,6 +49,7 @@ void AC_GameMode_GameLv::BeginPlay()
 	/*FActorSpawnParameters SpawnParam{};
 	SpawnParam.Owner = this;*/
 	m_GameOverChecker = GetWorld()->SpawnActor<AC_GameOverChecker>(AC_GameOverChecker::StaticClass());
+
 }
 
 void AC_GameMode_GameLv::Tick(float DeltaSeconds)
@@ -92,45 +62,65 @@ void AC_GameMode_GameLv::Tick(float DeltaSeconds)
 
 void AC_GameMode_GameLv::PostLogin(APlayerController* NewPlayer)
 {
-	Super::PostLogin(NewPlayer);
+    Super::PostLogin(NewPlayer);
+    
+    AC_PlayerState* PState = Cast<AC_PlayerState>(NewPlayer->PlayerState);
+    if (!PState) return;
 
-	if (AC_PlayerState* PState = Cast<AC_PlayerState>(NewPlayer->PlayerState))
-		PState->m_bIsHost = true;
+    PState->m_bIsHost = NewPlayer->IsLocalController();
 }
 
 void AC_GameMode_GameLv::Logout(AController* Exiting)
 {
-	// [중요] 부모 로그아웃(Super::Logout)을 호출하기 전에 우리의 로직을 먼저 실행해야 합니다!
-	APlayerController* PC = Cast<APlayerController>(Exiting);
-	if (PC)
-	{
-		APlayerState* PS = PC->GetPlayerState<APlayerState>();
-		if (PS)
-		{
-			int32 LeaverPlayerID = PS->GetPlayerId();
-            
-			// 디버그 로그: 정말 이 단계까지 진입하는지 확인
-			//UE_LOG(LogTemp, Warning, TEXT("Logout Detected! Leaver Player ID: %d"), LeaverPlayerID);
-			//UKismetSystemLibrary::PrintString(this, FString::Printf(TEXT("Logout Detected! PlayerID: %d"), LeaverPlayerID), true, true, FLinearColor::Red, 10.f);
+    APlayerController* PC = Cast<APlayerController>(Exiting);
+    if (PC)
+    {
+       AC_PlayerState* PS = PC->GetPlayerState<AC_PlayerState>();
+       if (PS)
+       {
+          const int32 LeaverPlayerID = PS->GetPlayerId();
+          UWorld* CurrentWorld = GetWorld();
 
-			UWorld* CurrentWorld = GetWorld();
+          for (TObjectIterator<UC_InvenComponent> It; It; ++It)
+          {
+             UC_InvenComponent* InvenComp = *It;
+             if (InvenComp && !InvenComp->IsTemplate() && InvenComp->GetWorld() == CurrentWorld)
+             {
+                InvenComp->ReleaseAllLocksByPlayer(LeaverPlayerID);
+             }
+          }
+       }
+    }
+    Super::Logout(Exiting);
+}
 
-			// 월드 안의 인벤토리 컴포넌트들을 돌며 락 해제
-			for (TObjectIterator<UC_InvenComponent> It; It; ++It)
-			{
-				UC_InvenComponent* InvenComp = *It;
-				if (InvenComp && !InvenComp->IsTemplate() && InvenComp->GetWorld() == CurrentWorld)
-				{
-					InvenComp->ReleaseAllLocksByPlayer(LeaverPlayerID);
-				}
-			}
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("Logout: PlayerState is Null! Cannot get PlayerID."));
-		}
-	}
+void AC_GameMode_GameLv::HandleSeamlessTravelPlayer(AController*& C)
+{
+   // 1. 엔진 로직 선행 (캐릭터 스폰 및 빙의 완료)
+   Super::HandleSeamlessTravelPlayer(C);
 
-	// 모든 작업이 끝난 뒤 부모 로그아웃 호출
-	Super::Logout(Exiting);
+   APlayerController* PC = Cast<APlayerController>(C);
+   if (!PC) return;
+
+   AC_PlayerState* PS = PC->GetPlayerState<AC_PlayerState>();
+   if (!PS) return;
+
+   APawn* NewPawn = PC->GetPawn();
+   if (!NewPawn) return;
+
+   // 2. 캐릭터의 PossessedBy에서 복구하지 못했을 경우를 대비해 확실하게 다시 강제 로드
+   // (심리스 트래블 완료 시점의 확실한 데이터 복구 보장)
+   if (UC_InvenComponent* InvenComp = NewPawn->FindComponentByClass<UC_InvenComponent>())
+   {
+      // 기존 인벤토리가 비어있거나, 데이터 복구가 누락되었다면 여기서 꽂아줌
+      InvenComp->LoadInventoryFromBackup(PS->GetSavedInventory()); 
+      UE_LOG(LogTemp, Warning, TEXT("[Travel Restore] 게임모드 단계에서 새 캐릭터 %s로 인벤토리 최종 복구 완료! (아이템: %d개)"), 
+         *NewPawn->GetName(), PS->GetSavedInventory().Num());
+   }
+
+   if (UC_StatComponentBase* StatComp = NewPawn->FindComponentByClass<UC_StatComponentBase>())
+   {
+      StatComp->LoadStatsFromBackup(PS->GetSavedStats(), PS->GetSavedStatGrades());
+      UE_LOG(LogTemp, Warning, TEXT("[Travel Restore] 게임모드 단계에서 새 캐릭터 %s로 스탯 최종 복구 완료!"), *NewPawn->GetName());
+   }
 }

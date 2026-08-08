@@ -27,6 +27,8 @@ public:
 
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 
+	void ToggleBoostBarColor(bool BoostExhausted);
+	
 public: // HPBar 및 BoostBar 관련
 	
 	/// <summary>

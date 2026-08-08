@@ -110,7 +110,9 @@ void UC_BasicPlayerInputComponent::InitializePlayerInput(UInputComponent* Player
 	if (const UInputAction* IA = FindIAByName(TEXT("IA_PlayerSprint")))
 	{
 		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::SprintStart);
-		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Completed, this, &UC_BasicPlayerInputComponent::SprintEnd);	
+		
+		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Completed, this, &UC_BasicPlayerInputComponent::SprintEnd);
+		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Canceled, this, &UC_BasicPlayerInputComponent::SprintEnd);
 	}
 		
 	if (const UInputAction* IA = FindIAByName(TEXT("IA_PlayerFire")))
@@ -241,6 +243,10 @@ void UC_BasicPlayerInputComponent::JumpAction()
 	}
 
 	Player->SetIsJumpInput(true);
+	
+	if (Player->IsSprinting()) 
+		Player->StopSprint();
+	
 	Player->Jump();
 }
 

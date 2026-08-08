@@ -45,8 +45,12 @@
 
 #include "TimerManager.h"
 #include "Actor/Components/PlayerProfileComponent/C_PlayerProfileComponent.h"
+
 #include "Actor/GameOverChecker/C_GameOverChecker.h"
 #include "GameModeAndManager/C_GameMode_GameLv.h"
+
+#include "GameModeAndManager/PlayerState/C_PlayerState.h"
+
 
 #include "Net/UnrealNetwork.h"
 #include "Kismet/KismetMathLibrary.h"
@@ -54,7 +58,54 @@
 #include "UI/InvenUI/Upgrade/C_ItemUpgradeWidget.h"
 #include "Item/Interact/C_InteractableBase.h"
 #include "Item/Interact/ItemUpgrade/C_ItemUpgradeStation.h"
+
 #include "Kismet/GameplayStatics.h"
+
+#include "UI/InvenUI/Upgrade/C_PlayerStatUpgradeWidget.h"
+
+#define RECHARGED_BOOST 20.f
+
+
+void AC_BasicPlayer::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+    
+	// 오직 서버에서만 실행되는 안전지대
+	if (!HasAuthority()) return;
+
+	if (AC_PlayerState* PS = NewController->GetPlayerState<AC_PlayerState>())
+	{
+		// 1. 인벤토리 컴포넌트 복구 (저장된 데이터가 유효할 때만)
+		if (PS->GetSavedInventory().Num() > 0)
+		{
+			if (UC_InvenComponent* InvenComp = FindComponentByClass<UC_InvenComponent>())
+			{
+				
+				
+				InvenComp->LoadInventoryFromBackup(PS->GetSavedInventory());
+			}
+			
+			if (m_EquippedComponent && HasAuthority())
+			{
+				//m_EquippedComponent->SetOwnerPlayer(this);
+				
+				for (int32 i = 0 ; i < static_cast<int32>(EWeaponSlot::None) ; ++i)
+					m_EquippedComponent->LoadEquippedWeaponFromInven(i,m_InvenComponent->GetItemAt(i));
+			}
+		}
+
+		// 2. 스탯 컴포넌트 복구
+		if (PS->GetSavedStats().Num() > 0)
+		{
+			if (UC_StatComponentBase* StatComp = FindComponentByClass<UC_StatComponentBase>())
+			{
+				StatComp->LoadStatsFromBackup(PS->GetSavedStats(), PS->GetSavedStatGrades());
+			}
+		}
+        
+		UE_LOG(LogTemp, Log, TEXT("[Character] PossessedBy 타이밍에 백업 데이터 정상 로드 완료."));
+	}
+}
 
 AC_BasicPlayer::AC_BasicPlayer()
 {
@@ -164,6 +215,12 @@ bool AC_BasicPlayer::Server_RequestItemUpgrade_Validate(AC_ItemUpgradeStation* I
 	return true;
 }
 
+void AC_BasicPlayer::OnRep_CurBoost()
+{
+	if (IsLocallyControlled())
+		UpdateBoostBarHUD(); 
+}
+
 void AC_BasicPlayer::BeginPlay()
 {
 	Super::BeginPlay();
@@ -176,7 +233,16 @@ void AC_BasicPlayer::BeginPlay()
 		LevelManager->AddPlayer(this);
 	
 
-	UpdateBoostBarHUD();
+
+	// 웅크리기 완료 시 호출할 OnPoseTransitionFinished 바인딩
+	if (m_PoseColliderHandlerComponent)
+	{
+		m_PoseColliderHandlerComponent
+			->OnPoseTransitionFinished.AddUObject(this, &AC_BasicPlayer::OnPoseTransitionFinished);
+	}
+
+	//UpdateBoostBarHUD();
+
 	// InventoryWidget에 Player의 InvenComponent 초기화 및 델리게이트 진행
 	APlayerController* PC = Cast<APlayerController>(GetController());
 	
@@ -202,8 +268,18 @@ void AC_BasicPlayer::BeginPlay()
 	if (m_InvenComponent && m_EquippedComponent)
 	{
 		m_EquippedComponent->SetupInventoryComponent(m_InvenComponent);
+		
 	}
+
+	if (m_StatComponent)
+		UIManager->GetInventoryWidget()->GetPlayerStatUpgradeWidget()->BindStatEvents(m_StatComponent);
 	
+	// GameLevelManager에 해당 Player 등록
+	if (UC_GameLevelManager* LevelManager = GetWorld()->GetSubsystem<UC_GameLevelManager>())
+		LevelManager->AddPlayer(this);
+	
+	UpdateBoostBarHUD();
+
 	//if (m_InvenComponent)
 	//{
 	//	UIManager->GetInventoryWidget()->GetPlayerGridWidget()->SetInvenComponent(m_InvenComponent);
@@ -214,17 +290,18 @@ void AC_BasicPlayer::BeginPlay()
 
 	// 플레이어의 인벤에 장비 전용 인덱스 추가.
 	//m_InvenComponent->SetMaxSlots(45 + static_cast<int32>(EWeaponSlot::Max));
-	
-	// 웅크리기 완료 시 호출할 OnPoseTransitionFinished 바인딩
-	if (m_PoseColliderHandlerComponent)
-	{
-		m_PoseColliderHandlerComponent
-			->OnPoseTransitionFinished.AddUObject(this, &AC_BasicPlayer::OnPoseTransitionFinished);
-	}
-
 
 	// 입력 시스템 초기화
 	//InitInput();
+	
+	UE_LOG(
+	LogTemp,
+	Error,
+	TEXT("[PLAYER BEGINPLAY] %s / Address=%p / World=%s"),
+	*GetName(),
+	this,
+	*GetWorld()->GetName()
+);
 }
 
 void AC_BasicPlayer::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -247,6 +324,8 @@ void AC_BasicPlayer::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	
 	DOREPLIFETIME(AC_BasicPlayer, m_HandState);
 	DOREPLIFETIME(AC_BasicPlayer, ReplicatedAimYaw);
+	DOREPLIFETIME(AC_BasicPlayer, m_CurBoost);
+	DOREPLIFETIME(AC_BasicPlayer, m_bIsBoostExhausted);
 }
 
 void AC_BasicPlayer::Tick(float DeltaTime)
@@ -265,20 +344,28 @@ void AC_BasicPlayer::Tick(float DeltaTime)
 
 	/// 나중에 스탯 컴포넌트로 분리할 예정
 	// 달리기 중이면 부스트 소모
-	if (m_PlayerPoseState == EPlayerPoseState::Sprint)
+	if (HasAuthority() && !IsFalling()) // TODO : 점프중에는 실행하면 안되고 달리던 속도를 유지 혹은 점차 감소 해야 한다.
 	{
-		UseBoost( m_StatComponent->GetStat(StatName::BoostCost) * DeltaTime);
-		
-		if (m_StatComponent->GetStat(StatName::CurBoost) <= 0.f)
+		// 부스트 소모 및 회복 (서버에서만 한 번에 처리)
+		const bool bIsMoving = GetVelocity().SizeSquared() > 10.f;
+		const bool bIsSprinting = (m_PlayerPoseState == EPlayerPoseState::Sprint);
+
+		if (bIsSprinting && bIsMoving && !m_bIsBoostExhausted)
 		{
-			StopSprint();
+			ProcessSprint(DeltaTime);
+		}
+		else
+		{
+			// 이동 중이 아니거나 달리기가 아니면 부스트 회복
+			RecoverBoost(m_StatComponent->GetStat(StatName::BoostRecover) * DeltaTime);
 		}
 	}
-	// 달리기 중이 아니면 부스트 회복
-	else
-	{
-		RecoverBoost(m_StatComponent->GetStat(StatName::BoostRecover) * DeltaTime);
-	}
+	
+	// 달리기가 아닌 상태일 때 부스트 회복
+	//if (m_PlayerPoseState != EPlayerPoseState::Sprint && m_StatComponent)
+	//{
+	//	RecoverBoost(m_StatComponent->GetStat(StatName::BoostRecover) * DeltaTime);
+	//}
 
 	// [Aim] 카메라 변환 중일 때만 함수 호출
 	if (m_BasicPlayerAimComponent->IsTransitioningCamera())
@@ -396,6 +483,27 @@ bool AC_BasicPlayer::SetCurDraggedItem(struct FInventoryEntry InEntry, UC_InvenC
 	return false;
 }
 
+void AC_BasicPlayer::SetCurBoost(float NewBoost)
+{
+	if (HasAuthority() && m_StatComponent)
+	{
+		const float MaxBoost = m_StatComponent->GetStat(StatName::MaxBoost);
+       
+		// 0.01f보다 작은 미세 수치는 완전히 0.f로 보정
+		if (NewBoost < 0.01f)
+		{
+			NewBoost = 0.f;
+		}
+
+		const float ClampedBoost = FMath::Clamp(NewBoost, 0.f, MaxBoost);
+
+		m_StatComponent->SetStat(StatName::CurBoost, ClampedBoost);
+		m_CurBoost = ClampedBoost; 
+
+		OnRep_CurBoost();
+	}
+}
+
 void AC_BasicPlayer::Server_SetAimYaw_Implementation(float InAimYaw)
 {
 	ReplicatedAimYaw = FMath::Clamp(InAimYaw, -90.f, 90.f);
@@ -460,45 +568,44 @@ void AC_BasicPlayer::Landed(const FHitResult& Hit)
 
 bool AC_BasicPlayer::UseBoost(float _UseAmount)
 {
-	if (_UseAmount <= 0.f || m_StatComponent->GetStat(StatName::MaxBoost) <= 0.f || m_StatComponent->GetStat(StatName::CurBoost) <= 0.f)
-		return false;
-	
+	if (_UseAmount <= 0.f || !m_StatComponent) return false;
+
 	float CurBoost = m_StatComponent->GetStat(StatName::CurBoost);
+	if (CurBoost <= 0.f) return false;
 
-	float PrevBoost = CurBoost;
 	bool bHasBoost = (CurBoost >= _UseAmount);
-
 	if (bHasBoost)
-	{	
-		// 부스트 사용 
-		m_StatComponent->SetStat(StatName::CurBoost, FMath::Max(0.f, CurBoost - _UseAmount));
-
-		// 값이 변경되었을 경우 HUD 업데이트
-		if (!FMath::IsNearlyEqual(PrevBoost, m_StatComponent->GetStat(StatName::CurBoost)))
-			UpdateBoostBarHUD();
+	{  
+		// UI 직접 호출(UpdateBoostBarHUD)을 제거하고 SetCurBoost 사용!
+		SetCurBoost(CurBoost - _UseAmount);
 	}
-	
+    
 	return bHasBoost;
 }
 
 void AC_BasicPlayer::RecoverBoost(float _RecoverAmount)
 {
+	if (!m_StatComponent) return;
+
 	float MaxBoost = m_StatComponent->GetStat(StatName::MaxBoost);
 	float CurBoost = m_StatComponent->GetStat(StatName::CurBoost);
-	
+    
 	if (_RecoverAmount <= 0.f || MaxBoost <= 0.f || CurBoost >= MaxBoost)
 		return;
 
-	float PrevBoost = CurBoost;
-	
-	// 부스트 회복
-	CurBoost = FMath::Min(MaxBoost, CurBoost + _RecoverAmount);
+	// 부스트 회복 계산
+	float NewBoost = FMath::Min(MaxBoost, CurBoost + _RecoverAmount);
 
-	m_StatComponent->SetStat(StatName::CurBoost, CurBoost);
+	// SetCurBoost를 사용하여 서버/클라이언트 UI 동기화 일원화!
+	SetCurBoost(NewBoost);
 	
-	// 값이 변경되었을 경우 HUD 업데이트
-	if (!FMath::IsNearlyEqual(PrevBoost, CurBoost))
-		UpdateBoostBarHUD();
+	// 탈진상태 해제 조건 체크 (서버에서만 실행됨)
+	if (m_bIsBoostExhausted && NewBoost >= RECHARGED_BOOST)
+	{
+		m_bIsBoostExhausted = false;
+		OnRep_ChangedBoostExhausted();
+		// TODO: 만약 방전 해제 시 UI 색상을 복구해야 한다면, RepNotify나 Delegate로 클라이언트에 전파
+	}
 }
 
 void AC_BasicPlayer::StartSprint()
@@ -506,6 +613,15 @@ void AC_BasicPlayer::StartSprint()
 	if (!IsAlive())
 		return;
 
+	// 방전 상태이면 달리기 불가.
+	if (m_bIsBoostExhausted && m_StatComponent->GetStat(StatName::CurBoost) >= RECHARGED_BOOST)
+	{
+		m_bIsBoostExhausted = false;
+		OnRep_ChangedBoostExhausted();
+	}
+	
+	if (m_bIsBoostExhausted) return;
+	
 	// 공중일 때는 달리기 불가
 	if (!GetCharacterMovement() || GetCharacterMovement()->IsFalling())
 		return;
@@ -537,11 +653,44 @@ void AC_BasicPlayer::StartSprint()
 		SetPoseStateOnServer(EPlayerPoseState::Sprint);
 		return;
 	}
-
+	
 	// 클라이언트에서 먼저 적용
 	ApplyPoseStateLocally(EPlayerPoseState::Sprint);
 
 	Server_RequestSetPoseState(EPlayerPoseState::Sprint);
+}
+
+void AC_BasicPlayer::ProcessSprint(float DeltaTime)
+{
+	// 부스트 방전 상태이거나 스탯 컴포넌트가 없으면 처리 안 함
+	if (m_bIsBoostExhausted || !m_StatComponent) 
+	{
+		StopSprint();
+		return;
+	}
+
+	// 이동 중일 때만 부스트 소모 (제자리에 서서 Shift만 누르고 있을 때 소모 방지)
+	if (GetVelocity().SizeSquared() > 10.f)
+	{
+		float Cost = m_StatComponent->GetStat(StatName::BoostCost) * DeltaTime;
+		float CurBoost = m_StatComponent->GetStat(StatName::CurBoost);
+
+		// 남아있는 부스트보다 차감량이 크면, 남은 만큼 깔끔하게 다 쓰고 0으로 만든 뒤 방전!
+		if (CurBoost <= Cost)
+		{
+			UseBoost(CurBoost); // 남은 수치 완충 소모 (0으로 만듦)
+			
+			m_bIsBoostExhausted = true;
+			
+			OnRep_ChangedBoostExhausted();
+			
+			StopSprint();
+		}
+		else
+		{
+			UseBoost(Cost);
+		}
+	}
 }
 
 void AC_BasicPlayer::StopSprint()
@@ -671,7 +820,7 @@ void AC_BasicPlayer::ApplyMovementSpeed()
 void AC_BasicPlayer::UpdateBoostBarHUD() const
 {
 	// 자기 자신의 Player인 경우에만 자신의 BoostBar 업데이트 처리
-	if (!IsLocallyControlled()) return;
+	//if (!IsLocallyControlled()) return;
 	
 	if (APlayerController* PC = GetController<APlayerController>())
 	{
@@ -690,6 +839,23 @@ void AC_BasicPlayer::OnPoseTransitionFinished(bool _bIsCrouched)
 
 	// 웅크리기 전환 완료 후 이동 속도 갱신
 	ApplyMovementSpeed();
+}
+
+void AC_BasicPlayer::OnRep_ChangedBoostExhausted()
+{
+	if (!IsLocallyControlled())
+		return;
+
+	if (APlayerController* PC = GetController<APlayerController>())
+	{
+		if (AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD()))
+		{
+			if (UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget())
+			{
+				MainHUD->ChangeBoostBarColor(m_bIsBoostExhausted);
+			}
+		}
+	}
 }
 
 ETeamAttitude::Type AC_BasicPlayer::GetTeamAttitudeTowards(const AActor& _Other) const

@@ -3,10 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GlobalData.h"
 #include "Components/ActorComponent.h"
 #include "C_StatUpgradeComponent.generated.h"
 
 
+class UC_InvenComponent;
 class AC_BasicPlayer;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -23,7 +25,12 @@ protected:
 public:	
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	virtual void UpgradeItem(AC_BasicPlayer* InPlayer, const FName& UpStatName);
+	virtual void UpgradeStat(AC_BasicPlayer* InPlayer, const FName& UpStatName);
 	
+private:
+	// 스탯 업그레이드 재료 소모 처리
+	void ConsumeUpgradeMaterials(UC_InvenComponent* InvenComp, const FGradeCostInfo& CostInfo);
 
+	// 업그레이드 진행 상태 종료 처리 (Local / Client 구분)
+	void FinishUpgradeState(AC_BasicPlayer* InPlayer);
 };

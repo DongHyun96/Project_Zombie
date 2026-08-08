@@ -10,6 +10,8 @@
 #include "GameModeAndManager/C_UIManager.h"
 #include "Item/Interact/ItemUpgrade/C_ItemUpgradeStation.h"
 #include "Item/Interact/StatUpgrade/C_StatUpgradeStation.h"
+#include "UI/InvenUI/C_InventoryWidget.h"
+#include "UI/InvenUI/Upgrade/C_PlayerStatUpgradeWidget.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
 #include "UI/MainHUD/PlayerStatHUD/C_OtherPlayerStatWidget.h"
 #include "UI/MainHUD/PlayerStatHUD/C_PlayerStatWidget.h"
@@ -49,8 +51,11 @@ void UC_PlayerStatComponent::Server_RequestStatUpgrade(AC_StatUpgradeStation* In
 	
 	if (!PC) return;
 	
-	if (PC->GetIsUpgradingPlayerStat()) return;
-	
+	if (PC->GetIsUpgradingPlayerStat())
+	{
+		PC->Client_FinishPlayerStatUpgrade();
+		return;
+	}
 	PC->SetIsUpgradingPlayerStat(true);
 	
 	InInteractableActor->RequestStatUpgrade(m_OwnerPlayer, UpStatName);

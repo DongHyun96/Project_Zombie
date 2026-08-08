@@ -492,6 +492,29 @@ void AC_GunBase::UpdateAmmoInfoHUDForDrawEnd()
 {
 	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled()) return;
 
+	if (ItemLinkComp)
+	{
+		UC_Util::Print("GUN : ItemLinkComp Is Valid");
+		
+		FInventoryEntry* Entry = ItemLinkComp->GetItemEntryPtr();
+		
+		if (Entry)
+		{
+			UC_Util::Print("GUN :Entry Is Valid");
+			
+			UC_Util::Print(Entry->CurCount);
+		}
+		else
+		{
+			UC_Util::Print("GUN :Entry Is Nullptr");
+		}
+	}
+	else
+	{
+		UC_Util::Print("GUN :ItemLinkComp Is nullptr");
+		
+	}
+	
 	UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility(true, m_FireMode, m_CurrentAmmo, m_MaxAmmo);
 }
 

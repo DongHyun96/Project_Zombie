@@ -17,9 +17,12 @@ void UC_PingWidget::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
 	
-	m_MyPlayer = Cast<AC_BasicPlayer>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
-	if (!m_MyPlayer) UC_Util::Print("From UC_PingWidget::NativeOnInitialized : m_MyPlayer init failed!", FColor::Red, 10.f);
-	
+	// OnInitialized 시점에는 폰이 없을 수 있으므로 여기서는 캐싱을 시도만 합니다.
+	APlayerController* PC = GetOwningPlayer();
+	if (PC)
+	{
+		m_MyPlayer = Cast<AC_BasicPlayer>(PC->GetPawn());
+	}
 }
 
 void UC_PingWidget::NativeConstruct()
@@ -27,16 +30,29 @@ void UC_PingWidget::NativeConstruct()
 	Super::NativeConstruct();
 
 	// 시간 0으로 Animation 정지 처리(안보이게끔)
-	// NativeConstruct 호출되기 이전, 이미 보이게끔 처리를 했을 수 있음
 	if (!m_bCurrentShowingPingMarker)
 	{
 		PlayAnimation(SpawnAnimation);
 		PauseAnimation(SpawnAnimation);
 	}
-	
-	// m_OwnerPlayer가 제대로 잡힌 PingWidget의 경우(Player의 Ping), CompassBarWidget에 대응되는 PingMarker 등록
+    
+	// 1. 연쇄 참조 안전하게 쪼개기 (포인터 방어막 형성)
 	if (m_OwnerPlayer)
-		m_TargetCompassMarkerWidget = UI_MANAGER(GetWorld())->GetMainHUDWidget()->GetCompassBarWidget()->RegisterPlayerCompassPingMarker(m_OwnerPlayer);
+	{
+		AC_UIManager* UIManager = UI_MANAGER(GetWorld());
+		if (UIManager)
+		{
+			UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget();
+			if (MainHUD)
+			{
+				UC_CompassBarWidget* CompassBar = MainHUD->GetCompassBarWidget();
+				if (CompassBar)
+				{
+					m_TargetCompassMarkerWidget = CompassBar->RegisterPlayerCompassPingMarker(m_OwnerPlayer);
+				}
+			}
+		}
+	}
 }
 
 void UC_PingWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
@@ -44,6 +60,20 @@ void UC_PingWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 	Super::NativeTick(MyGeometry, InDeltaTime);
 	
 	if (!m_bCurrentShowingPingMarker) return;
+	
+	// TODO : 타이머같은걸로 한번 세팅되면 끝나게 해야 좋을듯?
+	// 2. 런타임에 m_MyPlayer가 널이라면 안전하게 다시 갱신 시도
+	if (m_MyPlayer == nullptr)
+	{
+		APlayerController* PC = GetOwningPlayer();
+		if (PC)
+		{
+			m_MyPlayer = Cast<AC_BasicPlayer>(PC->GetPawn());
+		}
+	}
+
+	// 여전히 널이라면 이번 프레임은 연산을 건너뜁니다 (크래시 방지)
+	if (m_MyPlayer == nullptr) return;
 	
 	// DistanceText 업데이트
 	const float Distance      = FVector::Distance(m_SpawnedLocation, m_MyPlayer->GetActorLocation());

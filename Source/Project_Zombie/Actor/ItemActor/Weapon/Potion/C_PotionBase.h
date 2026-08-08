@@ -68,6 +68,9 @@ public:
 	/// </summary>
 	virtual void UpdateAmmoInfoHUDForDrawEnd() override;
 	
+	UFUNCTION()
+	void OnRep_UpdateAmmoWidget();
+	
 	// ThrowableBase에서 구조 가져와서 사용.
 private:
 	// 로컬에서 즉시 몽타주 재생하고 서버에 동기화 요청
@@ -98,8 +101,8 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 CurCount = 0;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int32 LeftTotalCount = 0;
+	//UPROPERTY(ReplicatedUsing = OnRep_UpdateAmmoWidget, EditAnywhere, BlueprintReadWrite)
+	//int32 LeftTotalCount = 0;
 	
 	// Collision이 필요한가?
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)

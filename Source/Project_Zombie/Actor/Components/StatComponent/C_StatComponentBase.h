@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GlobalData.h"
 #include "Components/ActorComponent.h"
 #include "C_StatComponentBase.generated.h"
 
@@ -10,6 +11,9 @@
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnCurHPReachedZero, class AC_BasicCharacter*);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnCurHPReachedFull, AC_BasicCharacter*);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnIncreaseCurHP, AC_BasicCharacter*);
+
+// StatUpgrade쪽에서 UI 업데이트 동기화 문제로 사용. 
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnStatGradeUpdated, const FName& /*StatName*/, uint8 /*NewGrade*/);
 
 /// <summary>
 /// Param - Ratio
@@ -49,6 +53,12 @@ public:
 	
 	UC_StatComponentBase();
 
+	void LoadStatsFromBackup(const TMap<FName, float>& InStats, const TMap<FName, uint8>& InGrades);
+	
+private:
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_InitializeAllStats(const TArray<FStatSyncPair>& InSyncArray);
+	
 public:
 	
 	virtual void BeginPlay() override;
@@ -256,4 +266,7 @@ private:
 	// 게임 오버 시, 피격을 당해도 Immortal로 인하여 1.f 이하로 피 떯어지지 않게끔 
 	bool m_bIsImmortal{};
 	
+
+	// Stat의 Grade가 바뀔 때, 호출
+	FOnStatGradeUpdated OnStatGradeUpdatedDelegate{};
 };

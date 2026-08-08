@@ -6,6 +6,7 @@
 #include "TaskSyncManager.h"
 #include "C_EquippedComponent.generated.h"
 
+class AC_BasicPlayer;
 enum class EFireMode : uint8;
 class UC_InvenComponent;
 
@@ -37,6 +38,9 @@ class PROJECT_ZOMBIE_API UC_EquippedComponent : public UActorComponent
 	
 public:	
 	UC_EquippedComponent();
+	
+	// OwnerPlayer Setter가 안보여서 급히 만듬.
+	void SetOwnerPlayer(AC_BasicPlayer* _Player) { m_OwnerPlayer = _Player; }
 
 protected:
 
@@ -104,6 +108,8 @@ public:
 
 	// 연결 해제
 	void ClearInventoryComponent();
+	
+	void LoadEquippedWeaponFromInven(int32 SlotIndex, const FInventoryEntry& ItemData);
 	
 protected:
 	UFUNCTION()

@@ -738,3 +738,18 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly)
     TArray<FZombieTypeSpawnSetting> ZombieTypeSetting;
 };
+
+USTRUCT(BlueprintType)
+struct FStatSyncPair
+{
+    GENERATED_BODY()
+
+    UPROPERTY()
+    FName StatName;
+
+    UPROPERTY()
+    float StatValue;
+
+    UPROPERTY()
+    uint8 StatGrade;
+};

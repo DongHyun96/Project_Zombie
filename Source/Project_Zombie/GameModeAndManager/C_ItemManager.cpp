@@ -53,18 +53,77 @@ void UC_ItemManager::Initialize(FSubsystemCollectionBase& Collection)
     }
 }
 
+void UC_ItemManager::Deinitialize()
+{
+    InactiveItemPool.Empty();
+    ActiveItemPool.Empty();
+
+    Super::Deinitialize();
+}
+
 void UC_ItemManager::ReturnToPool(AC_ItemPickUp* ItemToReturn)
 {
     if (!IsValid(ItemToReturn)) return;
 
+    UWorld* World = GetWorld();
+    
+    if (World && World->GetNetMode() == NM_Client) return;
+    
+    CleanUpPools();
+    
     // 활성화 목록에서 제거
     ActiveItemPool.Remove(ItemToReturn);
 
-    // 비활성화 처리 (시각/물리/타이머 끄기)
+    // 비활성화 처리 (시각/물리/타이머/충돌 끄기)
     ItemToReturn->DeactivateItem();
 
-    // 풀 배열에 보관
-    InactiveItemPool.AddUnique(ItemToReturn);
+    // 💡 비활성화 풀의 최대 크기 제한 (메모리 과다 방지)
+    constexpr int32 MaxInactiveLimit = 300; 
+    if (InactiveItemPool.Num() >= MaxInactiveLimit)
+    {
+        // 300개가 넘게 쌓이면 풀에 넣지 않고 진짜 파괴
+        ItemToReturn->Destroy();
+    }
+    else
+    {
+        InactiveItemPool.Add(ItemToReturn);
+    }
+}
+
+void UC_ItemManager::WarmupPool(int32 SpawnCount)
+{
+    UWorld* World = GetWorld();
+    if (!World || World->GetNetMode() == NM_Client) return;
+
+    FActorSpawnParameters SpawnParams;
+    SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+    // 대피용 위치 (안전지대)
+    FVector OffscreenLocation(0.f, 0.f, -5000.f);
+
+    for (int32 i = 0; i < SpawnCount; ++i)
+    {
+        AC_ItemPickUp* NewItem = World->SpawnActor<AC_ItemPickUp>(
+            AC_ItemPickUp::StaticClass(), 
+            OffscreenLocation, 
+            FRotator::ZeroRotator, 
+            SpawnParams
+        );
+
+        if (NewItem)
+        {
+            // 스폰 직후 곧바로 비활성화 처리하여 풀에 삽입
+            NewItem->DeactivateItem();
+            InactiveItemPool.Add(NewItem);
+        }
+    }
+}
+
+void UC_ItemManager::CleanUpPools()
+{
+    // 레벨 전환 등으로 Destroy된 Dangling Pointer 제거
+    InactiveItemPool.RemoveAll([](const TObjectPtr<AC_ItemPickUp>& Item) { return !IsValid(Item); });
+    ActiveItemPool.RemoveAll([](const TObjectPtr<AC_ItemPickUp>& Item) { return !IsValid(Item); });
 }
 
 const UDataTable* UC_ItemManager::GetTargetTable(EItemTableType InTableType) const
@@ -133,6 +192,8 @@ AC_ItemPickUp* UC_ItemManager::GetOrCreateItemPickUp(const FInventoryEntry& InEn
     UWorld* World = GetWorld();
     if (!World) return nullptr;
 
+    if (World->GetNetMode() == NM_Client) return nullptr;
+    
     // [미래 가능성 열어두기] 만약 활성화 수량이 한계치에 다다르면?
     // (현재는 적용 안 함, 추후 필요 시 주석 해제하여 사용)
     /*
@@ -142,6 +203,9 @@ AC_ItemPickUp* UC_ItemManager::GetOrCreateItemPickUp(const FInventoryEntry& InEn
     }
     */
 
+    // 팝업 직전 매번 파괴된 액터 포인터 청소
+    CleanUpPools();
+    
     AC_ItemPickUp* TargetItem = nullptr;
 
     // 1. 풀에 재사용 가능한 액터가 있는지 확인
@@ -331,12 +395,18 @@ AC_WeaponBase* UC_ItemManager::SpawnEquippedActor(FName InRowName, AActor* InOwn
         
         // 무기의 초기화
         if (Player->IsLocallyControlled())
-            SpawnedWeapon->SetItemRowName(InRowName);    
+        {
+            SpawnedWeapon->SetItemRowName(InRowName);
+            UC_Util::Print("UP");
+        }  
         
         SpawnedWeapon->InitializeItemActor(InRawData);
         
         if (!Player->IsLocallyControlled())
+        {
             SpawnedWeapon->SetItemRowName(InRowName);
+            UC_Util::Print("Down");
+        }
     }
 
     return SpawnedWeapon;

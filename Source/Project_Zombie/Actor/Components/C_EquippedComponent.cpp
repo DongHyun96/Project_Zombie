@@ -24,11 +24,11 @@ UC_EquippedComponent::UC_EquippedComponent()
 	m_Weapons.SetNum(static_cast<uint8>(EWeaponSlot::Max));
 }
 
-
 void UC_EquippedComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// 어디서 Set해주는거지?
 	// 이게 왜 리슨서버에서 클라이언트는 nullptr가 나오는거지?
 	m_OwnerPlayer = Cast<AC_BasicPlayer>(GetOwner());
 	
@@ -315,74 +315,62 @@ void UC_EquippedComponent::ClearInventoryComponent()
 	BoundInvenComp.Reset();
 }
 
+void UC_EquippedComponent::LoadEquippedWeaponFromInven(int32 SlotIndex, const FInventoryEntry& ItemData)
+{
+	// 💡 PossessedBy는 100% 서버에서 실행되므로 Authority 체크 및 월드 체크
+	if (!GetWorld() || !GetOwner() || !GetOwner()->HasAuthority()) return;
+	if (SlotIndex < 0 || SlotIndex >= static_cast<int32>(EWeaponSlot::None)) return;
+
+	// 이미 해당 슬롯에 무기가 있다면 중복 스폰 방지를 위해 리턴 또는 파괴 처리
+	if (m_Weapons.IsValidIndex(SlotIndex) && m_Weapons[SlotIndex] != nullptr)
+	{
+		// 심리스 트래블 직후라면 기존 무기가 nullptr이겠지만, 혹시 모를 예외 처리
+		return; 
+	}
+
+	//if (!m_OwnerPlayer)
+	//{
+	//	m_OwnerPlayer = Cast<AC_BasicPlayer>(GetOwner());
+	//}
+	
+	UC_ItemManager* ItemManager = GetWorld()->GetGameInstance()->GetSubsystem<UC_ItemManager>();
+	
+	if (!ItemManager) return;
+
+	UE_LOG(LogTemp, Log, TEXT("[Travel Restore] 슬롯 %d번에 무기 스폰 시작 (Row: %s)"), SlotIndex, *ItemData.ItemRowName.ToString());
+
+	// TODO : m_Ownerplayer가 nullptr로 SpawnedWeapon이 Nullptr라 서버만 안되는 거였음.
+	
+	// 1. 아이템 매니저를 통해 새 레벨에 무기 액터 복구 스폰
+	AC_WeaponBase* SpawnedWeapon = (ItemData.CurCount > 0) ? ItemManager->SpawnEquippedActor(ItemData.ItemRowName, m_OwnerPlayer) : nullptr;
+
+	if (SpawnedWeapon)
+	{
+		// 2. 슬롯에 등록 및 물리적 부착(AttachToHand/Holster 등) 및 변수 복제 처리
+		// RPC인 Server_SetSlotWeapon 대신, 서버 내부 로직인 SetSlotWeapon을 직접 호출합니다.
+		SetSlotWeapon(static_cast<EWeaponSlot>(SlotIndex), SpawnedWeapon);
+        
+		// 추가로 필요한 초기화나 데이터 업데이트가 있다면 처리
+		UpdateWeaponData(static_cast<EWeaponSlot>(SlotIndex), ItemData.ItemRowName);
+	}
+}
+
 void UC_EquippedComponent::OnInventorySlotChanged(int32 SlotIndex, const FInventoryEntry& ItemData)
 {
-	FString DebugMsg = FString::FromInt(SlotIndex);
-
-	PRINT_LOCAL(GetWorld(), DebugMsg, FColor::Green, 5.f);
-	if (SlotIndex < 0 || SlotIndex >= static_cast<int32>(EWeaponSlot::None)) return;	
-
-	PRINT_LOCAL(GetWorld(), "GetOwner", FColor::Green, 5.f);
+	if (SlotIndex < 0 || SlotIndex >= static_cast<int32>(EWeaponSlot::None)) return;   
 	if (GetOwner() == nullptr) return;
 
-	PRINT_LOCAL(GetWorld(), "HasAuthority", FColor::Green, 5.f);
-	//if (GetOwner()->HasAuthority()) return;
+	// 핵심: 만약 서버에서 실행 중이라면, RPC(Server_Request...)를 보낼 필요가 없습니다!
+	// 서버 환경에서 인벤토리가 바뀐 거라면 직접 내부 구현 함수를 호출하면 됩니다.
+	if (GetOwner()->HasAuthority())
+	{
+		// 서버 내부에서 일반적인 인벤토리 조작(예: 런타임 중 무기 교체 등)이 일어났을 때의 처리
+		Server_RequestSpawnEquippedActor_Implementation(SlotIndex, ItemData);
+		return;
+	}
 
+	// 오직 로컬 클라이언트 환경일 때만 서버에게 스폰을 요청(RPC)합니다.
 	Server_RequestSpawnEquippedActor(SlotIndex, ItemData);
-
-	//if (m_OwnerPlayer) return;
-	//
-	//if (m_OwnerPlayer->HasAuthority()) return;
-	// 들어오는 장비가 실제 장비가 있는지 없는 확인
-	// 1. RowName이 NAME_NONE이 드롭되서 들어올 일은 없지만
-	// 2. 장비창의 아이템을 인벤의 빈 슬롯에 드롭하면 들어올 수 있음.
-	// 3. RowName == NAME_None이면 아이템 해제하고 빈칸으로 만들어야 함.
-	// 4. 실제 존재하는 장비가 들어오는 경우
-	// 5. 해당 아이템을 ItemManager로 생성
-	// 6. SetSlotWeapon으로 장착
-	// 7. 이 때 장착했던 장비가 있었으면 Destroy
-	// 8. Destroy되는 장비의 정보(FInventoryEntry)는 인벤에서 Swap으로 이미 들어온 장비와 위치가 바뀜.
-	// 9. 결론은 여기 매개변수로 해당 슬롯 장비를 소환해서 장착하고 탈착된 장비는 Destroy한다.
-	// 10. 그러기 위해 해당 무기를 ItemManager에서 생성하는 함수를 만들어야 한다.
-	//PRINT_LOCAL(GetWorld(), "!GetWorld()", FColor::Green, 5.f);
-	//if (!GetWorld()) return;
-	//	
-	//UC_ItemManager* ItemManager = GetWorld()->GetGameInstance()->GetSubsystem<UC_ItemManager>();
-	//	
-	//PRINT_LOCAL(GetWorld(), "ItemManager", FColor::Green, 5.f);
-	//
-	//if (!ItemManager) return;
-	//
-	//PRINT_LOCAL(GetWorld(), "SpawnEquippedActor", FColor::Green, 5.f);
-	//
-	//AC_WeaponBase* SpawnedWeapon = ItemManager->SpawnEquippedActor(ItemData.ItemRowName, m_OwnerPlayer);
-	//
-	//AC_WeaponBase* PrevWeapon = m_Weapons[SlotIndex];
-	//
-	//Server_SetSlotWeapon(static_cast<EWeaponSlot>(SlotIndex), SpawnedWeapon);
-	//
-	//if (!PrevWeapon) return;
-	//
-	//AC_ThrowableWeaponBase* ThrowableWeapon = Cast<AC_ThrowableWeaponBase>(PrevWeapon);
-	//
-	//if (ThrowableWeapon)
-	//{
-	//	// ThrowableWeaponBase::OnThrowThrowable에서 투척류 숫자 차감하고 업데이트하고 있음.
-	//	// ThrowableWeapon은 투척한거면 여기서 삭제하면 안됨.
-	//	if (static_cast<int32>(EThrowableState::RemovePin) < static_cast<int32>(ThrowableWeapon->GetThrowableState()))
-	//	{
-	//		return;
-	//	}
-	//}
-	//
-	//
-	//PrevWeapon->Destroy();
-		
-	
-	
-	// 빈슬롯, 장비 해제 처리 확인하기
-	// 동일 무기 교체시 데이터만 교체하는 방식으로 하면 좋음
-	// 무기 교체? 장착? 사운드?
 }
 
 void UC_EquippedComponent::OnSheathEnd()

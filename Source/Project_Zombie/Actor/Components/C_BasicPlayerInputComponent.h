@@ -75,7 +75,6 @@ public:
 	void SetPlayerIMCMode(EPlayerIMCMode _IMCMode);
 	
 private:
-	
 	void MoveAction(const FInputActionValue& Value);
 	
 	void SprintStart();

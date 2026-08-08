@@ -10,6 +10,7 @@
 #include "C_BasicPlayer.generated.h"
 
 
+class AC_ItemUpgradeStation;
 // TODO: PlayerState 랑 PlayerLifeState 를 하나로 통합할지...
 // 캐릭터 상태
 UENUM(BlueprintType)
@@ -62,7 +63,7 @@ class PROJECT_ZOMBIE_API AC_BasicPlayer : public AC_BasicCharacter, public IGene
 {
 	GENERATED_BODY()
 
-// [Component]
+	// [Component]
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (DisplayName = "SpringArm"))
 	class USpringArmComponent* m_SpringArm;
@@ -114,7 +115,7 @@ protected:
 	class UC_FeetComponent* m_FeetComponent{};
 
 	
-// [Status]
+	// [Status]
 protected:
 	UPROPERTY(ReplicatedUsing = OnRep_PlayerState, VisibleAnywhere, BlueprintReadOnly, Category = "Status")
 	EPlayerState		m_PlayerState;
@@ -128,15 +129,21 @@ protected:
 	UPROPERTY(Replicated)
 	float ReplicatedAimYaw = 0.0f;
 
-	
+protected:
+	// StatComponent의 CurBoost가 변경될 때 서버에서 클라이언트로 복제할 변수
+	// (또는 StatComponent 내부 변수에 ReplicatedUsing을 걸어도 됩니다)
+	UPROPERTY(ReplicatedUsing = OnRep_CurBoost)
+	float m_CurBoost;
 
 
 
-// 팀 설정
+
+
+	// 팀 설정
 	FGenericTeamId		m_TeamId;
 
 
-// [Camera]
+	// [Camera]
 protected:
 	// 시점 상태
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
@@ -155,7 +162,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
 	float 				m_MouseSensitivity;
 
-// [Movement]
+	// [Movement]
 protected:
 	// 조준 시 속도 : StatComp
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
@@ -181,12 +188,15 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
 	bool m_IsSprintInput;
 	
+	UPROPERTY(ReplicatedUsing = OnRep_ChangedBoostExhausted, EditAnywhere, BlueprintReadOnly, Category = "Movement")
+	bool m_bIsBoostExhausted = false;
+	
 	// 이 값 이상 회복되어야 다시 달리기 가능
 	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	//float m_MinBoostToSprint = 10.f;
 
 
-// [Revive]
+	// [Revive]
 protected:
 	// 플레이어와 상호작용할 수 있는 범위
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction", meta = (AllowPrivateAccess = "true"))
@@ -204,11 +214,11 @@ private:
 	// Free look 상태 (Hold Alt 상태)
 	bool m_IsFreeLook{};
 
-// [Weapon] - EquippedComponent에서 관리할 예정
+	// [Weapon] - EquippedComponent에서 관리할 예정
 protected:
 
 
-// [Inventory]
+	// [Inventory]
 protected:
 	// => 나중에 InventoryComponent으로 분리?
 	// 상호작용 가능
@@ -224,7 +234,7 @@ protected:
 	UPROPERTY()
 	FCursorItem curDraggedItem{};
 
-// [Timer]
+	// [Timer]
 private:
 	// 플레이어의 LifeState 를 변경해서 BasicPlayer 가 관리
 	FTimerHandle m_GetUpTimerHandle;
@@ -283,9 +293,16 @@ public:
 
 	FCursorItem GetCurDraggedItem() {return curDraggedItem;}
 	
+	bool GetIsBoostExhausted() const { return m_bIsBoostExhausted; }
+	
+	void SetIsBoostExhausted(bool InExhausted) {m_bIsBoostExhausted = InExhausted;}
+	
 	// 드래그중인 아이템 관련 정보 저장
 	bool SetCurDraggedItem(struct FInventoryEntry InEntry, UC_InvenComponent* SrcInvenComp, int32 SrcSlotIdx);
 
+public:
+	void SetCurBoost(float NewBoost);
+	
 private:
 
 	UFUNCTION(Server, Reliable, WithValidation)
@@ -304,6 +321,7 @@ public:
 	bool IsGettingUp() const { return m_PlayerState == EPlayerState::GettingUp; }
 	bool IsDead() const { return m_PlayerState == EPlayerState::Dead; }
 
+	// TODO : bPressedJump를 안쓰고 이걸 쓰는 이유는?
 	bool IsJumpInput() const { return m_IsJumpInput; }
 	void SetIsJumpInput(bool _IsJumpInput) { m_IsJumpInput = _IsJumpInput; }
 	
@@ -328,20 +346,10 @@ public:
 	void Landed(const FHitResult& Hit) override;
 
 	/// <summary>
-	/// 후에 스탯 컴포넌트 쪽으로
-	/// 부스트를 사용하고 HUD를 갱신한다.
+	/// 웅크리기 토글
 	/// </summary>
-	/// <param name="_UseAmount"> : 사용할 부스트 양 </param>
-	/// <returns> : 사용 성공 여부 </returns>
-	bool UseBoost(float _UseAmount);
-
-	/// <summary>
-	/// 후에 스탯 컴포넌트 쪽으로
-	/// 부스트를 회복하고 HUD를 갱신한다.
-	/// </summary>
-	/// <param name="_RecoverAmount"> : 회복할 부스트 양 </param>
-	void RecoverBoost(float _RecoverAmount);
-
+	void ToggleCrouch();
+	
 	/// <summary>
 	/// 달리기 시작
 	/// </summary>
@@ -351,12 +359,30 @@ public:
 	///	달리기 종료
 	/// </summary>
 	void StopSprint();
+	
+private:
+	/// <summary>
+	/// 후에 스탯 컴포넌트 쪽으로
+	/// 부스트를 사용하고 HUD를 갱신한다.
+	/// Server에서만 호출
+	/// </summary>
+	/// <param name="_UseAmount"> : 사용할 부스트 양 </param>
+	/// <returns> : 사용 성공 여부 </returns>
+	bool UseBoost(float _UseAmount);
 
 	/// <summary>
-	/// 웅크리기 토글
+	/// 후에 스탯 컴포넌트 쪽으로
+	/// 부스트를 회복하고 HUD를 갱신한다.
+	/// Server에서만 호출
 	/// </summary>
-	void ToggleCrouch();
+	/// <param name="_RecoverAmount"> : 회복할 부스트 양 </param>
+	void RecoverBoost(float _RecoverAmount);
 
+	/// <summary>
+	/// 달리기 중
+	/// Server에서만 호출
+	/// </summary>
+	void ProcessSprint(float DeltaTime);
 
 	// 캐릭터 그로기 처리
 public:
@@ -399,7 +425,7 @@ public:
 protected:
 
 	//UFUNCTION()
-	void OnRep_PlayerState();
+	void OnRep_PlayerState(); // 이거 안쓰고 있는거 아닌가?
 
 	// 체력이 0이 되어 Downed 상태로 변경
 	UFUNCTION(Server, Reliable)
@@ -461,6 +487,9 @@ public:
 	
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_RequestItemUpgrade(AC_ItemUpgradeStation* InInteractableActor, int32 InItemIndex, EUpgradableStats TargetStat);
+	
+	UFUNCTION()
+	void OnRep_CurBoost();
 
 protected:
 	virtual void BeginPlay() override;
@@ -491,6 +520,9 @@ private:
 	// 웅크리기 상태 전환이 끝났을 때 실행되는 함수
 	void OnPoseTransitionFinished(bool _bIsCrouched);
 
+	UFUNCTION()
+	void OnRep_ChangedBoostExhausted();
+	
 private:
 	/// <summary>
 	/// 입력 클라이언트가 자세 상태를 즉시 로컬에서 적용
@@ -532,6 +564,10 @@ public:
 public:
 	class UC_InvenComponent* GetInvenComponent() { return m_InvenComponent; }
 	
+	virtual void PossessedBy(AController* NewController) override;
+	
+	//UFUNCTION()
+	//virtual void OnRep_AC_PlayerState() override;
 public:
 	AC_BasicPlayer();
 };

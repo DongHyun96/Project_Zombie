@@ -13,7 +13,7 @@ struct FInventoryContainer : public FFastArraySerializer
 	GENERATED_BODY()
 
 	// GlobalData.h에 정의된 FInventoryEntry 배열을 관리합니다.
-	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
 	TArray<FInventoryEntry> Items;
 
 	// 가방 컴포넌트를 가리키는 포인터

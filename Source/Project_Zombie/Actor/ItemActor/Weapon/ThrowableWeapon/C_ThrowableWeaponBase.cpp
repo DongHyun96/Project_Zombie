@@ -208,6 +208,8 @@ void AC_ThrowableWeaponBase::InitializeItemData(const FWeaponData* InRawData)
 
 	if (FInventoryEntry* EntryPtr = ItemLinkComp ? ItemLinkComp->GetItemEntryPtr() : nullptr)
 	{
+		UC_Util::Print("ThrowableBase : EntryPtr Is Valid!", FColor::Red, 10.f);
+		
 		// 1. 없으면 데이터 안전하게 생성
 		FUpgradableData* CustomData = EntryPtr->GetOrCreateEquipmentData();
 
@@ -216,15 +218,17 @@ void AC_ThrowableWeaponBase::InitializeItemData(const FWeaponData* InRawData)
 		int32 ExplosionRadiusGrade = CustomData->GetStatGrade(EUpgradableStats::ExplosionRadius);
 
 		// 3. 최종 스탯 계산: BaseStat + (Grade * DataAsset의 레벨당 증가량)
-		m_MaxDamage = ThrowableData->BaseDamage + (DamageGrade * ThrowableData->DamagePerUpgradeLevel);
-		m_MinDamage = ThrowableData->BaseDamage + (DamageGrade * ThrowableData->DamagePerUpgradeLevel);
+		m_MaxDamage += (DamageGrade * ThrowableData->DamagePerUpgradeLevel);
+		m_MinDamage += (DamageGrade * ThrowableData->DamagePerUpgradeLevel);
 
 		//m_MaxAmmo = ThrowableData->MaxAmmo + (AmmoGrade * GunData->MaxAmmoPerUpgradeLevel);
 		m_ExplosionRadius = ThrowableData->m_ExplosionRadius + (ExplosionRadiusGrade * ThrowableData->ExplosionRadiusPerUpgradeLevel);
+		//m_LeftCount = EntryPtr->CurCount;
 	}
 	else
 	{
-
+		UC_Util::Print("ThrowableBase : EntryPtr Is Nullptr!", FColor::Red, 10.f);
+		
 	}
 }
 
@@ -609,10 +613,13 @@ void AC_ThrowableWeaponBase::Server_DecreaseCurCount_Implementation()
 	{
 		if (FInventoryEntry* SlotEntry = ItemLinkComp->GetItemEntryPtr())
 		{
+			UC_Util::Print("Throwable Decrease");
 			--SlotEntry->CurCount;
+			//m_LeftCount = SlotEntry->CurCount;
 			int32 Idx = ItemLinkComp->GetSlotIndex();
 			if (SlotEntry->CurCount <= 0)
 			{
+				//m_LeftCount = 0;
 				SlotEntry->Clear();
 				SlotEntry->SlotIndex = Idx;
 			}
@@ -843,7 +850,8 @@ void AC_ThrowableWeaponBase::OnThrowProcessEnd()
 	// 투척류는 아이템 갯수가 Ammo라고 보면된다.
 	// 투척하면 하나씩 줄여주고 0이 되면 해당 슬롯의 Entry를 비워준다.
 	// 이 작업을 서버에서 처리하면 될 듯?
-	Server_DecreaseCurCount();
+	if (m_OwnerPlayer->IsLocallyControlled())
+		Server_DecreaseCurCount();
 	
 	// TODO : 던지고 Count 남아있으면 새로 스폰해주던지, 던질 때 가짜를 던지던지 해야함.
 	
@@ -1527,7 +1535,13 @@ void AC_ThrowableWeaponBase::ClearPredictedPath()
 void AC_ThrowableWeaponBase::UpdateAmmoInfoHUDForDrawEnd()
 {
 	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled()) return;
-	UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility(true, EFireMode::Single, 1, 1);
+	
+	int32 Count = 1;
+	
+	if (FInventoryEntry* Entry = ItemLinkComp->GetItemEntryPtr())
+		Count = Entry->CurCount;
+	
+	UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility(true, EFireMode::Single, 1, Count);
 }
 
 void AC_ThrowableWeaponBase::SetAmmoUIInfo(FAmmoUIInfo& _AmmoUIInfo)
@@ -1535,6 +1549,12 @@ void AC_ThrowableWeaponBase::SetAmmoUIInfo(FAmmoUIInfo& _AmmoUIInfo)
 	_AmmoUIInfo.Visible            = true;
 	_AmmoUIInfo.FireMode           = EFireMode::Single;
 	_AmmoUIInfo.MagazineAmmo       = 1;
-	_AmmoUIInfo.LeftAmmoTotalCount = 1;
+	
+	int32 Count = 1;
+	
+	if (FInventoryEntry* Entry = ItemLinkComp->GetItemEntryPtr())
+		Count = Entry->CurCount;
+	
+	_AmmoUIInfo.LeftAmmoTotalCount = Count;
 	
 }

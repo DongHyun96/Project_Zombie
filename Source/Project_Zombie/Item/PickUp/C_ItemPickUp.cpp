@@ -59,8 +59,8 @@ AC_ItemPickUp::AC_ItemPickUp()
     // 변수 초기화
     bPickup = false;
     
-    bReplicates = true;
-    SetReplicateMovement(true);
+    //bReplicates = true;
+    //SetReplicateMovement(true);
 }
 
 void AC_ItemPickUp::BeginPlay()
@@ -150,7 +150,52 @@ void AC_ItemPickUp::EnablePickupOverlap()
 
 void AC_ItemPickUp::ActivateItem(const FInventoryEntry& InEntry, const FVector& SpawnLocation)
 {
-    // 1. 위치 및 충돌/시각 켜기
+    // 1. 위치 이동 (TeleportPhysics 옵션 필수! - 이전 -10000 위치에서의 물리 연산 충격 방지)
+    SetActorLocation(SpawnLocation, false, nullptr, ETeleportType::TeleportPhysics);
+    SetActorHiddenInGame(false);
+    SetActorEnableCollision(true);
+    SetActorTickEnabled(false);
+
+    bPickup = false;
+    ItemEntry = InEntry;
+
+    // 2. 서버 전용 로직 (물리 제어, 타이머, 수거 처리)
+    if (HasAuthority())
+    {
+        if (PhysicsSphere)
+        {
+            PhysicsSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+            PhysicsSphere->SetSimulatePhysics(true);
+            
+            // 물리 속도 및 회전 속도 초기화
+            PhysicsSphere->SetPhysicsLinearVelocity(FVector::ZeroVector);
+            PhysicsSphere->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+            
+            // 물리가 멈췄는지 체크하는 타이머는 서버에서만 관리
+            GetWorldTimerManager().SetTimer
+            (
+                m_SimulatePhysicsStoppedCheckTimer,
+                this,
+                &AC_ItemPickUp::CheckPhysicsStopped,
+                0.5f,
+                true
+            );
+        }
+
+        // 3. 줍기 가능 지연 타이머 (서버 전용)
+        GetWorldTimerManager().SetTimer(
+            PickupDelayTimerHandle, 
+            this, 
+            &AC_ItemPickUp::EnablePickupOverlap, 
+            DELAYTIME, 
+            false
+        );
+
+        // 4. 시한부 자동 수거 타이머 (서버 전용)
+        StartDespawnTimer(DefaultLifeTime);
+    }
+
+    /*// 1. 위치 및 충돌/시각 켜기
     SetActorLocation(SpawnLocation);
     SetActorHiddenInGame(false);
     SetActorEnableCollision(true);
@@ -198,12 +243,62 @@ void AC_ItemPickUp::ActivateItem(const FInventoryEntry& InEntry, const FVector& 
 
         // 4. 시한부 자동 수거 타이머 시작 (서버에서만)
         StartDespawnTimer(DefaultLifeTime);
-    }
+    }*/
 }
 
 void AC_ItemPickUp::DeactivateItem()
 {
+    // [보안] 서버에서만 실행되어야 하는 정리 작업들
     if (HasAuthority())
+    {
+        GetWorldTimerManager().ClearTimer(PickupDelayTimerHandle);
+        GetWorldTimerManager().ClearTimer(DespawnTimerHandle);
+        GetWorldTimerManager().ClearTimer(m_SimulatePhysicsStoppedCheckTimer);
+
+        // StolenPlayerPingSystemComponent 정리
+        if (m_StolenPlayerPingSystemComponent && m_StolenPlayerPingSystemComponent->GetLastInstigator() == this)
+        {
+            m_StolenPlayerPingSystemComponent->Multicast_MustHidePingAll();
+        }
+    }
+
+    // 1. 비동기 로드 핸들 즉시 취소 (메모리 릭 및 지연 로드 방지)
+    if (AssetLoadHandle.IsValid() && AssetLoadHandle->IsActive())
+    {
+        AssetLoadHandle->CancelHandle();
+    }
+    AssetLoadHandle.Reset();
+
+    // 2. 물리 및 충돌 비활성화
+    if (PhysicsSphere)
+    {
+        PhysicsSphere->SetSimulatePhysics(false);
+        PhysicsSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    }
+
+    if (PickupSphere)
+    {
+        PickupSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    }
+
+    SetActorEnableCollision(false);
+
+    // 3. 시각 및 렌더링 끄기 (서버에서 설정하면 클라이언트로 복제됨)
+    SetActorHiddenInGame(true);
+    SetActorLocation(FVector(0.f, 0.f, -10000.f)); // 안전지대로 대피
+
+    // 4. 로컬 비주얼 및 데이터 초기화
+    if (MeshComp)
+    {
+        // Multicast 대신 로컬에서 직접 Outline 끄기
+        // (필요 시 SetRenderCustomDepth(false) 등 로컬 처리)
+        MeshComp->SetRenderCustomDepth(false); 
+        MeshComp->SetStaticMesh(nullptr);
+    }
+
+    ItemEntry = FInventoryEntry();
+    MeshRef = nullptr;
+    /*if (HasAuthority())
     {
         GetWorldTimerManager().ClearTimer(PickupDelayTimerHandle);
         GetWorldTimerManager().ClearTimer(DespawnTimerHandle);
@@ -251,7 +346,7 @@ void AC_ItemPickUp::DeactivateItem()
     {
         if (m_StolenPlayerPingSystemComponent->GetLastInstigator() == this)
             m_StolenPlayerPingSystemComponent->Multicast_MustHidePingAll();
-    }
+    }*/
 }
 
 void AC_ItemPickUp::StartDespawnTimer(float InLifeTime)

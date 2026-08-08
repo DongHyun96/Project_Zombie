@@ -14,6 +14,9 @@ class PROJECT_ZOMBIE_API AC_BasicPlayerController : public APlayerController
 {
 	GENERATED_BODY()
 	
+protected:
+	virtual void OnUnPossess() override;
+	
 public:
 	
 	void FinishItemUpgrade();
@@ -23,6 +26,7 @@ public:
 	
 	void FinishPlayerStatUpgrade();
 
+	// 멀티 캐스트로 바꾸고 IsLocallyController사용하기.
 	UFUNCTION(Client, Reliable)
 	void Client_FinishPlayerStatUpgrade();
 	

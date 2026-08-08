@@ -36,10 +36,10 @@ protected:
 	
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Component")
-	class USphereComponent* m_Collision;
+	class USphereComponent* m_Collision{};
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Mesh", meta = (AllowPrivateAccess = "true"))
-	class USkeletalMeshComponent* m_WeaponMesh;		// 정적정보 - 상연, 데이터 테이블에서 가져와서 초기화 해주기.
+	class USkeletalMeshComponent* m_WeaponMesh{};		// 정적정보 - 상연, 데이터 테이블에서 가져와서 초기화 해주기.
 
 	// AI Enemy가 Gun을 사용하는 처리 기능 담당
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI", meta = (DisplayName = "AIGunUsageComponent"))
@@ -48,35 +48,35 @@ protected:
 protected:
 	// 총이 갖는 최종 데미지
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Weapon|Stats")
-	float					m_Damage;
+	float					m_Damage{};
 
 	// 현재 남아있는 총알 수
 	UPROPERTY(BlueprintReadOnly, Category = "Weapon|Stats")
-	int32 m_CurrentAmmo;
+	int32					m_CurrentAmmo{};
 
 	// 총이 갖는 최종 MaxAmmo
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Weapon|Stats")
-	int32					m_MaxAmmo;
+	int32					m_MaxAmmo{};
 
 	// 총이 갖는 최종 FireRate
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Weapon|Stats")
-	float					m_FireRate;
+	float					m_FireRate{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GunStats")
 	float m_SpreadAngle = 0.0f;
 	
-	class UAnimMontage* m_PlayerFireAnimation;
+	class UAnimMontage* m_PlayerFireAnimation{};
 
-	class UAnimMontage* m_PlayerReloadAnimation;
+	class UAnimMontage* m_PlayerReloadAnimation{};
 
 	UPROPERTY(Transient)
-	TObjectPtr<class UAnimSequence> m_FireAnimation;   		// 정적정보. - 상연, 데이터 테이블에서 가져와서 초기화 해주기.
+	TObjectPtr<class UAnimSequence> m_FireAnimation{};   		// 정적정보. - 상연, 데이터 테이블에서 가져와서 초기화 해주기.
 	
 	UPROPERTY(Transient)
-	TObjectPtr<class UAnimSequence> m_ReloadAnimation;		// 정적정보. - 상연, 데이터 테이블에서 가져와서 초기화 해주기.
+	TObjectPtr<class UAnimSequence> m_ReloadAnimation{};		// 정적정보. - 상연, 데이터 테이블에서 가져와서 초기화 해주기.
 	
 	UPROPERTY(Transient)
-	TObjectPtr<class UStaticMesh> m_ShellMesh;				// 정적정보. - 상연, 데이터 테이블에서 가져와서 초기화 해주기.
+	TObjectPtr<class UStaticMesh> m_ShellMesh{};				// 정적정보. - 상연, 데이터 테이블에서 가져와서 초기화 해주기.
 
 	// 이 무기의 원본 데이터 및 동적 데이터(CustomData)를 보유하는 통합 Entry
 	// TODO : Lagacy로 지워질 예정
@@ -84,13 +84,13 @@ protected:
 	//FInventoryEntry			ItemEntry;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Effects")
-	class UNiagaraSystem* m_ShellEjectNiagaraSystem;
+	class UNiagaraSystem* m_ShellEjectNiagaraSystem{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Effects")
-	class UParticleSystem* m_TracerFX;
+	class UParticleSystem* m_TracerFX{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Effects")
-	class UParticleSystem* m_ImpactFX;
+	class UParticleSystem* m_ImpactFX{};
 
 protected:
 	// 현재 사격 버튼을 누르고 있는 상태인지 확인

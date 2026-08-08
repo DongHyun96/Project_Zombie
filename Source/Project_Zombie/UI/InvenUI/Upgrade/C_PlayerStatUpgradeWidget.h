@@ -6,6 +6,7 @@
 #include "Blueprint/UserWidget.h"
 #include "C_PlayerStatUpgradeWidget.generated.h"
 
+class UC_StatComponentBase;
 class AC_BasicPlayer;
 class UC_PlayerUpMattersWidget;
 class UC_PlayerStatsWidget;
@@ -48,6 +49,12 @@ public:
 		
 		UpdateWidget();
 	}
+	
+	void UpdateButton(bool InAllow);
+	
+	void BindStatEvents(UC_StatComponentBase* InStatComp);
+	
+	void OnStatGradeChanged(const FName& StatName, uint8 NewGrade);
 	
 protected:
 	virtual void NativeOnInitialized() override;

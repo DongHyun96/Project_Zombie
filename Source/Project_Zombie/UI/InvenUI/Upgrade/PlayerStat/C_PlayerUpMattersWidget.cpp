@@ -44,18 +44,28 @@ void UC_PlayerUpMattersWidget::UpdateWidget(AC_BasicPlayer* InUsePlayer)
 		UC_Util::Print("FPlayerStatUpgradeData Is Nullptr~!");
 		if (PlayerStatUpgradeWidget)
 			PlayerStatUpgradeWidget->SetHasRequiredItems(false);
+		
+		PlayerStatUpgradeWidget->UpdateButton(false);
+		
 		return;
 	}
 	
 	const TArray<FGradeCostInfo>& CostInfoArr = PSUpData->GradeCost; 
 	
-	if (StatGrade >= CostInfoArr.Num()) return;
+	if (StatGrade >= CostInfoArr.Num())
+	{
+		PlayerStatUpgradeWidget->UpdateButton(false);
+		return; // TODO : 버튼 닫아 주어야 함.
+	}
 	
 	// StatGrade의 시작은 0, CostInfoArr의 TargetGrade는 1부터 시작이라 다음 강화 단계를 불러옴.
 	const FGradeCostInfo& CostInfo = CostInfoArr[StatGrade];
 	
-	if (StatGrade >= CostInfo.TargetGrade) return;
-	
+	if (StatGrade >= CostInfo.TargetGrade)
+	{
+		PlayerStatUpgradeWidget->UpdateButton(false);
+		return; // TODO : 버튼 닫아 주어야 함.
+	}
 	const TArray<FUpgradeMaterialInfo>& RequiredMaterials =  CostInfo.RequiredMaterials;
 	
 	UC_InvenComponent* InvenComp = InUsePlayer->GetInvenComponent();
@@ -64,6 +74,8 @@ void UC_PlayerUpMattersWidget::UpdateWidget(AC_BasicPlayer* InUsePlayer)
 	
 	for (const auto& MaterialInfo : RequiredMaterials)
 	{
+		if (MaterialInfo.MatterItemID.IsNone() || MaterialInfo.RequiredCount <= 0) continue;
+		
 		const FName& MaterialName = MaterialInfo.MatterItemID;
 		
 		const int32& count = MaterialInfo.RequiredCount;
@@ -107,5 +119,8 @@ void UC_PlayerUpMattersWidget::UpdateWidget(AC_BasicPlayer* InUsePlayer)
 	}
 		
 	if (PlayerStatUpgradeWidget)
+	{
 		PlayerStatUpgradeWidget->SetHasRequiredItems(HasRequiredItems);
+		PlayerStatUpgradeWidget->UpdateButton(true);
+	}
 }

@@ -23,6 +23,8 @@ public:
 	// Sets default values for this component's properties
 	UC_InvenComponent();
 
+	void LoadInventoryFromBackup(const TArray<FInventoryEntry>& InSavedItems);
+	
 public:
     const TArray<FInventoryEntry>& GetInventoryItems() const { return InventoryContainer.Items; }
 	
