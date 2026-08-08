@@ -8,6 +8,7 @@
 #include "Multi/C_InvenStructures.h"
 #include "C_PlayerState.generated.h"
 
+class AC_WeaponBase;
 /**
  * 
  */
@@ -54,7 +55,8 @@ protected:
 	UPROPERTY()
 	TArray<FInventoryEntry> SavedInventoryContainers{};
 	
-	
+	UPROPERTY()
+	TArray<AC_WeaponBase*> SavedWeapons{};	
 	
 	UPROPERTY()
 	TMap<FName, float> SavedStats{};

@@ -71,7 +71,17 @@ void AC_BasicPlayer::PossessedBy(AController* NewController)
 		{
 			if (UC_InvenComponent* InvenComp = FindComponentByClass<UC_InvenComponent>())
 			{
+				
+				
 				InvenComp->LoadInventoryFromBackup(PS->GetSavedInventory());
+			}
+			
+			if (m_EquippedComponent && HasAuthority())
+			{
+				//m_EquippedComponent->SetOwnerPlayer(this);
+				
+				for (int32 i = 0 ; i < static_cast<int32>(EWeaponSlot::None) ; ++i)
+					m_EquippedComponent->LoadEquippedWeaponFromInven(i,m_InvenComponent->GetItemAt(i));
 			}
 		}
 

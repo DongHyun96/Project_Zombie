@@ -70,35 +70,31 @@ void AC_GameMode_GameLv::Logout(AController* Exiting)
 
 void AC_GameMode_GameLv::HandleSeamlessTravelPlayer(AController*& C)
 {
-   // 1. 엔진 로직 선행 (목적지 레벨에 새 캐릭터 스폰 및 빙의 완료)
+   // 1. 엔진 로직 선행 (캐릭터 스폰 및 빙의 완료)
    Super::HandleSeamlessTravelPlayer(C);
 
    APlayerController* PC = Cast<APlayerController>(C);
    if (!PC) return;
 
-   // CopyProperties()를 통해 이미 이전 레벨의 데이터를 고스란히 이어받은 상태의 새 PlayerState
    AC_PlayerState* PS = PC->GetPlayerState<AC_PlayerState>();
    if (!PS) return;
 
-   // 방금 막 스폰되어 컨트롤러가 갓 빙의한 새 깡통 캐릭터
    APawn* NewPawn = PC->GetPawn();
    if (!NewPawn) return;
 
-   // 2. 새 캐릭터의 인벤토리 컴포넌트에 PlayerState가 품고 온 진짜 데이터 복구
+   // 2. 캐릭터의 PossessedBy에서 복구하지 못했을 경우를 대비해 확실하게 다시 강제 로드
+   // (심리스 트래블 완료 시점의 확실한 데이터 복구 보장)
    if (UC_InvenComponent* InvenComp = NewPawn->FindComponentByClass<UC_InvenComponent>())
    {
-      // ※ 주의: 복구 함수(예: RestoreInventory)는 유저님이 구현하신 컴포넌트 내부의 데이터 세팅 함수명을 사용하세요.
-      // 여기서는 예시로 로직을 적어둡니다. (PS->GetSavedInventoryItems() 등으로 가져오기)
+      // 기존 인벤토리가 비어있거나, 데이터 복구가 누락되었다면 여기서 꽂아줌
       InvenComp->LoadInventoryFromBackup(PS->GetSavedInventory()); 
-        
-      UE_LOG(LogTemp, Warning, TEXT("[Travel Restore] 새 캐릭터 %s로 인벤토리 복구 완료!"), *NewPawn->GetName());
+      UE_LOG(LogTemp, Warning, TEXT("[Travel Restore] 게임모드 단계에서 새 캐릭터 %s로 인벤토리 최종 복구 완료! (아이템: %d개)"), 
+         *NewPawn->GetName(), PS->GetSavedInventory().Num());
    }
 
-   // 3. 새 캐릭터의 스탯 컴포넌트에 복구
    if (UC_StatComponentBase* StatComp = NewPawn->FindComponentByClass<UC_StatComponentBase>())
    {
-      // 컴포넌트에 데이터를 다시 꽂아주는 함수 호출
       StatComp->LoadStatsFromBackup(PS->GetSavedStats(), PS->GetSavedStatGrades());
-      UE_LOG(LogTemp, Warning, TEXT("[Travel Restore] 새 캐릭터 %s로 스탯 데이터 복구 완료!"), *NewPawn->GetName());
+      UE_LOG(LogTemp, Warning, TEXT("[Travel Restore] 게임모드 단계에서 새 캐릭터 %s로 스탯 최종 복구 완료!"), *NewPawn->GetName());
    }
 }
