@@ -95,6 +95,33 @@ void AC_BasicEnemy::ResetEnemyForPoolSpawn()
 	ForceNetUpdate();
 }
 
+int32 AC_BasicEnemy::SelectHitMontageIndex() const
+{
+	if (m_HitMontage.IsEmpty())
+		return INDEX_NONE;
+
+	return FMath::RandRange(0, m_HitMontage.Num() - 1);
+}
+
+void AC_BasicEnemy::PlayHitAnimation(int32 _Idx)
+{
+	if (!m_HitMontage.IsValidIndex(_Idx))
+		return;
+
+	UAnimMontage* HitMontage = m_HitMontage[_Idx];
+
+	if (!IsValid(HitMontage))
+		return;
+
+	PlayAnimMontage(HitMontage);
+}
+
+void AC_BasicEnemy::Multicast_PlayHit_Implementation(int32 _HitMontageIdx)
+{
+	PlayHitAnimation(_HitMontageIdx);
+	PlayHitSound();
+}
+
 void AC_BasicEnemy::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -152,6 +179,17 @@ float AC_BasicEnemy::TakeDamage
 	const float DamageAmount = Super::TakeDamage(_DamageAmount, _DamageEvent, _EventInstigator, _DamageCauser);
 	if (DamageAmount <= 0.f) return 0.f; // Damage가 들어오지 않음 (클라이언트단, TakeDamage 로컬 호출인 경우에 그럴 수 있음 -> 알아서 서버 쪽으로 Damage 입은 사실 전달)
 	
+	// 죽지 않은 경우에만 피격모션 재생
+	if (IsValid(m_StatComponent) && m_StatComponent->GetCurHP() > 0.f)
+	{
+		const int32 HitIdx = SelectHitMontageIndex();
+
+		if (HitIdx != INDEX_NONE)
+		{
+			Multicast_PlayHit(HitIdx);
+		}
+	}
+
 	/* PerceptionComponent에 Damage를 받았다고 보고 처리 */
 	ACharacter* DamageInstigator = _EventInstigator->GetCharacter();
 	const FVector DamageInstigatorPos = (DamageInstigator != nullptr) ? DamageInstigator->GetActorLocation() : this->GetActorLocation();
@@ -382,6 +420,8 @@ void AC_BasicEnemy::PlayDeadAnimation(int32 _DeadMontageIndex)
 
 	// 서버와 클라에서 같은 죽음 몽타주 재생
 	PlayAnimMontage(SelectedMontage);
+
+	PlayDeadSound();
 }
 
 void AC_BasicEnemy::OnRep_DeadData()

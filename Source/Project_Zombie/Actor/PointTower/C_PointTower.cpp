@@ -9,6 +9,7 @@
 #include "Actor/Components/StatComponent/C_StatComponentBase.h"
 #include "Actor/Ping/C_WorldPingActor.h"
 #include "Components/SphereComponent.h"
+#include "Components/AudioComponent.h"
 #include "GameModeAndManager/C_GameMode_GameLv.h"
 #include "GameModeAndManager/C_UIManager.h"
 #include "GameModeAndManager/PointTowerManager/C_PointTowerManager.h"
@@ -33,6 +34,11 @@ AC_PointTower::AC_PointTower()
 	
 	SetRootComponent(m_StaticMeshComTower);
 	m_StaticMeshComGenerator->SetupAttachment(GetRootComponent());
+
+	m_ConqueringAudioCom = CreateDefaultSubobject<UAudioComponent>(TEXT("ConqueringAudioCom"));
+
+	m_ConqueringAudioCom->SetupAttachment(GetRootComponent());
+	m_ConqueringAudioCom->SetAutoActivate(false);
 
 	// Outline 기능에 필요한 CustomDepth 활성화
 	m_StaticMeshComGenerator->SetRenderCustomDepth(true);
@@ -313,8 +319,10 @@ void AC_PointTower::OnInteractionColliderBeginOverlap
 	if (!m_ConqueringPlayer)
 	{
 		SetConqueringPlayer(EnteredPlayer);
+
+		Multicast_SetConqueringSound(true); // m_ConqueringPlayer 생기면 거점 점령이라 판단하고 재생 시작
 	}
-	
+
 	// 이 Area안에 들어온 모든 Player를 일단 저장해둠 (추후 후보군을 두기 위함)
 	m_ConquerTestAreaEnteredPlayers.Add(EnteredPlayer);
 }
@@ -357,6 +365,12 @@ void AC_PointTower::OnInteractionColliderEndOverlap
 	
 	// 가장 가까운 플레이어를 다음 점령자로 등록
 	SetConqueringPlayer(PickedPlayer);
+
+	// m_ConqueringPlayer가 없으면 거점 점령 중단이라 판단하고 사운드 중단
+	if (!m_ConqueringPlayer)
+	{
+		Multicast_SetConqueringSound(false); 
+	}
 }
 
 USceneComponent* AC_PointTower::FindSceneComponentByName(const FName& _ComName)
@@ -454,6 +468,12 @@ void AC_PointTower::Multicast_Activate_Implementation()
 	}
 
 	m_State = EPointTowerState::Active;
+
+	// 거점 활성화 알림음 재생
+	if (m_ActivateSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), m_ActivateSound, GetActorLocation());	
+	}
 	
 	// 거점 활성화 Outline 활성화
 	m_StaticMeshComTower->SetCustomDepthStencilValue(2);
@@ -498,6 +518,12 @@ void AC_PointTower::Multicast_Conquered_Implementation()
 
 	m_State = EPointTowerState::Conquered;
 
+	// 점령 사운드 정지
+	if (m_ConqueringAudioCom)
+	{
+		m_ConqueringAudioCom->Stop();
+	}
+
 	// 거점 아웃라인 비활성화
 	m_StaticMeshComTower->SetCustomDepthStencilValue(0);
 	m_StaticMeshComGenerator->SetCustomDepthStencilValue(0);
@@ -515,6 +541,32 @@ void AC_PointTower::Multicast_Conquered_Implementation()
 	// 전기 Effect 보여주기
 	if (m_ElectroSplinesParent)
 		m_ElectroSplinesParent->SetHiddenInGame(false, true);
+
+	// 전기 Effect 사운드 재생
+	if (m_ElectricSound)
+	{
+		// 이거 ElectroSplinesParent 위치를 수정해도 좋을듯...
+		const FVector ElectricSoundLocation = m_ElectroSplinesParent->GetComponentLocation();
+
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), m_ElectricSound, ElectricSoundLocation);
+	}
 	
 	if (m_PointTowerWidget) m_PointTowerWidget->SetVisibility(ESlateVisibility::Collapsed);
+}
+
+
+void AC_PointTower::Multicast_SetConqueringSound_Implementation(bool _Play)
+{
+	if (!m_ConqueringAudioCom)
+		return;
+
+	if (_Play)
+	{
+		if (!m_ConqueringAudioCom->IsPlaying())
+			m_ConqueringAudioCom->Play();
+	}
+	else
+	{
+		m_ConqueringAudioCom->Stop();
+	}
 }

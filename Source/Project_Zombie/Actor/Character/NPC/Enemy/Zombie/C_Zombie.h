@@ -6,6 +6,9 @@
 #include "../C_BasicEnemy.h"
 #include "C_Zombie.generated.h"
 
+class UAudioComponent;
+class USoundBase;
+
 UENUM(BlueprintType)
 enum class EZombieType : uint8
 {
@@ -50,7 +53,27 @@ private:
 	// 이미 이번 NormalAttack 휘두르기에 피격판정이 들어간 Player나 PointTower들
 	UPROPERTY()
 	TSet<AActor*> m_SetNormalAttackColliderEntered{};
-	
+
+protected: /* 사운드 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sound")
+	TObjectPtr<UAudioComponent> m_Sound;
+
+	// 피격 음성 목록
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound")
+	TArray<TObjectPtr<USoundBase>> m_HitSounds;
+
+	// 사망 음성 목록
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound")
+	TArray<TObjectPtr<USoundBase>> m_DeadSounds;
+
+	// Idle 음성 목록
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound")
+	TArray<TObjectPtr<USoundBase>> m_IdleSounds;
+
+	// 추격시 음성 목록
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound")
+	TArray<TObjectPtr<USoundBase>> m_ChaseSounds;
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -121,6 +144,26 @@ public:
 	bool ActivateFromPool(const FTransform& _SpawnTransform);
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+protected:
+	// 전달받은 사운드 목록 중 하나를 랜덤 재생
+	void PlayRandomVoice(const TArray<TObjectPtr<USoundBase>>& _Sounds);
+
+	// 피격 음성
+	virtual void PlayHitSound() override;
+
+	// 사망 음성
+	virtual void PlayDeadSound() override;
+
+	// Idle 음성
+	void PlayIdleSound();
+
+	// 추격 음성
+	virtual void PlayChaseSound();
+
+public:
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_PlayChaseSound();
 
 public:	
 	virtual void Tick(float DeltaTime) override;

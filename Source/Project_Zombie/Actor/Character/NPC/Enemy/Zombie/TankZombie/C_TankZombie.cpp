@@ -568,7 +568,6 @@ void AC_TankZombie::FinishChargeSkill()
 	m_ChargeHitTarget.Reset();
 }
 
-
 void AC_TankZombie::StartEndMove()
 {
 	if (!HasAuthority())

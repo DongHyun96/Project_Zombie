@@ -78,6 +78,16 @@ void UC_Serv_SelectTarget::TickNode(UBehaviorTreeComponent& _OwnCom, uint8* _Nod
 		// BestTarget을 Target으로 지정
 		UBlackboardComponent* pBBCom = _OwnCom.GetBlackboardComponent();
 		if (!pBBCom) return;
+
+		// 기존에는 타겟이 없었는데
+		// 이번에 처음 추격할 타겟이 생긴 경우
+		UObject* CurrentTarget =
+			pBBCom->GetValueAsObject(m_Target.SelectedKeyName);
+
+		if (!IsValid(CurrentTarget))
+		{
+			pZombie->Multicast_PlayChaseSound();
+		}
 	
 		pBBCom->SetValueAsObject(m_Target.SelectedKeyName, pBestTarget);
 		return;
@@ -121,6 +131,19 @@ void UC_Serv_SelectTarget::TickNode(UBehaviorTreeComponent& _OwnCom, uint8* _Nod
 	// 가장 가까운 타겟을 블랙보드에 타겟으로 설정
 	UBlackboardComponent* pBBCom = _OwnCom.GetBlackboardComponent();
 	if (!pBBCom) return;
+
+	// 실제 타겟을 찾았을 때만
+	if (IsValid(pBestTarget))
+	{
+		UObject* CurrentTarget =
+			pBBCom->GetValueAsObject(m_Target.SelectedKeyName);
+
+		// 기존 타겟이 없었다면 추격 시작 사운드
+		if (!IsValid(CurrentTarget))
+		{
+			pZombie->Multicast_PlayChaseSound();
+		}
+	}
 	
 	pBBCom->SetValueAsObject(m_Target.SelectedKeyName, pBestTarget);
 }

@@ -43,6 +43,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Drop")
 	TObjectPtr<class UC_DropTableDataAsset> m_DropTableDataAsset{};
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HitAnim")
+	TArray<TObjectPtr<UAnimMontage>> m_HitMontage;
+
 protected: /* Dead 관련 */
 	/// <summary>
 	/// 서버에서 결정한 죽음 상태와 몽타주 인덱스를
@@ -161,6 +164,9 @@ protected: // ---- 죽음 관련 ---- //
 	UFUNCTION()
 	void OnRep_DeadData();
 
+	// 사망 음성
+	virtual void PlayDeadSound() {}
+
 protected:
 	/// <summary>
 	/// 풀에서 다시 활성화될 때
@@ -168,6 +174,21 @@ protected:
 	/// 서버에서만 호출
 	/// </summary>
 	virtual void ResetEnemyForPoolSpawn();
+
+protected: /* 피격처리 */
+	
+	int32 SelectHitMontageIndex() const;
+
+	void PlayHitAnimation(int32 _Idx);
+
+	UFUNCTION(NetMulticast, Unreliable)
+	void Multicast_PlayHit(int32 _HitMontageIdx);
+
+	// 피격 음성
+	virtual void PlayHitSound() {}
+
+	// 추격 음성
+	virtual void PlayChaseSound() {}
 	
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;

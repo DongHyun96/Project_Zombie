@@ -119,7 +119,11 @@ void UC_ZombieManager::InitializeZombiePool()
 		const TSubclassOf<AC_Zombie>* ZombieClass = m_ZombieClasses.Find(ZombieType);
 		if (!ZombieClass || !(*ZombieClass))
 		{
-			UC_Util::Print("From InitializeZombiePool : ZombieClass not found", FColor::Red, 10.f);
+			UC_Util::Print(
+				"From InitializeZombiePool : ZombieClass not found",
+				FColor::Red,
+				10.f);
+
 			continue;
 		}
 
@@ -129,6 +133,7 @@ void UC_ZombieManager::InitializeZombiePool()
 		// 설정된 수만큼 생성
 		for (uint32 i = 0; i < PoolCount; ++i)
 		{
+
 			FActorSpawnParameters SpawnParams;
 
 			// 초기 풀 객체는 생성 직후 바로 숨길거라서
@@ -146,6 +151,7 @@ void UC_ZombieManager::InitializeZombiePool()
 				continue;
 			}
 
+
 			// 생성된 좀비를 즉시 풀 대기상태로 전환
 			if (!SpawnZombie->DeactivateForPool())
 			{
@@ -154,7 +160,7 @@ void UC_ZombieManager::InitializeZombiePool()
 				SpawnZombie->Destroy();
 				continue;
 			}
-
+			
 			// 비활성 대기 풀 등록
 			pPool.Add(SpawnZombie);
 
@@ -375,27 +381,34 @@ bool UC_ZombieManager::CanSpawnZombieType(const FZombieTypeSpawnSetting& _Settin
 	if (_Setting.SpawnWeight <= 0.f)
 		return false;
 
+	const int32 ActiveCount = GetActiveZombieCount(_Setting.ZombieType);
+	
 	// 타입별 최대 활성 수 검사
-	if (GetActiveZombieCount(_Setting.ZombieType) >= _Setting.MaxActiveCount)
-	{
+	if (ActiveCount >= _Setting.MaxActiveCount)
 		return false;
-	}
 
 	// 해당 타입 Pool이 존재하고 꺼낼 좀비가 남아있는지 확인
 	const TArray<AC_Zombie*>* Pool = m_ZombiePool.Find(_Setting.ZombieType);
 
-	if (!Pool || Pool->IsEmpty())
+	if (!Pool)
 		return false;
 
+	if (Pool->IsEmpty())
+		return false;
+	
 	// 타입별 SpawnCoolDown 검사
 	if (const float* NextSpawnTime = m_NextZombieSpawnTime.Find(_Setting.ZombieType))
 	{
 		if (World->GetTimeSeconds() < *NextSpawnTime)
+		{
 			return false;
+		}
 	}
 
+	AC_SpawnArea* SpawnArea = SelectSpawnAreaForZombieType(_Setting.ZombieType);
+	
 	// 해당 타입을 허용하는 SpawnArea도 있어야 함
-	if (!IsValid(SelectSpawnAreaForZombieType(_Setting.ZombieType)))
+	if (!IsValid(SpawnArea))
 		return false;
 
 	return true;
