@@ -6,6 +6,9 @@
 #include "../C_BasicEnemy.h"
 #include "C_Zombie.generated.h"
 
+class UAudioComponent;
+class USoundBase;
+
 UENUM(BlueprintType)
 enum class EZombieType : uint8
 {
@@ -47,10 +50,30 @@ protected: /* 공통 NormalAttack 피격판정 및 피격처리 (해당 기능�
 
 private:
 	
-	// 이미 이번 NormalAttack 휘두르기에 피격판정이 들어간 Player들
+	// 이미 이번 NormalAttack 휘두르기에 피격판정이 들어간 Player나 PointTower들
 	UPROPERTY()
-	TSet<class AC_BasicPlayer*> m_SetNormalAttackColliderEntered{};
-	
+	TSet<AActor*> m_SetNormalAttackColliderEntered{};
+
+protected: /* 사운드 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sound")
+	TObjectPtr<UAudioComponent> m_Sound;
+
+	// 피격 음성 목록
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound")
+	TArray<TObjectPtr<USoundBase>> m_HitSounds;
+
+	// 사망 음성 목록
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound")
+	TArray<TObjectPtr<USoundBase>> m_DeadSounds;
+
+	// Idle 음성 목록
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound")
+	TArray<TObjectPtr<USoundBase>> m_IdleSounds;
+
+	// 추격시 음성 목록
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound")
+	TArray<TObjectPtr<USoundBase>> m_ChaseSounds;
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -100,19 +123,47 @@ protected:
 	void OnRep_PoolActive();
 
 public:
+	bool IsPoolActive() const
+	{
+		return m_bPoolActive;
+	}
+
 	/// <summary>
 	/// 죽은 좀비를 레벨에서 제거하고 
 	/// 풀 대기상태로 전환
 	/// 서버에서만 호출
 	/// </summary>
-	void DeactivateForPool();
+	bool DeactivateForPool();
 
-	bool IsPoolActive() const
-	{
-		return m_bPoolActive;
-	}
-	
+	/// <summary>
+	/// 대기 풀의 좀비를 지정한 위치에서 다시 활성화
+	/// 서버에서만 호출
+	/// </summary>
+	/// <param name="_SpawnTransform"> : 스폰위치 </param>
+	/// <returns></returns>
+	bool ActivateFromPool(const FTransform& _SpawnTransform);
+
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+protected:
+	// 전달받은 사운드 목록 중 하나를 랜덤 재생
+	void PlayRandomVoice(const TArray<TObjectPtr<USoundBase>>& _Sounds);
+
+	// 피격 음성
+	virtual void PlayHitSound() override;
+
+	// 사망 음성
+	virtual void PlayDeadSound() override;
+
+	// Idle 음성
+	void PlayIdleSound();
+
+	// 추격 음성
+	virtual void PlayChaseSound();
+
+public:
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_PlayChaseSound();
 
 public:	
 	virtual void Tick(float DeltaTime) override;

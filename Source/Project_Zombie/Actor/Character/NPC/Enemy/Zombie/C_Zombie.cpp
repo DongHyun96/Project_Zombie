@@ -7,35 +7,46 @@
 #include "../../../GlobalEnum.h"
 #include "Actor/Character/NPC/Enemy/Components/SkillComponent/C_EnemySkillComponent.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
+#include "Actor/PointTower/C_PointTower.h"
 #include "Net/UnrealNetwork.h"
+#include "AIController.h"
+#include "BrainComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/AudioComponent.h"
 #include "Components/ShapeComponent.h"
+#include "Sound/SoundBase.h"
+#include "Controller/C_ZombieController.h"
 #include "Kismet/GameplayStatics.h"
 #include "Utility/C_Util.h"
 
 AC_Zombie::AC_Zombie()
 	: m_ZombieType(EZombieType::NormalZombie)
 {
+	m_TeamId = static_cast<uint8>(ETeamType::Enemy);
 }
 
 AC_Zombie::AC_Zombie(EZombieType _ZombieType)
 	: m_ZombieType(_ZombieType)
 {
+	m_TeamId = static_cast<uint8>(ETeamType::Enemy);
+
+	m_Sound = CreateDefaultSubobject<UAudioComponent>(TEXT("Sound"));
+
+	m_Sound->SetupAttachment(GetRootComponent());
+
+	m_Sound->bAutoActivate = false;
 }
 
 void AC_Zombie::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	// 팀 설정
-	SetGenericTeamId(static_cast<uint8>(ETeamType::Enemy));
-
 	// 등록된 모든 NormalAttackCollider의 ComponentBeginOverlap 이벤트 바인딩 및 첫 시작 시, 비활성화 처리
 	for (UShapeComponent* NormalAttackCollider : m_NormalAttackColliders)
 	{
 		// 서버 쪽에서만 실질적인 피격 판정 및 피격 처리가 들어갈 것임
-		if (IsLocallyControlled())
+		if (HasAuthority())
 			NormalAttackCollider->OnComponentBeginOverlap.AddDynamic(this, &AC_Zombie::OnNormalAttackColliderBeginOverlap);
 		
 		NormalAttackCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -59,8 +70,6 @@ void AC_Zombie::ANS_OnNormalAttackEnd()
 {
 	if (!HasAuthority()) return;
 
-	UC_Util::Print("On ANSNormalAttack End", FColor::MakeRandomColor(), 20.f);
-	
 	m_SetNormalAttackColliderEntered.Empty();
 
 	for (UShapeComponent* AttackCollider : m_NormalAttackColliders)
@@ -79,16 +88,18 @@ void AC_Zombie::OnNormalAttackColliderBeginOverlap
 {
 	// Client 쪽은 Event 바인딩 처리 자체를 안해서 검사하지 않아도 됨
 	AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(OtherActor);
+	AC_PointTower* PointTower = Cast<AC_PointTower>(OtherActor);
+	if (!Player && !PointTower) return; // PointTower나 Player가 아닌 경우
 	
 	// 이미 이번 휘두르기에 피격처리가 한 번 들어감
 	if (m_SetNormalAttackColliderEntered.Contains(Player)) return;
 	
 	m_SetNormalAttackColliderEntered.Add(Player);
 
-	// 현재 Skill의 피격량을 구해와서, 대상 Player에게 ApplyDamage 처리
+	// 현재 Skill의 피격량을 구해와서, 대상 Target에게 ApplyDamage 처리
 	UGameplayStatics::ApplyDamage
 	(
-		Player,
+		OtherActor,
 		m_SkillCom->GetCurSkillDamage(),
 		GetController(),
 		this,
@@ -100,14 +111,37 @@ void AC_Zombie::ApplyPoolActiveState()
 {
 	if (m_bPoolActive)
 	{
-		// 재스폰 구현할때 활성화 처리 추가하기
 		SetActorHiddenInGame(false);
 		SetActorEnableCollision(true);
 		SetActorTickEnabled(true);
 
+		// 이동 활성화
+		if (UCharacterMovementComponent* MoveCom = GetCharacterMovement())
+		{
+			MoveCom->StopMovementImmediately();
+			MoveCom->SetMovementMode(EMovementMode::MOVE_Walking);
+		}
+		
 		return;
 	}
 
+	// =====================풀 비활성화 상태=========================
+
+	// AI 정지
+	if (HasAuthority())
+	{
+		if (AAIController* pController = Cast<AAIController>(GetController()))
+		{
+			// 이전 이동 요청 제거
+			pController->StopMovement();
+
+			if (UBrainComponent* Brain = pController->GetBrainComponent())
+			{
+				Brain->StopLogic(TEXT("Zombie in Pool"));
+			}
+		}
+	}
+	
 	// 풀 반환 시 남아있는 몽타주 정지
 	StopAnimMontage();
 
@@ -126,6 +160,10 @@ void AC_Zombie::ApplyPoolActiveState()
 
 	// tick 비활성화
 	SetActorTickEnabled(false);
+	
+	// BrainComponent 비활성화
+	if (UBrainComponent* Brain = m_ZombieController->GetBrainComponent())
+		Brain->StopLogic(TEXT("FirstInitPooling"));
 }
 
 void AC_Zombie::OnRep_PoolActive()
@@ -134,15 +172,15 @@ void AC_Zombie::OnRep_PoolActive()
 	ApplyPoolActiveState();
 }
 
-void AC_Zombie::DeactivateForPool()
+bool AC_Zombie::DeactivateForPool()
 {
 	// 풀 상태 변경은 서버에서만 처리
 	if (!HasAuthority())
-		return;
+		return false;
 
 	// 중복 처리 방지
 	if (!m_bPoolActive)
-		return;
+		return false;
 
 	m_bPoolActive = false;
 
@@ -151,6 +189,49 @@ void AC_Zombie::DeactivateForPool()
 
 	// 클라에 최대한 빨리 전달
 	ForceNetUpdate();
+
+	return true;
+}
+
+bool AC_Zombie::ActivateFromPool(const FTransform& _SpawnTransform)
+{
+	// 풀 활성 상태는 서버에서만 처리
+	if (!HasAuthority())
+		return false;
+
+	// 이미 활성화 되어잇는 좀비는 중복처리 x
+	if (m_bPoolActive)
+		return false;
+
+	// 스폰 위치 먼저 설정
+	// 숨김 상태가 풀리기 전에 먼저 옮겨두려고 미리 설정
+	SetActorTransform(_SpawnTransform, false, nullptr, ETeleportType::TeleportPhysics);
+
+	// 좀비 공통 상태 초기화
+	ResetEnemyForPoolSpawn();
+
+	// 풀 활성 상태로 변경
+	m_bPoolActive = true;
+
+	// 서버에 활성 상태 적용
+	ApplyPoolActiveState();
+
+	// 죽은 이후 StopLogic으로 정지된 BT 다시 시작
+	if (AAIController* pController = Cast<AAIController>(GetController()))
+	{
+		// 이전 이동 요청 제거
+		pController->StopMovement();
+
+		if (UBrainComponent* Brain = pController->GetBrainComponent())
+		{
+			Brain->RestartLogic();
+		}
+	}
+
+	// 클라에 상태와 위치를 빠르게 전달
+	ForceNetUpdate();
+
+	return true;
 }
 
 void AC_Zombie::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -159,6 +240,70 @@ void AC_Zombie::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetim
 
 	// 풀 활성 여부를 클라에 복제
 	DOREPLIFETIME(AC_Zombie, m_bPoolActive);
+}
+
+void AC_Zombie::PlayRandomVoice(const TArray<TObjectPtr<USoundBase>>& _Sounds)
+{
+	// AudioComponent가 없으면 재생 불가
+	if (!IsValid(m_Sound))
+		return;
+
+	// 등록된 사운드가 없으면 재생하지 않음
+	if (_Sounds.IsEmpty())
+		return;
+
+	// 랜덤 인덱스 선택
+	const int32 RandomIndex =
+		FMath::RandRange(0, _Sounds.Num() - 1);
+
+	USoundBase* Sound = _Sounds[RandomIndex];
+
+	if (!IsValid(Sound))
+		return;
+
+	// 기존 음성 중단
+	if (m_Sound->IsPlaying())
+	{
+		m_Sound->Stop();
+	}
+
+	// 새로운 사운드 설정 후 재생
+	m_Sound->SetSound(Sound);
+	m_Sound->Play();
+}
+
+void AC_Zombie::PlayHitSound()
+{
+	PlayRandomVoice(m_HitSounds);
+}
+
+void AC_Zombie::PlayDeadSound()
+{
+	PlayRandomVoice(m_DeadSounds);
+}
+
+void AC_Zombie::PlayIdleSound()
+{
+	PlayRandomVoice(m_IdleSounds);
+}
+
+void AC_Zombie::PlayChaseSound()
+{
+	PlayRandomVoice(m_ChaseSounds);
+}
+
+void AC_Zombie::Multicast_PlayChaseSound_Implementation()
+{
+	UE_LOG(
+		LogTemp,
+		Warning,
+		TEXT("[ChaseSound Multicast] Zombie=%s / Role=%d / NetMode=%d"),
+		*GetName(),
+		static_cast<int32>(GetLocalRole()),
+		static_cast<int32>(GetNetMode())
+	);
+
+	PlayChaseSound();
 }
 
 void AC_Zombie::Tick(float DeltaTime)

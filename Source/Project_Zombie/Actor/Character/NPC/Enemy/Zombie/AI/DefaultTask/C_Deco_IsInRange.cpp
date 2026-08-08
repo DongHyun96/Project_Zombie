@@ -6,6 +6,7 @@
 #include "Actor/Character/NPC/Enemy/Zombie/C_Zombie.h"
 #include "Actor/Character/NPC/Enemy/Zombie/Controller/C_ZombieController.h"
 #include "Actor/Character/NPC/Enemy/Components/SkillComponent/C_EnemySkillComponent.h"
+#include "Actor/PointTower/C_PointTower.h"
 
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Utility/C_Util.h"
@@ -44,6 +45,11 @@ bool UC_Deco_IsInRange::CalculateRawConditionValue(UBehaviorTreeComponent& _OwnC
 
 	// TODO : 에디터 BehaviorTree 에서 해당 SkillSlot으로 초기화해줄 것 (기본은 1번 Slot으로 되어있음)
 	float AttackRange = SkillCom->GetSkillRange(m_SkillSlot);
+
+	// PointTower가 Target인 경우, 다른 AttackRange 적용
+	if (m_bSUsePointTowerRangeIfTargetIsPointTower)
+		if (AC_PointTower* PointTower = Cast<AC_PointTower>(pTargetActor))
+			AttackRange = PointTower->GetZombieAttackRange();
 
 	return Dist <= AttackRange;
 }

@@ -23,17 +23,24 @@
 
 #include "../C_Zombie.h"
 #include "Actor/Character/NPC/Enemy/Components/StatComponent/C_EnemyStatComponent.h"
+#include "Actor/PointTower/C_PointTower.h"
+#include "GameModeAndManager/C_GameMode_GameLv.h"
+#include "GameModeAndManager/C_UIManager.h"
+#include "GameModeAndManager/PointTowerManager/C_PointTowerManager.h"
+#include "Kismet/GameplayStatics.h"
+#include "Utility/C_Util.h"
+#include "WorldPartition/HLOD/HLODRuntimeSubsystem.h"
 
 AC_ZombieController::AC_ZombieController()
 {
+	PrimaryActorTick.bCanEverTick = false;
+	
 	// 인지기능 컴포넌트 생성 및 Controller에 등록 
-	m_PerceptionCom = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("PerceptionComponent"));
-	SetPerceptionComponent(*m_PerceptionCom); 
+	m_PerceptionComponent = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("PerceptionComp"));
+	SetPerceptionComponent(*m_PerceptionComponent); 
 
 	// 시각정보 설정
 	m_SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("Sight"));
-
-	m_HearingConfig = CreateDefaultSubobject<UAISenseConfig_Hearing>(TEXT("Hearing"));
 
 	if (m_SightConfig)
 	{
@@ -42,44 +49,31 @@ AC_ZombieController::AC_ZombieController()
 		m_SightConfig->LoseSightRadius                          = 3500.f; // AI 가 대상을 처음 감지할 수 있는 거리
 		m_SightConfig->PeripheralVisionAngleDegrees             = 60.f; // 시전 정면방향을 기준으로, 반경 각도, 최대시야각은 x2 
 		m_SightConfig->DetectionByAffiliation.bDetectEnemies    = true; // 감지대상이 적대관계인경우 탐지한것으로 인정
-		m_SightConfig->DetectionByAffiliation.bDetectFriendlies = true; // 감지대상이 우호관계인경우 탐지한것으로 인정
-		m_SightConfig->DetectionByAffiliation.bDetectNeutrals   = true; // 감지대상이 중립관계인경우 탐지한것으로 인정
-
-		m_PerceptionCom->ConfigureSense(*m_SightConfig); // 인지 컴포넌트에 시각정보 추가
-		m_PerceptionCom->SetDominantSense(m_SightConfig->GetSenseImplementation()); // 시각정보를 최우선 감각으로 사용할 것
+		m_SightConfig->DetectionByAffiliation.bDetectFriendlies = false; // 감지대상이 우호관계인경우 탐지 x
+		m_SightConfig->DetectionByAffiliation.bDetectNeutrals   = false; // 감지대상이 중립관계인경우 탐지 x
 	}
-
-	if (m_HearingConfig)
-	{
-		// 청각 기본값 세팅
-		m_HearingConfig->HearingRange = 2000.f;
-
-		m_HearingConfig->DetectionByAffiliation.bDetectEnemies    = true;
-		m_HearingConfig->DetectionByAffiliation.bDetectFriendlies = false;
-		m_HearingConfig->DetectionByAffiliation.bDetectNeutrals   = false;
-
-		m_PerceptionCom->ConfigureSense(*m_HearingConfig); // 인지 컴포넌트에 청각정보 추가
-	}
-
 	m_DamageConfig = CreateDefaultSubobject<UAISenseConfig_Damage>(TEXT("Damage"));
-	m_PerceptionCom->ConfigureSense(*m_DamageConfig); // 인지 컴포넌트에 데미지정보 추가
+	
+	m_PerceptionComponent->ConfigureSense(*m_SightConfig);
+	// 인지 컴포넌트에 시각정보 추가 및 반영 (추후 SightConfig 값을 변경하고 싶다면, 변경한 다음 ConfigureSense 호출을 해주어야 적용된다)
+	m_PerceptionComponent->ConfigureSense(*m_DamageConfig);
 
-
+	m_PerceptionComponent->SetDominantSense(m_SightConfig->GetSenseImplementation()); // 시각정보를 최우선 감각으로 설정	
 }
 
 void AC_ZombieController::OnPossess(APawn* _Pawn)
 {
 	Super::OnPossess(_Pawn);
 
+	m_OwnerZombie = Cast<AC_Zombie>(GetPawn());
+
 	//UE_LOG(LogTemp, Warning, TEXT("OnPossess Success"));
 
 	// 빙의한 대상과 같은 팀으로 설정
 	const IGenericTeamAgentInterface* pPawnTeam = Cast<IGenericTeamAgentInterface>(_Pawn);
-	if (pPawnTeam)
-		SetGenericTeamId(pPawnTeam->GetGenericTeamId());
-	// 공용헤더에 팀 설정 후 처리
-	else
-		SetGenericTeamId((uint8)ETeamType::None);
+	
+	if (pPawnTeam) SetGenericTeamId(pPawnTeam->GetGenericTeamId());
+	else SetGenericTeamId(static_cast<uint8>(ETeamType::None));
 
 	// 빙의 대상의 스탯 컴포넌트를 가져온다
 	UC_EnemyStatComponent* pStatCom = _Pawn->FindComponentByClass<UC_EnemyStatComponent>();
@@ -89,9 +83,9 @@ void AC_ZombieController::OnPossess(APawn* _Pawn)
 	m_SightConfig->LoseSightRadius = pStatCom->GetStat(TEXT("LoseDetectRange"));
 
 	// 인지 컴포넌트 갱신
-	m_PerceptionCom->ConfigureSense(*m_SightConfig);
-	m_PerceptionCom->ConfigureSense(*m_DamageConfig);
-	m_PerceptionCom->ConfigureSense(*m_HearingConfig);
+	m_PerceptionComponent->ConfigureSense(*m_SightConfig);
+	m_PerceptionComponent->ConfigureSense(*m_DamageConfig);
+	m_PerceptionComponent->RequestStimuliListenerUpdate();
 
 	// 비헤이비어트리, 블랙보드 세팅
 	if (m_BTAsset && m_BBAsset)
@@ -110,84 +104,67 @@ void AC_ZombieController::OnPossess(APawn* _Pawn)
 }
 
 
-void AC_ZombieController::OnTargetDetected(AActor* _Target, FAIStimulus _Stimulus)
+void AC_ZombieController::OnTargetUpdated(AActor* _Target, FAIStimulus _Stimulus)
 {
-	//UE_LOG(LogTemp, Warning, TEXT("Perception Triggered"));
-
-	/*if (!_Target)
-		return;
-
-	if (_Stimulus.WasSuccessfullySensed())
+	// 자극의 근원지를 추적할 수 없음
+	if (!_Target) return;
+	
+	if (!m_OwnerZombie)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Detected : %s"), *_Target->GetName());
-
-		if (Blackboard)
-		{
-			Blackboard->SetValueAsObject(TEXT("Target"), _Target);
-		}
+		UC_Util::Print("[AC_ZombieController::OnTargetDetected] : m_OwnerZombie nullptr", FColor::Red, 10.f);
+		return;
 	}
-
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Lost : %s"), *_Target->GetName());
-
-		if (Blackboard)
-		{
-			Blackboard->ClearValue(TEXT("Target"));
-		}
-	}*/
-
-	// 감지한 대상이 적인지 아닌지 판단
-	AC_Zombie* pZombie = Cast<AC_Zombie>(GetPawn());
-	if (nullptr == pZombie)
-		return;
 
 	// 감지대상의 우호관계 가져오기
-	ETeamAttitude::Type type = pZombie->GetTeamAttitudeTowards(*_Target);
+	ETeamAttitude::Type type = m_OwnerZombie->GetTeamAttitudeTowards(*_Target);
 
-	// 감지 대상이 적(플레이어)이라면
-	if (ETeamAttitude::Hostile == type)
+	// 감지 대상이 적대관계인 경우만 처리
+	if (type != ETeamAttitude::Hostile) return;
+	
+	// PointTower인 경우, 현재 SensedInfo로 넣을 수 있는 상태인지 체크 -> 빼버리는건 Delegate 호출에 의해 알아서 처리가 됨
+	AC_PointTower* PointTower = Cast<AC_PointTower>(_Target);
+	if (PointTower && !PointTower->CanBeInsertedToSensedTarget()) return;
+	
+	// 이미 감지됐던 타겟인지 확인
+	FSensedTargetInfo* pInfo = FindSensedTarget(_Target);
+	if (!pInfo)
 	{
-		// 이미 감지됐던 타겟인지 확인
-		FSensedTargetInfo* pInfo = FindSensedTarget(_Target);
-
-		// 없다면 목록에 추가
-		if (nullptr == pInfo)
+		pInfo = &AddSensedTarget(_Target); // 없다면 목록에 추가
+		if (PointTower)
 		{
-			pInfo = &AddSensedTarget(_Target);
-		}
-
-		pInfo->bSensed = _Stimulus.WasSuccessfullySensed();
-
-		// 인지범위에서 벗어난 경우
-		if (false == pInfo->bSensed)
-		{
-			// 놓친 위치 저장
-			pInfo->LosePos = _Stimulus.StimulusLocation;
-
-			// 놓쳤을 때 시간 저장
-			pInfo->LoseTime = GetWorld()->GetTimeSeconds();
-		}
-
-		// 인지정보가 어떤 감각으로 발생한 정보인지 구별
-		static FAISenseID SightID = UAISense::GetSenseID<UAISense_Sight>();
-		static FAISenseID DmgID = UAISense::GetSenseID<UAISense_Damage>();
-		static FAISenseID HearingID = UAISense::GetSenseID<UAISense_Hearing>();
-
-		if (_Stimulus.Type == SightID)
-		{
-			if (pInfo->bSensed)
-				pInfo->AggroValue += 10.f;
-		}
-		else if (_Stimulus.Type == DmgID)
-		{
-			pInfo->AggroValue += 20.f;
-		}
-		else
-		{
-			pInfo->AggroValue += 15.f;
+			PointTower->m_OnCurPointTowerSequenceOver.AddUObject
+			(
+				this,
+				&AC_ZombieController::OnCurPointSeqOver,
+				pInfo // Payload -> 구독을 걸어둘 Info 정보를 Payload로 Delegate 구독자에게 알려놓음
+			);
 		}
 	}
+
+	// 감지 여부를 기록한다
+	pInfo->bSensed = _Stimulus.WasSuccessfullySensed();
+
+	/* 인지범위에서 벗어난 경우 */
+	if (!pInfo->bSensed)
+	{
+		UC_Util::Print("OUT", FColor::Red, 10.f);
+		pInfo->LosePos  = _Stimulus.StimulusLocation;	// 놓친 위치 저장
+		pInfo->LoseTime = GetWorld()->GetTimeSeconds(); // 놓쳤을 때 시간 저장
+		return;
+	}
+
+	/* 인지범위에 잡힌 경우 */
+	UC_Util::Print("IN", FColor::Red, 10.f);
+	// 인지정보가 어떤 감각으로 발생한 정보인지 구별
+	static FAISenseID SightID = UAISense::GetSenseID<UAISense_Sight>();
+	static FAISenseID DmgID   = UAISense::GetSenseID<UAISense_Damage>();
+	// static FAISenseID HearingID = UAISense::GetSenseID<UAISense_Hearing>();
+
+	if (_Stimulus.Type == SightID)
+	{
+		if (pInfo->bSensed) pInfo->AggroValue += 10.f; // 이 Target에 대한 어그로수치 10점 추가
+	}
+	else if (_Stimulus.Type == DmgID) pInfo->AggroValue += 20.f;
 }
 
 void AC_ZombieController::BeginPlay()
@@ -195,12 +172,34 @@ void AC_ZombieController::BeginPlay()
 	Super::BeginPlay();
 	
 	// 탐지가 발생하면 호출받을 Delegate 등록
-	m_PerceptionCom->OnTargetPerceptionUpdated.AddDynamic(this, &AC_ZombieController::OnTargetDetected);
+	m_PerceptionComponent->OnTargetPerceptionUpdated.AddDynamic(this, &AC_ZombieController::OnTargetUpdated);
+}
+
+void AC_ZombieController::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	// DrawDebugSightRange();
+	
+	/*TArray<AActor*> Actors;
+
+	m_PerceptionCom->GetKnownPerceivedActors(
+		UAISense_Sight::StaticClass(),
+		Actors);
+
+	UE_LOG(LogTemp, Warning, TEXT("Known : %d"), Actors.Num());
+
+	for (AActor* Actor : Actors)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("  %s"), *Actor->GetName());
+	}*/
+	/*TArray<UObject*> Temp = m_PerceptionComponent->OnTargetPerceptionUpdated.GetAllObjects();
+	UC_Util::Print(Temp.Num(), FColor::Red, 1.f);*/
 }
 
 FSensedTargetInfo& AC_ZombieController::AddSensedTarget(AActor* _Target)
 {
-	FSensedTargetInfo info;
+	FSensedTargetInfo info{};
 
 	info.Target = _Target;
 
@@ -247,10 +246,26 @@ void AC_ZombieController::ClearSensedTarget(float _LimitTime)
 
 		if (bRemove)
 		{
+			// 제거대상이 PointTower인 경우, Delegate 구독 취소
+			if (AC_PointTower* PointTower = Cast<AC_PointTower>(iter->Target))
+				PointTower->m_OnCurPointTowerSequenceOver.RemoveAll(this);
+			
 			// iter 가 가리키는 대상을 삭제하고, 하나 이전을 가리킨다
 			iter.RemoveCurrent();
 		}
 	}
+}
+
+void AC_ZombieController::ClearAllSensedTarget()
+{
+	// 모든 SensedTarget을 지우기 이전 PointTower Target의 경우, Delegate 구독 해지 처리를 해준다
+	for (const FSensedTargetInfo& _Info : m_SensedTargets)
+	{
+		if (AC_PointTower* PointTower = Cast<AC_PointTower>( _Info.Target))
+			PointTower->m_OnCurPointTowerSequenceOver.RemoveAll(this);
+	}
+	
+	m_SensedTargets.Empty();
 }
 
 AActor* AC_ZombieController::GetCurrentBBTarget() const
@@ -262,7 +277,7 @@ bool AC_ZombieController::IsCurrentlyOnSight(AActor* _TargetActor) const
 {
 	if (!_TargetActor) return false;
 	
-	if (const FActorPerceptionInfo* ActorPerceptionInfo = m_PerceptionCom->GetActorInfo(*_TargetActor))
+	if (const FActorPerceptionInfo* ActorPerceptionInfo = m_PerceptionComponent->GetActorInfo(*_TargetActor))
 		for (const FAIStimulus& Stimulus : ActorPerceptionInfo->LastSensedStimuli)
 		{
 			const TSubclassOf<UAISense> SenseClass = UAIPerceptionSystem::GetSenseClassForStimulus(GetWorld(), Stimulus);
@@ -272,4 +287,47 @@ bool AC_ZombieController::IsCurrentlyOnSight(AActor* _TargetActor) const
 		}
 	
 	return false;
+}
+
+void AC_ZombieController::OnCurPointSeqOver(FSensedTargetInfo* _TargetInfo)
+{
+	if (!_TargetInfo) return;
+
+	const int32 Index = _TargetInfo - m_SensedTargets.GetData();
+
+	if (m_SensedTargets.IsValidIndex(Index))
+		m_SensedTargets.RemoveAt(Index);
+}
+
+void AC_ZombieController::DrawDebugSightRange()
+{
+	FVector Center = GetPawn()->GetActorLocation();
+
+	DrawDebugCircle
+	(
+		GetWorld(),
+		Center,
+		m_SightConfig->SightRadius,
+		300,
+		FColor::Green,
+		false,
+		-1.f, 0, 0,
+		GetPawn()->GetActorRightVector(),
+		GetPawn()->GetActorForwardVector()
+	);
+
+	/*Center.Z += 1.f;
+
+	DrawDebugCircle
+	(
+		GetWorld(),
+		Center,
+		BehaviorRange,
+		300,
+		FColor::Red,
+		false,
+		-1.f, 0, 0,
+		GetPawn()->GetActorRightVector(),
+		GetPawn()->GetActorForwardVector()
+	);*/
 }

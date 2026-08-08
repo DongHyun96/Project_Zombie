@@ -14,6 +14,7 @@
 #include "GameFramework/Pawn.h"
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
+#include "Actor/PointTower/C_PointTower.h"
 
 #include "Utility/C_Util.h"
 
@@ -103,10 +104,11 @@ void AC_ToxicPool::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AAct
 	if (OtherActor == m_SkillUser)
 		return;
 
-	// 플레이어인지 확인
+	// 플레이어나 PointTower인지 확인
 	AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(OtherActor);
-	if (!Player)
-		return;
+	AC_PointTower* PointTower = Cast<AC_PointTower>(OtherActor);
+	if (!Player && !PointTower) return; // 둘 다 아닌 경우
+		
 
 	// 데미지를 받을 타겟 등록
 	m_OverlapTargets.Add(OtherActor);
@@ -122,12 +124,7 @@ void AC_ToxicPool::EndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 	if (!IsValid(OtherActor))
 		return;
 
-	// 플레이어인지 확인
-	AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(OtherActor);
-	if (!Player)
-		return;
-
-	// 장판 밖으로 나간 플레이어는 목록에서 제거
+	// 장판 밖으로 나간 액터 목록에서 제거 (없다면 없는대로 알아서 넘어감)
 	m_OverlapTargets.Remove(OtherActor);
 }
 
