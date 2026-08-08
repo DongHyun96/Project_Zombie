@@ -385,14 +385,11 @@ float AC_PointTower::TakeDamage
 	
 	float ReceivedDamageAmount = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 	const float Damage = ReceivedDamageAmount * m_ZombieDamageRatio; // Damage 만큼 현재 Conquered 펀센트에서 제거
-	// m_CurConquerAmount -= Damage; // TODO : 이 주석 풀것
+	m_CurConquerAmount -= Damage; // TODO : 이 주석 풀것
 
 	// 공격을 받을 수 있는 상황에서, 다시금 Active로 넘어간 상태
 	if (m_State == EPointTowerState::Conquered)
-	{
-		UC_Util::Print("RE-ACTIVATE", FColor::Cyan, 20.f);
 		SetPointTowerState(EPointTowerState::Active);
-	}
 	
 	Multicast_OnTakeDamage(); // % 위젯 색상 잠시 빨간색으로 변경	
 	return Damage;
@@ -427,11 +424,6 @@ void AC_PointTower::SetConqueringPlayer(AC_BasicPlayer* InConqueringPlayer)
 		m_ConqueringPlayer->GetStatComponent()->OnCurHPReachedZeroDelegate.RemoveAll(this);
 		m_ConqueringPlayer->Client_NotifyConqueringPointTower(false);
 		m_ConqueringPlayer = nullptr;
-
-		// TODO : 이전 대상자 도트데미지 제거해주어야 함
-		// -> TODO : Local Player에게 거점 활성화 중이 아니라고 알려주어야 함 (도트데미지 적용 효과 제거)
-		// Client_~~~ 로 알려주기
-		
 		return;
 	}
 	
