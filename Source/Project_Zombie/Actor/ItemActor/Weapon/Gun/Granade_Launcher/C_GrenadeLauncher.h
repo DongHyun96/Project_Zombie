@@ -31,7 +31,7 @@ private:
 
 protected:
 	virtual void PullTrigger() override;
-	virtual void ReleaseTrigger() override;
+	
 	virtual void SpawnShellEject() override;
 	virtual void PlayFireEffects_Client() override;
 	virtual void AIFire(const FVector& TargetLocation) override;

@@ -371,7 +371,7 @@ void AC_BasicPlayer::ToggleInventoryWidget()
 
 void AC_BasicPlayer::Client_NotifyConqueringPointTower_Implementation(bool _IsCurrentlyConquering)
 {
-	// TODO : InputComponent 자체와 조율할 것
+	m_PlayerInputComponent->SetPlayerIMCMode(_IsCurrentlyConquering ? EPlayerIMCMode::OnlyMovementMapping : EPlayerIMCMode::DefaultMapping);
 }
 
 void AC_BasicPlayer::SetHandState(EHandState _HandState)
