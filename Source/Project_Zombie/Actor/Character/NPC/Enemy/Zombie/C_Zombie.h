@@ -145,7 +145,7 @@ public:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-private:
+protected:
 	// 전달받은 사운드 목록 중 하나를 랜덤 재생
 	void PlayRandomVoice(const TArray<TObjectPtr<USoundBase>>& _Sounds);
 
