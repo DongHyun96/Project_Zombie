@@ -222,7 +222,7 @@ bool AC_PointTower::CanCurrentlyAttackedByZombie()
 	if (m_State == EPointTowerState::Waiting) return false;
 	
 	// 현재 활성화된 시퀀스의 PointTower일 경우에만 공격 가능
-	return POINT_TOWER_MANAGER(this)->GetCurrentSequenceIdx() == m_ActivateSequenceIdx;  
+	return POINT_TOWER_MANAGER(this)->GetCurrentSequenceIdx() == m_ActivateSequenceIdx;
 }
 
 bool AC_PointTower::CanBeInsertedToSensedTarget()
@@ -385,7 +385,15 @@ float AC_PointTower::TakeDamage
 	
 	float ReceivedDamageAmount = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 	const float Damage = ReceivedDamageAmount * m_ZombieDamageRatio; // Damage 만큼 현재 Conquered 펀센트에서 제거
-	m_CurConquerAmount -= Damage;
+	// m_CurConquerAmount -= Damage; // TODO : 이 주석 풀것
+
+	// 공격을 받을 수 있는 상황에서, 다시금 Active로 넘어간 상태
+	if (m_State == EPointTowerState::Conquered)
+	{
+		UC_Util::Print("RE-ACTIVATE", FColor::Cyan, 20.f);
+		SetPointTowerState(EPointTowerState::Active);
+	}
+	
 	Multicast_OnTakeDamage(); // % 위젯 색상 잠시 빨간색으로 변경	
 	return Damage;
 }
@@ -481,6 +489,10 @@ void AC_PointTower::Multicast_Activate_Implementation()
 		m_PointTowerWidget->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 		m_PointTowerWidget->SetPercentText(m_CurConquerAmountInt);
 	}
+	
+	// 전기 Effect 끄기(Conquered 상태에서 다시금 Activate 상태로 돌아갈 수 있음)
+	if (m_ElectroSplinesParent)
+		m_ElectroSplinesParent->SetHiddenInGame(true, true);
 }
 
 void AC_PointTower::Multicast_Conquered_Implementation()

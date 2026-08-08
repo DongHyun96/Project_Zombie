@@ -26,6 +26,9 @@ public:
 	/// GameMode BeginPlay 시점에 호출됨 
 	/// </summary>
 	void OnWorldBeginPlay();
+
+	/// <returns> Tick이 더이상 필요 없다면 return false </returns>
+	bool WorldTick(float _DeltaTime);
 	
 private:
 	
@@ -95,9 +98,18 @@ private:
 
 private:
 	
-	FTimerHandle m_TestTimerHandle{};
+	FTimerHandle m_FirstPointOpenWaitTimerHandle{};
 
 	UPROPERTY()
 	TObjectPtr<class UC_ZombieManager> m_ZombieManager;
+	
+private:
+
+	// 일단 20초로 두어봤음 (만약 더 유하게 다른 플레이어들 접속을 기다려야 한다면 값 늘릴 것)
+	const float m_GameStartWaitTime = 20.f;
+	
+	// 현재 게임 시작 기다리기까지 남은 초 -> 이걸로 실시간 동기화 처리할 것
+	// UI Display 처리 또한 이 값으로 진행
+	int32 m_GameStartTimeLeftInt{};
 	
 };

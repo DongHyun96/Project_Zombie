@@ -4,9 +4,10 @@
 #include "C_GameOverChecker.h"
 
 #include "GameModeAndManager/C_UIManager.h"
-#include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
 #include "UI/MainHUD/GameOverWidget/C_GameOverWidget.h"
+#include "UI/MainHUD/InformWidget/C_InformWidget.h"
+#include "Utility/C_Util.h"
 
 
 AC_GameOverChecker::AC_GameOverChecker()
@@ -19,14 +20,30 @@ AC_GameOverChecker::AC_GameOverChecker()
 void AC_GameOverChecker::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	PRINT_LOCAL(GetWorld(), "GameOverChecker SPawned", FColor::Red, 10.f);
 }
-
 
 void AC_GameOverChecker::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+}
+
+void AC_GameOverChecker::Multicast_ShowMainInformConqueringPointTower_Implementation()
+{
+	AC_UIManager* UIManager = UI_MANAGER(GetWorld());
+	if (!UIManager) return;
+	
+	UIManager->GetMainHUDWidget()->GetInformWidget()->ShowMainInstruction("CONQUER THE NEXT POINT TOWERS !");
+	
+	// 혹시 모르니, GameStart 파넬 여기서 끄는 처리를 넣어줌
+	UIManager->GetMainHUDWidget()->GetInformWidget()->ToggleGameStartPanel(false);
+}
+
+void AC_GameOverChecker::Multicast_UpdateGameStartLeftTime_Implementation(int32 _LeftTime)
+{
+	AC_UIManager* UIManager = UI_MANAGER(GetWorld());
+	if (!UIManager) return;
+	
+	UIManager->GetMainHUDWidget()->GetInformWidget()->UpdateGameStartLeftTime(_LeftTime);
 }
 
 void AC_GameOverChecker::Multicast_GameOver_Implementation(bool _PlayerWin)

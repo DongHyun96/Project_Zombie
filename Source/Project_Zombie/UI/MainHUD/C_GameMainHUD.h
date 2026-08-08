@@ -112,6 +112,8 @@ public:
 
 	class UC_GameOverWidget* GetGameOverWidget() const { return GameOverWidget; }
 	
+	class UC_InformWidget* GetInformWidget() const { return InformWidget; }
+	
 public: // Ingame Log 관련
 	
 	/// <summary>

@@ -14,6 +14,8 @@
 
 AC_GameMode_GameLv::AC_GameMode_GameLv()
 {
+	PrimaryActorTick.bCanEverTick = true;
+	
 	PlayerStateClass = AC_PlayerState::StaticClass();
 }
 
@@ -78,7 +80,15 @@ void AC_GameMode_GameLv::BeginPlay()
 	/*FActorSpawnParameters SpawnParam{};
 	SpawnParam.Owner = this;*/
 	m_GameOverChecker = GetWorld()->SpawnActor<AC_GameOverChecker>(AC_GameOverChecker::StaticClass());
-}	
+}
+
+void AC_GameMode_GameLv::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (!m_PointTowerManager->WorldTick(DeltaSeconds))
+		SetActorTickEnabled(false);
+}
 
 void AC_GameMode_GameLv::PostLogin(APlayerController* NewPlayer)
 {

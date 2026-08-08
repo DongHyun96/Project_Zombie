@@ -23,11 +23,37 @@ void UC_PointTowerManager::OnWorldBeginPlay()
 {
 	m_CurrentSequenceIndex = 0;
 	
-	// For Testing
+	// 거점 활성화까지 여유시간을 줌 (플레이어 기다리기 처리 등)
 	GetWorld()->GetTimerManager().SetTimer
 	(
-		m_TestTimerHandle, this, &UC_PointTowerManager::StartActivateCurrentPointsSequence, 2.5f, false
+		m_FirstPointOpenWaitTimerHandle, this, &UC_PointTowerManager::StartActivateCurrentPointsSequence, 20.f, false
 	);
+}
+
+bool UC_PointTowerManager::WorldTick(float _DeltaTime)
+{
+	// 자체 제작 Tick (GameMode의 Tick에서 호출 걸어둠)
+
+	// 게임 시작까지 기다리기 (다른 플레이어 접속 등을 기다리는 이유도 있다)
+	// TODO : 움직이지 못하게 처리를 해버릴까 생각 중
+	if (!GetWorld()->GetTimerManager().IsTimerActive(m_FirstPointOpenWaitTimerHandle)) return false;
+	
+	float LeftTime = GetWorld()->GetTimerManager().GetTimerRemaining(m_FirstPointOpenWaitTimerHandle);
+
+	// UI 표시용 올림값 구하기
+	const int32 CurrentSecLeftInt = FMath::CeilToInt(LeftTime);
+	if (CurrentSecLeftInt != m_GameStartTimeLeftInt)
+	{
+		GAME_LV_GAME_MODE(this)->GetGameOverChecker()->Multicast_UpdateGameStartLeftTime(CurrentSecLeftInt);
+		m_GameStartTimeLeftInt = CurrentSecLeftInt;
+		
+		/*if (m_GameStartTimeLeftInt <= 0) // 게임 시작 처리 (는 알아서 Timer에 의해서 시작됨)
+		{
+			
+		}*/
+	}
+	
+	return true;
 }
 
 void UC_PointTowerManager::StartActivateCurrentPointsSequence()
@@ -40,9 +66,12 @@ void UC_PointTowerManager::StartActivateCurrentPointsSequence()
 
 	for (AC_PointTower* PointTower : m_PointTowers[m_CurrentSequenceIndex])
 		PointTower->SetPointTowerState(EPointTowerState::Active);
-	
-	// -> m_CurrentSequenceIndex에 해당하는 sequence의 스폰 지점을 활성화 해야한다면 여기서 continue
 
+	/* 다음 거점 먹으라는 표기 Multicast로 쏴주기 */
+	GAME_LV_GAME_MODE(this)->GetGameOverChecker()->Multicast_ShowMainInformConqueringPointTower();
+	
+	/* ZombieSpawn 관련 Initing 처리 */
+	
 	// ============ 현재 Sequence SpawnArea 가져오기 ===============
 
 	TArray<AC_SpawnArea*> CurrentSpawnAreas = GetCurrentSequenceSpawnAreas();
