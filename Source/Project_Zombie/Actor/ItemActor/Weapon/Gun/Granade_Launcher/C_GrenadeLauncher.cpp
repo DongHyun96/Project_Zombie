@@ -90,11 +90,6 @@ void AC_GrenadeLauncher::Server_ExecuteFire_Implementation(FVector_NetQuantize I
 	SpawnGrenadeProjectile(FVector(ImpactPoint));
 }
 
-void AC_GrenadeLauncher::ReleaseTrigger()
-{
-	m_bIsFiring = false;
-}
-
 void AC_GrenadeLauncher::ResetFireCooldown()
 {
 	m_bCanFire = true;

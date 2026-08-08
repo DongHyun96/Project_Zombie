@@ -3,6 +3,7 @@
 
 #include "C_InformWidget.h"
 
+#include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
 #include "Components/TextBlock.h"
 #include "Utility/C_Util.h"
@@ -43,7 +44,6 @@ void UC_InformWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 	Super::NativeTick(MyGeometry, InDeltaTime);
 	
 	HandleLogFadeOut(InDeltaTime);
-	
 	HandleLogQueuePositionsAndDefaultAlpha(InDeltaTime);
 }
 
@@ -73,6 +73,22 @@ bool UC_InformWidget::AddPlayerWarningLog(const FString& WarningLog, const FColo
 	ApplyNewLifeTimerToLog(TargetTextBlock, 3.f);
     
 	return true;
+}
+
+void UC_InformWidget::ToggleGameStartPanel(bool _Visible)
+{
+	GameStartsTimerPanel->SetVisibility(_Visible ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+}
+
+void UC_InformWidget::UpdateGameStartLeftTime(int32 _Time)
+{
+	GameStartTimerText->SetText(FText::AsNumber(_Time));
+}
+
+void UC_InformWidget::ShowMainInstruction(const FString& _Construction)
+{
+	MainInstructionText->SetText(FText::FromString(_Construction));
+	PlayAnimation(ShowMainInstructionAnim);
 }
 
 void UC_InformWidget::HandleLogFadeOut(const float& DeltaTime)

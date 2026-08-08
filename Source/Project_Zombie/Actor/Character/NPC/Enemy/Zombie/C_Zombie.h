@@ -47,9 +47,9 @@ protected: /* 공통 NormalAttack 피격판정 및 피격처리 (해당 기능�
 
 private:
 	
-	// 이미 이번 NormalAttack 휘두르기에 피격판정이 들어간 Player들
+	// 이미 이번 NormalAttack 휘두르기에 피격판정이 들어간 Player나 PointTower들
 	UPROPERTY()
-	TSet<class AC_BasicPlayer*> m_SetNormalAttackColliderEntered{};
+	TSet<AActor*> m_SetNormalAttackColliderEntered{};
 	
 protected:
 	virtual void BeginPlay() override;
@@ -100,18 +100,26 @@ protected:
 	void OnRep_PoolActive();
 
 public:
+	bool IsPoolActive() const
+	{
+		return m_bPoolActive;
+	}
+
 	/// <summary>
 	/// 죽은 좀비를 레벨에서 제거하고 
 	/// 풀 대기상태로 전환
 	/// 서버에서만 호출
 	/// </summary>
-	void DeactivateForPool();
+	bool DeactivateForPool();
 
-	bool IsPoolActive() const
-	{
-		return m_bPoolActive;
-	}
-	
+	/// <summary>
+	/// 대기 풀의 좀비를 지정한 위치에서 다시 활성화
+	/// 서버에서만 호출
+	/// </summary>
+	/// <param name="_SpawnTransform"> : 스폰위치 </param>
+	/// <returns></returns>
+	bool ActivateFromPool(const FTransform& _SpawnTransform);
+
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 public:	

@@ -7,6 +7,8 @@
 #include "Actor/Components/C_PingSystemComponent.h"
 #include "GameModeAndManager/C_UIManager.h"
 #include "Net/UnrealNetwork.h"
+#include "UI/MainHUD/C_GameMainHUD.h"
+#include "UI/MainHUD/PlayerStatHUD/C_OtherPlayerStatWidget.h"
 #include "Utility/C_Util.h"
 
 
@@ -32,6 +34,9 @@ void UC_PlayerProfileComponent::BeginPlay()
 	
 	// TODO : 이 Test 라인 지울 것 (일단 서버에서 일괄 랜덤 적용한 색상으로 적용)
 	if (m_OwnerPlayer->HasAuthority()) m_PlayerSelectedColor = FColor::MakeRandomColor();
+	
+	if (!m_OwnerPlayer->IsLocallyControlled())
+		UI_MANAGER(GetWorld())->GetMainHUDWidget()->GetOtherPlayerStatWidget()->RegisterOtherPlayer(m_OwnerPlayer);
 }
 
 void UC_PlayerProfileComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -41,3 +46,20 @@ void UC_PlayerProfileComponent::GetLifetimeReplicatedProps(TArray<FLifetimePrope
 	DOREPLIFETIME(UC_PlayerProfileComponent, m_PlayerSelectedColor);
 	DOREPLIFETIME(UC_PlayerProfileComponent, m_PlayerName);
 }
+
+void UC_PlayerProfileComponent::OnRep_PlayerName()
+{
+	if (!m_OwnerPlayer) return;
+	
+	if (!m_OwnerPlayer->IsLocallyControlled())
+		UI_MANAGER(GetWorld())->GetMainHUDWidget()->GetOtherPlayerStatWidget()->RegisterOtherPlayer(m_OwnerPlayer);	
+}
+
+void UC_PlayerProfileComponent::OnRep_PlayerSelectedColor()
+{
+	if (!m_OwnerPlayer) return;
+	
+	if (!m_OwnerPlayer->IsLocallyControlled())
+		UI_MANAGER(GetWorld())->GetMainHUDWidget()->GetOtherPlayerStatWidget()->RegisterOtherPlayer(m_OwnerPlayer);
+}
+

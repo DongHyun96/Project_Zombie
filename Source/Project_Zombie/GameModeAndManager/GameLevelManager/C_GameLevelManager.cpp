@@ -4,6 +4,9 @@
 #include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 
 #include "NativeGameplayTags.h"
+#include "Actor/Character/Player/C_BasicPlayer.h"
+#include "Actor/GameOverChecker/C_GameOverChecker.h"
+#include "GameModeAndManager/C_UIManager.h"
 #include "GameModeAndManager/C_ZombieManager.h"
 #include "Utility/C_Util.h"
 
@@ -26,4 +29,17 @@ bool UC_GameLevelManager::ShouldCreateSubsystem(UObject* Outer) const
 void UC_GameLevelManager::OnWorldBeginPlay(UWorld& InWorld)
 {
 	Super::OnWorldBeginPlay(InWorld);
+}
+
+void UC_GameLevelManager::AddPlayer(AC_BasicPlayer* _Player)
+{
+	m_Players.Add(_Player);
+	if (_Player->IsLocallyControlled()) m_LocalPlayer = _Player;
+}
+
+bool UC_GameLevelManager::HasAllPlayerDead() const
+{
+	for (AC_BasicPlayer* Player : m_Players)
+		if (Player->GetPlayerState() != EPlayerState::Dead) return false;
+	return true;
 }

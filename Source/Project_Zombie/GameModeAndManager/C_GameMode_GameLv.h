@@ -1,10 +1,11 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
 #include "C_GameMode_GameLv.generated.h"
+
 
 /**
  * GameLevel에서 사용될 GameMode Base class
@@ -22,6 +23,8 @@ public:
 	
 	virtual void BeginPlay() override;
 	
+	virtual void Tick(float DeltaSeconds) override;
+	
 public:
 
 	virtual void PostLogin(APlayerController* NewPlayer) override;
@@ -36,6 +39,8 @@ public:
 	
 	class UC_ZombieManager* GetZombieManager() const { return m_ZombieManager; }
 	class UC_PointTowerManager* GetPointTowerManager() const { return m_PointTowerManager; }
+	
+	class AC_GameOverChecker* GetGameOverChecker() const { return m_GameOverChecker; }
 
 protected: /* ZombieManager 관련 */
 	
@@ -49,6 +54,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UC_PointTowerManager* m_PointTowerManager{};
+
+	UPROPERTY()
+	AC_GameOverChecker* m_GameOverChecker{};
 	
 };
 

@@ -23,6 +23,7 @@
 #include "CollisionQueryParams.h"
 #include "CollisionShape.h"
 #include "DrawDebugHelpers.h"
+#include "Actor/PointTower/C_PointTower.h"
 
 #include "Utility/C_Util.h"
 
@@ -197,6 +198,22 @@ void AC_TankZombie::OnChargeBeginOverlap(UPrimitiveComponent* OverlappedComponen
 		m_ChargeHitTarget.Add(Enemy);
 		HandleEnemyHit(Enemy);
 		return;
+	}
+	
+	// 충돌 대상이 거점이라면
+	// 데미지만
+	if (AC_PointTower* PointTower = Cast<AC_PointTower>(OtherActor))
+	{
+		m_ChargeHitTarget.Add(PointTower);
+		
+		UGameplayStatics::ApplyDamage
+		(
+			PointTower,
+			m_Skill->Damage,
+			GetController(),
+			this,
+			UDamageType::StaticClass()
+		);
 	}
 
 }

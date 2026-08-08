@@ -63,10 +63,12 @@ protected: /* Dead 관련 */
 	// 죽은 뒤 풀 반환까지 기다리는 타이머
 	FTimerHandle m_DeadRemainTimer;
 
-private:
+protected:
 	
 	UPROPERTY()
 	class AC_ZombieController* m_ZombieController{};
+
+private:
 	
 	// ItemManager Subsystem 캐싱 
 	UPROPERTY()
@@ -118,9 +120,9 @@ private:
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_ToggleHealedEffect(bool _Activate);
 
-	
 	void DropItemOnDead();
-protected:
+
+protected: // ---- 죽음 관련 ---- //
 	
 	/// <summary>
 	/// 사망 절차만 처리
@@ -141,9 +143,10 @@ protected:
 	virtual void StopAllActionsForDead();
 
 	/// <summary>
-	/// 서버와 클라이언트에서 공통으로 적용할 죽음 시각 처리
+	/// 서버와 클라이언트에서 공통으로 적용할 죽음 처리
+	/// 몽타주 정지, 죽음 몽타주 재생, 충돌 비활성화
 	/// </summary>
-	void ApplyDeadVisual(int32 _DeadMontageIndex);
+	void ApplyDeadState(int32 _DeadMontageIndex);
 
 	/// <summary>
 	/// 전달받은 인덱스의 죽음 몽타주 재생
@@ -157,6 +160,14 @@ protected:
 	/// </summary>
 	UFUNCTION()
 	void OnRep_DeadData();
+
+protected:
+	/// <summary>
+	/// 풀에서 다시 활성화될 때
+	/// 죽음 상태와 좀비 공통 상태값을 초기화
+	/// 서버에서만 호출
+	/// </summary>
+	virtual void ResetEnemyForPoolSpawn();
 	
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;

@@ -31,6 +31,13 @@ public:
 	// 인지를 놓친 시간
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	float					LoseTime{};
+	
+public:
+	
+	bool operator==(const FSensedTargetInfo& Other) const
+	{
+		return Target == Other.Target;
+	}
 };
 
 UCLASS()
@@ -40,8 +47,8 @@ class PROJECT_ZOMBIE_API AC_ZombieController : public AAIController
 	
 protected:
 	// 인지기능
-	UPROPERTY(VisibleAnywhere, Category = "AI")
-	class UAIPerceptionComponent*	m_PerceptionCom{}; 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
+	class UAIPerceptionComponent*	m_PerceptionComponent{}; 
 
 	// 시야, 시각정보
 	UPROPERTY(VisibleAnywhere, Category = "AI")
@@ -51,9 +58,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "AI")
 	class UAISenseConfig_Damage*	m_DamageConfig{};
 
-	// 청각 정보
+	/*// 청각 정보 // Not in used
 	UPROPERTY(VisibleAnywhere, Category = "AI")
-	class UAISenseConfig_Hearing*	m_HearingConfig{};
+	class UAISenseConfig_Hearing*	m_HearingConfig{};*/
 
 	// 비헤이비어트리
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
@@ -65,12 +72,18 @@ protected:
 
 	// 감지된 타겟들
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
-	TArray<FSensedTargetInfo>		m_SensedTargets{};
+	TArray<FSensedTargetInfo>			m_SensedTargets{};
 
+private:
 
+	UPROPERTY()
+	class AC_Zombie* m_OwnerZombie{}; 
+	
 public:
 	
 	virtual void BeginPlay() override;
+
+	virtual void Tick(float DeltaSeconds) override;
 	
 public:
 	const TArray<FSensedTargetInfo>& GetSensedTargets() { return m_SensedTargets; }
@@ -78,6 +91,11 @@ public:
 	FSensedTargetInfo& AddSensedTarget(AActor* _Target);
 	FSensedTargetInfo* FindSensedTarget(const AActor* _Target);
 	void ClearSensedTarget(float _LimitTime);
+
+	/// <summary>
+	/// 모든 SensedTarget 날리기 (Pool에 돌아갈 때 호출처리할 것)
+	/// </summary>
+	void ClearAllSensedTarget();
 
 	/// <summary>
 	/// 현재 BB에 세팅된 Target Get
@@ -92,7 +110,7 @@ public:
 	/// <param name="_Target"></param>
 	/// <param name="_Stimulus"></param>
 	UFUNCTION()
-	void OnTargetDetected(AActor* _Target, FAIStimulus _Stimulus);
+	void OnTargetUpdated(AActor* _Target, FAIStimulus _Stimulus);
 
 protected:
 	/// <summary>
@@ -109,6 +127,17 @@ public:
 	/// <param name="_TargetActor"> 검사해 볼 Actor </param>
 	/// <returns> : 시야에 들어와 있는 상황(SightConfig에 잡힌 보이는 상황) 이면 return true </returns>
 	bool IsCurrentlyOnSight(AActor* _TargetActor) const;
+
+private:
+	
+	/// <summary>
+	/// m_SensedTargets에 들어가 있던 SensedInfo가 PointTower였을 때, 현재 Point sequence가 비활성화 되었을 때 호출될 함수
+	/// </summary>
+	void OnCurPointSeqOver(FSensedTargetInfo* _TargetInfo);
+
+private:
+	
+	void DrawDebugSightRange();
 	
 public:
 	AC_ZombieController();

@@ -38,6 +38,10 @@ public:
 	/// <param name="_TextColor"> : TargetLog 색상 </param>
 	/// <returns> : 제대로 추가되지 않았다면 return false </returns>
 	bool AddPlayerWarningLog(const FString& WarningLog, const FColor& _TextColor);
+
+	void ToggleGameStartPanel(bool _Visible);
+	void UpdateGameStartLeftTime(int32 _Time);
+	void ShowMainInstruction(const FString& _Construction);
 	
 private:
 	
@@ -80,5 +84,20 @@ private:
 	
 	TMap<UWidget*, FTimerHandle> LogLifeTimers{};	// Log Spawn된 이 후, FadeOut처리되기 이전까지의 수명처리 담당
 	TSet<UWidget*>				 FadeOutLogs{};		// FadeOut 처리시킬 Widget들
+	
+protected:
+	
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* GameStartTimerText{};
+
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* MainInstructionText{};
+
+	UPROPERTY(meta = (BindWidget))
+	class UCanvasPanel* GameStartsTimerPanel{};  
+	
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
+	UWidgetAnimation* ShowMainInstructionAnim{};
+	
 	
 };

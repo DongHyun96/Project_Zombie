@@ -42,10 +42,10 @@ void UC_BasicPlayerInputComponent::TickComponent(float DeltaTime, ELevelTick Tic
 
 void UC_BasicPlayerInputComponent::InitializePlayerInput(UInputComponent* PlayerInputComponent, AC_BasicPlayer* InPlayer)
 {
-		Player = InPlayer;
+	Player = InPlayer;
 	if (!Player) return;
 
-	if (!DefaultMappingContext)
+	if (!DefaultMappingContext || !OnlyMovementMappingContext)
 	{
 		UC_Util::Print("UC_BasicPlayerInputComponent::InitializePlayerInput : Init DefaultMappingContext on BPC_Player InputComponent", FColor::Red, 10.f);
 		return;
@@ -62,21 +62,23 @@ void UC_BasicPlayerInputComponent::InitializePlayerInput(UInputComponent* Player
 			// 기존에 등록된 MappingContext 제거 후 새로 등록
 			// Look 쪽 매핑이 등록되어 있으면 기존 매핑을 제거하고 새로 등록
 			Subsystem->ClearAllMappings();
-
-			if (DefaultMappingContext) Subsystem->AddMappingContext(DefaultMappingContext, 0);
+			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
 	}
 	
 	// 2. Add input actions to m_mapIA
-	for (const FEnhancedActionKeyMapping& Mapping : DefaultMappingContext->GetMappings())
+	auto PopulateIAMap = [this](const UInputMappingContext* Context) 
 	{
-		if (!Mapping.Action) continue;
-		
-		const FString ActionName = Mapping.Action->GetName();
-		
-		if (!m_mapIA.Contains(ActionName))
-			m_mapIA.Add(ActionName, Mapping.Action);
-	}
+		if (!Context) return;
+		for (const FEnhancedActionKeyMapping& Mapping : Context->GetMappings()) 
+		{
+			if (Mapping.Action && !m_mapIA.Contains(Mapping.Action->GetName())) 
+				m_mapIA.Add(Mapping.Action->GetName(), Mapping.Action);
+		}
+	};
+
+	PopulateIAMap(DefaultMappingContext);
+	PopulateIAMap(OnlyMovementMappingContext);
 	
 
 	UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent);
@@ -149,6 +151,34 @@ const UInputAction* UC_BasicPlayerInputComponent::FindIAByName(const FString& _N
 	
 	// return !pAction ? nullptr : *pAction;
 	return *pAction;
+}
+
+void UC_BasicPlayerInputComponent::SetPlayerIMCMode(EPlayerIMCMode _IMCMode)
+{
+	if (!Player) return;
+
+	APlayerController* PC = Cast<APlayerController>(Player->GetController());
+	if (!PC) return;
+
+	UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer());
+	if (!Subsystem) return;
+
+	if (_IMCMode == EPlayerIMCMode::OnlyMovementMapping)
+	{
+		// 1. 사격, 조준 등 누르고 있던 행동 상태를 명시적으로 끝냄
+		FireEnd();
+		KeepAimActionEnd();
+
+		// 2. DefaultMappingContext 제거 및 OnlyMovementMappingContext 적용
+		if (DefaultMappingContext) Subsystem->RemoveMappingContext(DefaultMappingContext);
+		if (OnlyMovementMappingContext) Subsystem->AddMappingContext(OnlyMovementMappingContext, 0);
+	}
+	else
+	{
+		// 1. OnlyMovementMappingContext 제거 및 DefaultMappingContext 복구
+		if (OnlyMovementMappingContext) Subsystem->RemoveMappingContext(OnlyMovementMappingContext);
+		if (DefaultMappingContext) Subsystem->AddMappingContext(DefaultMappingContext, 0);
+	}
 }
 
 void UC_BasicPlayerInputComponent::MoveAction(const FInputActionValue& Value)

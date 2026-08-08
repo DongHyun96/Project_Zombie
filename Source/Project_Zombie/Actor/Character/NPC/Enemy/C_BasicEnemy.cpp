@@ -12,11 +12,13 @@
 #include "GameModeAndManager/C_GameMode_GameLv.h"
 #include "Net/UnrealNetwork.h"
 #include "BrainComponent.h"
+#include "Actor/Character/Player/C_BasicPlayer.h"
 #include "GameModeAndManager/C_ItemManager.h"
 #include "GameModeAndManager/C_ZombieManager.h"
 #include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 #include "Item/DataAsset/C_DropTableDataAsset.h"
 #include "Kismet/GameplayStatics.h"
+#include "Perception/AISense_Damage.h"
 #include "Utility/C_Util.h"
 #include "Zombie/NurseZombie/C_NurseZombie.h"
 #include "Zombie/Controller/C_ZombieController.h"
@@ -43,7 +45,54 @@ AC_BasicEnemy::AC_BasicEnemy()
 	
 	if (HealedEffect.Succeeded())
 		m_HealedEffectNGComponent->SetAsset(HealedEffect.Object.Get());
+
+	GetCharacterMovement()->RotationRate = FRotator(0.f, 240.f, 0.f);
+	GetCharacterMovement()->bOrientRotationToMovement = true;
+	bUseControllerRotationYaw = false;
 	
+}
+
+void AC_BasicEnemy::ResetEnemyForPoolSpawn()
+{
+	// 좀비 상태는 서버에서만 처리
+	if (!HasAuthority())
+		return;
+
+	// 죽음 상태 초기화
+	m_DeadRepData.bDead = false;
+	m_DeadRepData.DeadMontageIndex = INDEX_NONE;
+
+	// 이전의 죽음 타이머가 남아있다면 제거
+	GetWorldTimerManager().ClearTimer(m_DeadRemainTimer);
+
+	// 몽타주 종료
+	StopAnimMontage();
+
+	// HP 초기화
+	if (IsValid(m_StatComponent))
+	{
+		m_StatComponent->SetCurHP(m_StatComponent->GetStat(StatName::MaxHP));
+	}
+
+	// 이동 복구
+	if (UCharacterMovementComponent* MoveCom = GetCharacterMovement())
+	{
+		MoveCom->SetMovementMode(EMovementMode::MOVE_Walking);
+
+		MoveCom->StopMovementImmediately();
+	}
+
+	// 힐 요청 상태 초기화
+	m_HealRequestRegisterCount = 0;
+
+	// 힐 이펙트 초기화
+	if (IsValid(m_HealedEffectNGComponent))
+	{
+		m_HealedEffectNGComponent->DeactivateImmediate();
+	}
+
+	// 죽음 상태 변경을 클라에 빠르게 전달
+	ForceNetUpdate();
 }
 
 void AC_BasicEnemy::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -57,8 +106,6 @@ void AC_BasicEnemy::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 void AC_BasicEnemy::BeginPlay()
 {
 	Super::BeginPlay();
-
-	UC_Util::Print("AC_BasicEnemy::BeginPlay", FColor::Red, 10.f);
 	
 	if (IsLocallyControlled())
 	{
@@ -75,7 +122,7 @@ void AC_BasicEnemy::BeginPlay()
 			m_ItemManager = GI->GetSubsystem<UC_ItemManager>();
 		}
 	}
-	else // 클라이언트 환경
+	/*else // 클라이언트 환경
 	{
 		// 클라이언트단 화면에서는 Controller가 없기에, Controller Rotation (0, 0, 0) 값을 사용ㄴ
 		// 따라서 끊겨보이는 버그가 있었음
@@ -84,7 +131,7 @@ void AC_BasicEnemy::BeginPlay()
 		GetCharacterMovement()->bUseControllerDesiredRotation = false;
 		GetCharacterMovement()->RotationRate                  = FRotator(0.f, 360.f, 0.f);
 		
-	}
+	}*/
 
 	// HealEffect 재생 속도 조절
 	m_HealedEffectNGComponent->SetCustomTimeDilation(2.f);
@@ -105,8 +152,28 @@ float AC_BasicEnemy::TakeDamage
 	const float DamageAmount = Super::TakeDamage(_DamageAmount, _DamageEvent, _EventInstigator, _DamageCauser);
 	if (DamageAmount <= 0.f) return 0.f; // Damage가 들어오지 않음 (클라이언트단, TakeDamage 로컬 호출인 경우에 그럴 수 있음 -> 알아서 서버 쪽으로 Damage 입은 사실 전달)
 	
-	// UC_Util::Print("Zombie Damaged", FColor::Red, 10.f);
+	/* PerceptionComponent에 Damage를 받았다고 보고 처리 */
+	ACharacter* DamageInstigator = _EventInstigator->GetCharacter();
+	const FVector DamageInstigatorPos = (DamageInstigator != nullptr) ? DamageInstigator->GetActorLocation() : this->GetActorLocation();
+	
+	UAISense_Damage::ReportDamageEvent
+	(
+		GetWorld(),				 // 히트 이벤트가 발생한 월드 
+		this,					 // 맞은 놈 
+		DamageInstigator,		 // 때린 놈 
+		DamageAmount,			 // 최종 데미지
+		DamageInstigatorPos,	 // 때린놈 위치 
+		this->GetActorLocation() // 맞은놈 위치
+	);
 
+	// 사망 했을 경우
+	if (m_StatComponent->IsCurHPZero())
+	{
+		// 마지막으로 죽인 Player에게 Kill 수 업데이트 처리를 하라고 보내줄 것
+		if (AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(_EventInstigator->GetPawn()))
+			Player->Multicast_IncreaseKillCount();
+	}
+	
 	/* 힐 요청 처리 관련 */
 
 	// 이미 힐 요청 최대 등록 횟수를 기록
@@ -217,7 +284,7 @@ void AC_BasicEnemy::OnDead(AC_BasicCharacter* _DeadCharacter)
 	
 	// 죽은 곳에 아이템 드랍
 	DropItemOnDead();
-
+	
 	if (IsValid(m_HealedEffectNGComponent))
 	{
 		m_HealedEffectNGComponent->DeactivateImmediate();
@@ -229,11 +296,11 @@ void AC_BasicEnemy::OnDead(AC_BasicCharacter* _DeadCharacter)
 
 	// RepNotify는 서버에서 자동 호출되지 않으므로 
 	// 서버 화면에는 직접 죽음 시각 처리 적용
-	ApplyDeadVisual(m_DeadRepData.DeadMontageIndex);
+	ApplyDeadState(m_DeadRepData.DeadMontageIndex);
 	
 	// TODO : 죽은동안 충돌 끄기. 혹시 오브젝트 풀링으로 사용중이거나 해서 나중에 켜야 된다면 켜주어야 함.
 	// 풀에서 꺼낼 때 복구하기
-	SetActorEnableCollision(false);
+	//SetActorEnableCollision(false);
 
 	// 변경한 복제 정보를 가능한 빨리 클라에 전달
 	ForceNetUpdate();
@@ -289,13 +356,16 @@ void AC_BasicEnemy::StopAllActionsForDead()
 	}
 }
 
-void AC_BasicEnemy::ApplyDeadVisual(int32 _DeadMontageIndex)
+void AC_BasicEnemy::ApplyDeadState(int32 _DeadMontageIndex)
 {
 	// 클라에 남아있던 공격 또는 스킬 몽타주 정지
 	StopAnimMontage();
 
 	// 서버가 선택한 죽음 몽타주 재생
 	PlayDeadAnimation(_DeadMontageIndex);
+
+	// 서버와 클라 동시 즉시 충돌 비활성화
+	SetActorEnableCollision(false);
 }
 
 void AC_BasicEnemy::PlayDeadAnimation(int32 _DeadMontageIndex)
@@ -316,13 +386,15 @@ void AC_BasicEnemy::PlayDeadAnimation(int32 _DeadMontageIndex)
 
 void AC_BasicEnemy::OnRep_DeadData()
 {
-	// 죽음 상태가 된 경우만 처리
-	// 풀 재사용 시 초기화 처리도 이 함수에 추가
-	if (!m_DeadRepData.bDead)
+	if (m_DeadRepData.bDead)
+	{
+		ApplyDeadState(m_DeadRepData.DeadMontageIndex);
+
 		return;
-	
-	// 서버가 선택한 죽음 몽타주를 클라이언트에서도 재생
-	ApplyDeadVisual(m_DeadRepData.DeadMontageIndex);
+	}
+
+	// 풀에서 다시 활성화 된 경우
+	StopAnimMontage();
 }
 
 

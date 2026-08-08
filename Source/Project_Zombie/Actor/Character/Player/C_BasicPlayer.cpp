@@ -45,6 +45,8 @@
 
 #include "TimerManager.h"
 #include "Actor/Components/PlayerProfileComponent/C_PlayerProfileComponent.h"
+#include "Actor/GameOverChecker/C_GameOverChecker.h"
+#include "GameModeAndManager/C_GameMode_GameLv.h"
 
 #include "Net/UnrealNetwork.h"
 #include "Kismet/KismetMathLibrary.h"
@@ -52,6 +54,8 @@
 #include "UI/InvenUI/Upgrade/C_ItemUpgradeWidget.h"
 #include "Item/Interact/C_InteractableBase.h"
 #include "Item/Interact/ItemUpgrade/C_ItemUpgradeStation.h"
+#include "Kismet/GameplayStatics.h"
+
 AC_BasicPlayer::AC_BasicPlayer()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -104,7 +108,8 @@ AC_BasicPlayer::AC_BasicPlayer()
 	m_IsJumpInput = false;
 
 	// TeamId
-	SetGenericTeamId((uint8)ETeamType::Player);
+	// SetGenericTeamId((uint8)ETeamType::Player); // 생성자 가상함수 호출 금지
+	m_TeamId = static_cast<uint8>(ETeamType::Player);
 
 	// 우리가 만든 InputComponent 클래스를 Player에게 추가.
 	m_PlayerInputComponent = CreateDefaultSubobject<UC_BasicPlayerInputComponent>(TEXT("PlayerInputComponent"));
@@ -171,13 +176,6 @@ void AC_BasicPlayer::BeginPlay()
 		LevelManager->AddPlayer(this);
 	
 
-	// 웅크리기 완료 시 호출할 OnPoseTransitionFinished 바인딩
-	if (m_PoseColliderHandlerComponent)
-	{
-		m_PoseColliderHandlerComponent
-			->OnPoseTransitionFinished.AddUObject(this, &AC_BasicPlayer::OnPoseTransitionFinished);
-	}
-
 	UpdateBoostBarHUD();
 	// InventoryWidget에 Player의 InvenComponent 초기화 및 델리게이트 진행
 	APlayerController* PC = Cast<APlayerController>(GetController());
@@ -205,14 +203,6 @@ void AC_BasicPlayer::BeginPlay()
 	{
 		m_EquippedComponent->SetupInventoryComponent(m_InvenComponent);
 	}
-	
-	// GameLevelManager에 해당 Player 등록
-	if (UC_GameLevelManager* LevelManager = GetWorld()->GetSubsystem<UC_GameLevelManager>())
-		LevelManager->AddPlayer(this);
-	
-	UpdateBoostBarHUD();
-
-
 	
 	//if (m_InvenComponent)
 	//{
@@ -367,6 +357,16 @@ void AC_BasicPlayer::ToggleInventoryWidget()
 		PC->SetInputMode(InputMode);
 		PC->SetShowMouseCursor(true);
 	}
+}
+
+void AC_BasicPlayer::Client_NotifyConqueringPointTower_Implementation(bool _IsCurrentlyConquering)
+{
+	m_PlayerInputComponent->SetPlayerIMCMode(_IsCurrentlyConquering ? EPlayerIMCMode::OnlyMovementMapping : EPlayerIMCMode::DefaultMapping);
+}
+
+void AC_BasicPlayer::Multicast_IncreaseKillCount_Implementation()
+{
+	++m_KillCount;
 }
 
 void AC_BasicPlayer::SetHandState(EHandState _HandState)
@@ -815,8 +815,14 @@ void AC_BasicPlayer::Server_EnterDownedState_Implementation()
 		return;
 	}
 
-	// TODO: 몽타주 재생 등 추가적인 처리를 여기에 
 	SetPlayerStateOnServer(EPlayerState::Dead); 
+	
+	// 게임 오버 상황인지 체크 (모든 플레이어들이 그로기 상태로 접어든 상황인 경우)
+	if (LEVEL_MANAGER->HasAllPlayerDead())
+	{
+		// 게임 오버 상황
+		GAME_LV_GAME_MODE(GetWorld())->GetGameOverChecker()->Multicast_GameOver(false);
+	}
 }
 
 void AC_BasicPlayer::StartGettingUp()

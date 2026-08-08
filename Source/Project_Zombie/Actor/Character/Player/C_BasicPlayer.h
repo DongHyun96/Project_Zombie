@@ -229,7 +229,28 @@ private:
 	// 플레이어의 LifeState 를 변경해서 BasicPlayer 가 관리
 	FTimerHandle m_GetUpTimerHandle;
 
+private:
+	
+	int32 m_KillCount{};
+
 public:
+	
+	/// <summary>
+	/// 이 Player의 KillCount 올리기 
+	/// </summary>
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_IncreaseKillCount();
+	
+	int32 GetKillCount() const { return m_KillCount; }
+	
+public:
+	
+	/// <summary>
+	/// 현재 거점 Conquering 상태인걸 알림 -> Input 처리를 움직임 처리만을 진행 && 이팩트 재생 (이거는 서버의 PointTower가 진행)
+	/// 또는 거점에서 손을 뗀 상황 알림
+	/// </summary>
+	UFUNCTION(Client, Reliable)
+	void Client_NotifyConqueringPointTower(bool _IsCurrentlyConquering);
 	
 	EPlayerState GetPlayerState() const { return m_PlayerState; }
 	//void SetPlayerState(EPlayerState _NewState) { m_PlayerState = _NewState; }

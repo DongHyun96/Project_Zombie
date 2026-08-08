@@ -26,6 +26,10 @@ public:
 private:
 	
 	virtual UScriptStruct* GetStatDataStruct() const override;
+
+private:
+	
+	void UpdateOtherPlayerHPBar(float _Ratio);
 	
 private:
 

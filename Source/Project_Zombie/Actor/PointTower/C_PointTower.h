@@ -3,10 +3,18 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GenericTeamAgentInterface.h"
+#include "GlobalData.h"
 #include "GameFramework/Actor.h"
+#include "Perception/AIPerceptionListenerInterface.h"
+#include "Perception/AISightTargetInterface.h"
 #include "UI/MainHUD/CompassBarWidget/C_CompassBarWidget.h"
 #include "UI/MainHUD/CompassBarWidget/CompassMarkerWidget/C_CompassMarkerWidget.h"
 #include "C_PointTower.generated.h"
+
+
+// Enemy에 의해 감지된 경우, 현재 Sequence가 끝날 때 EController SensedContainer에서 일괄 삭제하기 위한 Delegate
+DECLARE_MULTICAST_DELEGATE(FOnCurPointTowerSequenceOver);
 
 UENUM(BlueprintType)
 enum class EPointTowerState : uint8
@@ -20,7 +28,7 @@ enum class EPointTowerState : uint8
 /// 주의 : 인게임 레벨에 배치 시, EditInstanceOnly 되어있는 멤버변수 초기화 시켜줄 것 (어떤 값인지 주석 확인할 것)
 /// </summary>
 UCLASS()
-class PROJECT_ZOMBIE_API AC_PointTower : public AActor
+class PROJECT_ZOMBIE_API AC_PointTower : public APawn, public IGenericTeamAgentInterface
 {
 	GENERATED_BODY()
 
@@ -36,14 +44,26 @@ public:
 	
 	virtual void Tick(float DeltaTime) override;
 
-public:
-
-	float GetZombieDamageRatio() const { return m_ZombieDamageRatio; }
+	virtual void SetGenericTeamId(const FGenericTeamId& TeamID) override { m_TeamId = TeamID; }
+	virtual FGenericTeamId GetGenericTeamId() const override { return m_TeamId; }
+	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const override;
 	
 public:
-
+	
 	void SetPointTowerState(EPointTowerState _PointTowerState);
 	EPointTowerState GetPointTowerState() const { return m_State; }
+	
+	float GetZombieAttackRange() const { return m_ZombieAttackRange; }
+
+	/// <summary>
+	/// 현재 라운드 및, 다중  
+	/// </summary>
+	bool CanCurrentlyAttackedByZombie();
+
+	/// <summary>
+	/// SensedTarget에 삽입가능한 상황인지 체크 
+	/// </summary>
+	bool CanBeInsertedToSensedTarget();
 	
 	void TestFunction();
 	void TestFunction2();
@@ -121,6 +141,42 @@ private:
 	
 	USceneComponent* FindSceneComponentByName(const FName& _ComName);
 	
+public:
+	
+	virtual float TakeDamage
+	(
+		float				DamageAmount,
+		FDamageEvent const& DamageEvent,
+		AController*		EventInstigator,
+		AActor*				DamageCauser
+	) override;
+
+
+	virtual void GetActorEyesViewPoint(FVector& OutLocation, FRotator& OutRotation) const override;
+
+private:
+
+	
+	void OnConqueringPlayerDead(class AC_BasicCharacter*);
+	
+	void SetConqueringPlayer(AC_BasicPlayer* InConqueringPlayer);
+
+public:
+	
+	UStaticMeshComponent* GetGenerator() const { return m_StaticMeshComGenerator; }
+	
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	
+	const FZombieWaveSetting& GetZombieWaveSetting() const { return m_ZombieWaveSetting; }
+
+private:
+	
+	/// <summary>
+	/// Damage를 입었을 때 처리 
+	/// </summary>
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_OnTakeDamage();
+
 protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
@@ -157,6 +213,10 @@ protected:
 	// 좀비에게 공격당했을 시, 좀비 공격력 x Ratio(해당 변수) 만큼 거점 게이지 즉각 하락 처리
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
 	float m_ZombieDamageRatio = 0.25f;
+
+	// 좀비가 판단하기에 Attack 반경이다라고 판단할 반경
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	float m_ZombieAttackRange = 200.f;
 
 protected:
 	
@@ -206,6 +266,8 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	USphereComponent* m_InteractionTestingCollider{};
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	UShapeComponent* m_DamageDetector{};	
 	
 private:
 
@@ -218,10 +280,34 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	class UC_PointTowerWidget* m_PointTowerWidget{};
 	
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	TSubclassOf<class AC_PointTowerElectroEffect> m_PointTowerElectroEffectClass{};
+	
+private:
+
+	UPROPERTY(Replicated)
+	AC_PointTowerElectroEffect* m_PointTowerInteractEffect{};
 	
 private:
 	
 	FTimerHandle m_TestTimerHandle{};
 	FTimerHandle m_TestTimerHandle2{};
+	
+	float m_DamageTimer{}; // 1초 간격으로 Damage 입힐 것
+	
+private: /* Enemy AI 인지 관련 TeamAgent 등 */
+	
+	FGenericTeamId m_TeamId{};
+	
+public:
+	
+	FOnCurPointTowerSequenceOver m_OnCurPointTowerSequenceOver{};
+
+public:
+
+	// 거점 Sequence에서 사용할 좀비 웨이브 설정
+	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "ZombieWave")
+	FZombieWaveSetting m_ZombieWaveSetting;
 	
 };

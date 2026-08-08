@@ -8,6 +8,13 @@
 class AC_BasicPlayer;
 struct FInputActionValue;
 
+UENUM(BlueprintType)
+enum class EPlayerIMCMode : uint8
+{
+	DefaultMapping,
+	OnlyMovementMapping // 거점 활성화하는 인원의 경우, 해당 Mapping 모드 사용할 것
+};
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class PROJECT_ZOMBIE_API UC_BasicPlayerInputComponent : public UActorComponent
 {
@@ -23,7 +30,14 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Input")
 	TMap<FString, const class UInputAction*> m_mapIA{};
 	
+protected:
+	
+	// Player MovementOnly InputMappingContext
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Input")
+	UInputMappingContext* OnlyMovementMappingContext{};
+	
 private:
+	
 	// 조종할 대상 캐릭터와 무브먼트 컴포넌트 주소 저장용
 	UPROPERTY()
 	AC_BasicPlayer* Player;
@@ -52,6 +66,13 @@ public:
 private:
 	
 	const UInputAction* FindIAByName(const FString& _Name);
+
+public:
+	
+	/// <summary>
+	/// IMC 모드 변경 
+	/// </summary>
+	void SetPlayerIMCMode(EPlayerIMCMode _IMCMode);
 	
 private:
 	

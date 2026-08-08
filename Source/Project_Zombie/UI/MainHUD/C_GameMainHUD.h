@@ -107,7 +107,13 @@ public:
 	class UC_PlayerStatWidget* GetPlayerStatWidget() const { return PlayerStatWidget; }
 
 	class UC_InteractionWidget* GetInteractionWidget() const { return InteractionWidget; }
+	
+	class UC_OtherPlayerStatWidget* GetOtherPlayerStatWidget() const { return OtherPlayerStatWidget; }
 
+	class UC_GameOverWidget* GetGameOverWidget() const { return GameOverWidget; }
+	
+	class UC_InformWidget* GetInformWidget() const { return InformWidget; }
+	
 public: // Ingame Log 관련
 	
 	/// <summary>
@@ -135,4 +141,10 @@ protected:
 
 	UPROPERTY(meta = (BindWidget))
 	class UC_InteractionWidget* InteractionWidget{};
+
+	UPROPERTY(meta = (BindWidget))
+	UC_OtherPlayerStatWidget* OtherPlayerStatWidget{};
+	
+	UPROPERTY(meta = (BindWidget))
+	UC_GameOverWidget* GameOverWidget{};
 };

@@ -10,6 +10,7 @@
 #include "Particles/ParticleSystemComponent.h"
 #include "Actor/Components/C_PingSystemComponent.h"
 #include "Actor/ItemActor/Weapon/Gun/C_GunBase.h"
+#include "Actor/PointTower/C_PointTower.h"
 #include "Components/SphereComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Utility/C_Util.h"
@@ -204,6 +205,16 @@ FVector UC_AIGunUsageComponent::AIProcessLineTraceDamage(float _DamageVal)
 		{
 			UGameplayStatics::ApplyDamage(
 				HitCharacter,
+				_DamageVal,
+				m_WeaponCopZombieUser->GetController(),
+				m_OwnerGun,
+				nullptr
+			);
+		}
+		else if (AC_PointTower* PointTower = Cast<AC_PointTower>(HitResult.GetActor()))
+		{
+			UGameplayStatics::ApplyDamage(
+				PointTower,
 				_DamageVal,
 				m_WeaponCopZombieUser->GetController(),
 				m_OwnerGun,
