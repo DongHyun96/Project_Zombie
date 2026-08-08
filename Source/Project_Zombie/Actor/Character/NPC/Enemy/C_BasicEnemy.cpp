@@ -12,6 +12,7 @@
 #include "GameModeAndManager/C_GameMode_GameLv.h"
 #include "Net/UnrealNetwork.h"
 #include "BrainComponent.h"
+#include "Actor/Character/Player/C_BasicPlayer.h"
 #include "GameModeAndManager/C_ItemManager.h"
 #include "GameModeAndManager/C_ZombieManager.h"
 #include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
@@ -105,8 +106,6 @@ void AC_BasicEnemy::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 void AC_BasicEnemy::BeginPlay()
 {
 	Super::BeginPlay();
-
-	UC_Util::Print("AC_BasicEnemy::BeginPlay", FColor::Red, 10.f);
 	
 	if (IsLocallyControlled())
 	{
@@ -167,6 +166,14 @@ float AC_BasicEnemy::TakeDamage
 		this->GetActorLocation() // 맞은놈 위치
 	);
 
+	// 사망 했을 경우
+	if (m_StatComponent->IsCurHPZero())
+	{
+		// 마지막으로 죽인 Player에게 Kill 수 업데이트 처리를 하라고 보내줄 것
+		if (AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(_EventInstigator->GetPawn()))
+			Player->Multicast_IncreaseKillCount();
+	}
+	
 	/* 힐 요청 처리 관련 */
 
 	// 이미 힐 요청 최대 등록 횟수를 기록

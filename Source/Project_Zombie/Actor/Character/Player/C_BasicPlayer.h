@@ -225,6 +225,20 @@ private:
 	// 플레이어의 LifeState 를 변경해서 BasicPlayer 가 관리
 	FTimerHandle m_GetUpTimerHandle;
 
+private:
+	
+	int32 m_KillCount{};
+
+public:
+	
+	/// <summary>
+	/// 이 Player의 KillCount 올리기 
+	/// </summary>
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_IncreaseKillCount();
+	
+	int32 GetKillCount() const { return m_KillCount; }
+	
 public:
 	
 	/// <summary>

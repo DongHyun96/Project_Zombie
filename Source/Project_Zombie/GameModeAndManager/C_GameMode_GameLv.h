@@ -37,6 +37,8 @@ public:
 	
 	class UC_ZombieManager* GetZombieManager() const { return m_ZombieManager; }
 	class UC_PointTowerManager* GetPointTowerManager() const { return m_PointTowerManager; }
+	
+	class AC_GameOverChecker* GetGameOverChecker() const { return m_GameOverChecker; }
 
 protected: /* ZombieManager 관련 */
 	
@@ -50,6 +52,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UC_PointTowerManager* m_PointTowerManager{};
+
+	UPROPERTY()
+	AC_GameOverChecker* m_GameOverChecker{};
 	
 };
 

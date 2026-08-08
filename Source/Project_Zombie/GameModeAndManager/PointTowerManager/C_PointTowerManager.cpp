@@ -4,8 +4,14 @@
 #include "C_PointTowerManager.h"
 #include "../C_ZombieManager.h"
 #include "Actor/Character/NPC/Enemy/Zombie/Spawn/C_SpawnArea.h"
+#include "Actor/Character/Player/C_BasicPlayer.h"
+#include "Actor/Components/StatComponent/C_StatComponentBase.h"
+#include "Actor/GameOverChecker/C_GameOverChecker.h"
 #include "Actor/PointTower/C_PointTower.h"
+#include "GameModeAndManager/C_GameMode_GameLv.h"
 #include "GameModeAndManager/C_UIManager.h"
+#include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
+#include "Kismet/GameplayStatics.h"
 #include "Utility/C_Util.h"
 
 UC_PointTowerManager::UC_PointTowerManager()
@@ -174,7 +180,13 @@ void UC_PointTowerManager::OnPointTowerConquered()
 	// 게임오버 체크
 	if (!m_PointTowers.IsValidIndex(m_CurrentSequenceIndex))
 	{
-		// TODO : 게임 오버 처리할 것
+		// 게임 오버 처리할 것 -> PlayerWin
+		
+		// 피격을 당해도 쓰러지지 않게끔 처리 (이미 쓰러진 플레이어는 그냥 누워있으셈) (서버 쪽 환경만 Immoratl 설정을 해주면 알아서 데미지 환산 때 서버 쪽에서 무적 걸림)
+		for (AC_BasicPlayer* Player : LEVEL_MANAGER->GetPlayers())
+			Player->GetStatComponent()->SetImmortal(); 
+
+		GAME_LV_GAME_MODE(this)->GetGameOverChecker()->Multicast_GameOver(true);
 		return;
 	}
 	

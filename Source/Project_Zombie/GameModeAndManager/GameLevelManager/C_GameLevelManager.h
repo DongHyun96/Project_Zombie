@@ -31,13 +31,24 @@ public:
 
 public:
 	
-	void AddPlayer(class AC_BasicPlayer* _Player) { m_Players.Add(_Player); }
+	void AddPlayer(class AC_BasicPlayer* _Player);
 	const TArray<AC_BasicPlayer*>& GetPlayers() const { return m_Players; }
-	
+
+	AC_BasicPlayer* GetLocalPlayer() const { return m_LocalPlayer; }
+
+	/// <summary>
+	/// 모든 플레이어의 상태가 그로기 상태인지ㄴ 
+	/// </summary>
+	bool HasAllPlayerDead() const;
+
 private:
 
 	// 이 레벨을 플레이 중인 모든 플레이어 객체
+	UPROPERTY()
 	TArray<AC_BasicPlayer*> m_Players{};
+
+	UPROPERTY()
+	AC_BasicPlayer* m_LocalPlayer{};
 	
 };
 

@@ -8,6 +8,7 @@
 #include "C_ZombieManager.h"
 #include "PointTowerManager/C_PointTowerManager.h"
 #include "Actor/Character/NPC/Enemy/Zombie/Spawn/C_SpawnArea.h"
+#include "Actor/GameOverChecker/C_GameOverChecker.h"
 #include "Kismet/GameplayStatics.h"
 #include "Utility/C_Util.h"
 
@@ -72,6 +73,11 @@ void AC_GameMode_GameLv::BeginPlay()
 		m_PointTowerManager->SetZombieManager(m_ZombieManager);
 		m_PointTowerManager->OnWorldBeginPlay();
 	}
+	
+	// GameOverChecker 생성
+	/*FActorSpawnParameters SpawnParam{};
+	SpawnParam.Owner = this;*/
+	m_GameOverChecker = GetWorld()->SpawnActor<AC_GameOverChecker>(AC_GameOverChecker::StaticClass());
 }	
 
 void AC_GameMode_GameLv::PostLogin(APlayerController* NewPlayer)
