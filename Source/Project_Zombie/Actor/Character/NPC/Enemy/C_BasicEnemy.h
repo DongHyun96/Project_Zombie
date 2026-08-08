@@ -164,6 +164,9 @@ protected: // ---- 죽음 관련 ---- //
 	UFUNCTION()
 	void OnRep_DeadData();
 
+	// 사망 음성
+	virtual void PlayDeadSound() {}
+
 protected:
 	/// <summary>
 	/// 풀에서 다시 활성화될 때
@@ -180,6 +183,12 @@ protected: /* 피격처리 */
 
 	UFUNCTION(NetMulticast, Unreliable)
 	void Multicast_PlayHit(int32 _HitMontageIdx);
+
+	// 피격 음성
+	virtual void PlayHitSound() {}
+
+	// 추격 음성
+	virtual void PlayChaseSound() {}
 	
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;

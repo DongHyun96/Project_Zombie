@@ -118,6 +118,7 @@ void AC_BasicEnemy::PlayHitAnimation(int32 _Idx)
 void AC_BasicEnemy::Multicast_PlayHit_Implementation(int32 _HitMontageIdx)
 {
 	PlayHitAnimation(_HitMontageIdx);
+	PlayHitSound();
 }
 
 void AC_BasicEnemy::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -415,6 +416,8 @@ void AC_BasicEnemy::PlayDeadAnimation(int32 _DeadMontageIndex)
 
 	// 서버와 클라에서 같은 죽음 몽타주 재생
 	PlayAnimMontage(SelectedMontage);
+
+	PlayDeadSound();
 }
 
 void AC_BasicEnemy::OnRep_DeadData()

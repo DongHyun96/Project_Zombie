@@ -13,7 +13,9 @@
 #include "BrainComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/AudioComponent.h"
 #include "Components/ShapeComponent.h"
+#include "Sound/SoundBase.h"
 #include "Controller/C_ZombieController.h"
 #include "Kismet/GameplayStatics.h"
 #include "Utility/C_Util.h"
@@ -28,6 +30,12 @@ AC_Zombie::AC_Zombie(EZombieType _ZombieType)
 	: m_ZombieType(_ZombieType)
 {
 	m_TeamId = static_cast<uint8>(ETeamType::Enemy);
+
+	m_Sound = CreateDefaultSubobject<UAudioComponent>(TEXT("Sound"));
+
+	m_Sound->SetupAttachment(GetRootComponent());
+
+	m_Sound->bAutoActivate = false;
 }
 
 void AC_Zombie::BeginPlay()
@@ -232,6 +240,70 @@ void AC_Zombie::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetim
 
 	// 풀 활성 여부를 클라에 복제
 	DOREPLIFETIME(AC_Zombie, m_bPoolActive);
+}
+
+void AC_Zombie::PlayRandomVoice(const TArray<TObjectPtr<USoundBase>>& _Sounds)
+{
+	// AudioComponent가 없으면 재생 불가
+	if (!IsValid(m_Sound))
+		return;
+
+	// 등록된 사운드가 없으면 재생하지 않음
+	if (_Sounds.IsEmpty())
+		return;
+
+	// 랜덤 인덱스 선택
+	const int32 RandomIndex =
+		FMath::RandRange(0, _Sounds.Num() - 1);
+
+	USoundBase* Sound = _Sounds[RandomIndex];
+
+	if (!IsValid(Sound))
+		return;
+
+	// 기존 음성 중단
+	if (m_Sound->IsPlaying())
+	{
+		m_Sound->Stop();
+	}
+
+	// 새로운 사운드 설정 후 재생
+	m_Sound->SetSound(Sound);
+	m_Sound->Play();
+}
+
+void AC_Zombie::PlayHitSound()
+{
+	PlayRandomVoice(m_HitSounds);
+}
+
+void AC_Zombie::PlayDeadSound()
+{
+	PlayRandomVoice(m_DeadSounds);
+}
+
+void AC_Zombie::PlayIdleSound()
+{
+	PlayRandomVoice(m_IdleSounds);
+}
+
+void AC_Zombie::PlayChaseSound()
+{
+	PlayRandomVoice(m_ChaseSounds);
+}
+
+void AC_Zombie::Multicast_PlayChaseSound_Implementation()
+{
+	UE_LOG(
+		LogTemp,
+		Warning,
+		TEXT("[ChaseSound Multicast] Zombie=%s / Role=%d / NetMode=%d"),
+		*GetName(),
+		static_cast<int32>(GetLocalRole()),
+		static_cast<int32>(GetNetMode())
+	);
+
+	PlayChaseSound();
 }
 
 void AC_Zombie::Tick(float DeltaTime)

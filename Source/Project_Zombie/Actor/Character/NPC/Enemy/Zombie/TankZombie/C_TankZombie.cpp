@@ -568,6 +568,11 @@ void AC_TankZombie::FinishChargeSkill()
 	m_ChargeHitTarget.Reset();
 }
 
+void AC_TankZombie::PlayRoarSound()
+{
+	PlayRandomVoice(m_RoarSounds);
+}
+
 
 void AC_TankZombie::StartEndMove()
 {
