@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -58,6 +58,10 @@ private:
 
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_UpdateConquerAmountInt(uint8 _CurrentConquerAmount);
+
+	// 점령 활성화 되면 true, 점령 활성화가 중단되면 false
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_SetConqueringSound(bool _Play);
 	
 private:
 	
@@ -223,5 +227,19 @@ private:
 	
 	FTimerHandle m_TestTimerHandle{};
 	FTimerHandle m_TestTimerHandle2{};
-	
+
+
+private: // 사운드
+
+	// 거점 활성화 시 1회 재생
+	UPROPERTY(EditAnywhere, Category = "Sound")
+	USoundBase* m_ActivateSound{};
+
+	// 점령 중 반복 재생되는 소리
+	UPROPERTY(VisibleAnywhere, Category = "Sound")
+	UAudioComponent* m_ConqueringAudioCom{};
+
+	// 점령 완료 후 반복 재생되는 전기 소리
+	UPROPERTY(EditAnywhere, Category = "Sound")
+	USoundBase* m_ElectricSound{};
 };

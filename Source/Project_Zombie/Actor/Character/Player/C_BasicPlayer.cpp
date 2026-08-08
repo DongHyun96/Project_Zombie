@@ -591,6 +591,15 @@ void AC_BasicPlayer::ToggleCrouch()
 
 		return;
 	}
+
+	// 웅크리기 전환 가능 여부 확인
+	if (NewPoseState == EPlayerPoseState::Walk)
+	{
+		if (!m_PoseColliderHandlerComponent->CanStand())
+		{
+			return;
+		}
+	}
 	
 	// 클라이언트에서 먼저 적용
 	ApplyPoseStateLocally(NewPoseState);

@@ -8,6 +8,8 @@
 
 class USoundMix;
 class USoundClass;
+class USoundBase;
+class UAudioComponent;
 
 UCLASS()
 class PROJECT_ZOMBIE_API UC_SoundManager : public UGameInstanceSubsystem
@@ -17,11 +19,18 @@ class PROJECT_ZOMBIE_API UC_SoundManager : public UGameInstanceSubsystem
 public:
 	void SetFootstepVolume(float _Volume);
 
+	void PlayBGM();
+	void StopBGM();
+
 private:
 	UPROPERTY()
 	TObjectPtr<USoundMix> m_GameSoundMix;
 
 	UPROPERTY()
 	TObjectPtr<USoundClass> m_FootstepSoundClass;
+
+private:
+	UPROPERTY()
+	UAudioComponent* m_BGMAudioComponent;
 
 };
