@@ -424,8 +424,23 @@ bool AC_ThrowableWeaponBase::Reload(AC_BasicPlayer* _WeaponUser)
 
 	if (m_OwnerPlayer != _WeaponUser)
 		m_OwnerPlayer = _WeaponUser;
+	
+	// 이미 예약한 상태면 false
+	if (m_bWantsCook)
+		return false;
 
-	return OnStartCookInput();
+	// 이미 Timer 진행중이면 false
+	if (GetWorld()->GetTimerManager().IsTimerActive(m_FuseTimerHandle))
+		return false;
+
+	const bool bSuccess = OnStartCookInput();
+
+	if (bSuccess && m_PinpullInputSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), m_PinpullInputSound, m_OwnerPlayer->GetActorLocation());
+	}
+
+	return bSuccess;
 }
 
 void AC_ThrowableWeaponBase::PlayThrowMontageSynced(FName _SectionName)
@@ -557,15 +572,28 @@ void AC_ThrowableWeaponBase::Multicast_PlayExplosionFX_Implementation(bool _bSto
 		m_OwnerPlayer->SetHandState(EHandState::UnArmed);
 	}
 
+	// 폭발 이펙트 생성
 	if (m_ExplosionEffect)
 	{
-		// 폭발 이펙트 생성
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld()
 			, m_ExplosionEffect
 			, _ExplosionLocation
 			, _ExplosionRotation
 			, FVector(m_ExplosionEffectScale)
 			, true);	// 재생 종료 후 자동 제거
+	}
+
+	// 폭발 사운드 재생
+	if (m_ExplosionSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(GetWorld()
+			, m_ExplosionSound
+			, _ExplosionLocation
+			, 1.0f				// Volume
+			, 1.0f				// Pitch
+			, 0.0f
+			, m_ExplosionSoundAttenuation
+		);
 	}
 }
 
@@ -660,7 +688,7 @@ void AC_ThrowableWeaponBase::Server_ApplyExplosionDamage_Implementation(const TA
 
 		UGameplayStatics::ApplyDamage(
 			Target,						// 데미지 받는 대상
-			50,							// 거리 비례 데미지 계산
+			300,						// 거리 비례 데미지 계산 // 
 			InstigatorController,		// 데미지를 입힌 주체
 			this,						// 데미지를 입힌 무기
 			UDamageType::StaticClass()	// 데미지 타입
@@ -710,6 +738,12 @@ void AC_ThrowableWeaponBase::OnRemovePin()
 		return;
 
 	m_ThrowableState = EThrowableState::Ready;
+
+	// 어색해서 지울 수 있음
+	if (m_PinpullSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), m_PinpullSound, m_OwnerPlayer->GetActorLocation());
+	}
 
 	// R 키를 먼저 눌러둔 경우, 핀 제거 후 바로 타이머 시작
 	if (m_bWantsCook)

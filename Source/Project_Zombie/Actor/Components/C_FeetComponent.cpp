@@ -13,13 +13,13 @@ UC_FeetComponent::UC_FeetComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 	
-	m_LeftFootSocketName = FName(TEXT("foot_l"));
-	m_RightFootSocketName = FName(TEXT("foot_r"));
+	m_LeftFootSocketName = FName(TEXT("left_foot"));
+	m_RightFootSocketName = FName(TEXT("right_foot"));
 
 	m_LocalVolume = 1.f;
 	m_RemoteVolume = 0.6f;
 
-	m_CrouchPitch = 0.8f;
+	m_CrouchPitch = 0.4f;
 
 	m_FootstepAttenuation = nullptr;
 	m_FootstepConcurrency = nullptr;
@@ -125,13 +125,6 @@ void UC_FeetComponent::PlayFootstep(bool _IsLeftFoot)
 		return;
 	}
 
-	UE_LOG(
-		LogTemp,
-		Warning,
-		TEXT("[Footstep] Sound 선택 완료 / Sound=%s"),
-		*GetNameSafe(FootstepSound)
-	);
-
 	if (!FootstepSound)
 		return;
 
@@ -148,6 +141,53 @@ void UC_FeetComponent::PlayFootstep(bool _IsLeftFoot)
 		0.f,
 		m_FootstepAttenuation,
 		m_FootstepConcurrency
+	);
+}
+
+void UC_FeetComponent::PlayLandingSound(const FHitResult& _Hit)
+{
+	if (!m_OwnerPlayer)
+		return;
+
+	USkeletalMeshComponent* Mesh = m_OwnerPlayer->GetMesh();
+	if (!Mesh)
+		return;
+
+	const FVector TraceStart = _Hit.ImpactPoint + FVector(0.f, 0.f, 20.f);
+	const FVector TraceEnd = _Hit.ImpactPoint - FVector(0.f, 0.f, 100.f);
+
+	// 라인 트레이스 검사
+	FCollisionQueryParams Params = {};
+	Params.AddIgnoredActor(m_OwnerPlayer);
+
+	// 충돌이 검출되면, 대상의 물리재질 정보를 가져올것
+	Params.bReturnPhysicalMaterial = true;
+
+	FHitResult HitResult;
+
+	const bool bHit = GetWorld()->LineTraceSingleByChannel(
+		HitResult,
+		TraceStart,
+		TraceEnd,
+		ECC_Visibility,
+		Params
+	);
+
+	if (!bHit)
+		return;
+
+	UC_PhysicalMaterial_FootSound* FootMaterial = Cast<UC_PhysicalMaterial_FootSound>(HitResult.PhysMaterial.Get());
+	if (!FootMaterial)
+		return;
+
+	if (!FootMaterial->GetLandingSound())
+		return;
+
+	UGameplayStatics::PlaySoundAtLocation(
+		this,
+		FootMaterial->GetLandingSound(),
+		HitResult.ImpactPoint,
+		m_LocalVolume
 	);
 }
 

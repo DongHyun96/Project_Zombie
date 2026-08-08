@@ -155,37 +155,37 @@ bool UC_GrenadeExplode::UseStrategy_Implementation(AC_ThrowableWeaponBase* _Thro
 		);
 
 
-		// ----------- TraceColor 는 디버그용 -------------
-		// Trace 가 막혔으면 데미지 적용하지 않음 (자기자신 제외)
-		if (bBlocked && BlockHit.GetActor() != Target)
-		{
-			const FColor TraceColor = FColor::Red;
-			DrawDebugLine(
-				GetWorld(),
-				TraceStart,
-				TraceEnd,
-				TraceColor,
-				false,
-				2.0f,
-				0,
-				1.5f
-			);
+		//// ----------- TraceColor 는 디버그용 -------------
+		//// Trace 가 막혔으면 데미지 적용하지 않음 (자기자신 제외)
+		//if (bBlocked && BlockHit.GetActor() != Target)
+		//{
+		//	const FColor TraceColor = FColor::Red;
+		//	DrawDebugLine(
+		//		GetWorld(),
+		//		TraceStart,
+		//		TraceEnd,
+		//		TraceColor,
+		//		false,
+		//		2.0f,
+		//		0,
+		//		1.5f
+		//	);
 
-			continue;
-		}
+		//	continue;
+		//}
 
 
-		const FColor TraceColor = FColor::Green;
-		DrawDebugLine(
-			GetWorld(),
-			TraceStart,
-			TraceEnd,
-			TraceColor,
-			false,
-			2.0f,
-			0,
-			1.5f
-		);
+		//const FColor TraceColor = FColor::Green;
+		//DrawDebugLine(
+		//	GetWorld(),
+		//	TraceStart,
+		//	TraceEnd,
+		//	TraceColor,
+		//	false,
+		//	2.0f,
+		//	0,
+		//	1.5f
+		//);
 		// -----------------------------------
 
 		HitActors.Add(Target);

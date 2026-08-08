@@ -27,6 +27,11 @@ public:
 	/// <param name="_IsLeftFoot">왼쪽 발일 경우 true</param>
 	void PlayFootstep(bool _IsLeftFoot);
 
+	/// <summary>
+	/// 착지 소리 재생
+	/// </summary>
+	void PlayLandingSound(const FHitResult& _Hit);
+
 private:
 
 	UPROPERTY()
