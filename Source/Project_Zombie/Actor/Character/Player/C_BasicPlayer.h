@@ -398,7 +398,7 @@ public:
 protected:
 
 	//UFUNCTION()
-	void OnRep_PlayerState();
+	void OnRep_PlayerState(); // 이거 안쓰고 있는거 아닌가?
 
 	// 체력이 0이 되어 Downed 상태로 변경
 	UFUNCTION(Server, Reliable)
@@ -537,6 +537,10 @@ public:
 public:
 	class UC_InvenComponent* GetInvenComponent() { return m_InvenComponent; }
 	
+	virtual void PossessedBy(AController* NewController) override;
+	
+	//UFUNCTION()
+	//virtual void OnRep_AC_PlayerState() override;
 public:
 	AC_BasicPlayer();
 };

@@ -44,6 +44,7 @@
 
 #include "TimerManager.h"
 #include "Actor/Components/PlayerProfileComponent/C_PlayerProfileComponent.h"
+#include "GameModeAndManager/PlayerState/C_PlayerState.h"
 
 #include "Net/UnrealNetwork.h"
 #include "Kismet/KismetMathLibrary.h"
@@ -55,6 +56,37 @@
 
 #define RECHARGED_BOOST 20.f
 
+
+void AC_BasicPlayer::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+    
+	// 오직 서버에서만 실행되는 안전지대
+	if (!HasAuthority()) return;
+
+	if (AC_PlayerState* PS = NewController->GetPlayerState<AC_PlayerState>())
+	{
+		// 1. 인벤토리 컴포넌트 복구 (저장된 데이터가 유효할 때만)
+		if (PS->GetSavedInventory().Num() > 0)
+		{
+			if (UC_InvenComponent* InvenComp = FindComponentByClass<UC_InvenComponent>())
+			{
+				InvenComp->LoadInventoryFromBackup(PS->GetSavedInventory());
+			}
+		}
+
+		// 2. 스탯 컴포넌트 복구
+		if (PS->GetSavedStats().Num() > 0)
+		{
+			if (UC_StatComponentBase* StatComp = FindComponentByClass<UC_StatComponentBase>())
+			{
+				StatComp->LoadStatsFromBackup(PS->GetSavedStats(), PS->GetSavedStatGrades());
+			}
+		}
+        
+		UE_LOG(LogTemp, Log, TEXT("[Character] PossessedBy 타이밍에 백업 데이터 정상 로드 완료."));
+	}
+}
 
 AC_BasicPlayer::AC_BasicPlayer()
 {
@@ -248,6 +280,15 @@ void AC_BasicPlayer::BeginPlay()
 
 	// 입력 시스템 초기화
 	//InitInput();
+	
+	UE_LOG(
+	LogTemp,
+	Error,
+	TEXT("[PLAYER BEGINPLAY] %s / Address=%p / World=%s"),
+	*GetName(),
+	this,
+	*GetWorld()->GetName()
+);
 }
 
 void AC_BasicPlayer::EndPlay(const EEndPlayReason::Type EndPlayReason)

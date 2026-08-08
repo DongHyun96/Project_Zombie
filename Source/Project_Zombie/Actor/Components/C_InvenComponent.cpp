@@ -24,6 +24,23 @@ UC_InvenComponent::UC_InvenComponent()
 	//}
 }
 
+void UC_InvenComponent::LoadInventoryFromBackup(const TArray<FInventoryEntry>& InSavedItems)
+{
+	// 서버 권한 검사
+	if (!GetOwner()->HasAuthority()) return;
+
+	// Fast Array 내부의 TArray에 백업본 데이터 주입
+	InventoryContainer.Items = InSavedItems;
+    
+	// 중요: Fast Array가 내부 요소를 모두 감지하여 클라이언트들에게 Replicate 하도록 마킹
+	InventoryContainer.MarkArrayDirty();
+    
+	// 로컬 델리게이트 알림 혹은 강제 동기화 보정용 함수 호출
+	ForceRepInven();
+    
+	UE_LOG(LogTemp, Log, TEXT("[InvenComp] %d개의 아이템을 성공적으로 복구했습니다."), InventoryContainer.Items.Num());
+}
+
 void UC_InvenComponent::BeginPlay()
 {
 	Super::BeginPlay();

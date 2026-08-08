@@ -14,6 +14,9 @@ class PROJECT_ZOMBIE_API AC_BasicPlayerController : public APlayerController
 {
 	GENERATED_BODY()
 	
+protected:
+	virtual void OnUnPossess() override;
+	
 public:
 	
 	void FinishItemUpgrade();

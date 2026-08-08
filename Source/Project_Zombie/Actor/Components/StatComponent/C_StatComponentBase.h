@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GlobalData.h"
 #include "Components/ActorComponent.h"
 #include "C_StatComponentBase.generated.h"
 
@@ -52,6 +53,12 @@ public:
 	
 	UC_StatComponentBase();
 
+	void LoadStatsFromBackup(const TMap<FName, float>& InStats, const TMap<FName, uint8>& InGrades);
+	
+private:
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_InitializeAllStats(const TArray<FStatSyncPair>& InSyncArray);
+	
 public:
 	
 	virtual void BeginPlay() override;

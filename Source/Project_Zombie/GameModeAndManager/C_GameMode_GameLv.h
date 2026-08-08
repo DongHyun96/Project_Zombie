@@ -32,6 +32,8 @@ public:
 	 */
 	virtual void Logout(AController* Exiting) override;
 	
+	virtual void HandleSeamlessTravelPlayer(AController*& C) override;
+	
 public:
 	
 	class UC_ZombieManager* GetZombieManager() const { return m_ZombieManager; }

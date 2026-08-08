@@ -17,6 +17,68 @@ UC_StatComponentBase::UC_StatComponentBase()
 	PrimaryComponentTick.bCanEverTick = false;
 }
 
+void UC_StatComponentBase::LoadStatsFromBackup(const TMap<FName, float>& InStats, const TMap<FName, uint8>& InGrades)
+{
+	if (!GetOwner()->HasAuthority()) return;
+
+	// 1. 서버 메모리 즉시 복구
+	m_Stats = InStats;
+	m_StatGrades = InGrades;
+
+	// 2. RPC 전송을 위한 팩킹 (TMap -> TArray)
+	TArray<FStatSyncPair> SyncArray;
+    
+	// m_Stats나 m_StatGrades 중 하나를 기준으로 순회합니다. (키 값이 같다고 가정)
+	for (const auto& Pair : m_Stats)
+	{
+		FStatSyncPair SyncData;
+		SyncData.StatName = Pair.Key;
+		SyncData.StatValue = Pair.Value;
+        
+		// 등급 맵에서도 해당 키의 값을 찾아 매칭
+		if (m_StatGrades.Contains(Pair.Key))
+		{
+			SyncData.StatGrade = m_StatGrades[Pair.Key];
+		}
+		else
+		{
+			SyncData.StatGrade = 0; // 예외 처리용 기본값
+		}
+
+		SyncArray.Add(SyncData);
+	}
+
+	// 3. 네트워크 전송이 가능한 TArray로 멀티캐스트 호출
+	Multicast_InitializeAllStats(SyncArray);
+}
+
+void UC_StatComponentBase::Multicast_InitializeAllStats_Implementation(const TArray<FStatSyncPair>& InSyncArray)
+{
+	// 서버가 아닌 클라이언트(Proxy)들만 로컬 값 복구 수행
+	if (!GetOwner()->HasAuthority())
+	{
+		m_Stats.Empty();
+		m_StatGrades.Empty();
+
+		for (const FStatSyncPair& Data : InSyncArray)
+		{
+			m_Stats.Add(Data.StatName, Data.StatValue);
+			m_StatGrades.Add(Data.StatName, Data.StatGrade);
+		}
+	}
+
+	// 4. UI 레이어 및 로컬 노티파이 갱신 트리거
+	for (const auto& Pair : m_StatGrades)
+	{
+		if (OnStatGradeUpdatedDelegate.IsBound())
+		{
+			OnStatGradeUpdatedDelegate.Broadcast(Pair.Key, Pair.Value);
+		}
+	}
+    
+	UE_LOG(LogTemp, Log, TEXT("[StatComp] %d개의 스탯 맵 복구 및 동기화 완료 (클라이언트 통과)"), InSyncArray.Num());
+}
+
 void UC_StatComponentBase::OnRegister()
 {
 	Super::OnRegister();

@@ -690,3 +690,19 @@ struct FPlayerStatUpgradeData : public FTableRowBase
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     TArray<float> GradeValue{};    
 };
+
+
+USTRUCT(BlueprintType)
+struct FStatSyncPair
+{
+    GENERATED_BODY()
+
+    UPROPERTY()
+    FName StatName;
+
+    UPROPERTY()
+    float StatValue;
+
+    UPROPERTY()
+    uint8 StatGrade;
+};

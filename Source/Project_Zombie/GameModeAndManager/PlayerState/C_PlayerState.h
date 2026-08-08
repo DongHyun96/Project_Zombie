@@ -3,7 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GlobalData.h"
 #include "GameFramework/PlayerState.h"
+#include "Multi/C_InvenStructures.h"
 #include "C_PlayerState.generated.h"
 
 /**
@@ -28,11 +30,36 @@ public:
 	
 	bool IsHost() const { return m_bIsHost; }
 	
+	virtual void CopyProperties(APlayerState* NewPlayerState);
+	
+public:
+	// 스탯 데이터 입출력
+	void SaveStatsToState(const TMap<FName, float>& InStats, const TMap<FName, uint8>& InGrades)
+	{
+		SavedStats = InStats;
+		SavedStatGrades = InGrades;
+	}
+	const TMap<FName, float>& GetSavedStats() const { return SavedStats; }
+	const TMap<FName, uint8>& GetSavedStatGrades() const { return SavedStatGrades; }
+
+	// 인벤토리 데이터 입출력
+	void SaveInventoryToState(const TArray<FInventoryEntry>& InContainer) { SavedInventoryContainers = InContainer; }
+	const TArray<FInventoryEntry>& GetSavedInventory() const { return SavedInventoryContainers; }
+	
 protected:
 	
 	UPROPERTY(Replicated, BlueprintReadOnly)
 	bool m_bIsHost{};
 	
+	UPROPERTY()
+	TArray<FInventoryEntry> SavedInventoryContainers{};
 	
+	
+	
+	UPROPERTY()
+	TMap<FName, float> SavedStats{};
+
+	UPROPERTY()
+	TMap<FName, uint8> SavedStatGrades{};
 };
 
