@@ -45,7 +45,7 @@ protected: /* 스폰 세팅 */
 
 	// NavMesh 위로 위치를 찾을 때 사용할 탐색 범위
 	//UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Spawn|Navigation")
-	FVector m_NavProjectionExtent = FVector(150.f, 150.f, 500.f);
+	FVector m_NavProjectionExtent = FVector(500.f, 500.f, 2000.f);
 
 	// 바닥과 캡슐이 너무 정확히 붙어서 겹침 판정이 나는 것을 방지하는 여유 높이
 	//UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Spawn|Collision", meta = (ClampMin = "0.0"))
