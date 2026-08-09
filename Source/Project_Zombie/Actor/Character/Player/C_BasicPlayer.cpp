@@ -230,10 +230,11 @@ void AC_BasicPlayer::BeginPlay()
 	m_InteractionComponent->SetupInteraction(m_InteractionSphere);
 
 	// GameLevelManager에 해당 Player 등록
-	if (UC_GameLevelManager* LevelManager = GetWorld()->GetSubsystem<UC_GameLevelManager>())
-		LevelManager->AddPlayer(this);
-	
-
+	GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
+	{
+		if (UC_GameLevelManager* LevelManager = GetWorld()->GetSubsystem<UC_GameLevelManager>())
+			LevelManager->AddPlayer(this);
+	});
 
 	// 웅크리기 완료 시 호출할 OnPoseTransitionFinished 바인딩
 	if (m_PoseColliderHandlerComponent)
