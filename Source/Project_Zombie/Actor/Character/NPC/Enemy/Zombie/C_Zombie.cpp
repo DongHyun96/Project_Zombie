@@ -94,9 +94,9 @@ void AC_Zombie::OnNormalAttackColliderBeginOverlap
 	if (!Player && !PointTower) return; // PointTower나 Player가 아닌 경우
 	
 	// 이미 이번 휘두르기에 피격처리가 한 번 들어감
-	if (m_SetNormalAttackColliderEntered.Contains(Player)) return;
+	if (m_SetNormalAttackColliderEntered.Contains(OtherActor)) return;
 	
-	m_SetNormalAttackColliderEntered.Add(Player);
+	m_SetNormalAttackColliderEntered.Add(OtherActor);
 
 	// 현재 Skill의 피격량을 구해와서, 대상 Target에게 ApplyDamage 처리
 	const float AppliedDamage = UGameplayStatics::ApplyDamage
@@ -109,9 +109,9 @@ void AC_Zombie::OnNormalAttackColliderBeginOverlap
 	);
 
 	// 플레이어가 맞았을때 skilldata의 hitsound 재생
-	if (Player && AppliedDamage > 0.f)
+	if ((Player || PointTower) && AppliedDamage > 0.f)
 	{
-		PlayCurrentSkillHitSound(Player->GetActorLocation());
+		PlayCurrentSkillHitSound(OtherActor->GetActorLocation());
 	}
 }
 
