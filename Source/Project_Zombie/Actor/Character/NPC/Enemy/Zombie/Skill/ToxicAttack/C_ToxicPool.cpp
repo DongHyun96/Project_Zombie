@@ -40,10 +40,6 @@ AC_ToxicPool::AC_ToxicPool()
 	// 오버랩 이벤트 활성화
 	m_Sphere->SetGenerateOverlapEvents(true);
 
-	// 2. NiagaraComponent
-	m_NiagaraCom = CreateDefaultSubobject<UNiagaraComponent>(TEXT("Niagara"));
-	m_NiagaraCom->SetupAttachment(m_Sphere); // 자식으로 설정
-
 	m_Sphere->OnComponentBeginOverlap.AddDynamic(
 		this,
 		&AC_ToxicPool::OnBeginOverlap);
@@ -56,13 +52,6 @@ AC_ToxicPool::AC_ToxicPool()
 void AC_ToxicPool::BeginPlay()
 {
 	Super::BeginPlay();
-
-	if (m_PoolEffect)
-	{
-		m_NiagaraCom->SetAsset(m_PoolEffect);
-		m_NiagaraCom->Activate();
-	}
-
 }
 
 void AC_ToxicPool::InitPool(AC_BasicEnemy* _SkillUser, UC_EnemySkillData* _Skill)

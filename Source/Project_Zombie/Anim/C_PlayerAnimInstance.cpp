@@ -36,7 +36,7 @@ void UC_PlayerAnimInstance::NativeUpdateAnimation(float _DT)
 		return;
 
 	// PlayerState 갱신
-	m_PlayerState = m_Character->GetPlayerState();
+	m_PlayerState = m_Character->GetPlayerMainState();
 
 	// HandState 갱신
 	m_HandState = m_Character->GetHandState();

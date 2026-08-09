@@ -77,6 +77,11 @@ private:
 	/// 현재 Sequence에 등록된 SpawnArea들을 반환 
 	/// </summary>
 	TArray<AC_SpawnArea*> GetCurrentSequenceSpawnAreas() const;
+
+private:
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_ShowGameStartPanel();
 	
 public:
 	void SetZombieManager(class UC_ZombieManager* _ZombieManager) { m_ZombieManager = _ZombieManager; }
@@ -111,5 +116,9 @@ private:
 	// 현재 게임 시작 기다리기까지 남은 초 -> 이걸로 실시간 동기화 처리할 것
 	// UI Display 처리 또한 이 값으로 진행
 	int32 m_GameStartTimeLeftInt{};
+	
+private:
+	
+	bool m_GameStartTimerSet{};
 	
 };
