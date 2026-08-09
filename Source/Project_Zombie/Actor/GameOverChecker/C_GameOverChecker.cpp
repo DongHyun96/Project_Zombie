@@ -42,6 +42,8 @@ void AC_GameOverChecker::Multicast_UpdateGameStartLeftTime_Implementation(int32 
 {
 	AC_UIManager* UIManager = UI_MANAGER(GetWorld());
 	if (!UIManager) return;
+
+	if (!UIManager->GetMainHUDWidget()) return;
 	
 	UIManager->GetMainHUDWidget()->GetInformWidget()->UpdateGameStartLeftTime(_LeftTime);
 }

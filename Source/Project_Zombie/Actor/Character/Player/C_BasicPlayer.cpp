@@ -1016,7 +1016,7 @@ void AC_BasicPlayer::Server_EnterDownedState_Implementation()
 	SetPlayerStateOnServer(EPlayerState::Dead); 
 	
 	// 게임 오버 상황인지 체크 (모든 플레이어들이 그로기 상태로 접어든 상황인 경우)
-	if (LEVEL_MANAGER->HasAllPlayerDead())
+	if (LEVEL_MANAGER && LEVEL_MANAGER->HasAllPlayerDead())
 	{
 		// 게임 오버 상황
 		GAME_LV_GAME_MODE(GetWorld())->GetGameOverChecker()->Multicast_GameOver(false);

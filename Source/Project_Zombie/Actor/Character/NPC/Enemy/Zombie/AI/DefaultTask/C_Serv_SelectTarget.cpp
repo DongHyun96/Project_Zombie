@@ -35,6 +35,9 @@ void UC_Serv_SelectTarget::TickNode(UBehaviorTreeComponent& _OwnCom, uint8* _Nod
 	if (!pZombie)
 		return;
 
+	UBlackboardComponent* pBBCom = _OwnCom.GetBlackboardComponent();
+	if (!pBBCom) return;
+	
 	// 인지범위를 벗어난 대상이 일정시간이 지나면 인지목록에서 제거
 	pController->ClearSensedTarget(3.f);
 
@@ -76,13 +79,10 @@ void UC_Serv_SelectTarget::TickNode(UBehaviorTreeComponent& _OwnCom, uint8* _Nod
 	if (pBestTarget) // BestTarget가 나온 상황
 	{
 		// BestTarget을 Target으로 지정
-		UBlackboardComponent* pBBCom = _OwnCom.GetBlackboardComponent();
-		if (!pBBCom) return;
 
 		// 기존에는 타겟이 없었는데
 		// 이번에 처음 추격할 타겟이 생긴 경우
-		UObject* CurrentTarget =
-			pBBCom->GetValueAsObject(m_Target.SelectedKeyName);
+		UObject* CurrentTarget = pBBCom->GetValueAsObject(m_Target.SelectedKeyName);
 
 		if (!IsValid(CurrentTarget))
 		{
@@ -94,11 +94,8 @@ void UC_Serv_SelectTarget::TickNode(UBehaviorTreeComponent& _OwnCom, uint8* _Nod
 	}
 
 	// 여기까지 왔다는 것은 현재 추격할 Target을 찾지 못한 상황
-	UBlackboardComponent* pBBCom = _OwnCom.GetBlackboardComponent();
-	if (!pBBCom)
-		return;
 
-	// 추격음 반복 정지
+	/*// 추격음 반복 정지
 	pZombie->StopChaseSoundLoop();
 
 	// 기존 Blackboard Target도 제거
@@ -106,7 +103,7 @@ void UC_Serv_SelectTarget::TickNode(UBehaviorTreeComponent& _OwnCom, uint8* _Nod
 
 	// BestTarget이 나오지 않은 상황
 	//  -> 가장 가까운 플레이어 또는 거점을 찾는다
-	/*float MinDistSqr = FLT_MAX;
+	float MinDistSqr = FLT_MAX;
 
 	if (!m_GameLevelManager)
 	{
@@ -140,21 +137,5 @@ void UC_Serv_SelectTarget::TickNode(UBehaviorTreeComponent& _OwnCom, uint8* _Nod
 	}
 
 	// 가장 가까운 타겟을 블랙보드에 타겟으로 설정
-	UBlackboardComponent* pBBCom = _OwnCom.GetBlackboardComponent();
-	if (!pBBCom) return;
-
-	// 실제 타겟을 찾았을 때만
-	if (IsValid(pBestTarget))
-	{
-		UObject* CurrentTarget =
-			pBBCom->GetValueAsObject(m_Target.SelectedKeyName);
-
-		// 기존 타겟이 없었다면 추격 시작 사운드
-		if (!IsValid(CurrentTarget))
-		{
-			pZombie->Multicast_PlayChaseSound();
-		}
-	}
-	
 	pBBCom->SetValueAsObject(m_Target.SelectedKeyName, pBestTarget);*/
 }

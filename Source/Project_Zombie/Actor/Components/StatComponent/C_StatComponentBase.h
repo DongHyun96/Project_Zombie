@@ -224,6 +224,10 @@ private:
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_DecreaseCurHP(float _DecreaseAmount);
 
+private:
+	
+	void HandleZeroHPBoilerPlateOnServer();
+	
 protected:
 	
 	UPROPERTY()

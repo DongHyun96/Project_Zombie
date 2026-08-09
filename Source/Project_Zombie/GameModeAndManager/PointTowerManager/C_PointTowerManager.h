@@ -120,5 +120,10 @@ private:
 private:
 	
 	bool m_GameStartTimerSet{};
+
+public:
+	
+	bool GetGameStartTimerSet() const { return m_GameStartTimerSet; }
+	
 	
 };

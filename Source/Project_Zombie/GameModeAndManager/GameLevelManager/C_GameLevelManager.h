@@ -53,4 +53,4 @@ private:
 };
 
 // 주의 : GetWorld() 가 valid하거나, Valid한 시점에만 사용 & In GameLevel인 경우에만 사용할 것
-#define LEVEL_MANAGER	GetWorld()->GetSubsystem<UC_GameLevelManager>()
+#define LEVEL_MANAGER GetWorld()->GetSubsystem<UC_GameLevelManager>()
