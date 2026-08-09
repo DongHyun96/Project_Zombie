@@ -27,9 +27,17 @@ private:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UUserWidget> WBP_FriendList;
 
+	// 게임 종료 버튼
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<class UButton> Button_Exit_Game;
+
 	// 친구 버튼 클릭 시 호출될 함수
 	UFUNCTION()
 	void OnSocialsButtonClicked();
+
+	// 게임 종료 버튼 함수
+	UFUNCTION()
+	void OnExitGameButtonClicked();
 
 protected:
 	virtual FReply NativeOnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent) override;

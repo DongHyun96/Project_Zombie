@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -36,6 +36,9 @@ private:
 
 	void HandleExitToLobbyTimer(float DeltaTime);
 
+	UFUNCTION()
+	void OnExitToLobbyButtonClicked();
+
 protected:
 
 	UPROPERTY(meta = (BindWidgetAnim), Transient)
@@ -64,12 +67,19 @@ protected:
 
 	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly)
 	TSoftObjectPtr<UWorld> LobbyLevel{};
-	
+
+	//  ExitToLobbyButton 바인딩
+	UPROPERTY(meta = (BindWidget))
+	class UButton* ExitToLobbyButton{};
+
 private:
 
 	// 최대 60초 기다린 이후 로비로 나가기
 	float ExitToLobbyTimer = 60.f;
 	
+	// 중복 로비 이동 실행 방지
+	bool bIsExiting = false;
+
 	uint8 m_Ranking{};
 	
 };

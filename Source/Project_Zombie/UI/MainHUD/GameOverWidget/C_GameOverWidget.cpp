@@ -1,14 +1,16 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "C_GameOverWidget.h"
-
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/Components/PlayerProfileComponent/C_PlayerProfileComponent.h"
 #include "Components/TextBlock.h"
+#include "Components/Button.h"
 #include "Controller/C_BasicPlayerController.h"
 #include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 #include "Kismet/GameplayStatics.h"
+#include "OnlineSubsystem.h"
+#include "Interfaces/OnlineSessionInterface.h"
 
 void UC_GameOverWidget::NativeOnInitialized()
 {
@@ -18,6 +20,12 @@ void UC_GameOverWidget::NativeOnInitialized()
 void UC_GameOverWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+
+	// ExitToLobbyButton 바인딩
+	if (ExitToLobbyButton)
+	{
+		ExitToLobbyButton->OnClicked.AddDynamic(this, &UC_GameOverWidget::OnExitToLobbyButtonClicked);
+	}
 }
 
 void UC_GameOverWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
@@ -104,7 +112,36 @@ void UC_GameOverWidget::HandleExitToLobbyTimer(float DeltaTime)
 	FString CountDownString = "You will exit to lobby in " + FString::FromInt(Sec) + " seconds";
 	ExitToLobbyCountDownText->SetText(FText::FromString(CountDownString));
 
-	// TODO : Exit to Lobby
-	/*if (ExitToLobbyTimer < 0.f)
-		UGameplayStatics::OpenLevelBySoftObjectPtr(GetWorld(), LobbyLevel);*/
+	// 60초 카운트다운 완료 시 로비 이동
+	if (ExitToLobbyTimer <= 0.f)
+	{
+		ExitToLobbyTimer = 999.f; // 중복 호출 방지
+		OnExitToLobbyButtonClicked();
+	}
+}
+
+void UC_GameOverWidget::OnExitToLobbyButtonClicked()
+{
+	if (bIsExiting) return;
+	bIsExiting = true; // 중복 실행 방지
+
+	// 스팀/온라인 세션 정리 후 스타트 레벨로 이동
+	IOnlineSubsystem* Subsystem = IOnlineSubsystem::Get();
+	if (Subsystem)
+	{
+		IOnlineSessionPtr SessionInterface = Subsystem->GetSessionInterface();
+		if (SessionInterface.IsValid())
+		{
+			SessionInterface->DestroySession(NAME_GameSession, FOnDestroySessionCompleteDelegate::CreateLambda(
+				[this](FName SessionName, bool bWasSuccessful)
+				{
+					UGameplayStatics::OpenLevelBySoftObjectPtr(GetWorld(), LobbyLevel);
+				}
+			));
+			return;
+		}
+	}
+
+	// 2. 세션이 없을 경우 즉시 레벨 이동
+	UGameplayStatics::OpenLevelBySoftObjectPtr(GetWorld(), LobbyLevel);
 }
