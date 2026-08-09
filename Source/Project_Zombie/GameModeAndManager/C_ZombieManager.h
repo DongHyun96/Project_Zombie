@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GlobalData.h"
+#include "Actor/Character/NPC/Enemy/Zombie/C_Zombie.h"
 #include "UObject/Object.h"
 #include "C_ZombieManager.generated.h"
 
@@ -51,7 +52,7 @@ public: /* Spawn 관련 함수들 */
 	/// <returns> : 제대로 Pool로 돌아가지 못했다면 return false </returns>
 	bool ReturnHealingProjectileToPool(class AC_HealingProjectile* _HealingProjectile);
 
-	const TSet<AC_NurseZombie*>& GetActiveNurseZombies() const { return m_ActiveNurseZombies; }
+	const TSet<AC_Zombie*>& GetActiveNurseZombies() const { return m_ActiveZombies[EZombieType::NurseZombie]; }
 	
 	/// <summary>
 	/// 게임 시작 시 설정된 좀비 타입, 수량만큼 미리 생성하여
@@ -189,10 +190,6 @@ protected: /* Wave Spawn 관련 */
 	
 protected: /* Healer 좀비 관련 */
 
-	// 현재 스폰되어 레벨에 살아서 돌아다니는 Nurse 좀비들
-	UPROPERTY(VisibleAnywhere)
-	TSet<AC_NurseZombie*> m_ActiveNurseZombies{};
-	
 	/* Healer 좀비가 사용할 Healing Projectile pooling 관련 */
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Zombie", DisplayName = "HealingProjectileClass")

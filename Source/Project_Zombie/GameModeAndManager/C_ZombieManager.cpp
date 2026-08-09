@@ -33,6 +33,13 @@ UC_ZombieManager::UC_ZombieManager()
 
 	if (TankFinder.Succeeded())
 		m_ZombieClasses.Add(EZombieType::TankZombie, TankFinder.Class);
+
+	// TODO : 이거 5마리 종류보다 늘어나면 늘릴 것
+	for (uint8 i = 0; i < static_cast<uint8>(5); ++i)
+	{
+		EZombieType ZombieType = static_cast<EZombieType>(i);
+		m_ActiveZombies.Add(ZombieType, {});
+	}
 }
 
 void UC_ZombieManager::OnWorldBeginPlay()
@@ -206,15 +213,6 @@ bool UC_ZombieManager::ReturnZombieToPool(AC_Zombie* _Zombie)
 		ActiveSet->Remove(_Zombie);
 	}
 
-	// NurseZombie는 전용 활성목록에서도 제거
-	if (ZombieType == EZombieType::NurseZombie)
-	{
-		if (AC_NurseZombie* NurseZombie = Cast<AC_NurseZombie>(_Zombie))
-		{
-			m_ActiveNurseZombies.Remove(NurseZombie);
-		}
-	}
-
 	// 타입별 풀에 다시 대기 등록
 	pPool.Add(_Zombie);
 
@@ -251,25 +249,14 @@ AC_Zombie* UC_ZombieManager::SpawnZombieFromPool(EZombieType _ZombieType, const 
 
 	// 활성화 성공 후에만 풀에서 제거
 	if (!Zombie->ActivateFromPool(_SpawnTransform))
-	{
 		return nullptr;
-	}
 
 	// 대기 풀에서 제거
 	pPool->Pop();
 
 	// 필드 활성 목록에 등록
-	m_ActiveZombies.FindOrAdd(_ZombieType).Add(Zombie);
-
-	// NurseZombie 라면 전용 활성 목록에도 등록
-	if (_ZombieType == EZombieType::NurseZombie)
-	{
-		if (AC_NurseZombie* NurseZombie = Cast<AC_NurseZombie>(Zombie))
-		{
-			m_ActiveNurseZombies.Add(NurseZombie);
-		}
-	}
-
+	m_ActiveZombies[_ZombieType].Add(Zombie);
+	
 	return Zombie;
 }
 

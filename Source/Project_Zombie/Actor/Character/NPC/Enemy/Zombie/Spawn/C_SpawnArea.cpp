@@ -162,6 +162,8 @@ bool AC_SpawnArea::IsSpawnLocationBlocked(const FVector& _CapsuleCenter, float _
 	// 좀비와 같은 크기의 캡슐 충돌 형태 생성
 	const FCollisionShape CapsuleShape = FCollisionShape::MakeCapsule(_CapsuleRadius, _CapsuleHalfHeight);
 
+	DrawDebugCapsule(GetWorld(), _CapsuleCenter, _CapsuleHalfHeight, _CapsuleRadius, FQuat::Identity, FColor::Red, true);
+	
 	FCollisionQueryParams QueryParams;
 
 	// SpawnArea 자기 자신은 검사 제외
