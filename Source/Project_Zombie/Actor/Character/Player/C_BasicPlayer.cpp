@@ -1108,7 +1108,7 @@ void AC_BasicPlayer::ApplyPlayerState()
 	}
 }
 
-void AC_BasicPlayer::OnRep_PlayerState()
+void AC_BasicPlayer::OnRep_EPlayerState()
 {
 	ApplyPlayerState();
 }
