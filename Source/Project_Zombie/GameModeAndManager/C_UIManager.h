@@ -71,6 +71,8 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	UC_InventoryWidget* m_InventoryWidget{};
 	
+	
+	
 private:
 	
 	TArray<FLocalDebugMessage> m_DebugMessages{};

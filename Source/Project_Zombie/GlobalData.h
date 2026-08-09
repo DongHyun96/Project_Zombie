@@ -702,7 +702,7 @@ struct FZombieTypeSpawnSetting
 public:
     // 스폰할 좀비 타입
     UPROPERTY(EditAnywhere, BlueprintReadOnly)
-    EZombieType ZombieType;
+    EZombieType ZombieType{};
 
     // 다른 타입과 비교한 스폰 선택 가중치
     // 숫자가 높을수록 선택될 가능성이 높음
