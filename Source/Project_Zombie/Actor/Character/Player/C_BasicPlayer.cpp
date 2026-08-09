@@ -1041,6 +1041,8 @@ void AC_BasicPlayer::ApplyPlayerState()
 			MovementComponent->SetMovementMode(MOVE_Walking);
 		}
 
+		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		
 		// 현재 자세에 맞는 이동 속도 적용
 		ApplyMovementSpeed();
 		break;
@@ -1055,6 +1057,7 @@ void AC_BasicPlayer::ApplyPlayerState()
 	{
 		MovementComponent->StopMovementImmediately();
 		MovementComponent->DisableMovement();
+		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		break;
 	}
 	case EPlayerState::GettingUp:
