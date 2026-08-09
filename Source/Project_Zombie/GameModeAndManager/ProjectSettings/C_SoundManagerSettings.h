@@ -22,11 +22,15 @@ public:
 	}
 
 public:
-	UPROPERTY(Config, EditAnywhere, Category = "GameBGM")
-	TSoftObjectPtr<USoundBase> m_GameBGM;
 
 	UPROPERTY(Config, EditAnywhere, Category = "SoundMix")
 	TSoftObjectPtr<USoundMix> m_GameSoundMix;
+
+	UPROPERTY(Config, EditAnywhere, Category = "SoundClass")
+	TSoftObjectPtr<USoundClass> m_BGMSoundClass;
+
+	UPROPERTY(Config, EditAnywhere, Category = "SoundClass")
+	TSoftObjectPtr<USoundClass> m_SFXSoundClass;
 
 	// 우선순위 만들때 필요
 	//UPROPERTY(Config, EditAnywhere, Category = "SoundClass")

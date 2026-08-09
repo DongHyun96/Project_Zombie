@@ -17,20 +17,30 @@ class PROJECT_ZOMBIE_API UC_SoundManager : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
-	void SetFootstepVolume(float _Volume);
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+	virtual void Deinitialize() override;
 
-	void PlayBGM();
-	void StopBGM();
+public:
+
+	UFUNCTION(BlueprintCallable, Category = "SoundManager")
+	void SetBGMVolume(float _Volume);
+
+	UFUNCTION(BlueprintCallable, Category = "SoundManager")
+	void SetSFXVolume(float _Volume);
+
+private:
+	// SoundMix 가 중복 Push 되는것을 방지
+	void EnsureSoundMixPushed();
 
 private:
 	UPROPERTY()
 	TObjectPtr<USoundMix> m_GameSoundMix;
 
 	UPROPERTY()
-	TObjectPtr<USoundClass> m_FootstepSoundClass;
+	TObjectPtr<USoundClass> m_BGMSoundClass;
 
-private:
 	UPROPERTY()
-	UAudioComponent* m_BGMAudioComponent;
+	TObjectPtr<USoundClass> m_SFXSoundClass;
 
+	bool m_bSoundMixPushed = false;
 };
