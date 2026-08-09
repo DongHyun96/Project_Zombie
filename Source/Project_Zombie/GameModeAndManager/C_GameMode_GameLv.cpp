@@ -28,6 +28,14 @@ AC_GameMode_GameLv::AC_GameMode_GameLv()
 void AC_GameMode_GameLv::BeginPlay()
 {
     Super::BeginPlay();
+	
+	APlayerController* PC = GetWorld()->GetFirstPlayerController();
+	if (PC)
+	{
+		PC->SetInputMode(FInputModeGameOnly());
+		PC->SetShowMouseCursor(false);
+	}
+	else UC_Util::Print("[AC_GameMode_GameLv::BeginPlay] : Failed to get PC", FColor::Red, 10.f);
 
     if (m_ZombieManagerClass)
        m_ZombieManager = NewObject<UC_ZombieManager>(this, m_ZombieManagerClass);

@@ -225,6 +225,8 @@ void AC_BasicPlayer::BeginPlay()
 {
 	Super::BeginPlay();
 
+	UC_Util::Print("Player BeginPlay ", FColor::Red, 10.f);
+	
 	// InteractionComponent 활성화
 	m_InteractionComponent->SetupInteraction(m_InteractionSphere);
 
