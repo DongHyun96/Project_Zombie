@@ -64,7 +64,7 @@ void AC_GameMode_GameLv::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	if (!m_PointTowerManager->WorldTick(DeltaSeconds))
+	if (m_PointTowerManager && !m_PointTowerManager->WorldTick(DeltaSeconds))
 		SetActorTickEnabled(false);
 }
 
