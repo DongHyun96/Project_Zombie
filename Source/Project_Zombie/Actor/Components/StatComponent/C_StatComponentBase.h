@@ -266,7 +266,7 @@ private:
 	// 게임 오버 시, 피격을 당해도 Immortal로 인하여 1.f 이하로 피 떯어지지 않게끔 
 	bool m_bIsImmortal{};
 	
-
+public:
 	// Stat의 Grade가 바뀔 때, 호출
 	FOnStatGradeUpdated OnStatGradeUpdatedDelegate{};
 };

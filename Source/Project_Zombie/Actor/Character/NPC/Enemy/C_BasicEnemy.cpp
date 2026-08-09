@@ -435,15 +435,10 @@ void AC_BasicEnemy::OnRep_DeadData()
 
 	// 풀에서 다시 활성화 된 경우
 	StopAnimMontage();
-
-	
-	// 서버가 선택한 죽음 몽타주를 클라이언트에서도 재생
-	ApplyDeadVisual(m_DeadRepData.DeadMontageIndex);
 	
 	// 클라에서도 죽은 좀비의 Collision 꺼주기.
 	SetActorEnableCollision(false);
 }
-
 
 void AC_BasicEnemy::FinishDead()
 {
