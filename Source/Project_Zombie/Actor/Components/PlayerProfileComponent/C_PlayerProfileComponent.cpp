@@ -3,9 +3,11 @@
 
 #include "C_PlayerProfileComponent.h"
 
+#include "OnlineSubsystem.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
-#include "Actor/Components/C_PingSystemComponent.h"
+#include "GameFramework/PlayerState.h"
 #include "GameModeAndManager/C_UIManager.h"
+#include "Interfaces/OnlineIdentityInterface.h"
 #include "Net/UnrealNetwork.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
 #include "UI/MainHUD/PlayerStatHUD/C_OtherPlayerStatWidget.h"
@@ -51,6 +53,28 @@ void UC_PlayerProfileComponent::BeginPlay()
 			false
 		);
 	}
+	else // 자기자신 이름 초기화
+	{
+		APlayerState* PlayerState = m_OwnerPlayer->GetPlayerState();
+		if (!PlayerState)
+			return;
+
+		const FUniqueNetIdRepl& UniqueNetId = PlayerState->GetUniqueId();
+		if (!UniqueNetId.IsValid())
+			return;
+
+		IOnlineSubsystem* OnlineSubsystem = IOnlineSubsystem::Get();
+		if (!OnlineSubsystem)
+			return;
+
+		IOnlineIdentityPtr IdentityInterface = OnlineSubsystem->GetIdentityInterface();
+		if (!IdentityInterface.IsValid())
+			return;
+
+		m_PlayerName = IdentityInterface->GetPlayerNickname(*UniqueNetId);
+
+		if (m_PlayerName.IsEmpty()) m_PlayerName = TEXT("Anonymous");
+	}
 }
 
 void UC_PlayerProfileComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -66,7 +90,13 @@ void UC_PlayerProfileComponent::OnRep_PlayerName()
 	if (!m_OwnerPlayer) return;
 	
 	if (!m_OwnerPlayer->IsLocallyControlled())
-		UI_MANAGER(GetWorld())->GetMainHUDWidget()->GetOtherPlayerStatWidget()->RegisterOtherPlayer(m_OwnerPlayer);	
+	{
+		GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
+		{
+			if (UI_MANAGER(GetWorld()))
+				UI_MANAGER(GetWorld())->GetMainHUDWidget()->GetOtherPlayerStatWidget()->RegisterOtherPlayer(m_OwnerPlayer);
+		});	
+	}
 }
 
 void UC_PlayerProfileComponent::OnRep_PlayerSelectedColor()
@@ -74,6 +104,12 @@ void UC_PlayerProfileComponent::OnRep_PlayerSelectedColor()
 	if (!m_OwnerPlayer) return;
 	
 	if (!m_OwnerPlayer->IsLocallyControlled())
-		UI_MANAGER(GetWorld())->GetMainHUDWidget()->GetOtherPlayerStatWidget()->RegisterOtherPlayer(m_OwnerPlayer);
+	{
+		GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
+		{
+			if (UI_MANAGER(GetWorld()))
+				UI_MANAGER(GetWorld())->GetMainHUDWidget()->GetOtherPlayerStatWidget()->RegisterOtherPlayer(m_OwnerPlayer);
+		});	
+	}
 }
 

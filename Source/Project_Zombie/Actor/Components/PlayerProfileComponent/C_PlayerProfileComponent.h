@@ -46,7 +46,7 @@ protected:
 
 	// 게임 시작 시, 플레이어가 지정한 이름 (TODO : Dongman 지우기)
 	UPROPERTY(ReplicatedUsing = OnRep_PlayerName, VisibleAnywhere, BlueprintReadOnly, Category = "PlayerProfile", meta = (DisplayName = "PlayerName"))
-	FString m_PlayerName = "Dongman";
+	FString m_PlayerName = "Anonymous";
 
 	UPROPERTY(ReplicatedUsing = OnRep_PlayerSelectedColor, VisibleAnywhere, BlueprintReadOnly, Category = "PlayerProfile", meta = (DisplayName = "PlayerSelectedColor"))
 	FColor m_PlayerSelectedColor{};

@@ -112,4 +112,8 @@ private:
 	// UI Display 처리 또한 이 값으로 진행
 	int32 m_GameStartTimeLeftInt{};
 	
+private:
+	
+	bool m_GameStartTimerSet{};
+	
 };
