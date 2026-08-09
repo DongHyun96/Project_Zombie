@@ -120,6 +120,13 @@ void UC_StatComponentBase::BeginPlay()
 
 void UC_StatComponentBase::InitStat(bool _bModifyForEditor)
 {
+	// 
+	if (!m_Stats.IsEmpty())
+	{
+		UE_LOG(LogTemp, Log, TEXT("[StatComp] 이미 로드된 스탯 데이터가 존재하므로 테이블 초기화를 스킵합니다. (스탯 수: %d개)"), m_Stats.Num());
+		return;
+	}
+	
 	// 테이블과 행 이름이 설정되어 있어야 한다
 	if (!m_Table || m_RowName.IsNone())
 	{

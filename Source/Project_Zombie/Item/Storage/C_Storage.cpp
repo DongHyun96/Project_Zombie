@@ -6,6 +6,7 @@
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/Components/C_InvenComponent.h"
 #include "Components/SphereComponent.h"
+#include "GameModeAndManager/C_ItemManager.h"
 #include "GameModeAndManager/C_UIManager.h"
 #include "UI/InvenUI/C_InventoryGridWidget.h"
 #include "UI/InvenUI/C_InventoryWidget.h"
@@ -41,6 +42,41 @@ void AC_Storage::BeginPlay()
 		SphereComp->OnComponentEndOverlap.AddDynamic(this, &AC_Storage::OnOverlapEnd);
 	}
 	
+	if (HasAuthority() && InvenComp)
+	{
+		// 인벤토리 매니저 서브시스템 가져오기
+		if (UC_ItemManager* ItemManager = GetGameInstance()->GetSubsystem<UC_ItemManager>())
+		{
+			// 인벤토리의 현재 아이템 총 개수만큼 루프
+			const TArray<FInventoryEntry>& Items = InvenComp->GetInventoryItems();
+			for (int32 i = 0; i < Items.Num(); ++i)
+			{
+				// 빈 슬롯이거나 이름이 없다면 패스
+				if (Items[i].ItemRowName.IsNone()) continue;
+
+				// 이미 유효한 CustomData를 가지고 있다면 패스
+				if (Items[i].CustomData.IsValid()) continue;
+
+				// 인벤토리 내부 원본 데이터의 포인터 주소를 긁어옵니다.
+				FInventoryEntry* RawItemPtr = InvenComp->GetSlotDataPtr(i);
+				if (RawItemPtr)
+				{
+					// ItemManager에서 아이템 테이블 기본 데이터를 조회
+					if (const FItemData* BaseData = ItemManager->GetItemData<FItemData>(EItemTableType::General, RawItemPtr->ItemRowName))
+					{
+						// ❌ 누락되었던 기본 CustomData를 인스턴스 구조체로 생성하여 주입!
+						RawItemPtr->CustomData = FInstancedStruct::Make(BaseData->CustomData);
+
+						// 🔄 Fast Array Container 상태를 더티 마킹하여 클라이언트에 강제 복제 요청
+						InvenComp->MarkSlotDirty(i);
+
+						UE_LOG(LogTemp, Log, TEXT("📦 [Storage Init] 슬롯 [%d]의 '%s' 아이템 CustomData 주입 및 동기화 완료!"), 
+							i, *RawItemPtr->ItemRowName.ToString());
+					}
+				}
+			}
+		}
+	}
 }
 
 void AC_Storage::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
