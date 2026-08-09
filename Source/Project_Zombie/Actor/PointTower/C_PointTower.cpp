@@ -76,27 +76,11 @@ void AC_PointTower::BeginPlay()
 	if (HasAuthority())
 	{
 		// 서버 환경에서의 PointTower만 PointTowerManager(서버 쪽에만 존재) 에 등록 처리를 할 것임
-		//POINT_TOWER_MANAGER(this)->RegisterPointTower(this);
-		
-		// 1. GameMode를 안전하게 가져와 캐스팅합니다.
-		if (AC_GameMode_GameLv* GameMode = Cast<AC_GameMode_GameLv>(GetWorld()->GetAuthGameMode()))
+		// 등록을 한 Tick 미룸
+		GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
 		{
-			// 2. GameMode 안의 매니저가 유효한지 널 체크를 합니다.
-			if (UC_PointTowerManager* TowerManager = GameMode->GetPointTowerManager())
-			{
-				TowerManager->RegisterPointTower(this);
-			}
-			else
-			{
-				// 매니저가 아직 생성되지 않은 타이밍이라면 로그를 남깁니다.
-				UE_LOG(LogTemp, Error, TEXT("[AC_PointTower::BeginPlay] PointTowerManager is NULL!"));
-			}
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("[AC_PointTower::BeginPlay] GameMode is NULL or Invalid Class!"));
-		}
-		
+			if (POINT_TOWER_MANAGER(this)) POINT_TOWER_MANAGER(this)->RegisterPointTower(this);
+		});
 	}
 
 	if (m_WorldPingActorClass)

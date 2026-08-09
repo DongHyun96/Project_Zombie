@@ -44,17 +44,9 @@ bool UC_PointTowerManager::WorldTick(float _DeltaTime)
 	const int32 CurrentSecLeftInt = FMath::CeilToInt(LeftTime);
 	if (CurrentSecLeftInt != m_GameStartTimeLeftInt)
 	{
+		if (GAME_LV_GAME_MODE(this) && GAME_LV_GAME_MODE(this)->GetGameOverChecker())
+			GAME_LV_GAME_MODE(this)->GetGameOverChecker()->Multicast_UpdateGameStartLeftTime(CurrentSecLeftInt);
 		
-		AC_GameMode_GameLv* GameLvMode = GAME_LV_GAME_MODE(this);
-		
-		if (!GameLvMode) return true;
-		
-		AC_GameOverChecker* Checker = GameLvMode->GetGameOverChecker();
-		
-		if (!Checker) return true;
-		
-		Checker->Multicast_UpdateGameStartLeftTime(CurrentSecLeftInt);
-		//GAME_LV_GAME_MODE(this)->GetGameOverChecker()->Multicast_UpdateGameStartLeftTime(CurrentSecLeftInt);
 		m_GameStartTimeLeftInt = CurrentSecLeftInt;
 		
 		/*if (m_GameStartTimeLeftInt <= 0) // 게임 시작 처리 (는 알아서 Timer에 의해서 시작됨)
