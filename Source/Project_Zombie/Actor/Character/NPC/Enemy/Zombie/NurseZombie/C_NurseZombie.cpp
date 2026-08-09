@@ -38,9 +38,6 @@ void AC_NurseZombie::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	if (HasAuthority())
-		ZOMBIE_MANAGER(this)->AddNurseZombieToActivePool(this); // TODO : 이 라인 지워버리기 (Level 배치한 테스트용 처리 / 실질적인 Spawn 처리는 ZombieManager에서 할 것) 
-	
 	// ToggleHealingAura(false);
 	m_HealingAuraCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	m_HealingAuraEffectNG->DeactivateImmediate();

@@ -44,7 +44,9 @@ bool UC_PointTowerManager::WorldTick(float _DeltaTime)
 	const int32 CurrentSecLeftInt = FMath::CeilToInt(LeftTime);
 	if (CurrentSecLeftInt != m_GameStartTimeLeftInt)
 	{
-		GAME_LV_GAME_MODE(this)->GetGameOverChecker()->Multicast_UpdateGameStartLeftTime(CurrentSecLeftInt);
+		if (GAME_LV_GAME_MODE(this) && GAME_LV_GAME_MODE(this)->GetGameOverChecker())
+			GAME_LV_GAME_MODE(this)->GetGameOverChecker()->Multicast_UpdateGameStartLeftTime(CurrentSecLeftInt);
+		
 		m_GameStartTimeLeftInt = CurrentSecLeftInt;
 		
 		/*if (m_GameStartTimeLeftInt <= 0) // 게임 시작 처리 (는 알아서 Timer에 의해서 시작됨)
@@ -138,11 +140,8 @@ const FZombieWaveSetting* UC_PointTowerManager::GetCurrentWaveSetting() const
 
 bool UC_PointTowerManager::RegisterPointTower(AC_PointTower* _PointTower)
 {
-	PRINT_LOCAL(GetWorld(), "[UC_PointTowerManager::RegisterPointTower]", FColor::Red, 10.f);
-	
 	// 새로운 Sequence 신규 PointTower, size를 늘림과 동시에 넣어줌
-	if (!m_PointTowers.IsValidIndex(_PointTower->m_ActivateSequenceIdx) ||
-		m_PointTowers[_PointTower->m_ActivateSequenceIdx].IsEmpty())
+	if (!m_PointTowers.IsValidIndex(_PointTower->m_ActivateSequenceIdx))
 	{
 		m_PointTowers.SetNum(_PointTower->m_ActivateSequenceIdx + 1);
 		m_PointTowers[_PointTower->m_ActivateSequenceIdx].Add(_PointTower);
