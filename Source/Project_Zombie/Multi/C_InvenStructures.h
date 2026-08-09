@@ -30,6 +30,10 @@ struct FInventoryContainer : public FFastArraySerializer
 	void PreReplicatedRemove(const TArrayView<int32> RemovedIndices, int32 FinalDelta) {}
 	void PostReplicatedAdd(const TArrayView<int32> AddedIndices, int32 FinalDelta);
 	void PostReplicatedChange(const TArrayView<int32> ChangedIndices, int32 FinalDelta);
+	
+	//UFUNCTION(BlueprintCallable)
+	//TArray<FInventoryEntry>
+	
 };
 
 // 필수 매크로 등록

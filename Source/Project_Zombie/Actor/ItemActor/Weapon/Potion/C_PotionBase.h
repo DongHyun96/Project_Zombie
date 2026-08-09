@@ -22,6 +22,12 @@ public:
 	// 서버와 사용자만 알고 있으면 된다. 혹은 한쪽만 알고 나중에 알려주는 방식.
 	UFUNCTION(BlueprintCallable, Category = "Potion|AnimNotify")
 	void OnAction();
+	
+protected:
+	// 서버에서 실제 검증 및 힐/개수 감소를 처리할 Server RPC 정의
+	UFUNCTION(Server, Reliable)
+	void Server_OnAction();
+	
 public:
 	virtual bool InitializeItemActor(const FWeaponData* InRawData) override;
 

@@ -120,6 +120,13 @@ void UC_StatComponentBase::BeginPlay()
 
 void UC_StatComponentBase::InitStat(bool _bModifyForEditor)
 {
+	// 
+	if (!m_Stats.IsEmpty())
+	{
+		UE_LOG(LogTemp, Log, TEXT("[StatComp] 이미 로드된 스탯 데이터가 존재하므로 테이블 초기화를 스킵합니다. (스탯 수: %d개)"), m_Stats.Num());
+		return;
+	}
+	
 	// 테이블과 행 이름이 설정되어 있어야 한다
 	if (!m_Table || m_RowName.IsNone())
 	{
@@ -449,7 +456,46 @@ void UC_StatComponentBase::IncreaseCurHP(float _IncreaseAmount)
 
 bool UC_StatComponentBase::Local_IncreaseCurHP(float _IncreaseAmount)
 {
-	if (_IncreaseAmount < 0.f) return false;
+	FString NetRoleStr = m_OwnerCharacter->HasAuthority() ? TEXT("Server") : TEXT("Client");
+
+	if (_IncreaseAmount < 0.f)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[%s] Local_IncreaseCurHP Rejected - Invalid Amount: %f"), *NetRoleStr, _IncreaseAmount);
+		return false;
+	}
+    
+	const float CurMaxHP = GetStat(StatName::MaxHP);
+	float* pCurHP = m_Stats.Find(StatName::CurHP);
+    
+	if (!pCurHP)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[%s] Local_IncreaseCurHP Failed - StatName::CurHP NOT FOUND in m_Stats map!"), *NetRoleStr);
+		return false;
+	}
+
+	float BeforeHP = *pCurHP;
+	if (BeforeHP >= CurMaxHP)
+	{
+		UE_LOG(LogTemp, Display, TEXT("[%s] Local_IncreaseCurHP Bypassed - Already Full HP (Cur: %f, Max: %f)"), *NetRoleStr, BeforeHP, CurMaxHP);
+		return false; 
+	}
+
+	*pCurHP = FMath::Min(*pCurHP + _IncreaseAmount, CurMaxHP);
+	float AfterHP = *pCurHP;
+
+	UE_LOG(LogTemp, Warning, TEXT("[%s] Local_IncreaseCurHP SUCCESS - Amount: %f | HP Change: %f -> %f (Max: %f)"), 
+		   *NetRoleStr, _IncreaseAmount, BeforeHP, AfterHP, CurMaxHP);
+
+	OnIncreaseCurHPDelegate.Broadcast(m_OwnerCharacter);
+    
+	if (*pCurHP >= CurMaxHP) 
+		OnCurHPReachedFullDelegate.Broadcast(m_OwnerCharacter);
+
+	if (CurMaxHP != 0.f)
+		OnCurHPUpdatedDelegate.Broadcast(*pCurHP / CurMaxHP);
+    
+	return true;
+	/*if (_IncreaseAmount < 0.f) return false;
 	
 	const float CurMaxHP = GetStat(StatName::MaxHP);
 
@@ -466,7 +512,7 @@ bool UC_StatComponentBase::Local_IncreaseCurHP(float _IncreaseAmount)
 	if (CurMaxHP != 0.f)
 		OnCurHPUpdatedDelegate.Broadcast(*pCurHP / CurMaxHP);
 	
-	return true;
+	return true;*/
 }
 
 void UC_StatComponentBase::Server_IncreaseCurHP_Implementation(float _IncreaseAmount)

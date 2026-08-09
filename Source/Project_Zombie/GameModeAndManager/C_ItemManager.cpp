@@ -13,6 +13,102 @@ void UC_ItemManager::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
 
+    UE_LOG(LogTemp, Log, TEXT("=================================================="));
+    UE_LOG(LogTemp, Log, TEXT("[ItemManager] Initialize Started. Checking Config Settings..."));
+
+    const UC_ItemManagerSettings* Settings = GetDefault<UC_ItemManagerSettings>();
+    if (!Settings) 
+    {
+        UE_LOG(LogTemp, Error, TEXT("❌ CRITICAL: [ItemManager] UC_ItemManagerSettings 획득 실패 (GetDefault NULL)"));
+        return;
+    }
+
+    // Helper Lambda: SoftObjectPtr 동기 로드 후 Map 등록 및 로그 출력
+    auto RegisterTable = [this](EItemTableType Type, const TSoftObjectPtr<UDataTable>& SoftTablePtr, const FString& TableTypeName)
+    {
+        if (SoftTablePtr.IsNull()) 
+        {
+            UE_LOG(LogTemp, Warning, TEXT("⚠️ [ItemManager] %s Table Config Path is Empty (IsNull)"), *TableTypeName);
+            return;
+        }
+
+        if (UDataTable* LoadedTable = SoftTablePtr.LoadSynchronous())
+        {
+            CachedItemTables.Add(Type, LoadedTable);
+            UE_LOG(LogTemp, Log, TEXT("✅ SUCCESS: [ItemManager] %s Table Loaded! (Rows: %d) | Path: %s"), 
+                   *TableTypeName, LoadedTable->GetRowNames().Num(), *SoftTablePtr.ToString());
+        }
+        else
+        {
+            UE_LOG(LogTemp, Error, TEXT("❌ FAILED: [ItemManager] %s Table LoadSynchronous FAILED! | Path: %s"), 
+                   *TableTypeName, *SoftTablePtr.ToString());
+        }
+    };
+
+    // 1. 카테고리별 기본 아이템 테이블 로드 체크
+    RegisterTable(EItemTableType::General, Settings->GeneralItemDataTableConfig, TEXT("General"));
+    RegisterTable(EItemTableType::Gun, Settings->GunDataTableConfig, TEXT("Gun"));
+    RegisterTable(EItemTableType::Melee, Settings->MeleeDataTableConfig, TEXT("Melee"));
+    RegisterTable(EItemTableType::Throwable, Settings->ThrowableDataTableConfig, TEXT("Throwable"));
+    RegisterTable(EItemTableType::Potion, Settings->PotionDataTableConfig, TEXT("Potion"));
+
+    // 2. 단독 변수 강화 데이터 테이블 체크 (현재 크리티컬 터진 부분들)
+    if (!Settings->WeaponUpgradePerValueTableConfig.IsNull())
+    {
+        WeaponUpgradeData = Settings->WeaponUpgradePerValueTableConfig.LoadSynchronous();
+        if (WeaponUpgradeData)
+        {
+            UE_LOG(LogTemp, Log, TEXT("✅ SUCCESS: [ItemManager] WeaponUpgradeData Loaded! (Rows: %d)"), WeaponUpgradeData->GetRowNames().Num());
+        }
+        else
+        {
+            UE_LOG(LogTemp, Error, TEXT("❌ FAILED: [ItemManager] WeaponUpgradeData LoadSynchronous FAILED!"));
+        }
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("⚠️ [ItemManager] WeaponUpgradePerValueTableConfig is Empty"));
+    }
+    
+    // 3. 아이템 강화 재료 데이터 테이블 체크
+    if (!Settings->WeaponUpgradeCostTableConfig.IsNull())
+    {
+        ItemUpgradeCostData = Settings->WeaponUpgradeCostTableConfig.LoadSynchronous();
+        if (ItemUpgradeCostData)
+        {
+            UE_LOG(LogTemp, Log, TEXT("✅ SUCCESS: [ItemManager] ItemUpgradeCostData Loaded! (Rows: %d)"), ItemUpgradeCostData->GetRowNames().Num());
+        }
+        else
+        {
+            UE_LOG(LogTemp, Error, TEXT("❌ FAILED: [ItemManager] ItemUpgradeCostData LoadSynchronous FAILED!"));
+        }
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("⚠️ [ItemManager] WeaponUpgradeCostTableConfig is Empty"));
+    }
+    
+    // 4. PlayerStatUpgradeData 데이터 테이블 체크
+    if (!Settings->FPlayerStatUpgradeDataTableConfig.IsNull())
+    {
+        PlayerStatUpgradeData = Settings->FPlayerStatUpgradeDataTableConfig.LoadSynchronous();
+        if (PlayerStatUpgradeData)
+        {
+            UE_LOG(LogTemp, Log, TEXT("✅ SUCCESS: [ItemManager] PlayerStatUpgradeData Loaded! (Rows: %d)"), PlayerStatUpgradeData->GetRowNames().Num());
+        }
+        else
+        {
+            UE_LOG(LogTemp, Error, TEXT("❌ FAILED: [ItemManager] PlayerStatUpgradeData LoadSynchronous FAILED!"));
+        }
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("⚠️ [ItemManager] FPlayerStatUpgradeDataTableConfig is Empty"));
+    }
+
+    UE_LOG(LogTemp, Log, TEXT("=================================================="));
+    /*Super::Initialize(Collection);
+
     const UC_ItemManagerSettings* Settings = GetDefault<UC_ItemManagerSettings>();
     if (!Settings) return;
 
@@ -50,7 +146,7 @@ void UC_ItemManager::Initialize(FSubsystemCollectionBase& Collection)
     if (!Settings->FPlayerStatUpgradeDataTableConfig.IsNull())
     {
         PlayerStatUpgradeData = Settings->FPlayerStatUpgradeDataTableConfig.LoadSynchronous();
-    }
+    }*/
 }
 
 void UC_ItemManager::Deinitialize()

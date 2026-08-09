@@ -54,7 +54,14 @@ void UC_StatUpgradeComponent::UpgradeStat(AC_BasicPlayer* InPlayer, const FName&
     // 2. 스탯 증가 및 등급 상승
     if (PSUData->GradeValue.IsValidIndex(curGrade))
     {
-        PlayerStatComp->IncreaseStat(UpStatName, PSUData->GradeValue[curGrade]);
+    	if (UpStatName == StatName::BoostCost)
+    	{
+    		PlayerStatComp->DecreaseStat(UpStatName, PSUData->GradeValue[curGrade]);	
+    	}
+	    else
+	    {
+			PlayerStatComp->IncreaseStat(UpStatName, PSUData->GradeValue[curGrade]);
+	    }
 		PlayerStatComp->IncreaseStatGrade(UpStatName);
     }
 	
