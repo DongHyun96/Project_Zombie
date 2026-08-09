@@ -25,7 +25,9 @@ bool UC_EquipmentItemSlotWidget::NativeOnDrop(const FGeometry& InGeometry, const
 	
 	// 장비 슬롯 타입 일치 검사
 	FInventoryEntry FromEntry = FromInvenComp->GetItemAt(FromSlot);
+	
 	UC_ItemManager* ItemManager = GetWorld()->GetGameInstance()->GetSubsystem<UC_ItemManager>();
+	
 	if (ItemManager)
 	{
 		const FItemData* FromItemData = ItemManager->GetItemData<FItemData>(EItemTableType::General, FromEntry.ItemRowName);
