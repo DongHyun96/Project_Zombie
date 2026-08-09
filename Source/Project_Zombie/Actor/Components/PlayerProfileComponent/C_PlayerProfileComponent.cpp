@@ -3,9 +3,11 @@
 
 #include "C_PlayerProfileComponent.h"
 
+#include "OnlineSubsystem.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
-#include "Actor/Components/C_PingSystemComponent.h"
+#include "GameFramework/PlayerState.h"
 #include "GameModeAndManager/C_UIManager.h"
+#include "Interfaces/OnlineIdentityInterface.h"
 #include "Net/UnrealNetwork.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
 #include "UI/MainHUD/PlayerStatHUD/C_OtherPlayerStatWidget.h"
@@ -32,10 +34,42 @@ void UC_PlayerProfileComponent::BeginPlay()
 		return;
 	}
 	
+	UC_Util::Print("UC_PlayerProfileComponent::BeginPlay", FColor::Cyan, 10.f);
+	
 	// TODO : 이 Test 라인 지울 것 (일단 서버에서 일괄 랜덤 적용한 색상으로 적용)
-	if (m_OwnerPlayer->HasAuthority()) m_PlayerSelectedColor = FColor::MakeRandomColor();
+	if (m_OwnerPlayer->HasAuthority())
+		m_PlayerSelectedColor = FColor::MakeRandomColor();
 	
 	if (!m_OwnerPlayer->IsLocallyControlled())
+	{
+		FTimerHandle Temp{};
+		
+		GetWorld()->GetTimerManager().SetTimer(Temp, [this]()
+		{
+			APlayerState* PlayerState = m_OwnerPlayer->GetPlayerState();
+			if (PlayerState)
+			{
+				m_PlayerName = PlayerState->GetPlayerName();
+
+				if (m_PlayerName.IsEmpty())
+				{
+					UC_Util::Print("Empty PlayerName", FColor::Red, 10.f);
+					m_PlayerName = TEXT("Anonymous");
+				}
+
+				if (!m_OwnerPlayer->IsLocallyControlled())
+				{
+					GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
+					{
+						if (UI_MANAGER(GetWorld()))
+							UI_MANAGER(GetWorld())->GetMainHUDWidget()->GetOtherPlayerStatWidget()->RegisterOtherPlayer(m_OwnerPlayer);
+					});
+				}
+			}
+		}, 1.5f, false);
+	}
+	
+	/*if (!m_OwnerPlayer->IsLocallyControlled())
 	{
 		FTimerHandle TimerHandle{};
 
@@ -50,30 +84,44 @@ void UC_PlayerProfileComponent::BeginPlay()
 			3.f,
 			false
 		);
-	}
+	}*/
+	/*else // 자기자신 이름 초기화
+	{*/
+		
+	// }
 }
 
 void UC_PlayerProfileComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	
 	DOREPLIFETIME(UC_PlayerProfileComponent, m_PlayerSelectedColor);
-	DOREPLIFETIME(UC_PlayerProfileComponent, m_PlayerName);
 }
 
-void UC_PlayerProfileComponent::OnRep_PlayerName()
+/*void UC_PlayerProfileComponent::OnRep_PlayerName()
 {
 	if (!m_OwnerPlayer) return;
 	
 	if (!m_OwnerPlayer->IsLocallyControlled())
-		UI_MANAGER(GetWorld())->GetMainHUDWidget()->GetOtherPlayerStatWidget()->RegisterOtherPlayer(m_OwnerPlayer);	
-}
+	{
+		GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
+		{
+			if (UI_MANAGER(GetWorld()))
+				UI_MANAGER(GetWorld())->GetMainHUDWidget()->GetOtherPlayerStatWidget()->RegisterOtherPlayer(m_OwnerPlayer);
+		});	
+	}
+}*/
 
 void UC_PlayerProfileComponent::OnRep_PlayerSelectedColor()
 {
 	if (!m_OwnerPlayer) return;
 	
 	if (!m_OwnerPlayer->IsLocallyControlled())
-		UI_MANAGER(GetWorld())->GetMainHUDWidget()->GetOtherPlayerStatWidget()->RegisterOtherPlayer(m_OwnerPlayer);
+	{
+		GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
+		{
+			if (UI_MANAGER(GetWorld()))
+				UI_MANAGER(GetWorld())->GetMainHUDWidget()->GetOtherPlayerStatWidget()->RegisterOtherPlayer(m_OwnerPlayer);
+		});	
+	}
 }
 

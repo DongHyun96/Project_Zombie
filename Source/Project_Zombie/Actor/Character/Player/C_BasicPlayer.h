@@ -262,7 +262,7 @@ public:
 	UFUNCTION(Client, Reliable)
 	void Client_NotifyConqueringPointTower(bool _IsCurrentlyConquering);
 	
-	EPlayerState GetPlayerState() const { return m_PlayerState; }
+	EPlayerState GetPlayerMainState() const { return m_PlayerState; }
 	//void SetPlayerState(EPlayerState _NewState) { m_PlayerState = _NewState; }
 	
 	EPlayerPoseState GetPlayerMoveState() const { return m_PlayerPoseState; }

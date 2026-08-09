@@ -49,6 +49,7 @@ void UC_GameOverWidget::ActivateWinningSequence()
 	RankingTextTotalCharacterCount->SetText(FText::FromString(TotalCharacterString));
 	const FString RankingStr = "#" + FString::FromInt(m_Ranking);
 	RankingText->SetText(FText::FromString(RankingStr));
+	RankingTextTopRight->SetText(FText::FromString(FString::FromInt(m_Ranking)));
 
 	KillCountText->SetText(FText::FromString(FString::FromInt(MyPlayer->GetKillCount())));
 

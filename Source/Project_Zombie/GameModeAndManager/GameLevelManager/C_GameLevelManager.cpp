@@ -40,6 +40,6 @@ void UC_GameLevelManager::AddPlayer(AC_BasicPlayer* _Player)
 bool UC_GameLevelManager::HasAllPlayerDead() const
 {
 	for (AC_BasicPlayer* Player : m_Players)
-		if (Player->GetPlayerState() != EPlayerState::Dead) return false;
+		if (Player->GetPlayerMainState() != EPlayerState::Dead) return false;
 	return true;
 }

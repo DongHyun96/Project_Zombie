@@ -18,12 +18,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	class USphereComponent*		m_Sphere;
 
-	UPROPERTY(VisibleAnywhere, Category = "Components")
-	class UNiagaraComponent*	m_NiagaraCom; // 나이아가라 재생 컴포넌트
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Niagara")
-	class UNiagaraSystem*		m_PoolEffect; // 장판 시각효과 이펙트
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill")
 	class AC_BasicEnemy*		m_SkillUser; // 장판 생성자
 

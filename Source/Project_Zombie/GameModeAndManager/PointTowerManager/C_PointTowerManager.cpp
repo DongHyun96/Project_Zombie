@@ -12,6 +12,8 @@
 #include "GameModeAndManager/C_UIManager.h"
 #include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 #include "Kismet/GameplayStatics.h"
+#include "UI/MainHUD/C_GameMainHUD.h"
+#include "UI/MainHUD/InformWidget/C_InformWidget.h"
 #include "Utility/C_Util.h"
 
 UC_PointTowerManager::UC_PointTowerManager()
@@ -22,12 +24,6 @@ UC_PointTowerManager::UC_PointTowerManager()
 void UC_PointTowerManager::OnWorldBeginPlay()
 {
 	m_CurrentSequenceIndex = 0;
-	
-	// 거점 활성화까지 여유시간을 줌 (플레이어 기다리기 처리 등)
-	GetWorld()->GetTimerManager().SetTimer
-	(
-		m_FirstPointOpenWaitTimerHandle, this, &UC_PointTowerManager::StartActivateCurrentPointsSequence, 20.f, false
-	);
 }
 
 bool UC_PointTowerManager::WorldTick(float _DeltaTime)
@@ -35,7 +31,7 @@ bool UC_PointTowerManager::WorldTick(float _DeltaTime)
 	// 자체 제작 Tick (GameMode의 Tick에서 호출 걸어둠)
 
 	// 게임 시작까지 기다리기 (다른 플레이어 접속 등을 기다리는 이유도 있다)
-	// TODO : 움직이지 못하게 처리를 해버릴까 생각 중
+	// 실질적으로 PointTower가 하나라도 존재하는 맵이여야 실제로 타이밍 발동처리되게끔 함
 	if (!GetWorld()->GetTimerManager().IsTimerActive(m_FirstPointOpenWaitTimerHandle)) return false;
 	
 	float LeftTime = GetWorld()->GetTimerManager().GetTimerRemaining(m_FirstPointOpenWaitTimerHandle);
@@ -145,6 +141,20 @@ bool UC_PointTowerManager::RegisterPointTower(AC_PointTower* _PointTower)
 	{
 		m_PointTowers.SetNum(_PointTower->m_ActivateSequenceIdx + 1);
 		m_PointTowers[_PointTower->m_ActivateSequenceIdx].Add(_PointTower);
+
+		// 포인트 타워가 현재 레벨에 하나라도 존재하는 상황 -> 만약 게임 시작까지 남은 시간 Timer등록을 하지 않은 상황이라면, 해당 Timer UI 띄우기 처리
+		// 거점 활성화까지 여유시간을 줌 (플레이어 기다리기 처리 등)
+		if (!m_GameStartTimerSet)
+		{
+			GetWorld()->GetTimerManager().SetTimer
+			(
+				m_FirstPointOpenWaitTimerHandle, this, &UC_PointTowerManager::StartActivateCurrentPointsSequence, 20.f, false
+			);
+			
+			Multicast_ShowGameStartPanel();
+			m_GameStartTimerSet = true;
+		}
+		
 		return true;
 	}
 
@@ -262,4 +272,12 @@ TArray<AC_SpawnArea*> UC_PointTowerManager::GetCurrentSequenceSpawnAreas() const
 	}
 
 	return Result;
+}
+
+void UC_PointTowerManager::Multicast_ShowGameStartPanel_Implementation()
+{
+	GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
+	{
+		if (UI_MANAGER(GetWorld())) UI_MANAGER(GetWorld())->GetMainHUDWidget()->GetInformWidget()->ToggleGameStartPanel(true);
+	});
 }

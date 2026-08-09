@@ -29,8 +29,9 @@ public class Project_Zombie : ModuleRules
             "OnlineSubsystem",
             "OnlineSubsystemUtils",
             "SteamSockets",
-            "NavigationSystem"
-        });
+            "NavigationSystem",
+			"AdvancedSessions"
+		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });
 
