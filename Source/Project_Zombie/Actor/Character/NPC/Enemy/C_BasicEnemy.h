@@ -6,6 +6,8 @@
 #include "Actor/Character/NPC/C_BasicNPC.h"
 #include "C_BasicEnemy.generated.h"
 
+class UC_EnemySkillData;
+class USoundBase;
 class UC_ItemManager;
 
 /// <summary>
@@ -88,6 +90,16 @@ private: /* 자기 자신을 힐러에게 힐등록할 수 있는 갯수 제한 
 	static const int8 s_MaxHealRequestRegisterCount; // 최대 힐 Register 등록 가능 횟수 (2회(또는 2마리)로 제한)
 	int8 m_HealRequestRegisterCount{}; // 힐 요청 Request 등록 count
 	
+public: /* HitSound 재생 */
+	void PlayCurrentSkillHitSound(const FVector& _Location);
+
+	void PlaySkillHitSound(UC_EnemySkillData* _SkillData, const FVector& _Location);
+	
+protected:
+	UFUNCTION(NetMulticast, Unreliable)
+	void Multicast_PlaySkillHitSound(USoundBase* _Sound, FVector _Location);
+
+
 public:
 	
 	AC_BasicEnemy();

@@ -99,7 +99,7 @@ void AC_Zombie::OnNormalAttackColliderBeginOverlap
 	m_SetNormalAttackColliderEntered.Add(Player);
 
 	// 현재 Skill의 피격량을 구해와서, 대상 Target에게 ApplyDamage 처리
-	UGameplayStatics::ApplyDamage
+	const float AppliedDamage = UGameplayStatics::ApplyDamage
 	(
 		OtherActor,
 		m_SkillCom->GetCurSkillDamage(),
@@ -107,6 +107,12 @@ void AC_Zombie::OnNormalAttackColliderBeginOverlap
 		this,
 		nullptr
 	);
+
+	// 플레이어가 맞았을때 skilldata의 hitsound 재생
+	if (Player && AppliedDamage > 0.f)
+	{
+		PlayCurrentSkillHitSound(Player->GetActorLocation());
+	}
 }
 
 void AC_Zombie::ApplyPoolActiveState()
@@ -174,6 +180,13 @@ void AC_Zombie::OnRep_PoolActive()
 	ApplyPoolActiveState();
 }
 
+void AC_Zombie::OnDead(AC_BasicCharacter* _DeadCharacter)
+{
+	StopChaseSoundLoop();
+
+	Super::OnDead(_DeadCharacter);
+}
+
 bool AC_Zombie::DeactivateForPool()
 {
 	// 풀 상태 변경은 서버에서만 처리
@@ -183,6 +196,9 @@ bool AC_Zombie::DeactivateForPool()
 	// 중복 처리 방지
 	if (!m_bPoolActive)
 		return false;
+
+	// 풀로 들어가기전에 추격음 정지
+	StopChaseSoundLoop();
 
 	m_bPoolActive = false;
 
@@ -294,6 +310,63 @@ void AC_Zombie::PlayIdleSound()
 void AC_Zombie::PlayChaseSound()
 {
 	PlayRandomVoice(m_ChaseSounds);
+}
+
+void AC_Zombie::ScheduleNextChaseSound()
+{
+	if (!HasAuthority())
+		return; 
+
+	if (!m_bChaseSoundLoopActive)
+		return;
+
+	const float RnadomDelay = FMath::FRandRange(m_ChaseSoundMinInterval, m_ChaseSoundMaxInterval);
+
+	GetWorldTimerManager().SetTimer(m_ChaseSoundTimer, this, &AC_Zombie::OnChaseSoundTimer, RnadomDelay, false);
+}
+
+void AC_Zombie::OnChaseSoundTimer()
+{
+	if (!HasAuthority())
+		return;
+
+	if (!m_bChaseSoundLoopActive)
+		return;
+
+	// 추격음 재생
+	Multicast_PlayChaseSound();
+
+	// 다시 다음 랜덤시간 예약
+	ScheduleNextChaseSound();
+}
+
+void AC_Zombie::StartChaseSoundLoop()
+{
+	// AI 및 Timer는 서버에서만 관리
+	if (!HasAuthority())
+		return;
+
+	// 이미 실행 중이면 또 시작하지 않음
+	if (m_bChaseSoundLoopActive)
+		return;
+
+	m_bChaseSoundLoopActive = true;
+
+	// 추격을 처음 시작할 때 바로 한 번 재생
+	Multicast_PlayChaseSound();
+
+	// 다음 추격음 예약
+	ScheduleNextChaseSound();
+}
+
+void AC_Zombie::StopChaseSoundLoop()
+{
+	if (!HasAuthority())
+		return;
+
+	m_bChaseSoundLoopActive = false;
+
+	GetWorldTimerManager().ClearTimer(m_ChaseSoundTimer);
 }
 
 void AC_Zombie::Multicast_PlayChaseSound_Implementation()

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "TimerManager.h"
 #include "../C_BasicEnemy.h"
 #include "C_Zombie.generated.h"
 
@@ -47,6 +48,22 @@ protected: /* 공통 NormalAttack 피격판정 및 피격처리 (해당 기능�
 	// TODO : 각 Zombie에서 생성한 NormalAttackCollider들 존재한다면, 여기에 넣어둘 것
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TArray<UShapeComponent*> m_NormalAttackColliders{};
+
+protected: /* 추격음 루프 관련 */
+
+	// 추격음 반복 타이머
+	FTimerHandle m_ChaseSoundTimer;
+
+	// 현재 추격음 반복 중인지
+	bool m_bChaseSoundLoopActive = false;
+
+	// 추격음 최소 재생 간격
+	UPROPERTY(EditDefaultsOnly, Category = "Sound|Chase")
+	float m_ChaseSoundMinInterval = 3.f;
+
+	// 추격음 최대 재생 간격
+	UPROPERTY(EditDefaultsOnly, Category = "Sound|Chase")
+	float m_ChaseSoundMaxInterval = 5.f;
 
 private:
 	
@@ -122,6 +139,8 @@ protected:
 	/// </summary>
 	void OnRep_PoolActive();
 
+	virtual void OnDead(AC_BasicCharacter* _DeadCharacter) override;
+
 public:
 	bool IsPoolActive() const
 	{
@@ -161,9 +180,21 @@ protected:
 	// 추격 음성
 	virtual void PlayChaseSound();
 
+	// 다음 추격음 예약
+	void ScheduleNextChaseSound();
+
+	// 타이머가 끝났을 때 실행
+	void OnChaseSoundTimer();
+
+
 public:
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_PlayChaseSound();
+
+	void StartChaseSoundLoop();
+
+	void StopChaseSoundLoop();
+
 
 public:	
 	virtual void Tick(float DeltaTime) override;

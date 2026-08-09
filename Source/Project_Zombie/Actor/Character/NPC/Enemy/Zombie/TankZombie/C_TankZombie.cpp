@@ -482,14 +482,17 @@ void AC_TankZombie::HandlePlayerHit(AC_BasicPlayer* _Player)
 										FVector::UpVector * m_Skill->KnockbackUpPower; 
 
 	// SkillData의 Damage 사용
-	UGameplayStatics::ApplyDamage(_Player, m_Skill->Damage, GetController(), this, UDamageType::StaticClass());
+	const float AppliedDamage = UGameplayStatics::ApplyDamage(_Player, m_Skill->Damage, GetController(), this, UDamageType::StaticClass());
 
 	_Player->LaunchCharacter(KnockbackVelocity, true, true);
 
 	// SkillData의 HitSound를 충돌음으로 사용
-	if (IsValid(m_Skill->HitSound))
+	if (AppliedDamage > 0.f)
 	{
-		UGameplayStatics::PlaySoundAtLocation(this, m_Skill->HitSound, _Player->GetActorLocation());
+		PlaySkillHitSound(
+			m_Skill,
+			_Player->GetActorLocation()
+		);
 	}
 }
 
@@ -519,6 +522,13 @@ void AC_TankZombie::HandleEnemyHit(AC_BasicEnemy* _Enemy)
 	// Enemy에게는 데미지 없이 넉백만 적용
 	_Enemy->LaunchCharacter(KnockbackVelocity, true, true);
 
+	// 다른 좀비와 충돌했을 때 전용 사운드
+	if (IsValid(m_EnemyCollisionSound))
+	{
+		Multicast_PlayEnemyCollisionSound(
+			_Enemy->GetActorLocation()
+		);
+	}
 }
 
 void AC_TankZombie::CancelPrepareCharge()
@@ -789,4 +799,17 @@ void AC_TankZombie::Multicast_MoveToJumpMontageSection_Implementation(UAnimMonta
 		return;
 
 	AnimInst->Montage_JumpToSection(_SectionName, _Montage);
+}
+
+void AC_TankZombie::Multicast_PlayEnemyCollisionSound_Implementation(
+	const FVector& _Location)
+{
+	if (!IsValid(m_EnemyCollisionSound))
+		return;
+
+	UGameplayStatics::PlaySoundAtLocation(
+		this,
+		m_EnemyCollisionSound,
+		_Location
+	);
 }

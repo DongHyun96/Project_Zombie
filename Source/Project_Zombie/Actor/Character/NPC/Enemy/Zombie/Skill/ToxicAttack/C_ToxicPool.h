@@ -6,6 +6,9 @@
 #include "GameFramework/Actor.h"
 #include "C_ToxicPool.generated.h"
 
+class UAudioComponent;
+class USoundBase;
+
 UCLASS()
 class PROJECT_ZOMBIE_API AC_ToxicPool : public AActor
 {
@@ -41,6 +44,14 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Pool")
 	float m_DamageInterval = 1.f; // 틱데미지 간격
+
+protected:
+
+	UPROPERTY(VisibleAnywhere, Category = "Sound")
+	TObjectPtr<UAudioComponent> m_AudioCom;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Sound")
+	TObjectPtr<USoundBase> m_LoopSound;
 	
 public:
 	/// <summary>

@@ -5,6 +5,8 @@
 
 #include "NiagaraComponent.h"
 #include "NiagaraSystem.h"
+#include "Actor/Character/NPC/Enemy/Zombie/Skill/C_EnemySkillData.h"
+#include "Actor/Character/NPC/Enemy/Components/SkillComponent/C_EnemySkillComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkillComponent/C_EnemySkillComponent.h"
 #include "Components/StatComponent/C_EnemyStatComponent.h"
@@ -22,8 +24,11 @@
 #include "Utility/C_Util.h"
 #include "Zombie/NurseZombie/C_NurseZombie.h"
 #include "Zombie/Controller/C_ZombieController.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundBase.h"
 
 const int8 AC_BasicEnemy::s_MaxHealRequestRegisterCount = 2;
+
 
 AC_BasicEnemy::AC_BasicEnemy()
 {
@@ -485,4 +490,40 @@ void AC_BasicEnemy::DecreaseHealRequestRegisterCount()
 		UC_Util::Print("From AC_BasicEnemy::DecreaseHealRequestRegisterCount : Wrong HealRequestRegisterCount decrease executed", FColor::Red, 10.f);
 		m_HealRequestRegisterCount = 0;
 	}
+}
+
+void AC_BasicEnemy::PlayCurrentSkillHitSound(const FVector& _Location)
+{
+	if (!IsValid(m_SkillCom))
+		return;
+
+	const TSoftObjectPtr<UC_EnemySkillData> CurSkillData = m_SkillCom->GetCurSkillData();
+	
+	if (!CurSkillData.IsValid())
+		return;
+
+	PlaySkillHitSound(CurSkillData.Get(), _Location);
+}
+
+void AC_BasicEnemy::PlaySkillHitSound(UC_EnemySkillData* _SkillData, const FVector& _Location)
+{
+	// 서버에서만 multicast 요청
+	if (!HasAuthority())
+		return;
+
+	if (!IsValid(_SkillData))
+		return;
+
+	if (!IsValid(_SkillData->HitSound))
+		return;
+
+	Multicast_PlaySkillHitSound(_SkillData->HitSound, _Location);
+}
+
+void AC_BasicEnemy::Multicast_PlaySkillHitSound_Implementation(USoundBase* _Sound, FVector _Location)
+{
+	if (!IsValid(_Sound))
+		return;
+
+	UGameplayStatics::PlaySoundAtLocation(this, _Sound, _Location);
 }

@@ -6,6 +6,8 @@
 #include "Actor/Character/NPC/Enemy/Zombie/C_Zombie.h"
 #include "C_TankZombie.generated.h"
 
+class USoundBase;
+
 UCLASS()
 class PROJECT_ZOMBIE_API AC_TankZombie : public AC_Zombie
 {
@@ -46,6 +48,9 @@ protected:
 
 	// 현재 End 이동시간
 	float m_EndMoveElapsedTime;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Sound")
+	TObjectPtr<USoundBase> m_EnemyCollisionSound;
 
 
 	// ===========================
@@ -179,6 +184,9 @@ protected:
 
 	UFUNCTION(BlueprintCallable, Category = "Charge")
 	void StopCharge();
+
+	UFUNCTION(NetMulticast, Unreliable)
+	void Multicast_PlayEnemyCollisionSound(const FVector& _Location);
 
 public:
 

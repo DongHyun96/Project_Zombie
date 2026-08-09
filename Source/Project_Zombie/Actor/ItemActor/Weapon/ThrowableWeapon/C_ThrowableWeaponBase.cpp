@@ -695,7 +695,7 @@ void AC_ThrowableWeaponBase::Server_ApplyExplosionDamage_Implementation(const TA
 
 		UGameplayStatics::ApplyDamage(
 			Target,						// 데미지 받는 대상
-			300,						// 거리 비례 데미지 계산 // 
+			Damage,						// 거리 비례 데미지 계산 // 
 			InstigatorController,		// 데미지를 입힌 주체
 			this,						// 데미지를 입힌 무기
 			UDamageType::StaticClass()	// 데미지 타입
