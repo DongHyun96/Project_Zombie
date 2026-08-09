@@ -515,7 +515,8 @@ void AC_GunBase::UpdateAmmoInfoHUDForDrawEnd()
 		
 	}
 	
-	UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility(true, m_FireMode, m_CurrentAmmo, m_MaxAmmo);
+	if (UI_MANAGER(GetWorld()))
+		UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility(true, m_FireMode, m_CurrentAmmo, m_MaxAmmo);
 }
 
 void AC_GunBase::PullTrigger()

@@ -60,7 +60,7 @@ void UC_StatComponentBase::LoadStatsFromBackup(const TMap<FName, float>& InStats
 
 void UC_StatComponentBase::Multicast_InitializeAllStats_Implementation(const TArray<FStatSyncPair>& InSyncArray)
 {
-	// 서버가 아닌 클라이언트(Proxy)들만 로컬 값 복구 수행
+	// 1. [클라이언트/프록시] 로컬 맵 데이터 동기화 복구 (서버는 이미 LoadStatsFromBackup에서 데이터가 들어감)
 	if (!GetOwner()->HasAuthority())
 	{
 		m_Stats.Empty();
@@ -73,7 +73,7 @@ void UC_StatComponentBase::Multicast_InitializeAllStats_Implementation(const TAr
 		}
 	}
 
-	// 4. UI 레이어 및 로컬 노티파이 갱신 트리거
+	// 2. [서버 & 클라이언트 공통] 등급(Grade) UI 및 노티파이 트리거 갱신
 	for (const auto& Pair : m_StatGrades)
 	{
 		if (OnStatGradeUpdatedDelegate.IsBound())
@@ -82,7 +82,29 @@ void UC_StatComponentBase::Multicast_InitializeAllStats_Implementation(const TAr
 		}
 	}
     
-	UE_LOG(LogTemp, Log, TEXT("[StatComp] %d개의 스탯 맵 복구 및 동기화 완료 (클라이언트 통과)"), InSyncArray.Num());
+	// 3. [★ 핵심 추가 ★] 서버와 클라이언트 모두 HUD HPBar 비율을 초기화하도록 트리거 뿜어주기
+	const float* pCurHP = m_Stats.Find(StatName::CurHP);
+	const float* pMaxHP = m_Stats.Find(StatName::MaxHP);
+    
+	if (pCurHP && pMaxHP && *pMaxHP > 0.f)
+	{
+		float HPRatio = *pCurHP / *pMaxHP;
+		if (OnCurHPUpdatedDelegate.IsBound())
+		{
+			OnCurHPUpdatedDelegate.Broadcast(HPRatio);
+			UE_LOG(LogTemp, Log, TEXT("[StatComp] HPBar 초기 비율 동기화 완료: %f"), HPRatio);
+		}
+	}
+    
+	// 4. BoostBar도 마찬가지로 초기 갱신이 필요하다면 여기서 같이 처리 가능합니다.
+	const float* pCurBoost = m_Stats.Find(StatName::CurBoost);
+	const float* pMaxBoost = m_Stats.Find(StatName::MaxBoost);
+	if (pCurBoost && pMaxBoost && *pMaxBoost > 0.f)
+	{
+		// 만약 BoostBar도 델리게이트 구조라면 여기서 Broadcast 처리!
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[StatComp] %d개의 스탯 복구 및 전 유저 UI 갱신 완료"), InSyncArray.Num());
 }
 
 void UC_StatComponentBase::OnRegister()
