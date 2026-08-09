@@ -7,6 +7,7 @@
 #include "GameModeAndManager/C_UIManager.h"
 
 AC_ItemUpgradeStation::AC_ItemUpgradeStation()
+	: Super()
 {
 	m_UpgradeComp = CreateDefaultSubobject<UC_ItemUpgradeComponent>(TEXT("ItemUpgradeComp"));
 }

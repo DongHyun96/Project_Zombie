@@ -147,12 +147,6 @@ protected:
 	int32 GetActiveZombieCount(EZombieType _ZombieType) const;
 
 
-public: /* For testing TODO : 이 Block 밑 지울 함수들 모두 지워버릴 것 */
-
-	// TODO : 이 함수 테스트 때문에 넣어둠 지워버릴 것
-	void AddNurseZombieToActivePool(AC_NurseZombie* _NurseZombie) { m_ActiveNurseZombies.Add(_NurseZombie); } 
-
-	
 protected: /* 좀비 스폰 기반 클래스 정보 및 PoolCount 정보 -> TODO : ZombieManager 블루프린트에 해당값 초기화시킬 것 */
 
 	// 스폰시킬 좀비 클래스들
