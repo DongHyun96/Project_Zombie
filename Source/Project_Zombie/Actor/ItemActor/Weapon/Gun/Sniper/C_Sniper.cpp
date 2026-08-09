@@ -71,7 +71,7 @@ void AC_Sniper::AIFire(const FVector& TargetLocation)
 
 		UGameplayStatics::ApplyDamage(
 			HitActor,
-			m_Damage,
+			m_Damage * 0.5f,
 			InstigatorController,
 			Cast<AActor>(ShootingPawn ? (AActor*)ShootingPawn : (AActor*)this),
 			nullptr);

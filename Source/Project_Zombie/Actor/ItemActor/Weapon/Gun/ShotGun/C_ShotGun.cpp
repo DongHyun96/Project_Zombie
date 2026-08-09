@@ -389,7 +389,7 @@ void AC_ShotGun::AIFire(const FVector& TargetLocation)
 
 			AController* InstigatorController = ShootingPawn ? ShootingPawn->GetController() : nullptr;
 			float PelletDamage = m_Damage / static_cast<float>(m_PelletCount);
-			UGameplayStatics::ApplyDamage(HitResult.GetActor(), PelletDamage, InstigatorController, this, nullptr);
+			UGameplayStatics::ApplyDamage(HitResult.GetActor(), PelletDamage * 0.5f, InstigatorController, this, nullptr);
 		}
 	}
 

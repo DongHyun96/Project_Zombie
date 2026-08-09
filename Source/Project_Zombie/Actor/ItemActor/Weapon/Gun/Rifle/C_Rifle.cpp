@@ -163,7 +163,7 @@ void AC_Rifle::AIFire(const FVector& TargetLocation)
 		UGameplayStatics::ApplyDamage
 		(
 			HitActor,
-			m_Damage,
+			m_Damage * 0.5f,
 			InstigatorController,
 			this,
 			nullptr

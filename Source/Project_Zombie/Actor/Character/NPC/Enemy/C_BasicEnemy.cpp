@@ -139,7 +139,7 @@ void AC_BasicEnemy::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	if (IsLocallyControlled())
+	if (HasAuthority())
 	{
 		// 죽었을 때 처리할 함수 Delegate 구독 처리 (죽은 이후로도 다음에 Spawn 처리가 될 수 있기 때문에 구독 해지는 처리하지 않는다)
 		m_StatComponent->OnCurHPReachedZeroDelegate.AddUObject(this, &AC_BasicEnemy::OnDead);

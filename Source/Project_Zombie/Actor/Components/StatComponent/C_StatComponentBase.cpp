@@ -556,13 +556,7 @@ void UC_StatComponentBase::Multicast_IncreaseCurHP_Implementation(float _Increas
 
 void UC_StatComponentBase::DecreaseCurHP(float _DecreaseAmount)
 {
-	// 서버가 직접 Local 함수를 실행하여 내부 스탯 및 보일러플레이트를 처리하게 합니다.
-	if (Local_DecreaseCurHP(_DecreaseAmount))
-	{
-		HandleZeroHPBoilerPlateOnServer();
-		Multicast_DecreaseCurHP(_DecreaseAmount);
-	}
-	//Server_DecreaseCurHP(_DecreaseAmount);
+	Server_DecreaseCurHP(_DecreaseAmount);
 }
 
 bool UC_StatComponentBase::IsCurHPFull() const
@@ -581,10 +575,6 @@ bool UC_StatComponentBase::Local_DecreaseCurHP(float _DecreaseAmount)
 
 	float* pCurHP = m_Stats.Find(StatName::CurHP);
 	
-	/*if (Cast<AC_BasicPlayer>(m_OwnerCharacter))
-		*pCurHP = FMath::Max(1.f, *pCurHP - _DecreaseAmount); // TODO : 다시 0.f로 수정할 것
-	else *pCurHP = FMath::Max(0.f, *pCurHP - _DecreaseAmount); // TODO : 다시 0.f로 수정할 것*/
-
 	const float MinHPReachAmount = m_bIsImmortal ? 1.f : 0.f;
 	*pCurHP = FMath::Max(MinHPReachAmount, *pCurHP - _DecreaseAmount);
 	
@@ -598,60 +588,12 @@ bool UC_StatComponentBase::Local_DecreaseCurHP(float _DecreaseAmount)
 	return true;
 }
 
-void UC_StatComponentBase::HandleZeroHPBoilerPlateOnServer()
-{
-	float* pCurHP = m_Stats.Find(StatName::CurHP);
-	if (*pCurHP != 0.f) return;
-
-	if (Cast<AC_BasicEnemy>(m_OwnerCharacter))
-	{
-		OnCurHPReachedZeroDelegate.Broadcast(m_OwnerCharacter);
-		return;
-	}
-
-	if (!GAME_LV_GAME_MODE(this))
-	{
-		UC_Util::Print("[GameMode Nullptr]", FColor::Red, 10.f);
-		return;
-	}
-	
-	// 로비맵이 아닌 인게임 레벨의 경우 early return
-	if (GAME_LV_GAME_MODE(this)->GetPointTowerManager()->GetGameStartTimerSet())
-	{
-		OnCurHPReachedZeroDelegate.Broadcast(m_OwnerCharacter);	
-		return;
-	}
-	
-	// (만약 로비 맵에서 마지막 남은 플레이어인 경우, 살려줌)
-	uint8 Count{};
-	for (AC_BasicPlayer* Player : LEVEL_MANAGER->GetPlayers())
-		if (Player->IsDead()) ++Count;
-	
-	if (Count >= LEVEL_MANAGER->GetPlayers().Num() - 1)
-		*pCurHP = 1.f; // 가장 마지막 남은 플레이어의 HP가 0이 되기 직전, 막아줌
-}
-
 void UC_StatComponentBase::Server_DecreaseCurHP_Implementation(float _DecreaseAmount)
 {
-	if (_DecreaseAmount < 0.f) return;
-
-	float* pCurHP = m_Stats.Find(StatName::CurHP);
-	
-	/*if (Cast<AC_BasicPlayer>(m_OwnerCharacter))
-		*pCurHP = FMath::Max(1.f, *pCurHP - _DecreaseAmount); // TODO : 다시 0.f로 수정할 것
-	else *pCurHP = FMath::Max(0.f, *pCurHP - _DecreaseAmount); // TODO : 다시 0.f로 수정할 것*/
-
-	
-	const float MinHPReachAmount = m_bIsImmortal ? 1.f : 0.f;
-	*pCurHP = FMath::Max(MinHPReachAmount, *pCurHP - _DecreaseAmount);
-
-	HandleZeroHPBoilerPlateOnServer();
-
-	const float CurMaxHP = GetStat(StatName::MaxHP);
-	if (CurMaxHP != 0.f) OnCurHPUpdatedDelegate.Broadcast(*pCurHP / CurMaxHP);
-	
-	Multicast_DecreaseCurHP(_DecreaseAmount);
-	
+	// 서버 환경에서의 Stat 맞추기
+	// 서버에서의 SetStat이 valid하게 작동되었다면, 나머지 클라이언트 환경에서의 SetStat 처리를 위해 Multicast를 쏴준다
+	if (Local_DecreaseCurHP(_DecreaseAmount))
+		Multicast_DecreaseCurHP(_DecreaseAmount);
 }
 
 void UC_StatComponentBase::Multicast_DecreaseCurHP_Implementation(float _DecreaseAmount)
