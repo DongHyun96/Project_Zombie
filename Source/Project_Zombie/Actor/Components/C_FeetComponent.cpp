@@ -3,6 +3,7 @@
 
 #include "Actor/Components/C_FeetComponent.h"
 
+#include "Components/ModelComponent.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Sound/FootStep/C_PhysicalMaterial_FootSound.h"
 
@@ -92,14 +93,18 @@ void UC_FeetComponent::PlayFootstep(bool _IsLeftFoot)
 
 	if (!FootMaterial)
 	{
+		// 만약 발자국 소리용 물리재질이 설정되지 않은 경우, 기본 콘크리트 물리재질을 사용
+		FootMaterial = m_ConcretePhysicalMaterial;
+	}
+
+	if (!FootMaterial)
+	{
 		UE_LOG(
 			LogTemp,
 			Error,
 			TEXT("[Footstep] FootMaterial Cast 실패 / 실제 PhysMaterial=%s"),
 			*GetNameSafe(HitResult.PhysMaterial.Get())
 		);
-
-		return;
 	}
 
 	// 플레이어 이동 자세와 발 위치에 따라 맞는 사운드 재생

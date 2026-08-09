@@ -7,6 +7,7 @@
 class AC_BasicPlayer;
 class USoundAttenuation;
 class USoundConcurrency;
+class UC_PhysicalMaterial_FootSound;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class PROJECT_ZOMBIE_API UC_FeetComponent : public UActorComponent
@@ -57,4 +58,7 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Footstep|Sound")
 	TObjectPtr<USoundConcurrency> m_FootstepConcurrency;
+
+	UPROPERTY(EditAnywhere, Category = "Footstep")
+	UC_PhysicalMaterial_FootSound* m_ConcretePhysicalMaterial;
 };
