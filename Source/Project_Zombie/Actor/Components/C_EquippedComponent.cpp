@@ -472,15 +472,25 @@ void UC_EquippedComponent::UpdateAmmoWidget()
 	// 이 플레이어가 내가 플레이 중인 플레이어일 때, Ammo Info 관련 업데이트 처리
 	if (!m_OwnerPlayer->IsLocallyControlled()) return;
 
+	AC_WeaponBase* Weapon = GetCurWeapon();
+	
 	// 현재 들고 있는 무기가 없을 때
-	if (!GetCurWeapon())
+	if (!Weapon)
 	{
-		UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility(false);
+		if (!GetWorld()) return;
+		
+		AC_UIManager* UI_Manager = UI_MANAGER(GetWorld()); 
+		
+		if (!UI_Manager) return;
+		
+		if (UI_Manager->GetMainHUDWidget() == nullptr) return;
+		
+		UI_Manager->GetMainHUDWidget()->ToggleAmmoInfoVisibility(false);
 		return;
 	}
 	
 	// 현재 들고 있는 무기가 존재할 때, 해당 무기의 HUD 초기화 함수 사용
-	GetCurWeapon()->UpdateAmmoInfoHUDForDrawEnd();
+	Weapon->UpdateAmmoInfoHUDForDrawEnd();
 }
 
 void UC_EquippedComponent::Client_UpdateAmmoWidget_Implementation(const FAmmoUIInfo& _AmmoUIInfo)
