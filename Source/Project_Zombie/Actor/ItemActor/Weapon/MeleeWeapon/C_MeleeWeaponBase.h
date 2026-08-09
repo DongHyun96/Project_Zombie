@@ -6,6 +6,7 @@
 #include "Actor/ItemActor/Weapon/C_WeaponBase.h"
 #include "C_MeleeWeaponBase.generated.h"
 
+
 UCLASS()
 class PROJECT_ZOMBIE_API AC_MeleeWeaponBase : public AC_WeaponBase
 {
@@ -41,6 +42,10 @@ protected:
 
 	// TODO : 이건 무슨 구조지? 순수 궁금증 - 상연
 	TSet<TWeakObjectPtr<AActor>>	m_HitActors;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hit|Sound")
+	class USoundBase* HitSound;
+
 
 protected:
 	
