@@ -489,12 +489,15 @@ void AC_PointTower::Multicast_Activate_Implementation()
 		const FVector GeneratorLocation = m_StaticMeshComGenerator->GetComponentLocation();
 		
 		m_WorldPingActor->SpawnPingActorToWorld(GeneratorLocation, EGamePingType::AntennaMarker, EPingShapeType::FullPing);
-		
-		m_ActivatedCompassMarkerWidget = UI_MANAGER(GetWorld())->GetMainHUDWidget()->GetCompassBarWidget()->SpawnGlobalPingMarker
-		(
-			EGamePingType::AntennaMarker,
-			GeneratorLocation
-		);		
+
+		if (UI_MANAGER(GetWorld()) && UI_MANAGER(GetWorld())->GetMainHUDWidget())
+		{
+			m_ActivatedCompassMarkerWidget = UI_MANAGER(GetWorld())->GetMainHUDWidget()->GetCompassBarWidget()->SpawnGlobalPingMarker
+			(
+				EGamePingType::AntennaMarker,
+				GeneratorLocation
+			);		
+		}
 	}
 	
 	// 근접 접근 시, EffectToggling 처리용 감지 Collider 활성화

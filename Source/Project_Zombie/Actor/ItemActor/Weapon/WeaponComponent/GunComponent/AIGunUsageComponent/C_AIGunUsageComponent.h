@@ -60,11 +60,6 @@ public: /* Attachment 처리 관련 */
 private:
 	
 	/// <summary>
-	/// AI 전용 Damage 주기 처리
-	/// </summary>
-	FVector AIProcessLineTraceDamage(float _DamageVal);
-
-	/// <summary>
 	/// 무기 Drop 처리 이후, GunMesh 굴러가는 게 멈췄는지 체크하고, 멈췄다면 대응되는 처리 실행
 	/// </summary>
 	void HandleGunMeshPhysicsStopped();
