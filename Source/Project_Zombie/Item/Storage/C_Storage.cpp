@@ -89,7 +89,7 @@ void AC_Storage::BeginPlay()
 			// 이미 유효한 CustomData를 가지고 있다면 패스
 			if (Items[i].CustomData.IsValid()) continue;
 			
-			if (FInventoryEntry* RawItemPtr = InvenComp->GetSlotDataPtr(i);)
+			if (FInventoryEntry* RawItemPtr = InvenComp->GetSlotDataPtr(i))
 			{
 				int32 SlotIdx = RawItemPtr->SlotIndex;
 				RawItemPtr->Clear();
