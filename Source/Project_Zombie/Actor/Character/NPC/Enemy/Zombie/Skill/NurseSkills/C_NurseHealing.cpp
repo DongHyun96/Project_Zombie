@@ -11,6 +11,7 @@
 #include "GameModeAndManager/C_ZombieManager.h"
 #include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 #include "Kismet/GameplayStatics.h"
+#include "Utility/C_Util.h"
 
 bool UC_NurseHealing::Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data, OUT int32& _PlayedMontageSectionIdx)
 {
@@ -19,7 +20,11 @@ bool UC_NurseHealing::Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data, 
 	AC_NurseZombie* Nurse = Cast<AC_NurseZombie>(_Owner); 
 
 	// 힐을 줄 대상이 없음
-	if (Nurse->GetHealProjectileTargets().IsEmpty()) return false;
+	if (Nurse->GetHealProjectileTargets().IsEmpty())
+	{
+		UC_Util::Print("asdfkjhadsjkhfg", FColor::Red, 10.f);
+		return false;
+	}
 	
 	const int32 NumSections       = _Data->Montage->CompositeSections.Num();
 	const int32 PickedIdx         = FMath::RandRange(0, NumSections - 1);
