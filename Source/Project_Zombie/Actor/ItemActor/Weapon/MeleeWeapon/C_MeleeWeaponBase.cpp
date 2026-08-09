@@ -333,6 +333,15 @@ void AC_MeleeWeaponBase::Multicast_PlayHitEffect_Implementation(FVector ImpactPo
 			ImpactNormal.Rotation()
 		);
 	}
+
+	if (HitSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(
+			GetWorld(),
+			HitSound,
+			ImpactPoint
+		);
+	}
 }
 
 void AC_MeleeWeaponBase::HitBoxCheck()
@@ -371,6 +380,11 @@ void AC_MeleeWeaponBase::HitBoxCheck()
 					UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 						GetWorld(), HitEffect, Result.ImpactPoint, Result.ImpactNormal.Rotation()
 					);
+				}
+
+				if (HitSound)
+				{
+					UGameplayStatics::PlaySoundAtLocation(GetWorld(), HitSound, Result.ImpactPoint);
 				}
 
 				Server_ApplyHitDamage(HitActor, m_Damage, Result.ImpactPoint, Result.ImpactNormal);
