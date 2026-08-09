@@ -77,6 +77,26 @@ void AC_Storage::BeginPlay()
 			}
 		}
 	}
+	// 클라는 의미없는 아이템 지우기.
+	else if (!HasAuthority() && InvenComp)
+	{
+		const TArray<FInventoryEntry>& Items = InvenComp->GetInventoryItems();
+		for (int32 i = 0; i < Items.Num(); ++i)
+		{
+			// 빈 슬롯이거나 이름이 없다면 패스
+			if (Items[i].ItemRowName.IsNone()) continue;
+
+			// 이미 유효한 CustomData를 가지고 있다면 패스
+			if (Items[i].CustomData.IsValid()) continue;
+			
+			if (FInventoryEntry* RawItemPtr = InvenComp->GetSlotDataPtr(i);)
+			{
+				int32 SlotIdx = RawItemPtr->SlotIndex;
+				RawItemPtr->Clear();
+				RawItemPtr->SlotIndex = SlotIdx; 
+			}
+		}
+	}
 }
 
 void AC_Storage::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
