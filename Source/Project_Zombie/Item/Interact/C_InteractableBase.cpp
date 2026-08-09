@@ -9,11 +9,14 @@
 
 // Sets default values
 AC_InteractableBase::AC_InteractableBase()
+	
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
 	
-	SetReplicates(true);
+	bReplicates	= true;
+	
+	//SetReplicates(true);
 
 	m_SphereComp = CreateDefaultSubobject<USphereComponent>(TEXT("SphereCollisionComp"));
 	
@@ -34,7 +37,6 @@ AC_InteractableBase::AC_InteractableBase()
 	InteractionComp->SetAllowMultipleInteractor(true);
 
 	m_SphereComp->SetCollisionProfileName(FName("InteractionOnly"));
-	
 }
 
 // Called when the game starts or when spawned

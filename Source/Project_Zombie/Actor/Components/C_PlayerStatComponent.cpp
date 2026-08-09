@@ -10,6 +10,7 @@
 #include "GameModeAndManager/C_UIManager.h"
 #include "Item/Interact/ItemUpgrade/C_ItemUpgradeStation.h"
 #include "Item/Interact/StatUpgrade/C_StatUpgradeStation.h"
+#include "Tests/OnlineBeaconUnitTestUtils.h"
 #include "UI/InvenUI/C_InventoryWidget.h"
 #include "UI/InvenUI/Upgrade/C_PlayerStatUpgradeWidget.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
@@ -31,15 +32,18 @@ void UC_PlayerStatComponent::BeginPlay()
 	
 	if (m_OwnerCharacter->IsLocallyControlled())
 	{
-		AC_UIManager* UIManager = UI_MANAGER(GetWorld());
-		if (!UIManager) return;
+		GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
+		{
+			AC_UIManager* UIManager = UI_MANAGER(GetWorld());
+			if (!UIManager) return;
 
-		UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget();
-		if (!MainHUD) return;
+			UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget();
+			if (!MainHUD) return;
 
-		UC_PlayerStatWidget* StatWidget = MainHUD->GetPlayerStatWidget();
-		if (StatWidget)
-			this->OnCurHPUpdatedDelegate.AddUObject(StatWidget, &UC_PlayerStatWidget::UpdateHPBarRatio);
+			UC_PlayerStatWidget* StatWidget = MainHUD->GetPlayerStatWidget();
+			if (StatWidget)
+				this->OnCurHPUpdatedDelegate.AddUObject(StatWidget, &UC_PlayerStatWidget::UpdateHPBarRatio);
+		});
 	}
 	else OnCurHPUpdatedDelegate.AddUObject(this, &UC_PlayerStatComponent::UpdateOtherPlayerHPBar);
 }

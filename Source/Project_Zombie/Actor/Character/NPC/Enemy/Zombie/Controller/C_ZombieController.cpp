@@ -24,12 +24,8 @@
 #include "../C_Zombie.h"
 #include "Actor/Character/NPC/Enemy/Components/StatComponent/C_EnemyStatComponent.h"
 #include "Actor/PointTower/C_PointTower.h"
-#include "GameModeAndManager/C_GameMode_GameLv.h"
-#include "GameModeAndManager/C_UIManager.h"
-#include "GameModeAndManager/PointTowerManager/C_PointTowerManager.h"
-#include "Kismet/GameplayStatics.h"
 #include "Utility/C_Util.h"
-#include "WorldPartition/HLOD/HLODRuntimeSubsystem.h"
+
 
 AC_ZombieController::AC_ZombieController()
 {
@@ -114,6 +110,8 @@ void AC_ZombieController::OnTargetUpdated(AActor* _Target, FAIStimulus _Stimulus
 		UC_Util::Print("[AC_ZombieController::OnTargetDetected] : m_OwnerZombie nullptr", FColor::Red, 10.f);
 		return;
 	}
+	
+	UC_Util::Print("TargetUpdated : " + _Target->GetName(), FColor::Red, 10.f);
 
 	// 감지대상의 우호관계 가져오기
 	ETeamAttitude::Type type = m_OwnerZombie->GetTeamAttitudeTowards(*_Target);

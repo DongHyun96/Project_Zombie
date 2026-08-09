@@ -76,7 +76,11 @@ void AC_PointTower::BeginPlay()
 	if (HasAuthority())
 	{
 		// 서버 환경에서의 PointTower만 PointTowerManager(서버 쪽에만 존재) 에 등록 처리를 할 것임
-		POINT_TOWER_MANAGER(this)->RegisterPointTower(this);
+		// 등록을 한 Tick 미룸
+		GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
+		{
+			if (POINT_TOWER_MANAGER(this)) POINT_TOWER_MANAGER(this)->RegisterPointTower(this);
+		});
 	}
 
 	if (m_WorldPingActorClass)

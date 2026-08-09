@@ -48,6 +48,8 @@ void AC_UIManager::BeginPlay()
 	//m_InventoryWidget->GetPlayerGridWidget()->InitializeGrid(nullptr);
 	//m_InventoryWidget->GetStorageGridWidget()->InitializeGrid(nullptr);
 	
+	//m_InventoryWidget->SetOwningPlayer()
+	
 	m_InventoryWidget->AddToViewport();
 	m_InventoryWidget->SetVisibility(ESlateVisibility::Collapsed);
 }

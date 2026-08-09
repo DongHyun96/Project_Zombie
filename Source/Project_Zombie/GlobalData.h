@@ -702,7 +702,7 @@ struct FZombieTypeSpawnSetting
 public:
     // 스폰할 좀비 타입
     UPROPERTY(EditAnywhere, BlueprintReadOnly)
-    EZombieType ZombieType;
+    EZombieType ZombieType{};
 
     // 다른 타입과 비교한 스폰 선택 가중치
     // 숫자가 높을수록 선택될 가능성이 높음
@@ -736,7 +736,7 @@ public:
 
     // 웨이브에서 등장 가능한 타입별 설정
     UPROPERTY(EditAnywhere, BlueprintReadOnly)
-    TArray<FZombieTypeSpawnSetting> ZombieTypeSetting;
+    TArray<FZombieTypeSpawnSetting> ZombieTypeSetting{};
 };
 
 USTRUCT(BlueprintType)
@@ -745,11 +745,11 @@ struct FStatSyncPair
     GENERATED_BODY()
 
     UPROPERTY()
-    FName StatName;
+    FName StatName{};
 
     UPROPERTY()
-    float StatValue;
+    float StatValue{};
 
     UPROPERTY()
-    uint8 StatGrade;
+    uint8 StatGrade{};
 };
