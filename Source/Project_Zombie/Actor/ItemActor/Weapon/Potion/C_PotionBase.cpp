@@ -38,19 +38,48 @@ AC_PotionBase::AC_PotionBase()
 
 void AC_PotionBase::OnAction()
 {
-	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled())
+	// [변경점] 클라이언트에서 호출되었다면 서버로 요청을 보냅니다.
+	if (!HasAuthority())
+	{
+		UE_LOG(LogTemp, Log, TEXT("[Client] OnAction() - Requesting Server_OnAction. Current Local Potion_value: %f"), Potion_value);
+		Server_OnAction();
 		return;
-	
+	}
+
+	// 서버(Authority)라면 즉시 아래 로직을 수행합니다.
+	Server_OnAction_Implementation();
+}
+
+void AC_PotionBase::Server_OnAction_Implementation()
+{
+	if (!m_OwnerPlayer)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[Server] Server_OnAction_Implementation - m_OwnerPlayer is NULL!"));
+		return;
+	}
+    
 	UC_StatComponentBase* StatComp = m_OwnerPlayer->GetStatComponent();
-	
+	if (!StatComp)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[Server] Server_OnAction_Implementation - StatComponent is NULL!"));
+		return;
+	}
+
+	// 1. 만약 서버 검증으로 풀피면 리턴하고 싶다면 처리 (기획에 따라 선택)
+	// if (StatComp->GetCurHPRatio() >= 1.f) return;
+
+	// 2. 체력 복구 값 계산 및 적용
 	float MaxHP = StatComp->GetStat(StatName::MaxHP);
-	
+	float CurHP = StatComp->GetCurHP();
 	float RecoverHPValue = MaxHP * Potion_value;
+    
+	UE_LOG(LogTemp, Warning, TEXT("[Server] Server_OnAction - Player: %s, CurHP: %f, MaxHP: %f, Potion_value: %f -> Calculated RecoverHP: %f"), 
+		   *m_OwnerPlayer->GetName(), CurHP, MaxHP, Potion_value, RecoverHPValue);
 	
-	// HP의 서버 동기화까지 함께 진행되는 함수.
-	m_OwnerPlayer->GetStatComponent()->IncreaseCurHP(RecoverHPValue);
-	
-	// Count를 줄여줘야함.
+	// UC_StatComponentBase 내부에서 Server_IncreaseCurHP를 호출하므로 안전하게 동작함
+	StatComp->IncreaseCurHP(RecoverHPValue);
+    
+	// 3. 포션 갯수 감소 처리 (이미 서버이므로 내부 로직이 안전하게 작동)
 	Server_DecreaseCurCount();
 }
 
@@ -81,7 +110,7 @@ void AC_PotionBase::InitializeItemData(const FWeaponData* InRawData)
 		return;
 	}
 	
-	float BaseValue = PotionData->Value;
+	//float BaseValue = PotionData->Value;
 	
 	if (!ItemLinkComp)
 	{
@@ -89,19 +118,45 @@ void AC_PotionBase::InitializeItemData(const FWeaponData* InRawData)
 	}
 	
 	UC_ItemManager* ItemManager = GetGameInstance()->GetSubsystem<UC_ItemManager>();
-	
-	if (!ItemManager) return;
-	
+	if (!ItemManager) 
+	{
+		UE_LOG(LogTemp, Error, TEXT("❌ CRITICAL: ItemManager 호칭 실패! 초기화 중단됨!"));
+		return;
+	}
+    
 	const FWeaponUpgradeData* UpgradeData = ItemManager->GetWeaponUpgradeData(m_WeaponRowName);
-	
-	if (!UpgradeData) return;
+	if (!UpgradeData) 
+	{
+		UE_LOG(LogTemp, Error, TEXT("❌ CRITICAL: %s 에 대한 UpgradeData를 찾을 수 없음!"), *m_WeaponRowName.ToString());
+		return;
+	}
 	
 	//if (!ItemLinkComp->IsLinkValid()) return;
 	
 	
 	
-	// 동적 데이터(CustomData) 처리
+	FString NetRoleStr = HasAuthority() ? TEXT("Server") : TEXT("Client");
+	float BaseValue = PotionData->Value;
+
 	if (FInventoryEntry* EntryPtr = ItemLinkComp->GetItemEntryPtr())
+	{
+		FUpgradableData* CustomData = EntryPtr->GetOrCreateEquipmentData();
+		uint8 ValueGrade = CustomData ? CustomData->GetStatGrade(EUpgradableStats::HPRecovery) : 0;
+       
+		Potion_value = BaseValue + ValueGrade * UpgradeData->GradePerValue[EUpgradableStats::HPRecovery];
+       
+		UE_LOG(LogTemp, Warning, TEXT("[%s] InitItemData (Inven Valid) - Item: %s, BaseValue: %f, Grade: %d, Final Potion_value: %f"), 
+			   *NetRoleStr, *m_WeaponRowName.ToString(), BaseValue, ValueGrade, Potion_value);
+	}
+	else
+	{
+		Potion_value = BaseValue;
+		UE_LOG(LogTemp, Warning, TEXT("[%s] InitItemData (Inven Null) - Item: %s, Fallback Potion_value: %f"), 
+			   *NetRoleStr, *m_WeaponRowName.ToString(), Potion_value);
+	}
+	
+	// 동적 데이터(CustomData) 처리
+	/*if (FInventoryEntry* EntryPtr = ItemLinkComp->GetItemEntryPtr())
 	{
 		// 1. 없으면 데이터 안전하게 생성
 		FUpgradableData* CustomData = EntryPtr->GetOrCreateEquipmentData();
@@ -117,7 +172,7 @@ void AC_PotionBase::InitializeItemData(const FWeaponData* InRawData)
 	else
 	{
 		Potion_value = BaseValue;
-	}
+	}*/
 }
 
 void AC_PotionBase::LoadAsyncAssets(const FWeaponData* InRawData)
