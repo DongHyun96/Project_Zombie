@@ -80,14 +80,13 @@ void AC_BasicPlayer::PossessedBy(AController* NewController)
 		{
 			if (UC_InvenComponent* InvenComp = FindComponentByClass<UC_InvenComponent>())
 			{
-				
-				
 				InvenComp->LoadInventoryFromBackup(PS->GetSavedInventory());
 			}
 			
 			if (m_EquippedComponent && HasAuthority())
 			{
-				//m_EquippedComponent->SetOwnerPlayer(this);
+				// 서버는 이 시점에 EquippedComponent의 OwnerPlayer가 없음.(비긴에서 넣어주고 있음)
+				m_EquippedComponent->SetOwnerPlayer(this);
 				
 				for (int32 i = 0 ; i < static_cast<int32>(EWeaponSlot::None) ; ++i)
 					m_EquippedComponent->LoadEquippedWeaponFromInven(i,m_InvenComponent->GetItemAt(i));
@@ -281,29 +280,6 @@ void AC_BasicPlayer::BeginPlay()
 		LevelManager->AddPlayer(this);
 	
 	UpdateBoostBarHUD();
-
-	//if (m_InvenComponent)
-	//{
-	//	UIManager->GetInventoryWidget()->GetPlayerGridWidget()->SetInvenComponent(m_InvenComponent);
-	//
-	//	UIManager->GetInventoryWidget()->GetEquipmentWidget()->InitEquipmentWidget(m_InvenComponent);
-	//}
-	
-
-	// 플레이어의 인벤에 장비 전용 인덱스 추가.
-	//m_InvenComponent->SetMaxSlots(45 + static_cast<int32>(EWeaponSlot::Max));
-
-	// 입력 시스템 초기화
-	//InitInput();
-	
-	UE_LOG(
-	LogTemp,
-	Error,
-	TEXT("[PLAYER BEGINPLAY] %s / Address=%p / World=%s"),
-	*GetName(),
-	this,
-	*GetWorld()->GetName()
-);
 }
 
 void AC_BasicPlayer::EndPlay(const EEndPlayReason::Type EndPlayReason)
