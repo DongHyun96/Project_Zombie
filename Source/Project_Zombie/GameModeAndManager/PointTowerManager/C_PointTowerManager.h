@@ -77,6 +77,11 @@ private:
 	/// 현재 Sequence에 등록된 SpawnArea들을 반환 
 	/// </summary>
 	TArray<AC_SpawnArea*> GetCurrentSequenceSpawnAreas() const;
+
+private:
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_ShowGameStartPanel();
 	
 public:
 	void SetZombieManager(class UC_ZombieManager* _ZombieManager) { m_ZombieManager = _ZombieManager; }

@@ -12,6 +12,8 @@
 #include "GameModeAndManager/C_UIManager.h"
 #include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 #include "Kismet/GameplayStatics.h"
+#include "UI/MainHUD/C_GameMainHUD.h"
+#include "UI/MainHUD/InformWidget/C_InformWidget.h"
 #include "Utility/C_Util.h"
 
 UC_PointTowerManager::UC_PointTowerManager()
@@ -148,6 +150,8 @@ bool UC_PointTowerManager::RegisterPointTower(AC_PointTower* _PointTower)
 			(
 				m_FirstPointOpenWaitTimerHandle, this, &UC_PointTowerManager::StartActivateCurrentPointsSequence, 20.f, false
 			);
+			
+			Multicast_ShowGameStartPanel();
 			m_GameStartTimerSet = true;
 		}
 		
@@ -268,4 +272,12 @@ TArray<AC_SpawnArea*> UC_PointTowerManager::GetCurrentSequenceSpawnAreas() const
 	}
 
 	return Result;
+}
+
+void UC_PointTowerManager::Multicast_ShowGameStartPanel_Implementation()
+{
+	GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
+	{
+		if (UI_MANAGER(GetWorld())) UI_MANAGER(GetWorld())->GetMainHUDWidget()->GetInformWidget()->ToggleGameStartPanel(true);
+	});
 }
