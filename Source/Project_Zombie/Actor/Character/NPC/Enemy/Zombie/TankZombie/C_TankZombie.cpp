@@ -489,7 +489,7 @@ void AC_TankZombie::HandlePlayerHit(AC_BasicPlayer* _Player)
 	// SkillData의 HitSound를 충돌음으로 사용
 	if (IsValid(m_Skill->HitSound))
 	{
-		UGameplayStatics::PlaySoundAtLocation(this, m_Skill->HitSound, _Player->GetActorLocation());
+		PlaySkillHitSound(m_Skill,_Player->GetActorLocation());
 	}
 }
 
