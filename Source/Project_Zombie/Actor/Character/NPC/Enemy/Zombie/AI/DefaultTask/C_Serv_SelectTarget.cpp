@@ -95,7 +95,7 @@ void UC_Serv_SelectTarget::TickNode(UBehaviorTreeComponent& _OwnCom, uint8* _Nod
 
 	// 여기까지 왔다는 것은 현재 추격할 Target을 찾지 못한 상황
 
-	/*// 추격음 반복 정지
+	// 추격음 반복 정지
 	pZombie->StopChaseSoundLoop();
 
 	// 기존 Blackboard Target도 제거
@@ -137,5 +137,5 @@ void UC_Serv_SelectTarget::TickNode(UBehaviorTreeComponent& _OwnCom, uint8* _Nod
 	}
 
 	// 가장 가까운 타겟을 블랙보드에 타겟으로 설정
-	pBBCom->SetValueAsObject(m_Target.SelectedKeyName, pBestTarget);*/
+	pBBCom->SetValueAsObject(m_Target.SelectedKeyName, pBestTarget);
 }
