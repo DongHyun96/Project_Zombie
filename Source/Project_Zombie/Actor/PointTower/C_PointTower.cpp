@@ -476,7 +476,7 @@ void AC_PointTower::Multicast_Activate_Implementation()
 	// 거점 활성화 알림음 재생
 	if (m_ActivateSound)
 	{
-		UGameplayStatics::PlaySoundAtLocation(GetWorld(), m_ActivateSound, GetActorLocation());	
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), m_ActivateSound, GetGenerator()->GetComponentLocation());
 	}
 	
 	// 거점 활성화 Outline 활성화
@@ -549,10 +549,7 @@ void AC_PointTower::Multicast_Conquered_Implementation()
 	// 전기 Effect 사운드 재생
 	if (m_ElectricSound)
 	{
-		// 이거 ElectroSplinesParent 위치를 수정해도 좋을듯...
-		const FVector ElectricSoundLocation = m_ElectroSplinesParent->GetComponentLocation();
-
-		UGameplayStatics::PlaySoundAtLocation(GetWorld(), m_ElectricSound, ElectricSoundLocation);
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), m_ElectricSound, GetGenerator()->GetComponentLocation());
 	}
 	
 	if (m_PointTowerWidget) m_PointTowerWidget->SetVisibility(ESlateVisibility::Collapsed);
