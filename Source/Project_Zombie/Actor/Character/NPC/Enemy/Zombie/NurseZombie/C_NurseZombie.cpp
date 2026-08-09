@@ -46,7 +46,7 @@ void AC_NurseZombie::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	// ToggleHealingAura(false);
+	ToggleHealingAura(false);
 	m_HealingAuraCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	m_HealingAuraEffectNG->DeactivateImmediate();
 

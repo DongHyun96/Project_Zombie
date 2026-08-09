@@ -49,7 +49,7 @@ protected: /* 스폰 세팅 */
 
 	// 바닥과 캡슐이 너무 정확히 붙어서 겹침 판정이 나는 것을 방지하는 여유 높이
 	//UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Spawn|Collision", meta = (ClampMin = "0.0"))
-	float m_GroundOffset = 2.f;
+	float m_GroundOffset = 20.f;
 
 public:
 

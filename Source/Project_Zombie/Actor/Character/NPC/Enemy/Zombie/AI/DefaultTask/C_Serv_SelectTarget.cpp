@@ -99,7 +99,7 @@ void UC_Serv_SelectTarget::TickNode(UBehaviorTreeComponent& _OwnCom, uint8* _Nod
 	pZombie->StopChaseSoundLoop();
 
 	// 기존 Blackboard Target도 제거
-	pBBCom->ClearValue(m_Target.SelectedKeyName);
+	// pBBCom->ClearValue(m_Target.SelectedKeyName);
 
 	// BestTarget이 나오지 않은 상황
 	//  -> 가장 가까운 플레이어 또는 거점을 찾는다

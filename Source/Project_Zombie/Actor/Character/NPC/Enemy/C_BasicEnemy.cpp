@@ -226,12 +226,17 @@ float AC_BasicEnemy::TakeDamage
 	// TODO : 이거 요청 빈도가 너무 높으면 여기서 병목 생길수도 있음 -> 추후 최적화할 때 고려할 것
 	if (m_StatComponent->GetCurHPRatio() < FMath::RandRange(0.5f, 0.7f))
 	{
-		for (AC_NurseZombie* ActiveNurse : ZOMBIE_MANAGER(this)->GetActiveNurseZombies())
+		for (AC_Zombie* Zombie : ZOMBIE_MANAGER(this)->GetActiveNurseZombies())
+		{
+			AC_NurseZombie* ActiveNurse = Cast<AC_NurseZombie>(Zombie);
+			if (!ActiveNurse) continue;
+			
 			if (ActiveNurse->TryRegisterAsHealTarget(this))
 			{
 				++m_HealRequestRegisterCount; // 등록 횟수 하나 올리기
 				break; // Nurse HealTarget에 정상 등록 처리됨 (Available한 Nurse가 없을 수도 있음)
 			}
+		}
 	}
 	
 	return DamageAmount;

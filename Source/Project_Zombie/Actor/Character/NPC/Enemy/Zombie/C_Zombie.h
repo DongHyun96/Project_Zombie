@@ -17,7 +17,7 @@ enum class EZombieType : uint8
 	ToxicZombie,
 	NurseZombie,
 	CopZombie,
-	TankZombie
+	TankZombie,
 };
 
 UCLASS()
