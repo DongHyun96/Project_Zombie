@@ -520,6 +520,8 @@ void AC_GunBase::UpdateAmmoInfoHUDForDrawEnd()
 
 void AC_GunBase::PullTrigger()
 {
+	if (m_OwnerPlayer && m_OwnerPlayer->IsDead()) return;
+
 	if (m_bIsFiring || m_bIsReloading || m_CurrentAmmo <= 0) return;
 
 	// 달리는 상태에서 사격 불가
@@ -597,6 +599,12 @@ FVector AC_GunBase::LineTraceDamage(const FVector& CameraStart, const FRotator& 
 
 void AC_GunBase::Client_ExecuteFire()
 {
+
+	if (m_OwnerPlayer && m_OwnerPlayer->IsDead())
+	{
+		ReleaseTrigger();
+		return;
+	}
 	// 달리기 시 사격 중단
 	if (m_OwnerPlayer  &&  m_OwnerPlayer->GetPlayerMoveState() == EPlayerPoseState::Sprint)
 	{

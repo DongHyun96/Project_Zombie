@@ -35,6 +35,9 @@ bool AC_ShotGun::OnStartFire(AC_BasicPlayer* _WeaponUser)
 
 bool AC_ShotGun::Reload(AC_BasicPlayer* _WeaponUser)
 {
+
+	if (m_OwnerPlayer->IsDead()) return false;
+
 	if (!_WeaponUser) return false;
 	m_OwnerPlayer = _WeaponUser;
 
@@ -65,6 +68,13 @@ bool AC_ShotGun::Reload(AC_BasicPlayer* _WeaponUser)
 
 void AC_ShotGun::Server_StartReload_Implementation()
 {
+
+	if (m_OwnerPlayer && m_OwnerPlayer->IsDead())
+	{
+		EndReload();
+		return;
+	}
+
 	// 탄약이 이미 꽉 찬 경우 거부
 	if (m_CurrentAmmo >= m_MaxAmmo) return;
 
@@ -145,6 +155,8 @@ void AC_ShotGun::Multicast_StopReloadAnimation_Implementation()
 
 void AC_ShotGun::PullTrigger()
 {
+	if (m_OwnerPlayer && m_OwnerPlayer->IsDead()) return;
+
 	if (m_bIsFiring || m_bIsReloading || !m_bCanFire || m_CurrentAmmo <= 0) return;
 
 	if (m_OwnerPlayer && m_OwnerPlayer->GetPlayerMoveState() == EPlayerPoseState::Sprint) return;
@@ -165,6 +177,13 @@ void AC_ShotGun::ResetFireCooldown()
 
 void AC_ShotGun::Client_ExecuteFire()
 {
+
+	if (m_OwnerPlayer && m_OwnerPlayer->IsDead())
+	{
+		m_bIsFiring = false;
+		return;
+	}
+
 	if (m_OwnerPlayer && m_OwnerPlayer->GetPlayerMoveState() == EPlayerPoseState::Sprint)
 	{
 		m_bIsFiring = false;

@@ -24,6 +24,9 @@ bool AC_GrenadeLauncher::OnStartFire(AC_BasicPlayer* _WeaponUser)
 	if (nullptr == _WeaponUser)
 		return false;
 
+	if (_WeaponUser->IsDead())
+		return false;
+
 	if (m_bIsReloading)
 		return false;
 
@@ -57,6 +60,9 @@ bool AC_GrenadeLauncher::Reload(AC_BasicPlayer* _WeaponUser)
 void AC_GrenadeLauncher::PullTrigger()
 {
 
+	if (m_OwnerPlayer && m_OwnerPlayer->IsDead())
+		return;
+
 	if (m_bIsFiring || m_bIsReloading || !m_bCanFire || m_CurrentAmmo <= 0)
 		return;
 
@@ -86,6 +92,10 @@ void AC_GrenadeLauncher::PullTrigger()
 
 void AC_GrenadeLauncher::Server_ExecuteFire_Implementation(FVector_NetQuantize ImpactPoint, AActor* HitActor)
 {
+
+	if (m_OwnerPlayer && m_OwnerPlayer->IsDead())
+		return;
+
 	// 서버에서 클라이언트가 전달한 에임 타겟 지점으로 유탄 스폰
 	SpawnGrenadeProjectile(FVector(ImpactPoint));
 }
