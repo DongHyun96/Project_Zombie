@@ -534,7 +534,13 @@ void UC_StatComponentBase::Multicast_IncreaseCurHP_Implementation(float _Increas
 
 void UC_StatComponentBase::DecreaseCurHP(float _DecreaseAmount)
 {
-	Server_DecreaseCurHP(_DecreaseAmount);
+	// 서버가 직접 Local 함수를 실행하여 내부 스탯 및 보일러플레이트를 처리하게 합니다.
+	if (Local_DecreaseCurHP(_DecreaseAmount))
+	{
+		HandleZeroHPBoilerPlateOnServer();
+		Multicast_DecreaseCurHP(_DecreaseAmount);
+	}
+	//Server_DecreaseCurHP(_DecreaseAmount);
 }
 
 bool UC_StatComponentBase::IsCurHPFull() const
