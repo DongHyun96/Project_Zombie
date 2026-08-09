@@ -36,7 +36,21 @@ void UC_PlayerProfileComponent::BeginPlay()
 	if (m_OwnerPlayer->HasAuthority()) m_PlayerSelectedColor = FColor::MakeRandomColor();
 	
 	if (!m_OwnerPlayer->IsLocallyControlled())
-		UI_MANAGER(GetWorld())->GetMainHUDWidget()->GetOtherPlayerStatWidget()->RegisterOtherPlayer(m_OwnerPlayer);
+	{
+		FTimerHandle TimerHandle{};
+
+		GetWorld()->GetTimerManager().SetTimer
+		(
+			TimerHandle,
+			[this]()
+			{
+				// 3초 후 실행
+				UI_MANAGER(GetWorld())->GetMainHUDWidget()->GetOtherPlayerStatWidget()->RegisterOtherPlayer(m_OwnerPlayer);
+			},
+			3.f,
+			false
+		);
+	}
 }
 
 void UC_PlayerProfileComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
