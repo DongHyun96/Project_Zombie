@@ -169,9 +169,6 @@ void AC_CopZombie::DropWeapon()
 	//if (!m_EquippedGun->GetAIGunUsageComponent()->DetachFromHand()) return;
 	
 	// C_ItemPickUp을 스폰해서 뿌려주면 됨. 이 때 AC_Weapon의 정보를 통해 데이터 테이블, 강화 테이블을 통해 역산해서 FInventoryEntry만들어야 함.
-	
-	m_EquippedGun = nullptr;
-	
 	UC_ItemManager* ItemManager = GetGameInstance()->GetSubsystem<UC_ItemManager>();
 	
 	if (!ItemManager) return;
@@ -184,6 +181,7 @@ void AC_CopZombie::DropWeapon()
 	{
 		SpawnedItemPickUp->SetStolenPlayerPingSystemComponent
 		(
+			
 			m_EquippedGun->GetAIGunUsageComponent()->GetPrevOwnerPlayer()->GetPingSystemComponent()
 		);
 	}
