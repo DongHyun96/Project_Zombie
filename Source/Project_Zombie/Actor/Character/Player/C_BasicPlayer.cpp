@@ -36,6 +36,7 @@
 
 #include "UI/InvenUI/C_InventoryGridWidget.h"
 #include "UI/InvenUI/C_InventoryWidget.h"
+#include "UI/MenuUI/C_MenuWidget.h"
 #include "UI/InvenUI/Equipment/C_EquipmentWidget.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
 #include "Utility/C_Util.h"
@@ -420,6 +421,44 @@ void AC_BasicPlayer::ToggleInventoryWidget()
 		InputMode.SetWidgetToFocus(nullptr);
 
 		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		PC->SetInputMode(InputMode);
+		PC->SetShowMouseCursor(true);
+	}
+}
+
+void AC_BasicPlayer::ToggleMenuWidget()
+{
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (!PC) return;
+
+	AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD());
+	if (!UIManager) return;
+
+	UUserWidget* MenuWidget = UIManager->GetMenuWidget();
+	if (!MenuWidget) return;
+
+	if (MenuWidget->GetVisibility() == ESlateVisibility::Visible)
+	{
+		// 닫기
+		MenuWidget->SetVisibility(ESlateVisibility::Collapsed);
+
+		// 게임 전용 입력 모드로 복귀
+		FInputModeGameOnly InputMode;
+		PC->SetInputMode(InputMode);
+		PC->SetShowMouseCursor(false);
+	}
+	else
+	{
+		// 열기
+		MenuWidget->SetVisibility(ESlateVisibility::Visible);
+
+		// [수정] UI 전용 입력 모드로 전환 (다른 게임 상호작용 완전 차단)
+		FInputModeUIOnly InputMode;
+
+		// MenuWidget에 포커스를 주어 다른 UI로 포커스가 넘어가지 않도록 설정
+		InputMode.SetWidgetToFocus(MenuWidget->TakeWidget());
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+
 		PC->SetInputMode(InputMode);
 		PC->SetShowMouseCursor(true);
 	}

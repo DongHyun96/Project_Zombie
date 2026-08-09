@@ -104,6 +104,7 @@ void UC_BasicPlayerInputComponent::InitializePlayerInput(UInputComponent* Player
 	
 	if (const UInputAction* IA = FindIAByName(TEXT("IA_ToggleArmed")))     EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::ToggleArmed);
 	if (const UInputAction* IA = FindIAByName(TEXT("IA_ToggleInventory"))) EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::ToggleInventoryWidget);
+	if (const UInputAction* IA = FindIAByName(TEXT("IA_ToggleMenu")))	   EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::ToggleMenuWidget);
 	if (const UInputAction* IA = FindIAByName(TEXT("IA_MarkPing")))        EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::MarkPing);
 		
 	
@@ -318,6 +319,11 @@ void UC_BasicPlayerInputComponent::KeepAimActionEnd()
 void UC_BasicPlayerInputComponent::ToggleInventoryWidget()
 {
 	Player->ToggleInventoryWidget();
+}
+
+void UC_BasicPlayerInputComponent::ToggleMenuWidget()
+{
+	Player->ToggleMenuWidget();
 }
 
 void UC_BasicPlayerInputComponent::EquipMainWeapon()

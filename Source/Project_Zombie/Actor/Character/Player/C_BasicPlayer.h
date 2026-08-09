@@ -549,6 +549,8 @@ public:
 	//UFUNCTION(BlueprintCallable)
 	void ToggleInventoryWidget();
 	
+	void ToggleMenuWidget();
+
 public:
 	// 데미지 처리 함수 
 	virtual float TakeDamage(float _Damage, struct FDamageEvent const& _DamageEvent

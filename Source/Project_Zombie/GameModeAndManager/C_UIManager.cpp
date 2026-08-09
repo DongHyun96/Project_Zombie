@@ -8,6 +8,7 @@
 #include "UI/InvenUI/C_InventoryGridWidget.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
 #include "UI/InvenUI/C_InventoryWidget.h"
+#include "UI/MenuUI/C_MenuWidget.h"
 #include "Utility/C_Util.h"
 
 void AC_UIManager::BeginPlay()
@@ -52,6 +53,25 @@ void AC_UIManager::BeginPlay()
 	
 	m_InventoryWidget->AddToViewport();
 	m_InventoryWidget->SetVisibility(ESlateVisibility::Collapsed);
+
+	// MenuWidget 불러오기.
+	if (!m_MenuWidgetClass)
+	{
+		UC_Util::Print("From AC_UIManager::BeginPlay : MenuWidgetClass Subclass nullptr", FColor::Red, 5.f);
+		return;
+	}
+
+	m_MenuWidget = Cast<UC_MenuWidget>(CreateWidget(GetOwningPlayerController(), m_MenuWidgetClass));
+
+	if (!m_MenuWidget)
+	{
+		UC_Util::Print("From AC_UIManager::BeginPlay : InventoryWidget creation failed", FColor::Red, 5.f);
+		return;
+	}
+
+	m_MenuWidget->AddToViewport();
+	m_MenuWidget->SetVisibility(ESlateVisibility::Collapsed);
+
 }
 
 void AC_UIManager::DrawHUD()

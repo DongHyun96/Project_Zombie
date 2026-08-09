@@ -49,6 +49,8 @@ public:
 	
 	class UC_InventoryWidget* GetInventoryWidget() const { return m_InventoryWidget; }
 	
+	class UC_MenuWidget* GetMenuWidget() const { return m_MenuWidget; };
+
 public:
 	
 	void PrintLocalDebugMessage(const FString& _Message, const FColor& _Color, float _Duration);
@@ -61,6 +63,9 @@ protected:
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "UI")
 	TSubclassOf<UC_InventoryWidget> m_InventoryWidgetClass{};
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "UI")
+	TSubclassOf<UC_MenuWidget> m_MenuWidgetClass{};
 protected:
 
 	// 생성된 MainHUD Widget 객체
@@ -70,6 +75,10 @@ protected:
 	// 생성된 Inventory Widget 객체
 	UPROPERTY(BlueprintReadOnly)
 	UC_InventoryWidget* m_InventoryWidget{};
+
+	// 생성된 Inventory Widget 객체
+	UPROPERTY(BlueprintReadOnly)
+	UC_MenuWidget* m_MenuWidget{};
 	
 	
 	

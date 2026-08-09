@@ -99,6 +99,9 @@ private:
 	// 인벤토리를 여닫는 함수
 	void ToggleInventoryWidget();
 
+	// 메뉴를 여닫는 함수
+	void ToggleMenuWidget();
+
 private: // Equip Weapon input 관련
 
 	void EquipMainWeapon();
