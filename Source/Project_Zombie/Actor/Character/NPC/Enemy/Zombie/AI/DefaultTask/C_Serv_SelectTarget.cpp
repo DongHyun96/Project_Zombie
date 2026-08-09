@@ -95,7 +95,7 @@ void UC_Serv_SelectTarget::TickNode(UBehaviorTreeComponent& _OwnCom, uint8* _Nod
 
 	// BestTarget이 나오지 않은 상황
 	//  -> 가장 가까운 플레이어 또는 거점을 찾는다
-	float MinDistSqr = FLT_MAX;
+	/*float MinDistSqr = FLT_MAX;
 
 	if (!m_GameLevelManager)
 	{
@@ -145,5 +145,5 @@ void UC_Serv_SelectTarget::TickNode(UBehaviorTreeComponent& _OwnCom, uint8* _Nod
 		}
 	}
 	
-	pBBCom->SetValueAsObject(m_Target.SelectedKeyName, pBestTarget);
+	pBBCom->SetValueAsObject(m_Target.SelectedKeyName, pBestTarget);*/
 }

@@ -736,7 +736,7 @@ public:
 
     // 웨이브에서 등장 가능한 타입별 설정
     UPROPERTY(EditAnywhere, BlueprintReadOnly)
-    TArray<FZombieTypeSpawnSetting> ZombieTypeSetting;
+    TArray<FZombieTypeSpawnSetting> ZombieTypeSetting{};
 };
 
 USTRUCT(BlueprintType)
@@ -745,11 +745,11 @@ struct FStatSyncPair
     GENERATED_BODY()
 
     UPROPERTY()
-    FName StatName;
+    FName StatName{};
 
     UPROPERTY()
-    float StatValue;
+    float StatValue{};
 
     UPROPERTY()
-    uint8 StatGrade;
+    uint8 StatGrade{};
 };
