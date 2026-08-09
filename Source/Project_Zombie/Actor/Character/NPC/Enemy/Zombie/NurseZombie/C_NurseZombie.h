@@ -1,10 +1,13 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Actor/Character/NPC/Enemy/Zombie/C_Zombie.h"
 #include "C_NurseZombie.generated.h"
+
+class UAudioComponent;
+class USoundBase;
 
 /// <summary>
 /// Nurse 좀비의 MainAction 갈래들 
@@ -119,5 +122,13 @@ protected:
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	class UBoxComponent* m_NormalAttackCollider{};
+
+protected: /* 힐 음악관련 */
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sound|Heal")
+	TObjectPtr<UAudioComponent> m_HealAudio;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound|Heal")
+	TObjectPtr<USoundBase> m_HealSong;
 	
 };

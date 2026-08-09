@@ -11,6 +11,9 @@
 #include "Actor/Character/NPC/Enemy/C_BasicEnemy.h"
 #include "Actor/Character/NPC/Enemy/Zombie/Skill/C_EnemySkillData.h"
 
+#include "Components/AudioComponent.h"
+#include "Sound/SoundBase.h"
+
 #include "GameFramework/Pawn.h"
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
@@ -51,6 +54,13 @@ AC_ToxicPool::AC_ToxicPool()
 	m_Sphere->OnComponentEndOverlap.AddDynamic(
 		this,
 		&AC_ToxicPool::EndOverlap);
+
+	m_AudioCom =
+		CreateDefaultSubobject<UAudioComponent>(TEXT("ToxicPoolAudio"));
+
+	m_AudioCom->SetupAttachment(m_Sphere);
+
+	m_AudioCom->bAutoActivate = false;
 }
 
 void AC_ToxicPool::BeginPlay()
@@ -83,6 +93,12 @@ void AC_ToxicPool::InitPool(AC_BasicEnemy* _SkillUser, UC_EnemySkillData* _Skill
 										&AC_ToxicPool::ApplyTickDamage,
 										m_DamageInterval,
 										true);
+	}
+
+	if (IsValid(m_AudioCom) && IsValid(m_LoopSound))
+	{
+		m_AudioCom->SetSound(m_LoopSound);
+		m_AudioCom->Play();
 	}
 }
 

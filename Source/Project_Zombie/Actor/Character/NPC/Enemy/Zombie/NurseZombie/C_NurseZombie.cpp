@@ -13,6 +13,8 @@
 #include "GameModeAndManager/C_ZombieManager.h"
 #include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 #include "Kismet/GameplayStatics.h"
+#include "Components/AudioComponent.h"
+#include "Sound/SoundBase.h"
 #include "Utility/C_Util.h"
 
 
@@ -32,6 +34,12 @@ AC_NurseZombie::AC_NurseZombie()
 	m_NormalAttackCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("NormalAttackCollider"));
 	m_NormalAttackCollider->SetupAttachment(GetRootComponent());
 	AddNormalAttackCollider(m_NormalAttackCollider);
+
+
+	m_HealAudio = CreateDefaultSubobject<UAudioComponent>(TEXT("HealAudio"));
+
+	m_HealAudio->SetupAttachment(GetRootComponent());
+	m_HealAudio->bAutoActivate = false;
 }
 
 void AC_NurseZombie::BeginPlay()
@@ -44,6 +52,7 @@ void AC_NurseZombie::BeginPlay()
 	// ToggleHealingAura(false);
 	m_HealingAuraCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	m_HealingAuraEffectNG->DeactivateImmediate();
+
 }
 
 void AC_NurseZombie::GetHealingAuraOverlappingEnemies(TArray<AActor*>& _OutOverlappingEnemies) const
@@ -97,11 +106,22 @@ void AC_NurseZombie::ToggleHealingAura(bool _Activate)
 	{
 		m_HealingAuraCollider->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 		m_HealingAuraEffectNG->Activate(true);
+	
+		if (IsValid(m_HealAudio) && IsValid(m_HealSong))
+		{
+			m_HealAudio->SetSound(m_HealSong);
+			m_HealAudio->Play();
+		}
 	}
 	else
 	{
 		m_HealingAuraCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		m_HealingAuraEffectNG->DeactivateImmediate();
+
+		if (IsValid(m_HealAudio))
+		{
+			m_HealAudio->Stop();
+		}
 	}
 	
 	Multicast_ToggleHealingAura(_Activate);
@@ -111,8 +131,27 @@ void AC_NurseZombie::Multicast_ToggleHealingAura_Implementation(bool _Active)
 {
 	if (IsLocallyControlled()) return;
 	
-	if (_Active)	m_HealingAuraEffectNG->Activate(true);
-	else			m_HealingAuraEffectNG->DeactivateImmediate();
+	if (_Active)
+	{
+		m_HealingAuraEffectNG->Activate(true);
+
+		if (IsValid(m_HealAudio) && IsValid(m_HealSong))
+		{
+			m_HealAudio->SetSound(m_HealSong);
+			m_HealAudio->Play();
+		}
+	}
+
+	else
+	{
+		m_HealingAuraEffectNG->DeactivateImmediate();
+
+		if (IsValid(m_HealAudio))
+		{
+			m_HealAudio->Stop();
+		}
+	}
+
 }
 
 void AC_NurseZombie::OnHealTargetDeadOrReachedFullHP(AC_BasicCharacter* _HealTarget)
@@ -129,6 +168,8 @@ void AC_NurseZombie::OnHealSkillEnd(AC_BasicEnemy* _Enemy)
 
 void AC_NurseZombie::OnDead(AC_BasicCharacter* _DeadCharacter)
 {
+	ToggleHealingAura(false);
+
 	Super::OnDead(_DeadCharacter);
 	
 	// 자기 자신에게 등록되었던 모든 힐 대상 제거
