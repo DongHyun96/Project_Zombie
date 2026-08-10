@@ -9,6 +9,7 @@
 #include "GameFramework/Actor.h"
 #include "C_WeaponBase.generated.h"
 
+class UC_InvenComponent;
 struct FAmmoUIInfo;
 struct FStreamableHandle;
 struct FWeaponData;
@@ -45,12 +46,21 @@ public:
 	UFUNCTION()
 	void OnRep_WeaponRowName();
 	
+	UFUNCTION()
+	void OnRep_OwnerPlayer();
+	
+	UFUNCTION(NetMulticast, Unreliable)
+	void Multi_InitItemActor(UC_InvenComponent* InInvenComp, int32 Idx);
+	
 protected:
 
 	// 데이터 테이블의 에셋들을 비동기 로드하기 위한 함수, 무기마다 다를 수 있기 때문에 순수 가상 함수로 선언. return 값을 bool 처리 할까?
 	virtual void LoadAsyncAssets(const FWeaponData* InRawData) PURE_VIRTUAL(AC_WeaponBase::LoadAsyncAssets, );
 	
 	void CancelAsyncLoad();
+	
+	// 실제 데이터를 세팅하는 내부 공통 함수 생성
+	void ClientInitializeWeapon();
 public:
 	
 	/// <summary>
@@ -154,7 +164,7 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	
 protected:
-	UPROPERTY(Replicated)
+	UPROPERTY(ReplicatedUsing = OnRep_OwnerPlayer, Transient)
 	AC_BasicPlayer* m_OwnerPlayer{};
 	
 

@@ -501,6 +501,20 @@ void AC_BasicPlayer::FinishInvincible()
 	m_IsInvincible = false;
 }
 
+void AC_BasicPlayer::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+	// TODO : HP, Stat Update
+	
+	if (!UI_MANAGER(GetWorld())) return;
+	
+	if (!m_StatComponent) return;
+	
+	UI_MANAGER(GetWorld())->GetMainHUDWidget()->GetPlayerStatWidget()->UpdateBoostBar(m_StatComponent->GetStat(StatName::CurBoost),  m_StatComponent->GetStat(StatName::MaxBoost));
+	
+	UI_MANAGER(GetWorld())->GetMainHUDWidget()->GetPlayerStatWidget()->RepPlayerStateInit(m_StatComponent->GetCurHPRatio());
+}
+
 void AC_BasicPlayer::SetHandState(EHandState _HandState)
 {
 	m_HandState = _HandState;
