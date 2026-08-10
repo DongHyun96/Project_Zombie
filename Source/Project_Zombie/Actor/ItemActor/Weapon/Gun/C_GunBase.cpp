@@ -227,6 +227,16 @@ void AC_GunBase::SetAmmoUIInfo(FAmmoUIInfo& _AmmoUIInfo)
 	_AmmoUIInfo.LeftAmmoTotalCount = m_MaxAmmo;
 }
 
+void AC_GunBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (GetWorld())
+	{
+		GetWorldTimerManager().ClearTimer(m_ReloadTimerHandle);
+	}
+	
+	Super::EndPlay(EndPlayReason);
+}
+
 void AC_GunBase::PlayFireEffects_Client()
 {
 	if (m_OwnerPlayer && m_PlayerFireAnimation)
@@ -283,7 +293,9 @@ void AC_GunBase::SpawnShellEject()
 
 void AC_GunBase::Multicast_PlayFireEffects_Implementation(FVector_NetQuantize ImpactPoint)
 {
-
+	 if (!m_OwnerPlayer) return;
+	
+	
 	if (!m_OwnerPlayer->IsLocallyControlled())
 	{
 		PlayFireEffects_Client();
