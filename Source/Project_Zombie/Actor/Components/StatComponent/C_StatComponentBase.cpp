@@ -30,6 +30,18 @@ void UC_StatComponentBase::LoadStatsFromBackup(const TMap<FName, float>& InStats
 	// 1. 서버 메모리 즉시 복구
 	m_Stats = InStats;
 	m_StatGrades = InGrades;
+	
+	FString msg = FString("Max HP : ");
+	
+	msg += FString::SanitizeFloat(m_Stats[StatName::MaxHP]);
+	
+	UC_Util::Print(msg);
+	
+	msg = FString("Current HP : ");
+	
+	msg += FString::SanitizeFloat(m_Stats[StatName::CurHP]);
+	
+	UC_Util::Print(msg);
 
 	// 2. RPC 전송을 위한 팩킹 (TMap -> TArray)
 	TArray<FStatSyncPair> SyncArray;
