@@ -248,7 +248,7 @@ private:
 
 	// 무적 상태 지속 시간
 	UPROPERTY(EditAnywhere, Category = "Revive")
-	float m_InvincibleDuration = 2.f;
+	float m_InvincibleDuration = 3.f;
 
 	// 무적 상태 종료
 	void FinishInvincible();

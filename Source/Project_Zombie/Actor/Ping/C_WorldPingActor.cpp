@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "C_WorldPingActor.h"
@@ -56,6 +56,12 @@ void AC_WorldPingActor::SpawnPingActorToWorld
 )
 {
 	HidePing(); // 이전 핑 지우기용 처리
+
+	// 핑 사운드 재생
+	if (m_PingSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), m_PingSound, _SpawnLocation);
+	}
 
 	// IconPing인 경우, 다리 없이 Icon 모양만 보이기
 	if (_PingShapeType == EPingShapeType::IconPing)

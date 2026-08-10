@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -87,5 +87,9 @@ protected:
 	UPROPERTY()
 	class UNiagaraComponent* m_PingEffectComp{};
 	
-	
+protected:
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ping|Sound")
+	class USoundBase* m_PingSound{};
+
 };
