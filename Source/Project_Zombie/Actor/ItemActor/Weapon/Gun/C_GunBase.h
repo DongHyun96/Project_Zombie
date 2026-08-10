@@ -136,6 +136,8 @@ protected:
 
 	virtual void SetAmmoUIInfo(FAmmoUIInfo& _AmmoUIInfo) override;
 	
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	
 public:
 	USkeletalMeshComponent* GetWeaponMesh() const { return m_WeaponMesh; }
 
