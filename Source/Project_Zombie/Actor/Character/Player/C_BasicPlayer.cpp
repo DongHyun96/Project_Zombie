@@ -493,6 +493,14 @@ void AC_BasicPlayer::Multicast_IncreaseKillCount_Implementation()
 	++m_KillCount;
 }
 
+void AC_BasicPlayer::FinishInvincible()
+{
+	if (!HasAuthority()) 
+		return;
+
+	m_IsInvincible = false;
+}
+
 void AC_BasicPlayer::SetHandState(EHandState _HandState)
 {
 	m_HandState = _HandState;
@@ -506,6 +514,10 @@ UC_InteractionComponent* AC_BasicPlayer::GetInteractionComponent() const
 
 float AC_BasicPlayer::TakeDamage(float _Damage, FDamageEvent const& _DamageEvent, AController* _InstigatorController, AActor* _InstigatorActor)
 {
+	// 무적 상태
+	if (m_IsInvincible)
+		return 0.0f;
+
 	return Super::TakeDamage(_Damage, _DamageEvent, _InstigatorController, _InstigatorActor);
 }
 
@@ -1057,7 +1069,21 @@ void AC_BasicPlayer::StartGettingUp()
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(m_GetUpTimerHandle);
+		World->GetTimerManager().ClearTimer(m_InvincibleTimerHandle);
 
+		// 일어나는 동작부터 무적
+		m_IsInvincible = true;
+
+		// 무적시간 타이머
+		World->GetTimerManager().SetTimer(
+			m_InvincibleTimerHandle,
+			this,
+			&AC_BasicPlayer::FinishInvincible,
+			m_InvincibleDuration,
+			false
+		);
+
+		// 일어나기 완료 타이머
 		World->GetTimerManager().SetTimer(
 			m_GetUpTimerHandle,
 			this,
@@ -1079,7 +1105,6 @@ void AC_BasicPlayer::FinishGettingUp()
 	// TODO: 몽타주 재생 등 추가적인 처리를 여기에 
 
 	m_StatComponent->SetCurHP(10.0f);
-
 
 	SetPlayerStateOnServer(EPlayerState::Idle);
 }
@@ -1350,65 +1375,3 @@ float AC_BasicPlayer::GetMoveSpeedByState(EPlayerPoseState _MoveSpeedState) cons
 {
 	return 0.0f;
 }
-
-//void AC_BasicPlayer::InitInput()
-//{
-//	APlayerController* PC = Cast<APlayerController>(GetController());
-//	if (!PC)
-//		return;
-//
-//	ULocalPlayer* LocalPlayer = PC->GetLocalPlayer();
-//	if (!LocalPlayer)
-//		return;
-//
-//	UEnhancedInputLocalPlayerSubsystem* Subsystem =
-//		LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
-//
-//	Subsystem->ClearAllMappings();
-//
-//	if (Subsystem && DefaultMappingContext)
-//	{
-//		Subsystem->AddMappingContext(DefaultMappingContext, 0);
-//	}
-//}
-
-//
-//void AC_BasicPlayer::MoveAction(const FInputActionValue& Value)
-//{
-//	if (GetController() != nullptr)
-//	{
-//		FVector2D Input = Value.Get<FVector2D>();
-//
-//		FVector vF = GetActorForwardVector();
-//		FVector vR = GetActorRightVector();
-//
-//		UE_LOG(LogTemp, Warning, TEXT("Move X: %f, Y: %f"), Input.X, Input.Y);
-//
-//		AddMovementInput(vF, Input.X);
-//		AddMovementInput(vR, Input.Y);
-//	}
-//}
-//
-//void AC_BasicPlayer::LookAction(const FInputActionValue& Value)
-//{
-//	if (GetController() != nullptr)
-//	{
-//		FVector2D Input = Value.Get<FVector2D>();
-//
-//		UE_LOG(LogTemp, Warning, TEXT("Look X: %f, Y: %f"), Input.X, Input.Y);
-//
-//		AddControllerYawInput(Input.X);
-//		AddControllerPitchInput(Input.Y);
-//	}
-//}
-//
-//void AC_BasicPlayer::JumpAction()
-//{
-//	Super::Jump();
-//}
-//
-//void AC_BasicPlayer::FireAction()
-//{
-//	// 무기 컴포넌트에서 발사 함수 호출
-//}
-
