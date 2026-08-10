@@ -240,10 +240,26 @@ protected:
 	UPROPERTY()
 	FCursorItem curDraggedItem{};
 
+	// [Invincible]
+private:
+
+	// 무적 상태 인가?
+	bool m_IsInvincible;
+
+	// 무적 상태 지속 시간
+	UPROPERTY(EditAnywhere, Category = "Revive")
+	float m_InvincibleDuration = 2.f;
+
+	// 무적 상태 종료
+	void FinishInvincible();
+
 	// [Timer]
 private:
 	// 플레이어의 LifeState 를 변경해서 BasicPlayer 가 관리
 	FTimerHandle m_GetUpTimerHandle;
+
+	// 부활 후 무적 타이머
+	FTimerHandle m_InvincibleTimerHandle;
 
 private:
 	
