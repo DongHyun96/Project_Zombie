@@ -413,7 +413,7 @@ void AC_BasicEnemy::ApplyDeadState(int32 _DeadMontageIndex)
 	PlayDeadAnimation(_DeadMontageIndex);
 
 	// 서버와 클라 동시 즉시 충돌 비활성화
-	SetActorEnableCollision(false);
+	//SetActorEnableCollision(false);
 }
 
 void AC_BasicEnemy::PlayDeadAnimation(int32 _DeadMontageIndex)
@@ -447,7 +447,7 @@ void AC_BasicEnemy::OnRep_DeadData()
 	StopAnimMontage();
 	
 	// 클라에서도 죽은 좀비의 Collision 꺼주기.
-	SetActorEnableCollision(false);
+	//SetActorEnableCollision(false);
 }
 
 void AC_BasicEnemy::FinishDead()
