@@ -75,13 +75,16 @@ void UC_StatComponentBase::Multicast_InitializeAllStats_Implementation(const TAr
 	// 1. [클라이언트/프록시] 로컬 맵 데이터 동기화 복구 (서버는 이미 LoadStatsFromBackup에서 데이터가 들어감)
 	if (!GetOwner()->HasAuthority())
 	{
-		m_Stats.Empty();
-		m_StatGrades.Empty();
+		//m_Stats.Empty();
+		//m_StatGrades.Empty();
 
 		for (const FStatSyncPair& Data : InSyncArray)
 		{
-			m_Stats.Add(Data.StatName, Data.StatValue);
-			m_StatGrades.Add(Data.StatName, Data.StatGrade);
+			m_Stats[Data.StatName] = Data.StatValue;
+			m_StatGrades[Data.StatName] = Data.StatGrade;
+			
+			//m_Stats.Add(Data.StatName, Data.StatValue);
+			//m_StatGrades.Add(Data.StatName, Data.StatGrade);
 		}
 	}
 
