@@ -23,6 +23,8 @@ public:
 	virtual void BeginPlay() override;
 	
 	void Server_RequestStatUpgrade(AC_StatUpgradeStation* InInteractableActor, const FName& UpStatName);
+	
+	void BindUpdateOtherPlayerHPBar();
 private:
 	
 	virtual UScriptStruct* GetStatDataStruct() const override;

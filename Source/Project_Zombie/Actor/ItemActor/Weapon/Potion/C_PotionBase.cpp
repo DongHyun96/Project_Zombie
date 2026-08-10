@@ -76,6 +76,12 @@ void AC_PotionBase::Server_OnAction_Implementation()
 	UE_LOG(LogTemp, Warning, TEXT("[Server] Server_OnAction - Player: %s, CurHP: %f, MaxHP: %f, Potion_value: %f -> Calculated RecoverHP: %f"), 
 		   *m_OwnerPlayer->GetName(), CurHP, MaxHP, Potion_value, RecoverHPValue);
 	
+	FString msg = FString("RecoverHPValue");
+	
+	msg += FString::SanitizeFloat(RecoverHPValue);
+	
+	UC_Util::Print(msg);
+	
 	// UC_StatComponentBase 내부에서 Server_IncreaseCurHP를 호출하므로 안전하게 동작함
 	StatComp->IncreaseCurHP(RecoverHPValue);
     

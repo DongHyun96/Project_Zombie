@@ -58,7 +58,11 @@ void AC_WeaponBase::OnRep_WeaponRowName()
 	if (WeaponData)
 	{
 		// 원래는 서버만 알게 할려고 했는데 현재 구조는 로컬에서 데미지 계산을 하고 최종값만 보내는 형식이라 필요해 졌음.
-		ItemLinkComp->InitializeLink(m_OwnerPlayer->GetInvenComponent(), static_cast<int32>(WeaponData->WeaponType));
+		UC_InvenComponent* OwnerInvenComp = m_OwnerPlayer->GetInvenComponent();
+		
+		if (!OwnerInvenComp) return;
+		
+		ItemLinkComp->InitializeLink(OwnerInvenComp, static_cast<int32>(WeaponData->WeaponType));
 		
 		InitializeItemData(WeaponData);
 		LoadAsyncAssets(WeaponData);

@@ -30,7 +30,7 @@ void UC_PlayerStatComponent::BeginPlay()
 
 	m_OwnerPlayer = Cast<AC_BasicPlayer>(GetOwner());
 	
-	if (m_OwnerCharacter->IsLocallyControlled())
+	/*if (m_OwnerCharacter->IsLocallyControlled())
 	{
 		GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
 		{
@@ -44,8 +44,11 @@ void UC_PlayerStatComponent::BeginPlay()
 			if (StatWidget)
 				this->OnCurHPUpdatedDelegate.AddUObject(StatWidget, &UC_PlayerStatWidget::UpdateHPBarRatio);
 		});
+	}*/
+	if (!m_OwnerCharacter->IsLocallyControlled())
+	{
+		OnCurHPUpdatedDelegate.AddUObject(this, &UC_PlayerStatComponent::UpdateOtherPlayerHPBar);
 	}
-	else OnCurHPUpdatedDelegate.AddUObject(this, &UC_PlayerStatComponent::UpdateOtherPlayerHPBar);
 }
 
 void UC_PlayerStatComponent::Server_RequestStatUpgrade(AC_StatUpgradeStation* InInteractableActor,
@@ -63,6 +66,11 @@ void UC_PlayerStatComponent::Server_RequestStatUpgrade(AC_StatUpgradeStation* In
 	PC->SetIsUpgradingPlayerStat(true);
 	
 	InInteractableActor->RequestStatUpgrade(m_OwnerPlayer, UpStatName);
+}
+
+void UC_PlayerStatComponent::BindUpdateOtherPlayerHPBar()
+{
+	this->OnCurHPUpdatedDelegate.AddUObject(this, &UC_PlayerStatComponent::UpdateOtherPlayerHPBar);
 }
 
 UScriptStruct* UC_PlayerStatComponent::GetStatDataStruct() const

@@ -850,6 +850,7 @@ void AC_ThrowableWeaponBase::OnThrowProcessEnd()
 	// 투척류는 아이템 갯수가 Ammo라고 보면된다.
 	// 투척하면 하나씩 줄여주고 0이 되면 해당 슬롯의 Entry를 비워준다.
 	// 이 작업을 서버에서 처리하면 될 듯?
+	if (!m_OwnerPlayer) return;
 	if (m_OwnerPlayer->IsLocallyControlled())
 		Server_DecreaseCurCount();
 	

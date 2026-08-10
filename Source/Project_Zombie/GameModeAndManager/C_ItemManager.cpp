@@ -486,23 +486,25 @@ AC_WeaponBase* UC_ItemManager::SpawnEquippedActor(FName InRowName, AActor* InOwn
             SpawnedWeapon->Destroy();
             return nullptr;
         }
+        SpawnedWeapon->SetItemRowName(InRowName);
         
         LinkComp->InitializeLink(InvenComp, SlotIdx);
         
+        SpawnedWeapon->SetOwnerPlayer(Player);
+        
         // 무기의 초기화
-        if (Player->IsLocallyControlled())
-        {
-            SpawnedWeapon->SetItemRowName(InRowName);
-            UC_Util::Print("UP");
-        }  
+        //if (Player->IsLocallyControlled())
+        //{
+        //    SpawnedWeapon->SetItemRowName(InRowName);
+        //    UC_Util::Print("UP");
+        //}  
         
         SpawnedWeapon->InitializeItemActor(InRawData);
         
-        if (!Player->IsLocallyControlled())
-        {
-            SpawnedWeapon->SetItemRowName(InRowName);
+        //if (!Player->IsLocallyControlled())
+        //{
             UC_Util::Print("Down");
-        }
+        //}
     }
 
     return SpawnedWeapon;

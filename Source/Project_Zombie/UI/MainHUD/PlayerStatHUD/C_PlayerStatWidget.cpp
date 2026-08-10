@@ -3,6 +3,9 @@
 
 #include "C_PlayerStatWidget.h"
 
+#include "Actor/Character/Player/C_BasicPlayer.h"
+#include "Actor/Components/C_PlayerStatComponent.h"
+#include "Actor/Components/StatComponent/C_StatComponentBase.h"
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
 #include "GameModeAndManager/C_UIManager.h"
@@ -63,6 +66,34 @@ void UC_PlayerStatWidget::ToggleBoostBarColor(bool BoostExhausted)
 
 		BoostBar->SetWidgetStyle(CurrentStyle);
 	}
+}
+
+void UC_PlayerStatWidget::BindCurHPUpdate(UC_StatComponentBase* InPlayerStatComponent)
+{
+	
+	UC_PlayerStatComponent* PlayerStatComp= Cast<UC_PlayerStatComponent>(InPlayerStatComponent);
+	
+	if (!PlayerStatComp) return;
+	
+	AC_BasicPlayer* OwnerPlayer = Cast<AC_BasicPlayer>(InPlayerStatComponent->GetOwnerCharacter());
+	
+	if (!OwnerPlayer) return;
+	
+	if (OwnerPlayer->IsLocallyControlled())
+	{
+		
+			//AC_UIManager* UIManager = UI_MANAGER(GetWorld());
+			//if (!UIManager) return;
+			//
+			//UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget();
+			//if (!MainHUD) return;
+			//
+			//UC_PlayerStatWidget* StatWidget = MainHUD->GetPlayerStatWidget();
+			//if (StatWidget)
+		PlayerStatComp->OnCurHPUpdatedDelegate.AddUObject(this, &UC_PlayerStatWidget::UpdateHPBarRatio);
+		
+	}
+	// else PlayerStatComp->BindUpdateOtherPlayerHPBar();
 }
 
 bool UC_PlayerStatWidget::UpdateHPBar(float _HP, float _MaxHP)

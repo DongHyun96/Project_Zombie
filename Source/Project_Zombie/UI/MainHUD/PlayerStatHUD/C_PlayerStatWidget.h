@@ -7,6 +7,7 @@
 #include "Blueprint/UserWidget.h"
 #include "C_PlayerStatWidget.generated.h"
 
+class UC_StatComponentBase;
 enum class EFireMode : uint8;
 
 /**
@@ -29,6 +30,8 @@ public:
 
 	void ToggleBoostBarColor(bool BoostExhausted);
 	
+	
+	void BindCurHPUpdate(UC_StatComponentBase* InPlayerStatComponent);
 public: // HPBar 및 BoostBar 관련
 	
 	/// <summary>

@@ -48,6 +48,7 @@
 #include "Actor/Components/PlayerProfileComponent/C_PlayerProfileComponent.h"
 
 #include "Actor/GameOverChecker/C_GameOverChecker.h"
+#include "Components/WidgetComponent.h"
 #include "GameModeAndManager/C_GameMode_GameLv.h"
 
 #include "GameModeAndManager/PlayerState/C_PlayerState.h"
@@ -63,6 +64,7 @@
 #include "Kismet/GameplayStatics.h"
 
 #include "UI/InvenUI/Upgrade/C_PlayerStatUpgradeWidget.h"
+#include "UI/MainHUD/PlayerStatHUD/C_PlayerStatWidget.h"
 
 #define RECHARGED_BOOST 20.f
 
@@ -275,7 +277,10 @@ void AC_BasicPlayer::BeginPlay()
 	}
 
 	if (m_StatComponent)
+	{
 		UIManager->GetInventoryWidget()->GetPlayerStatUpgradeWidget()->BindStatEvents(m_StatComponent);
+		UIManager->GetMainHUDWidget()->GetPlayerStatWidget()->BindCurHPUpdate(m_StatComponent);
+	}
 	
 	// GameLevelManager에 해당 Player 등록
 	if (UC_GameLevelManager* LevelManager = GetWorld()->GetSubsystem<UC_GameLevelManager>())
@@ -320,6 +325,19 @@ void AC_BasicPlayer::Tick(float DeltaTime)
 		{
 			Server_EnterDownedState();
 		}
+	}
+	
+	if (m_NameTagWidgetCom && !IsLocallyControlled())
+	{
+		APlayerController* PC = GetWorld()->GetFirstPlayerController();
+		if (!PC || !PC->PlayerCameraManager)
+			return;
+
+		FRotator CameraRotation = PC->PlayerCameraManager->GetCameraRotation();
+		CameraRotation.Pitch = -CameraRotation.Pitch;
+		CameraRotation.Yaw += 180.f;
+
+		m_NameTagWidgetCom->SetWorldRotation(CameraRotation);
 	}
 
 	/// 나중에 스탯 컴포넌트로 분리할 예정

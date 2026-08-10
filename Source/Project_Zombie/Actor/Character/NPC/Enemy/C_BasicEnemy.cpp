@@ -196,18 +196,21 @@ float AC_BasicEnemy::TakeDamage
 	}
 
 	/* PerceptionComponent에 Damage를 받았다고 보고 처리 */
-	ACharacter* DamageInstigator = _EventInstigator->GetCharacter();
-	const FVector DamageInstigatorPos = (DamageInstigator != nullptr) ? DamageInstigator->GetActorLocation() : this->GetActorLocation();
 	
-	UAISense_Damage::ReportDamageEvent
-	(
-		GetWorld(),				 // 히트 이벤트가 발생한 월드 
-		this,					 // 맞은 놈 
-		DamageInstigator,		 // 때린 놈 
-		DamageAmount,			 // 최종 데미지
-		DamageInstigatorPos,	 // 때린놈 위치 
-		this->GetActorLocation() // 맞은놈 위치
-	);
+	if (ACharacter* DamageInstigator = _EventInstigator->GetCharacter())
+	{
+		const FVector DamageInstigatorPos = (DamageInstigator != nullptr) ? DamageInstigator->GetActorLocation() : this->GetActorLocation();
+		
+		UAISense_Damage::ReportDamageEvent
+		(
+			GetWorld(),				 // 히트 이벤트가 발생한 월드 
+			this,					 // 맞은 놈 
+			DamageInstigator,		 // 때린 놈 
+			DamageAmount,			 // 최종 데미지
+			DamageInstigatorPos,	 // 때린놈 위치 
+			this->GetActorLocation() // 맞은놈 위치
+		);
+	}
 
 	// 사망 했을 경우
 	if (m_StatComponent->IsCurHPZero())
@@ -413,7 +416,7 @@ void AC_BasicEnemy::ApplyDeadState(int32 _DeadMontageIndex)
 	PlayDeadAnimation(_DeadMontageIndex);
 
 	// 서버와 클라 동시 즉시 충돌 비활성화
-	SetActorEnableCollision(false);
+	//SetActorEnableCollision(false);
 }
 
 void AC_BasicEnemy::PlayDeadAnimation(int32 _DeadMontageIndex)
@@ -447,7 +450,7 @@ void AC_BasicEnemy::OnRep_DeadData()
 	StopAnimMontage();
 	
 	// 클라에서도 죽은 좀비의 Collision 꺼주기.
-	SetActorEnableCollision(false);
+	//SetActorEnableCollision(false);
 }
 
 void AC_BasicEnemy::FinishDead()
