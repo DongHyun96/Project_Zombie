@@ -48,8 +48,6 @@ void AC_NurseZombie::BeginPlay()
 	
 	ToggleHealingAura(false);
 	m_HealingAuraCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	m_HealingAuraEffectNG->DeactivateImmediate();
-
 }
 
 void AC_NurseZombie::GetHealingAuraOverlappingEnemies(TArray<AActor*>& _OutOverlappingEnemies) const
