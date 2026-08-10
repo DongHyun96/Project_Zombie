@@ -280,6 +280,7 @@ void AC_BasicPlayer::BeginPlay()
 	{
 		UIManager->GetInventoryWidget()->GetPlayerStatUpgradeWidget()->BindStatEvents(m_StatComponent);
 		UIManager->GetMainHUDWidget()->GetPlayerStatWidget()->BindCurHPUpdate(m_StatComponent);
+		//UIManager->GetMainHUDWidget()->GetPlayerStatWidget()->UpdateHPBar(m_StatComponent->GetCurHPRatio());
 	}
 	
 	// GameLevelManager에 해당 Player 등록
