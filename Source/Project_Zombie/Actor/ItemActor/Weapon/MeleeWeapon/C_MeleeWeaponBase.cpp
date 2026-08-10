@@ -31,7 +31,6 @@ void AC_MeleeWeaponBase::BeginPlay()
 {
 	Super::BeginPlay();
 
-	//Melee_init();
 }
 
 void AC_MeleeWeaponBase::Tick(float DeltaTime)
@@ -40,9 +39,7 @@ void AC_MeleeWeaponBase::Tick(float DeltaTime)
 }
 
 bool AC_MeleeWeaponBase::InitializeItemActor(const FWeaponData* InRawData)
-{
-	//return Super::InitializeItemActor(InRawData);
-	
+{	
 	const FMeleeData* MeleeData = static_cast<const FMeleeData*>(InRawData);
 	
 	InitializeItemData(InRawData);
@@ -162,11 +159,14 @@ bool AC_MeleeWeaponBase::OnStartFire(AC_BasicPlayer* _WeaponUser)
 	{
 		return false;
 	}
-	else
+	
+	if (_WeaponUser->IsDead())
 	{
+		return false;
+	}
+
 		Attack(_WeaponUser);
 		return true;
-	}
 }
 
 bool AC_MeleeWeaponBase::AttachToHolster(USceneComponent* _ParentMesh)
@@ -220,12 +220,16 @@ void AC_MeleeWeaponBase::Attack(AC_BasicPlayer* _WeaponUser)
 {
 	if (!_WeaponUser) return;
 
+	if (_WeaponUser->IsDead()) return;
+
 	PlayAttackMotion(_WeaponUser);
 }
 
 void AC_MeleeWeaponBase::PlayAttackMotion(AC_BasicPlayer* _WeaponUser)
 {
 	if (!_WeaponUser || !m_PlayerAttackAnimation) return;
+
+	if (_WeaponUser->IsDead()) return;
 
 	UAnimInstance* AnimInstance = _WeaponUser->GetMesh() ? _WeaponUser->GetMesh()->GetAnimInstance() : nullptr;
 	if (!AnimInstance) return;
@@ -255,6 +259,8 @@ void AC_MeleeWeaponBase::PlayAttackMotion(AC_BasicPlayer* _WeaponUser)
 void AC_MeleeWeaponBase::Server_ReqMeleeCombo_Implementation()
 {
 	if (!m_OwnerPlayer || !m_OwnerPlayer->GetMesh()) return;
+
+	if (m_OwnerPlayer->IsDead()) return;
 
 	UAnimInstance* AnimInstance = m_OwnerPlayer->GetMesh()->GetAnimInstance();
 	if (!AnimInstance || !m_PlayerAttackAnimation) return;
@@ -299,6 +305,8 @@ void AC_MeleeWeaponBase::Multicast_PlayAttackMotion_Implementation(FName Section
 void AC_MeleeWeaponBase::Server_ApplyHitDamage_Implementation(AActor* HitActor, float Damage, FVector ImpactPoint, FVector ImpactNormal)
 {
 	if (!HasAuthority() || !HitActor) return;
+
+	if (m_OwnerPlayer && m_OwnerPlayer->IsDead()) return;
 
 	AController* InstigatorController = nullptr;
 	if (m_OwnerPlayer)
@@ -347,6 +355,8 @@ void AC_MeleeWeaponBase::Multicast_PlayHitEffect_Implementation(FVector ImpactPo
 void AC_MeleeWeaponBase::HitBoxCheck()
 {
 	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled()) return;
+
+	if (m_OwnerPlayer->IsDead()) return;
 
 	FVector CurSockPos = m_WeaponMesh->GetSocketLocation(TEXT("HitBoxSock"));
 
@@ -403,6 +413,12 @@ void AC_MeleeWeaponBase::MeleeCombo()
 		m_bSaveCombo = false;
 
 		if (!m_OwnerPlayer) return;
+
+		if (m_OwnerPlayer->IsDead())
+		{
+			m_bSaveCombo = false;
+			return;
+		}
 
 		m_HitActors.Empty();
 
