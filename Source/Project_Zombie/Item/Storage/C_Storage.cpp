@@ -64,6 +64,9 @@ void AC_Storage::BeginPlay()
 					// ItemManager에서 아이템 테이블 기본 데이터를 조회
 					if (const FItemData* BaseData = ItemManager->GetItemData<FItemData>(EItemTableType::General, RawItemPtr->ItemRowName))
 					{
+						
+						//if (static_cast<uint8>(BaseData->ItemType) <= static_cast<uint8>(EItemType::CONSUMABLE)) continue;
+						
 						// ❌ 누락되었던 기본 CustomData를 인스턴스 구조체로 생성하여 주입!
 						RawItemPtr->CustomData = FInstancedStruct::Make(BaseData->CustomData);
 
@@ -74,26 +77,6 @@ void AC_Storage::BeginPlay()
 							i, *RawItemPtr->ItemRowName.ToString());
 					}
 				}
-			}
-		}
-	}
-	// 클라는 의미없는 아이템 지우기.
-	else if (!HasAuthority() && InvenComp)
-	{
-		const TArray<FInventoryEntry>& Items = InvenComp->GetInventoryItems();
-		for (int32 i = 0; i < Items.Num(); ++i)
-		{
-			// 빈 슬롯이거나 이름이 없다면 패스
-			if (Items[i].ItemRowName.IsNone()) continue;
-
-			// 이미 유효한 CustomData를 가지고 있다면 패스
-			if (Items[i].CustomData.IsValid()) continue;
-			
-			if (FInventoryEntry* RawItemPtr = InvenComp->GetSlotDataPtr(i))
-			{
-				int32 SlotIdx = RawItemPtr->SlotIndex;
-				RawItemPtr->Clear();
-				RawItemPtr->SlotIndex = SlotIdx; 
 			}
 		}
 	}

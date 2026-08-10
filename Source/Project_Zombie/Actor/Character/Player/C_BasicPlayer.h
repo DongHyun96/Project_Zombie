@@ -118,7 +118,7 @@ protected:
 	// [Status]
 protected:
 	//UPROPERTY(ReplicatedUsing = OnRep_EPlayerState, VisibleAnywhere, BlueprintReadOnly, Category = "Status")
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Status")
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Status")
 	EPlayerState		m_PlayerState{};
 	
 	UPROPERTY(ReplicatedUsing = OnRep_PlayerPoseState, VisibleAnywhere, BlueprintReadOnly, Category = "Status")
