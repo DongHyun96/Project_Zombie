@@ -130,7 +130,7 @@ void UC_PingSystemComponent::Multicast_SpawnPing_Implementation
 {
 	// 자기자신의 Ping Spawn은 바로 Local 환경에서 이미 띄운 상황
 	// TODO : 이거 외부에 의한 Ping spawn은 실질적으로 스폰 처리를 해주어야 함
-	if (m_OwnerPlayer->IsLocallyControlled()) return;
+	if (!m_OwnerPlayer && m_OwnerPlayer->IsLocallyControlled()) return;
 	
 	m_WorldPingActor->SetPingColor(m_OwnerPlayer->GetPlayerProfileComponent()->GetPlayerSelectedColor());
 	m_WorldPingActor->SpawnPingActorToWorld(_SpawnedLocation, _GamePingType, _PingShapeType);
