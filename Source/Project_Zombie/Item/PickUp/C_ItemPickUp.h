@@ -48,7 +48,10 @@ public:
 	
 	void EnablePickupOverlap();
 	
+	
 	void ActivateItem(const FInventoryEntry& InEntry, const FVector& SpawnLocation);
+	
+	UFUNCTION(BlueprintCallable)
 	void DeactivateItem();
 
 	// 일정 시간 후 자동 수거 타이머 설정
