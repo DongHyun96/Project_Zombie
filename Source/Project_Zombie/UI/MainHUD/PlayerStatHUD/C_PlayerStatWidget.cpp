@@ -93,7 +93,7 @@ void UC_PlayerStatWidget::BindCurHPUpdate(UC_StatComponentBase* InPlayerStatComp
 		PlayerStatComp->OnCurHPUpdatedDelegate.AddUObject(this, &UC_PlayerStatWidget::UpdateHPBarRatio);
 		
 	}
-	else PlayerStatComp->BindUpdateOtherPlayerHPBar();
+	// else PlayerStatComp->BindUpdateOtherPlayerHPBar();
 }
 
 bool UC_PlayerStatWidget::UpdateHPBar(float _HP, float _MaxHP)
