@@ -31,7 +31,6 @@ void AC_MeleeWeaponBase::BeginPlay()
 {
 	Super::BeginPlay();
 
-	//Melee_init();
 }
 
 void AC_MeleeWeaponBase::Tick(float DeltaTime)
@@ -40,9 +39,7 @@ void AC_MeleeWeaponBase::Tick(float DeltaTime)
 }
 
 bool AC_MeleeWeaponBase::InitializeItemActor(const FWeaponData* InRawData)
-{
-	//return Super::InitializeItemActor(InRawData);
-	
+{	
 	const FMeleeData* MeleeData = static_cast<const FMeleeData*>(InRawData);
 	
 	InitializeItemData(InRawData);

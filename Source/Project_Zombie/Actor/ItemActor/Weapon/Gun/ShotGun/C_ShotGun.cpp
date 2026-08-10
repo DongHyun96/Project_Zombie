@@ -13,7 +13,7 @@
 
 AC_ShotGun::AC_ShotGun()
 {
-	m_PelletCount = 8;
+	m_PelletCount = 13;
 	m_SpreadAngle = 6.0f;
 	m_FireMode = EFireMode::Single;
 	m_FireRate = 0.8f;
