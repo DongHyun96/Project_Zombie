@@ -68,6 +68,11 @@ void UC_PlayerStatWidget::ToggleBoostBarColor(bool BoostExhausted)
 	}
 }
 
+void UC_PlayerStatWidget::RepPlayerStateInit(float _Ratio)
+{
+	UpdateHPBarRatio(_Ratio);
+}
+
 void UC_PlayerStatWidget::BindCurHPUpdate(UC_StatComponentBase* InPlayerStatComponent)
 {
 	

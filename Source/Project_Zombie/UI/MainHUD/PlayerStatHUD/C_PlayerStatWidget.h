@@ -30,6 +30,7 @@ public:
 
 	void ToggleBoostBarColor(bool BoostExhausted);
 	
+	void RepPlayerStateInit(float _Ratio);
 	
 	void BindCurHPUpdate(UC_StatComponentBase* InPlayerStatComponent);
 public: // HPBar 및 BoostBar 관련

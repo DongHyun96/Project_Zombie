@@ -274,6 +274,9 @@ public:
 	void Multicast_IncreaseKillCount();
 	
 	int32 GetKillCount() const { return m_KillCount; }
+
+	//UFUNCTION()
+	virtual void OnRep_PlayerState() override;
 	
 public:
 	
