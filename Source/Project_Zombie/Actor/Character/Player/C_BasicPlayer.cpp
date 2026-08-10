@@ -64,6 +64,7 @@
 #include "Kismet/GameplayStatics.h"
 
 #include "UI/InvenUI/Upgrade/C_PlayerStatUpgradeWidget.h"
+#include "UI/MainHUD/PlayerStatHUD/C_PlayerStatWidget.h"
 
 #define RECHARGED_BOOST 20.f
 
@@ -276,7 +277,10 @@ void AC_BasicPlayer::BeginPlay()
 	}
 
 	if (m_StatComponent)
+	{
 		UIManager->GetInventoryWidget()->GetPlayerStatUpgradeWidget()->BindStatEvents(m_StatComponent);
+		UIManager->GetMainHUDWidget()->GetPlayerStatWidget()->BindCurHPUpdate(m_StatComponent);
+	}
 	
 	// GameLevelManager에 해당 Player 등록
 	if (UC_GameLevelManager* LevelManager = GetWorld()->GetSubsystem<UC_GameLevelManager>())

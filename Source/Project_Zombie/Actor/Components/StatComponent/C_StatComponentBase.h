@@ -55,6 +55,8 @@ public:
 
 	void LoadStatsFromBackup(const TMap<FName, float>& InStats, const TMap<FName, uint8>& InGrades);
 	
+	AC_BasicCharacter* GetOwnerCharacter() {return m_OwnerCharacter;}
+	
 private:
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_InitializeAllStats(const TArray<FStatSyncPair>& InSyncArray);
