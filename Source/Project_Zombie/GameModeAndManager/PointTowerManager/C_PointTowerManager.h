@@ -121,9 +121,12 @@ private:
 	
 	bool m_GameStartTimerSet{};
 
+	FTimerHandle TempTimerHandle{};
+	
 public:
 	
 	bool GetGameStartTimerSet() const { return m_GameStartTimerSet; }
+
 	
 	
 };

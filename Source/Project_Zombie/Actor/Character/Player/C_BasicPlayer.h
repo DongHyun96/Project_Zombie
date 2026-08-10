@@ -114,10 +114,15 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Components", meta = (DisplayName = "FeetComponent"))
 	class UC_FeetComponent* m_FeetComponent{};
 
+
+protected:
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	class UWidgetComponent* m_NameTagWidgetCom{};
 	
 	// [Status]
 protected:
-	UPROPERTY(ReplicatedUsing = OnRep_PlayerState, VisibleAnywhere, BlueprintReadOnly, Category = "Status")
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Status")
 	EPlayerState		m_PlayerState;
 	
 	UPROPERTY(ReplicatedUsing = OnRep_PlayerPoseState, VisibleAnywhere, BlueprintReadOnly, Category = "Status")
@@ -550,6 +555,12 @@ public:
 	void ToggleInventoryWidget();
 	
 	void ToggleMenuWidget();
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void ToggleNameTagVisible(bool _Visible);
+	
+	UFUNCTION(BlueprintImplementableEvent)
+	void SetNameTagWidgetInfo(const FString& _Name, const FColor& _Color);
 
 public:
 	// 데미지 처리 함수 

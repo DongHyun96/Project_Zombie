@@ -276,16 +276,19 @@ TArray<AC_SpawnArea*> UC_PointTowerManager::GetCurrentSequenceSpawnAreas() const
 
 void UC_PointTowerManager::Multicast_ShowGameStartPanel_Implementation()
 {
-	FTimerHandle TimerHandle{};
-	
-	GetWorld()->GetTimerManager().SetTimer(
-	TimerHandle,
+	GetWorld()->GetTimerManager().SetTimer
+	(
+	TempTimerHandle,
 	[this]()
 	{
-		if (UI_MANAGER(GetWorld())) UI_MANAGER(GetWorld())->GetMainHUDWidget()->GetInformWidget()->ToggleGameStartPanel(true);
+		if (UI_MANAGER(GetWorld()))
+		{
+			UI_MANAGER(GetWorld())->GetMainHUDWidget()->GetInformWidget()->ToggleGameStartPanel(true);
+			GetWorld()->GetTimerManager().ClearTimer(TempTimerHandle);
+		}
 	},
-	3.0f,
-	false
+	1.f,
+	true
 );
 
 }

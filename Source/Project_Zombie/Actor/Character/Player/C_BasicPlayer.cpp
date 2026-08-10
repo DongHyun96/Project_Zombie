@@ -48,6 +48,7 @@
 #include "Actor/Components/PlayerProfileComponent/C_PlayerProfileComponent.h"
 
 #include "Actor/GameOverChecker/C_GameOverChecker.h"
+#include "Components/WidgetComponent.h"
 #include "GameModeAndManager/C_GameMode_GameLv.h"
 
 #include "GameModeAndManager/PlayerState/C_PlayerState.h"
@@ -320,6 +321,19 @@ void AC_BasicPlayer::Tick(float DeltaTime)
 		{
 			Server_EnterDownedState();
 		}
+	}
+	
+	if (m_NameTagWidgetCom && !IsLocallyControlled())
+	{
+		APlayerController* PC = GetWorld()->GetFirstPlayerController();
+		if (!PC || !PC->PlayerCameraManager)
+			return;
+
+		FRotator CameraRotation = PC->PlayerCameraManager->GetCameraRotation();
+		CameraRotation.Pitch = -CameraRotation.Pitch;
+		CameraRotation.Yaw += 180.f;
+
+		m_NameTagWidgetCom->SetWorldRotation(CameraRotation);
 	}
 
 	/// 나중에 스탯 컴포넌트로 분리할 예정

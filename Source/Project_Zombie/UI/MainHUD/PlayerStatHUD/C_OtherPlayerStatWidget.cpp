@@ -4,6 +4,8 @@
 #include "C_OtherPlayerStatWidget.h"
 
 #include "C_MiniHPBarWidget.h"
+#include "Actor/Character/Player/C_BasicPlayer.h"
+#include "Actor/Components/PlayerProfileComponent/C_PlayerProfileComponent.h"
 #include "Utility/C_Util.h"
 
 void UC_OtherPlayerStatWidget::NativeOnInitialized()
@@ -45,11 +47,14 @@ void UC_OtherPlayerStatWidget::RegisterOtherPlayer(AC_BasicPlayer* _Player)
 		(*TargetWidget)->Activate(_Player);
 		return;
 	}
-
+	
 	// 신규 등록
 	UC_MiniHPBarWidget* MiniHPBarWidget = m_MiniHPs.Pop();
 	MiniHPBarWidget->Activate(_Player);
 	m_RegisteredWidget.Add(_Player, MiniHPBarWidget);
+	
+	_Player->ToggleNameTagVisible(true);
+	_Player->SetNameTagWidgetInfo(_Player->GetPlayerProfileComponent()->GetPlayerName(), _Player->GetPlayerProfileComponent()->GetPlayerSelectedColor());
 }
 
 void UC_OtherPlayerStatWidget::UpdateHPBar(AC_BasicPlayer* _TargetPlayer, float _HPRatio)
