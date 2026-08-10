@@ -57,7 +57,7 @@ void UC_ZombieManager::OnWorldBeginPlay()
 	// HealingProjectile Pooling 처리
 	if (m_HealingProjectileClass)
 	{
-		for (int i = 0; i < 10; ++i)
+		for (int i = 0; i < 45; ++i)
 		{
 			AC_HealingProjectile* SpawnedProjectile = GetWorld()->SpawnActor<AC_HealingProjectile>(m_HealingProjectileClass);
 			if (SpawnedProjectile) m_HealingProjectilePool.Add(SpawnedProjectile);

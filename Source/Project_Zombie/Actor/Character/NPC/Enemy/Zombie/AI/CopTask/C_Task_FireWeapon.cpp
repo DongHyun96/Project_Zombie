@@ -30,6 +30,7 @@ void UC_Task_FireWeapon::OnTaskFinished
 	// 총알을 모두 소진한 경우, 무기를 다시 뱉어낸다
 
 	AC_CopZombie* Cop = Cast<AC_CopZombie>(OwnerComp.GetAIOwner()->GetPawn());
+	if (!Cop) return;
 
 	if (!Cop->GetEquippedGun()) return; // 아마 고장난 상황
 	
