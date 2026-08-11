@@ -359,6 +359,7 @@ void UC_EquippedComponent::LoadEquippedWeaponFromInven(int32 SlotIndex, const FI
 	//	UpdateWeaponData(static_cast<EWeaponSlot>(SlotIndex), ItemData.ItemRowName);
 	//}
 	
+	// TODO : 서버에서 아이템을 장착하는 함수를 실행. 테스트 필요, 만약 클라에서 제대로 초기화가 안된다면 다른 방법 모색 해야 함.
 	Server_RequestSpawnEquippedActor(SlotIndex, ItemData);
 
 }
