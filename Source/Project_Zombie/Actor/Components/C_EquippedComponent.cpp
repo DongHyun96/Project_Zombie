@@ -52,14 +52,16 @@ void UC_EquippedComponent::SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* 
     // 들어온 슬롯의 이전 무기가 존재할 때, 이전 무기 해제 및 OwnerPlayer 초기화
     if (AC_WeaponBase* PrevSlotWeapon = m_Weapons[TargetSlotIdx])
     {
+    	PRINT_LOCAL(GetWorld(), "들어온 슬롯의 이전 무기가 존재할 때, 이전 무기 해제 및 OwnerPlayer 초기화", FColor::Cyan, 10.f);
     	PrevSlotWeapon->DetachFromActor(FDetachmentTransformRules::KeepRelativeTransform);
     	PrevSlotWeapon->SetOwnerPlayer(nullptr);
-    }
+    } else PRINT_LOCAL(GetWorld(), "No Weapon On CurSlot", FColor::Cyan, 10.f);
 
     m_Weapons[TargetSlotIdx] = WeaponToEquip; // 새로 들어온 무기로 교체
     
     if (!m_Weapons[TargetSlotIdx]) // Slot에 새로 지정한 무기가 nullptr -> early return
     {
+    	PRINT_LOCAL(GetWorld(), "WOWWOWWOW", FColor::Cyan, 10.f);
         if (m_CurWeaponTypeIdx == TargetSlotIdx) // 현재 손에 들고 있는 무기를 Slot에서 강제로 뺀 상황
         {
             m_NextWeaponTypeIdx  = static_cast<uint8>(EWeaponSlot::None);
@@ -87,7 +89,28 @@ void UC_EquippedComponent::SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* 
 		PRINT_LOCAL(GetWorld(), "Current holding weapon swapped to new Same SlotWeapon", FColor::Red, 10.f);
 		m_Weapons[TargetSlotIdx]->AttachToHand(m_OwnerPlayer->GetMesh());
 	}
-    else m_Weapons[TargetSlotIdx]->AttachToHolster(m_OwnerPlayer->GetMesh());
+    else
+    {
+    	m_Weapons[TargetSlotIdx]->AttachToHolster(m_OwnerPlayer->GetMesh());
+    }
+}
+
+void UC_EquippedComponent::Multicast_SetSlotWeapon_Implementation(EWeaponSlot TargetSlot, AC_WeaponBase* WeaponToEquip)
+{
+	PRINT_LOCAL(GetWorld(), "Multicast_SetSlotWeapon Start", FColor::Cyan, 10.f);
+	
+	if (!m_OwnerPlayer)
+	{
+		PRINT_LOCAL(GetWorld(), "Multicast_SetSlotWeapon OwnerPlayer nullptr", FColor::Cyan, 10.f);
+		return;
+	}		
+	if (m_OwnerPlayer->HasAuthority()) return;
+
+	if (WeaponToEquip)
+		PRINT_LOCAL(GetWorld(), WeaponToEquip->GetWeaponRowName().ToString(), FColor::Green, 10.f);
+	
+	SetSlotWeapon(TargetSlot, WeaponToEquip);
+	UpdateAmmoWidget();
 }
 
 void UC_EquippedComponent::UpdateWeaponData(EWeaponSlot _TargetWeapon, FName InItemRow)
@@ -130,6 +153,7 @@ void UC_EquippedComponent::Server_RequestSpawnEquippedActor_Implementation(int32
 	AC_WeaponBase* PrevWeapon = m_Weapons[SlotIndex];
 
 	// 추가적인 부수처리가 같이 있어서 Server_SetSlotWeapon으로 수정
+	// TODO : SetSlotWeapon -> RowName으로 해당 Weapon 찾아서  Set 해줄 것
 	Server_SetSlotWeapon(static_cast<EWeaponSlot>(SlotIndex), SpawnedWeapon);
 
 	if (!PrevWeapon) return;
@@ -154,30 +178,11 @@ void UC_EquippedComponent::Server_SetSlotWeapon_Implementation(EWeaponSlot _Targ
 	PRINT_LOCAL(GetWorld(), "Server_SetSlotWeapon_Implementation", FColor::Red, 10.f);
 
 	SetSlotWeapon(_TargetSlot, _WeaponToEquip); // 서버 환경에서의 SetSlotWeapon 처리
+	Multicast_SetSlotWeapon(_TargetSlot, _WeaponToEquip);	
 
 	// 서버 환경 자기자신일 때의 UI 업데이트
 	if (m_OwnerPlayer->IsLocallyControlled())
-	{
 		UpdateAmmoWidget();
-		return;
-	}
-
-	// 서버 플레이어가 아닌 경우, 대응되는 Client의 HUD 화면을 업데이트 처리
-	
-	if (!GetCurWeapon())
-	{
-		Client_UpdateAmmoWidget(FAmmoUIInfo());
-	}
-	else
-	{
-		// 현재 들고 있는 무기 상태에 맞게끔 UI 수정
-		FAmmoUIInfo AmmoUIInfo{};
-		GetCurWeapon()->SetAmmoUIInfo(AmmoUIInfo);
-		
-		Client_UpdateAmmoWidget(AmmoUIInfo);
-	}
-	
-	// Multicast_SetSlotWeapon(_TargetSlot, _WeaponToEquip); // 클라이언트단의 SetSlotWeapon도 호출해줌으로써 동기화 처리
 }
 
 void UC_EquippedComponent::Client_UpdateWeaponData_Implementation(EWeaponSlot _TargetWeapon, FName InItemRow)
@@ -493,24 +498,6 @@ void UC_EquippedComponent::UpdateAmmoWidget()
 	Weapon->UpdateAmmoInfoHUDForDrawEnd();
 }
 
-void UC_EquippedComponent::Client_UpdateAmmoWidget_Implementation(const FAmmoUIInfo& _AmmoUIInfo)
-{
-	// if (_AmmoUIInfo.Visible)
-
-	if (_AmmoUIInfo.Visible)
-		PRINT_LOCAL(GetWorld(), "RECEIVED CLIENT UPDATE AMMO_WIDGET : VISIBLE", FColor::Cyan, 20.f);
-	else
-		PRINT_LOCAL(GetWorld(), "RECEIVED CLIENT UPDATE AMMO_WIDGET : HIDDEN", FColor::Cyan, 20.f);
-	
-	UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility
-	(
-		_AmmoUIInfo.Visible,
-		_AmmoUIInfo.FireMode,
-		_AmmoUIInfo.MagazineAmmo,
-		_AmmoUIInfo.LeftAmmoTotalCount
-	);
-}
-
 void UC_EquippedComponent::Server_PlayDrawMontage_Implementation(AC_WeaponBase* _TargetWeapon)
 {
 	Multicast_PlayDrawMontage(_TargetWeapon);
@@ -559,8 +546,17 @@ void UC_EquippedComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProp
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
 	// 리플리케이트 하고싶은 멤버를 등록 여기서
-	DOREPLIFETIME(UC_EquippedComponent, m_Weapons);
+	// DOREPLIFETIME(UC_EquippedComponent, m_Weapons);
 	DOREPLIFETIME(UC_EquippedComponent, m_CurWeaponTypeIdx);
 	
 	// DOREPLIFETIME(UC_EquippedComponent, m_bIsCurrentlyChangingWeapon);
+}
+
+void UC_EquippedComponent::OnRep_Weapons()
+{
+	PRINT_LOCAL(GetWorld(), "OnRep_Weapons", FColor::Cyan, 10.f);
+	
+	if (m_Weapons[0])
+		PRINT_LOCAL(GetWorld(), m_Weapons[0]->GetWeaponRowName().ToString(), FColor::Cyan, 10.f);
+	
 }

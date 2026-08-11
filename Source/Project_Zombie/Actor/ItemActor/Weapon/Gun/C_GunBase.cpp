@@ -414,10 +414,22 @@ void AC_GunBase::Multicast_StopReloadEffects_Implementation()
 
 bool AC_GunBase::AttachToHand(USceneComponent* _ParentMesh)
 {
-	if (!_ParentMesh) return false;
+	if (!_ParentMesh)
+	{
+		PRINT_LOCAL(GetWorld(), "AttachToHand ParentMesh Nullptr", FColor::Cyan, 10.f);
+		return false;
+	}
 	AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(_ParentMesh->GetOwner());
-	if (!Player) return false; // 손에 장착 시도하는 Owner Character가 Player형이 아닌 경우, return false
-	if (Player != m_OwnerPlayer) return false; // 손에 장착 시도하는 Player가 무기주인인 경우가 아닌 경우
+	if (!Player)
+	{
+		PRINT_LOCAL(GetWorld(), "AttachToHand ParentMesh->GetOwner() Nullptr", FColor::Cyan, 10.f);
+		return false; // 손에 장착 시도하는 Owner Character가 Player형이 아닌 경우, return false
+	}
+	if (Player != m_OwnerPlayer)
+	{
+		PRINT_LOCAL(GetWorld(), "AttachToHand Player != m_OwnerPlayer", FColor::Cyan, 10.f);
+		return false; // 손에 장착 시도하는 Player가 무기주인인 경우가 아닌 경우
+	}
 
 	SetOwner(Player);
 
@@ -433,16 +445,24 @@ bool AC_GunBase::AttachToHand(USceneComponent* _ParentMesh)
 		Player->SetHandState(EHandState::WeaponGun);
 		UpdateAmmoInfoHUDForDrawEnd();
 	}
-	else PRINT_LOCAL(GetWorld(), "AttachToHand Failed", FColor::Red, 10.f);
+	else PRINT_LOCAL(GetWorld(), "AttachToComponent(hand) Failed", FColor::Red, 10.f);
 	
 	return bIsAttached;
 }
 
 bool AC_GunBase::AttachToHolster(USceneComponent* _ParentMesh)
 {
-	if (!_ParentMesh) return false;
+	if (!_ParentMesh)
+	{
+		PRINT_LOCAL(GetWorld(), "AttachToHolster ParentMesh Nullptr", FColor::Cyan, 10.f);
+		return false;
+	}
 	AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(_ParentMesh->GetOwner());
-	if (!Player) return false; // 장착 시도하는 Owner Character가 Player형이 아닌 경우, return false
+	if (!Player)
+	{
+		PRINT_LOCAL(GetWorld(), "ParentMeshes GetOwner() nullptr", FColor::Cyan, 10.f);
+		return false; // 장착 시도하는 Owner Character가 Player형이 아닌 경우, return false
+	}
 
 	const bool bIsAttached = AttachToComponent
 	(
@@ -459,6 +479,7 @@ bool AC_GunBase::AttachToHolster(USceneComponent* _ParentMesh)
 		// 카메라 원위치 (견착조준 상태였다면)
 		// FireWeapon -> 사격 도중 끊김 : 연발 사격 시 계속해서 Timer 등록처리됨 -> 이거는 근데 AttachToHolster 시점이 아닌, SheathWeapon 처리 시 바로 들어가줘야 할듯
 	}
+	else PRINT_LOCAL(GetWorld(), "AttachToComponent(Holster) failed", FColor::Cyan, 10.f);
 	
 	return bIsAttached;
 }
