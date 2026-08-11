@@ -72,7 +72,7 @@
 void AC_BasicPlayer::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
-    
+	
 	// 오직 서버에서만 실행되는 안전지대
 	if (!HasAuthority()) return;
 

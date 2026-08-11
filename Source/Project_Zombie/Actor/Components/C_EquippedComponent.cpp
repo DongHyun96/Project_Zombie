@@ -125,6 +125,7 @@ void UC_EquippedComponent::Server_RequestSpawnEquippedActor_Implementation(int32
 
 	PRINT_LOCAL(GetWorld(), "SpawnEquippedActor", FColor::Green, 5.f);
 
+	// 장착할 아이템 스폰.
 	AC_WeaponBase* SpawnedWeapon = (ItemData.CurCount > 0) ? ItemManager->SpawnEquippedActor(ItemData.ItemRowName, m_OwnerPlayer) : nullptr;
 
 	AC_WeaponBase* PrevWeapon = m_Weapons[SlotIndex];
@@ -341,18 +342,25 @@ void UC_EquippedComponent::LoadEquippedWeaponFromInven(int32 SlotIndex, const FI
 
 	// TODO : m_Ownerplayer가 nullptr로 SpawnedWeapon이 Nullptr라 서버만 안되는 거였음.
 	
-	// 1. 아이템 매니저를 통해 새 레벨에 무기 액터 복구 스폰
-	AC_WeaponBase* SpawnedWeapon = (ItemData.CurCount > 0) ? ItemManager->SpawnEquippedActor(ItemData.ItemRowName, m_OwnerPlayer) : nullptr;
+	
+	// 기존 코드.
+	// 1. 아이템 매니저를 통해 새 레벨에 무기 액터 복구 스폰(서버에서 아이템 생성해서 붙여줌.)
+	//AC_WeaponBase* SpawnedWeapon = (ItemData.CurCount > 0) ? ItemManager->SpawnEquippedActor(ItemData.ItemRowName, m_OwnerPlayer) : nullptr;
 
-	if (SpawnedWeapon)
-	{
-		// 2. 슬롯에 등록 및 물리적 부착(AttachToHand/Holster 등) 및 변수 복제 처리
-		// RPC인 Server_SetSlotWeapon 대신, 서버 내부 로직인 SetSlotWeapon을 직접 호출합니다.
-		SetSlotWeapon(static_cast<EWeaponSlot>(SlotIndex), SpawnedWeapon);
-        
-		// 추가로 필요한 초기화나 데이터 업데이트가 있다면 처리
-		UpdateWeaponData(static_cast<EWeaponSlot>(SlotIndex), ItemData.ItemRowName);
-	}
+	// 클라에서 장비를 장착한 채로 레벨 전환 했을 때 총기 재장전 모션이나 격발음등이 안들린 이유는 서버에서만 장착된 상태이기 때문.
+	// 근데 EquippedComponent에서 m_Weapons가 Replicated되어 있는데?
+	//if (SpawnedWeapon)
+	//{
+	//	// 2. 슬롯에 등록 및 물리적 부착(AttachToHand/Holster 등) 및 변수 복제 처리
+	//	// RPC인 Server_SetSlotWeapon 대신, 서버 내부 로직인 SetSlotWeapon을 직접 호출합니다.
+	//	SetSlotWeapon(static_cast<EWeaponSlot>(SlotIndex), SpawnedWeapon);
+    //    
+	//	// 추가로 필요한 초기화나 데이터 업데이트가 있다면 처리
+	//	UpdateWeaponData(static_cast<EWeaponSlot>(SlotIndex), ItemData.ItemRowName);
+	//}
+	
+	Server_RequestSpawnEquippedActor(SlotIndex, ItemData);
+
 }
 
 void UC_EquippedComponent::OnInventorySlotChanged(int32 SlotIndex, const FInventoryEntry& ItemData)
