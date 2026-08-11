@@ -493,9 +493,13 @@ bool AC_GunBase::Reload(AC_BasicPlayer* _WeaponUser)
 
 	if (m_CurrentAmmo >= m_MaxAmmo || m_bIsReloading) return false;
 
+	// 이거 Reload 동작이 제대로 play를 할 수 있는 상황이 아니라면, 아예 재장전 처리를 하지 않아야 함 (로컬 본인이 따져야 함)
+	
+	
+	
 	// 사격 중이었다면 사격을 중단 처리
 	ReleaseTrigger();
-
+	
 	Server_StartReload();
 	return true;
 }

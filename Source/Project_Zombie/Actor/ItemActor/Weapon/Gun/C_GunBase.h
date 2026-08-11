@@ -64,9 +64,11 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GunStats")
 	float m_SpreadAngle = 0.0f;
-	
+
+	UPROPERTY()
 	class UAnimMontage* m_PlayerFireAnimation{};
 
+	UPROPERTY()
 	class UAnimMontage* m_PlayerReloadAnimation{};
 
 	UPROPERTY(Transient)
@@ -97,7 +99,7 @@ protected:
 	bool m_bIsFiring = false;
 
 	// 현재 재장전 상태인지 확인
-	UPROPERTY(Replicated)
+	UPROPERTY(Replicated) // TODO : 이 상태값을 Only local만 가지는 처리로 (다른 환경에서는 맞출 필요 없이)
 	bool m_bIsReloading = false;
 
 	// 연사 타이머를 관리하기 위한 핸들
