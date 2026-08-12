@@ -23,13 +23,15 @@
 #include "Utility/C_Util.h"
 
 AC_Zombie::AC_Zombie()
-	: m_ZombieType(EZombieType::NormalZombie)
+	: AC_BasicEnemy()
+	, m_ZombieType(EZombieType::NormalZombie)
 {
 	m_TeamId = static_cast<uint8>(ETeamType::Enemy);
 }
 
 AC_Zombie::AC_Zombie(EZombieType _ZombieType)
-	: m_ZombieType(_ZombieType)
+	: AC_BasicEnemy()
+	, m_ZombieType(_ZombieType)
 {
 	m_TeamId = static_cast<uint8>(ETeamType::Enemy);
 

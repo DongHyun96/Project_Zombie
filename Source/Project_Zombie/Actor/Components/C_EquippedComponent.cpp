@@ -52,7 +52,7 @@ void UC_EquippedComponent::SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* 
     // 들어온 슬롯의 이전 무기가 존재할 때, 이전 무기 해제 및 OwnerPlayer 초기화
     if (AC_WeaponBase* PrevSlotWeapon = m_Weapons[TargetSlotIdx])
     {
-    	PRINT_LOCAL(GetWorld(), "들어온 슬롯의 이전 무기가 존재할 때, 이전 무기 해제 및 OwnerPlayer 초기화", FColor::Cyan, 10.f);
+    	PRINT_LOCAL(GetWorld(), "Detaching PrevSlotWeapon", FColor::Cyan, 10.f);
     	PrevSlotWeapon->DetachFromActor(FDetachmentTransformRules::KeepRelativeTransform);
     	PrevSlotWeapon->SetOwnerPlayer(nullptr);
     } else PRINT_LOCAL(GetWorld(), "No Weapon On CurSlot", FColor::Cyan, 10.f);
@@ -91,6 +91,7 @@ void UC_EquippedComponent::SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* 
 	}
     else
     {
+    	PRINT_LOCAL(GetWorld(), "New Weapon Attaching to holster", FColor::Cyan, 10.f);
     	m_Weapons[TargetSlotIdx]->AttachToHolster(m_OwnerPlayer->GetMesh());
     }
 }
@@ -156,6 +157,8 @@ void UC_EquippedComponent::Server_RequestSpawnEquippedActor_Implementation(int32
 	// TODO : SetSlotWeapon -> RowName으로 해당 Weapon 찾아서  Set 해줄 것
 	Server_SetSlotWeapon(static_cast<EWeaponSlot>(SlotIndex), SpawnedWeapon);
 
+	if (m_OwnerPlayer) m_OwnerPlayer->ForceNetUpdate();
+	
 	if (!PrevWeapon) return;
 
 	AC_ThrowableWeaponBase* ThrowableWeapon = Cast<AC_ThrowableWeaponBase>(PrevWeapon);
@@ -178,11 +181,15 @@ void UC_EquippedComponent::Server_SetSlotWeapon_Implementation(EWeaponSlot _Targ
 	PRINT_LOCAL(GetWorld(), "Server_SetSlotWeapon_Implementation", FColor::Red, 10.f);
 
 	SetSlotWeapon(_TargetSlot, _WeaponToEquip); // 서버 환경에서의 SetSlotWeapon 처리
-	Multicast_SetSlotWeapon(_TargetSlot, _WeaponToEquip);	
+	// Multicast_SetSlotWeapon(_TargetSlot, _WeaponToEquip);	
 
 	// 서버 환경 자기자신일 때의 UI 업데이트
-	if (m_OwnerPlayer->IsLocallyControlled())
-		UpdateAmmoWidget();
+	if (m_OwnerPlayer->IsLocallyControlled()) UpdateAmmoWidget();
+	/*else
+	{
+		// m_Weapons가 Replicate 처리된 상황에서(기다림) AmmoWidget을 업데이트 처리할 것임
+		// Client_UpdateAmmoWidget();
+	}*/
 }
 
 void UC_EquippedComponent::Client_UpdateWeaponData_Implementation(EWeaponSlot _TargetWeapon, FName InItemRow)
@@ -556,7 +563,5 @@ void UC_EquippedComponent::OnRep_Weapons()
 {
 	PRINT_LOCAL(GetWorld(), "OnRep_Weapons", FColor::Cyan, 10.f);
 	
-	if (m_Weapons[0])
-		PRINT_LOCAL(GetWorld(), m_Weapons[0]->GetWeaponRowName().ToString(), FColor::Cyan, 10.f);
-	
+	if (m_OwnerPlayer && m_OwnerPlayer->IsLocallyControlled()) UpdateAmmoWidget();
 }

@@ -145,8 +145,8 @@ private:
 	/// <summary>
 	/// SetSlotWeapon 처리 시, AmmoWidget 업데이트 이 Client RPC Call을 통해 처리할 것 
 	/// </summary>
-	// UFUNCTION(Client, Reliable)
-	// void Client_UpdateAmmoWidget(const FAmmoUIInfo& _AmmoUIInfo);
+	/*UFUNCTION(Client, Reliable)
+	void Client_UpdateAmmoWidget(const FAmmoUIInfo& _AmmoUIInfo);*/
 	
 private:
 	
@@ -202,7 +202,7 @@ protected: /* 장착 무기 Slot */
 	// 장착된 무기가 없는 슬롯은 nullptr가 들어간다
 	/*UPROPERTY(ReplicatedUsing = , VisibleAnywhere, BlueprintReadOnly, DisplayName =  "Weapons")*/
 	// UPROPERTY(ReplicatedUsing = OnRep_Weapons, VisibleAnywhere, BlueprintReadOnly, DisplayName =  "Weapons")
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, DisplayName =  "Weapons")
+	UPROPERTY(ReplicatedUsing = OnRep_Weapons, VisibleAnywhere, BlueprintReadOnly, DisplayName =  "Weapons")
 	TArray<AC_WeaponBase*> m_Weapons{};
 
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)
