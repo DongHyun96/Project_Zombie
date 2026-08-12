@@ -83,6 +83,8 @@ public:
 	UFUNCTION(Server, Reliable)
 	void Server_RequestSpawnEquippedActor(int32 SlotIndex, const FInventoryEntry& ItemData);
 
+	
+	// 아이템 업그레이드시 장착중인 아이템에 즉시 적용하게 업데이트 하는 함수.
 	void UpdateWeaponData(EWeaponSlot _TargetWeapon, FName InItemRow);
 	
 	UFUNCTION(Client, Reliable)
