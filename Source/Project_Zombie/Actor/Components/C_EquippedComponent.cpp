@@ -199,6 +199,8 @@ void UC_EquippedComponent::Client_UpdateWeaponData_Implementation(EWeaponSlot _T
 
 bool UC_EquippedComponent::ChangeCurWeapon(EWeaponSlot _ChangeTo)
 {
+	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled()) return false;
+	
 	const uint8 ChangeToIdx = static_cast<uint8>(_ChangeTo);
 	const uint8 NoneSlotIdx = static_cast<uint8>(EWeaponSlot::None);
 

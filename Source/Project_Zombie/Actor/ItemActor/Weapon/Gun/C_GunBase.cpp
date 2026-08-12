@@ -379,18 +379,14 @@ void AC_GunBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifeti
 	
 	DOREPLIFETIME(AC_GunBase, m_Damage);
 	DOREPLIFETIME(AC_GunBase, m_MaxAmmo);
-	DOREPLIFETIME(AC_GunBase, m_bIsReloading);
 }
 
 // 타이머 중단 및 총기 상태값 RPC
 void AC_GunBase::Server_CancelReload_Implementation()
 {
 	if (GetWorldTimerManager().IsTimerActive(m_ReloadTimerHandle))
-	{
 		GetWorldTimerManager().ClearTimer(m_ReloadTimerHandle);
-	}
 
-	m_bIsReloading = false;
 	m_bIsFiring = false;
 
 	Multicast_StopReloadEffects();
@@ -408,8 +404,11 @@ void AC_GunBase::Multicast_StopReloadEffects_Implementation()
 	{
 		m_WeaponMesh->Stop();
 	}
+}
 
-	m_bIsReloading = false;
+void AC_GunBase::AN_OnGunReloadEnd()
+{
+	
 }
 
 bool AC_GunBase::AttachToHand(USceneComponent* _ParentMesh)
@@ -489,7 +488,8 @@ bool AC_GunBase::OnStartFire(AC_BasicPlayer* _WeaponUser)
 	if (!_WeaponUser) return false;
 	m_OwnerPlayer = _WeaponUser;
 
-	if (m_bIsReloading) return false;
+	// 이거 그러면 현재는 재장전 모션과 사격 모션의 Priority가 동일한데, 사격모션보다 재장전 모션의 Priority가 더 높?
+	if (m_bIsReloading) return false; 
 
 	PullTrigger();
 	return true;
@@ -511,18 +511,33 @@ bool AC_GunBase::Reload(AC_BasicPlayer* _WeaponUser)
 {
 	if (!_WeaponUser) return false;
 	m_OwnerPlayer = _WeaponUser;
+	if (!m_OwnerPlayer)
+	{
+		UC_Util::Print("[AC_GunBase::Reload] : Received weaponUser nullptr", FColor::Cyan, 10.f);
+		return false;
+	}
 
-	if (m_CurrentAmmo >= m_MaxAmmo || m_bIsReloading) return false;
+	// 이미 최대 장탄수, 또는 이미 Reload 처리 중이라면 (플레이어 애니메이션 재생 여부에 따라 결정)
+	if (m_CurrentAmmo >= m_MaxAmmo) return false;
+	if (m_OwnerPlayer->GetMesh()->GetAnimInstance()->Montage_IsPlaying(m_PlayerReloadAnimation)) return false;
 
 	// 이거 Reload 동작이 제대로 play를 할 수 있는 상황이 아니라면, 아예 재장전 처리를 하지 않아야 함 (로컬 본인이 따져야 함)
+	const float PlayResultDuration = m_OwnerPlayer->PlayAnimMontage(m_PlayerReloadAnimation);
+	if (PlayResultDuration <= 0.f) return false; // 현재 다른 동작에 의해 재장전 처리를 할 수 없는 상황 (Priority에 의해 막힌 상황)
 	
-	
+	// 재장전 동작이 문제 없이 시작된 상황
 	
 	// 사격 중이었다면 사격을 중단 처리
 	ReleaseTrigger();
 	
 	Server_StartReload();
 	return true;
+}
+
+bool AC_GunBase::CanCurrentlySheathWeapon()
+{
+	// 현재는 Reload 상태에서만 Sheath 처리를 불가하다고 판정한다
+	return !m_bIsReloading;
 }
 
 void AC_GunBase::UpdateAmmoInfoHUDForDrawEnd()
@@ -749,29 +764,23 @@ void AC_GunBase::OnSheathStart()
 	// 사격 해제
 	ReleaseTrigger();
 
+	if (!m_OwnerPlayer) return;
+	
 	// Aim 카메라 및 UI 등 조준 관련 원위치
-	if (m_OwnerPlayer && m_OwnerPlayer->GetAimComponent())
-	{
+	if (m_OwnerPlayer->GetAimComponent())
 		m_OwnerPlayer->GetAimComponent()->OnAimReleased();
-	}
 
-	// 총기, 몽타주 재장전 애니메이션 해제
-	if (m_bIsReloading)
+	// 총기, 몽타주 재장전 애니메이션 해제 (만약 재장전 중이었다면)
+	if (m_OwnerPlayer->GetMesh()->GetAnimInstance()->Montage_IsPlaying(m_PlayerReloadAnimation))
 	{
-		m_bIsReloading = false;
-
-		if (m_OwnerPlayer && m_PlayerReloadAnimation)
-		{
-			m_OwnerPlayer->StopAnimMontage(m_PlayerReloadAnimation);
-		}
-
-		if (m_WeaponMesh && m_ReloadAnimation)
-		{
-			m_WeaponMesh->SetAnimation(nullptr);
-		}
-
-		Server_CancelReload();
+		
 	}
+
+	// Sheath가 시작되면, 재장전을 하고있든말든 WeaponMesh의 Animation을 빼버리는 처리를 한다
+	if (m_WeaponMesh && m_ReloadAnimation)
+		m_WeaponMesh->SetAnimation(nullptr);
+
+	Server_CancelReload();
 }
 
 void AC_GunBase::Multicast_PlayAIFireEffects_Implementation(FVector_NetQuantize ImpactPoint)

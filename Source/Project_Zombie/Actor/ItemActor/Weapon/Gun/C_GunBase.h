@@ -98,10 +98,6 @@ protected:
 	// 현재 사격 버튼을 누르고 있는 상태인지 확인
 	bool m_bIsFiring = false;
 
-	// 현재 재장전 상태인지 확인
-	UPROPERTY(Replicated) // TODO : 이 상태값을 Only local만 가지는 처리로 (다른 환경에서는 맞출 필요 없이)
-	bool m_bIsReloading = false;
-
 	// 연사 타이머를 관리하기 위한 핸들
 	FTimerHandle m_FireTimerHandle;
 
@@ -142,8 +138,6 @@ protected:
 	
 public:
 	USkeletalMeshComponent* GetWeaponMesh() const { return m_WeaponMesh; }
-
-	void SetCurrentAmmo(int32 _CurAmmo) { m_CurrentAmmo = _CurAmmo; }
 
 	int32 GetCurrentAmmo() const { return m_CurrentAmmo; }
 
@@ -187,7 +181,7 @@ public:
 	virtual void UpdateAmmoInfoHUDForDrawEnd() override;
 
 	// AI 사격 함수
-	virtual void AIFire(const FVector& TargetLocation) { return; };;
+	virtual void AIFire(const FVector& TargetLocation) { return; };
 
 protected:
 	virtual void PullTrigger();
@@ -239,6 +233,13 @@ protected:
 	UFUNCTION(NetMulticast, Unreliable)
 	void Multicast_PlayAIFireEffects(FVector_NetQuantize ImpactPoint);
 
+public:
+	
+	/// <summary>
+	/// 일반적인 Reload Animation 끝지점에서 호출처리됨 (만약 재장전 중, Animation 끊기면 해당 Notify 불리지 않는 점 인지) 
+	/// </summary>
+	void AN_OnGunReloadEnd();
+	
 public:
 
 	virtual bool AttachToHand(USceneComponent* _ParentMesh) override;
