@@ -22,32 +22,38 @@ private:
 	FTimerHandle m_ShotCooldownTimer;
 	FTimerHandle m_ReloadTimerHandle;
 
+public:
+	
+	virtual bool OnStartFire(AC_BasicPlayer* _WeaponUser) override;
+	
 private:
-	void StartReload();
-	void CompleteReload();
+	
 	void SpawnGrenadeProjectile(const FVector& TargetPoint);
 	void ResetFireCooldown();
 	FVector GetCameraTargetPoint() const;
 
 protected:
-	virtual void PullTrigger() override;
-	
 	virtual void SpawnShellEject() override;
-	virtual void PlayFireEffects_Client() override;
+	
 	virtual void AIFire(const FVector& TargetLocation) override;
 
+public:
+	
 	// 클라이언트 사격 시 서버에 발사체 스폰 요청
 	virtual void Server_ExecuteFire_Implementation(FVector_NetQuantize ImpactPoint, AActor* HitActor) override;
 
-	virtual void Server_StartReload_Implementation() override;
+	// virtual void Server_PlayReloadEffects_Implementation() override;
 
-	UFUNCTION(NetMulticast, Unreliable)
+private:
+	
+	UFUNCTION(Server, Reliable)
+	void Server_EjectAllSpentShells(int32 SpentShellCount);
+	
+	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_EjectAllSpentShells(int32 SpentShellCount);
 
 protected:
-	virtual bool OnStartFire(AC_BasicPlayer* _WeaponUser) override;
-	virtual bool OnFireOnGoing(AC_BasicPlayer* _WeaponUser) override;
-	virtual bool OnFireEnd(AC_BasicPlayer* _WeaponUser) override;
+	
 	virtual bool Reload(AC_BasicPlayer* _WeaponUser) override;
 	
 public:

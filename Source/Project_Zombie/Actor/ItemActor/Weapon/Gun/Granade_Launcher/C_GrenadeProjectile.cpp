@@ -18,6 +18,7 @@ AC_GrenadeProjectile::AC_GrenadeProjectile()
 
 	bAlwaysRelevant = true;
 	bReplicates = true;
+	SetReplicatingMovement(true);
 
 	ProjectileMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComp"));
 	ProjectileMesh->SetupAttachment(RootComponent);

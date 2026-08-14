@@ -96,12 +96,14 @@ protected:
 
 protected:
 	// 현재 사격 버튼을 누르고 있는 상태인지 확인
+	UPROPERTY(VisibleAnywhere)
 	bool m_bIsFiring = false;
+
+	UPROPERTY(VisibleAnywhere)
+	bool m_bIsReloading = false;
 
 	// 연사 타이머를 관리하기 위한 핸들
 	FTimerHandle m_FireTimerHandle;
-
-	FTimerHandle m_ReloadTimerHandle;
 
 	EFireMode m_FireMode{};
 
@@ -181,25 +183,43 @@ public:
 	virtual void UpdateAmmoInfoHUDForDrawEnd() override;
 
 	// AI 사격 함수
-	virtual void AIFire(const FVector& TargetLocation) { return; };
+	virtual void AIFire(const FVector& TargetLocation) PURE_VIRTUAL(AC_GunBase::AIFire, );
 
 protected:
-	virtual void PullTrigger();
+	
+	/// <summary>
+	/// 실질적인 사격 처리 (사격 불가능 시, return false) 
+	/// </summary>
+	// virtual bool PullTrigger();
+	
 	virtual void ReleaseTrigger();
 
-	// 클라이언트 사격 실행
-	virtual void Client_ExecuteFire();
+	/// <summary>
+	/// 로컬환경 자기자신 사격 실행 
+	/// </summary>
+	/// <returns> : 사격실패 시, return false </returns>
+	virtual bool ExecuteFire();
 
-	// 로컬 사격/재장전
-	virtual void PlayFireEffects_Client();
+	/// <summary>
+	/// 로컬 사격 모션 재생
+	/// </summary>
+	/// <returns> 만약 사격 모션 재생 실패 시(Montage Priority에 의해 사격 불가능한 상황) return false </returns>
+	bool PlayFireEffects();
+	
 	virtual void SpawnShellEject();
 
 	// HUD 갱신
 	void UpdateAmmoUI();
 
-	virtual FVector LineTraceDamage(const FVector& CameraStart, const FRotator& CameraRot, AActor*& OutHitActor);
+	virtual FVector LineTraceDamage
+	(
+		const FVector& CameraStart,
+		const FRotator& CameraRot,
+		AActor*& OutHitActor
+	);
 
 protected:
+	
 	// 클라이언트가 사격 후 결과를 서버로 동기화
 	UFUNCTION(Server, Reliable)
 	void Server_ExecuteFire(FVector_NetQuantize ImpactPoint, AActor* HitActor);
@@ -210,26 +230,28 @@ protected:
 	UFUNCTION(NetMulticast, Unreliable)
 	void Multicast_PlayFireEffects(FVector_NetQuantize ImpactPoint);
 
-	// 클라이언트가 재장전
-	UFUNCTION(Client, Reliable)
-	void Client_CompleteReload();
-
+protected:
+	
 	// 클라이언트가 재장전 후 결과를 서버로 동기화
 	UFUNCTION(Server, Reliable)
-	void Server_StartReload();
+	void Server_PlayReloadEffects();
 
 	// 클라이언트들에게 사격 연출 Multicast
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_PlayReloadEffects();
 
+protected:
+	
 	// 재장전 취소 RPC
 	UFUNCTION(Server, Reliable)
 	void Server_CancelReload();
 
 	// 재생 중인 재장전 애니메이션 정지 멀티캐스트
 	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_StopReloadEffects();
+	void Multicast_CancelReload();
 
+protected:
+	
 	UFUNCTION(NetMulticast, Unreliable)
 	void Multicast_PlayAIFireEffects(FVector_NetQuantize ImpactPoint);
 
@@ -238,7 +260,13 @@ public:
 	/// <summary>
 	/// 일반적인 Reload Animation 끝지점에서 호출처리됨 (만약 재장전 중, Animation 끊기면 해당 Notify 불리지 않는 점 인지) 
 	/// </summary>
-	void AN_OnGunReloadEnd();
+	virtual void AN_OnGunReloadEnd();
+
+	/// <summary>
+	/// 샷건류와 같이, Single 장전 처리 시 호출될 AN
+	/// Shotgun에서 override해서 사용할 것
+	/// </summary>
+	virtual void AN_OnSingleReloadEnd() {}
 	
 public:
 

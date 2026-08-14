@@ -13,23 +13,28 @@ AC_Sniper::AC_Sniper()
 	m_SpreadAngle = 0.0f; // 스나이퍼는 탄 퍼짐 0
 }
 
-void AC_Sniper::PullTrigger()
+bool AC_Sniper::OnStartFire(AC_BasicPlayer* _WeaponUser)
 {
-	if (m_bIsFiring || m_bIsReloading || !m_bCanFire || m_CurrentAmmo <= 0) return;
+	if (!Super::OnStartFire(_WeaponUser)) return false;
+	if (!m_bCanFire) return false;
 
+	if (!ExecuteFire())
+	{
+		m_bIsFiring = false;
+		m_bCanFire  = true;
+		return false;
+	}
+		
 	m_bIsFiring = true;
-	m_bCanFire = false;
+	m_bCanFire  = false;
 
-	Client_ExecuteFire();
 
 	if (GetWorld() && m_FireRate > 0.0f)
-	{
 		GetWorld()->GetTimerManager().SetTimer(m_ShotCooldownTimer, this, &AC_Sniper::ResetFireCooldown, m_FireRate, false);
-	}
 	else
-	{
 		ResetFireCooldown();
-	}
+	
+	return true;
 }
 
 void AC_Sniper::ResetFireCooldown()

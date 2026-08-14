@@ -25,7 +25,8 @@ AC_HealingProjectile::AC_HealingProjectile()
 	PrimaryActorTick.bCanEverTick = false;
 
 	SetReplicates(true);
-	SetReplicateMovement(true);
+	SetReplicatingMovement(true);
+	// bAlwaysRelevant = true;
 	
 	m_MainCollider = CreateDefaultSubobject<USphereComponent>(TEXT("MainCollider"));
 	m_MainCollider->InitSphereRadius(30.f);

@@ -29,8 +29,12 @@ private:
 	void HandleBurstFire();
 	void ResetBurstCooldown();
 
+public:
+	
+	virtual bool OnStartFire(AC_BasicPlayer* _WeaponUser) override;
+	
 protected:
-	virtual void PullTrigger() override;
+	
 	virtual void ReleaseTrigger() override;
 	virtual void AIFire(const FVector& TargetLocation) override;
 
