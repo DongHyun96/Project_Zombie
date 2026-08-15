@@ -35,7 +35,10 @@ bool AC_ShotGun::OnStartFire(AC_BasicPlayer* _WeaponUser)
 	
 	// 재장전 하는 중 -> 재장전 모션 끝내기(예외적으로 여기서만 사격이 재장전의 우선순위를 이기는 중)
 	if (m_OwnerPlayer->GetMesh()->GetAnimInstance()->Montage_IsPlaying(m_PlayerReloadAnimation))
-		EndReload();
+	{
+		m_bIsReloading = false;
+		// m_OwnerPlayer->StopAnimMontage(m_PlayerReloadAnimation); // 직접적으로 재장전 모션을 끊어줌 (이거 근데 어차피 Priority가 같아서 안해도 무방)
+	}
 
 	if (!Super::OnStartFire(_WeaponUser)) return false;
 	if (!m_bCanFire) return false;

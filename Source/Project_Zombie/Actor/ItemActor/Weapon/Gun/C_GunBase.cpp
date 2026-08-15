@@ -551,6 +551,10 @@ bool AC_GunBase::Reload(AC_BasicPlayer* _WeaponUser)
 	// 이거 Reload 동작이 제대로 play를 할 수 있는 상황이 아니라면, 아예 재장전 처리를 하지 않아야 함 (로컬 본인이 따져야 함)
 	const float PlayResultDuration = m_OwnerPlayer->PlayAnimMontage(m_PlayerReloadAnimation);
 	if (PlayResultDuration <= 0.f) return false; // 현재 다른 동작에 의해 재장전 처리를 할 수 없는 상황 (Priority에 의해 막힌 상황)
+
+	// 총기 Mesh 또한 자기자신의 환경에서 바로 재생 처리
+	if (m_WeaponMesh && m_ReloadAnimation)
+		m_WeaponMesh->PlayAnimation(m_ReloadAnimation, false);
 	
 	// 재장전 동작이 문제 없이 시작된 상황
 	m_bIsReloading = true;
