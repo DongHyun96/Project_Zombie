@@ -615,17 +615,18 @@ FVector AC_GunBase::LineTraceDamage
 	if (!m_WeaponMesh || !GetWorld() || !m_OwnerPlayer)
 		return FVector::ZeroVector;
 
-	FVector CameraForward = CameraRot.Vector();
-	float TraceRange = 10000.0f;
+	const FVector CameraForward   = CameraRot.Vector();
+	static const float TraceRange = 10000.0f;
 
-	FCollisionQueryParams QueryParams;
+	FCollisionQueryParams QueryParams{};
 	QueryParams.AddIgnoredActor(this);
 	QueryParams.AddIgnoredActor(m_OwnerPlayer);
 
-	FVector CameraEnd = CameraStart + (CameraForward * TraceRange);
-	FHitResult CameraHitResult;
+	const FVector CameraEnd = CameraStart + (CameraForward * TraceRange);
+	FHitResult CameraHitResult{};
 
-	bool bCameraHit = GetWorld()->LineTraceSingleByChannel(
+	const bool bCameraHit = GetWorld()->LineTraceSingleByChannel
+	(
 		CameraHitResult,
 		CameraStart,
 		CameraEnd,
@@ -633,8 +634,15 @@ FVector AC_GunBase::LineTraceDamage
 		QueryParams
 	);
 
-	FVector TargetPoint = bCameraHit ? CameraHitResult.ImpactPoint : CameraEnd;
-	FVector MuzzleStart = m_WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
+	if (bCameraHit)
+	{
+		DrawDebugLine(GetWorld(), CameraStart, CameraHitResult.ImpactPoint, FColor::Yellow, false, 5.f);
+		DrawDebugSphere(GetWorld(), CameraHitResult.ImpactPoint, 5.f, 10, FColor::Green, false, 5.f);
+	}
+	else DrawDebugLine(GetWorld(), CameraStart, CameraEnd, FColor::Yellow, false, 5.f);
+
+	const FVector TargetPoint = bCameraHit ? CameraHitResult.ImpactPoint : CameraEnd;
+	const FVector MuzzleStart = m_WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
 	FVector ShootDirection = (TargetPoint - MuzzleStart).GetSafeNormal();
 
 	if (m_SpreadAngle > 0.0f)
@@ -646,13 +654,21 @@ FVector AC_GunBase::LineTraceDamage
 	FVector FinalMuzzleEnd = MuzzleStart + (ShootDirection * TraceRange);
 	FHitResult MuzzleHitResult;
 
-	bool bMuzzleHit = GetWorld()->LineTraceSingleByChannel(
+	const bool bMuzzleHit = GetWorld()->LineTraceSingleByChannel
+	(
 		MuzzleHitResult,
 		MuzzleStart,
 		FinalMuzzleEnd,
 		ECC_Visibility,
 		QueryParams
 	);
+	
+	if (bMuzzleHit)
+	{
+		DrawDebugLine(GetWorld(), MuzzleStart, MuzzleHitResult.ImpactPoint, FColor::Red, false, 5.f);
+		DrawDebugSphere(GetWorld(), MuzzleHitResult.ImpactPoint, 5.f, 10, FColor::Blue, false, 5.f);
+	}
+	else DrawDebugLine(GetWorld(), MuzzleStart, FinalMuzzleEnd, FColor::Red, false, 5.f);
 
 	// 최종으로 맞은 Actor
 	if (bMuzzleHit)
@@ -661,11 +677,11 @@ FVector AC_GunBase::LineTraceDamage
 		return MuzzleHitResult.ImpactPoint;
 	}
 	
-	if (bCameraHit)
+	/*if (bCameraHit)
 	{
 		OutHitActor = CameraHitResult.GetActor();
 		return CameraHitResult.ImpactPoint;
-	}
+	}*/
 
 	return FinalMuzzleEnd;
 }
