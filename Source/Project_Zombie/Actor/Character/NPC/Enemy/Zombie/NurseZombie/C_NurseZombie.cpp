@@ -163,6 +163,8 @@ void AC_NurseZombie::OnHealSkillEnd(AC_BasicEnemy* _Enemy)
 
 void AC_NurseZombie::OnDead(AC_BasicCharacter* _DeadCharacter)
 {
+	UC_Util::Print("OnDead", FColor::Cyan, 10.f);
+	
 	ToggleHealingAura(false);
 
 	Super::OnDead(_DeadCharacter);
