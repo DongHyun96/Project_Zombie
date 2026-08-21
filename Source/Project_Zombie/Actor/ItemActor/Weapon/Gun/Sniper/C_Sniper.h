@@ -18,11 +18,15 @@ private:
 	bool m_bCanFire = true;
 	FTimerHandle m_ShotCooldownTimer;
 
+public:
+	
+	virtual bool OnStartFire(AC_BasicPlayer* _WeaponUser) override;
+	
 private:
 	void ResetFireCooldown();
 
 protected:
-	virtual void PullTrigger() override;
+	
 
 	virtual void AIFire(const FVector& TargetLocation) override;
 

@@ -52,14 +52,16 @@ void UC_EquippedComponent::SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* 
     // 들어온 슬롯의 이전 무기가 존재할 때, 이전 무기 해제 및 OwnerPlayer 초기화
     if (AC_WeaponBase* PrevSlotWeapon = m_Weapons[TargetSlotIdx])
     {
+    	PRINT_LOCAL(GetWorld(), "Detaching PrevSlotWeapon", FColor::Cyan, 10.f);
     	PrevSlotWeapon->DetachFromActor(FDetachmentTransformRules::KeepRelativeTransform);
     	PrevSlotWeapon->SetOwnerPlayer(nullptr);
-    }
+    } else PRINT_LOCAL(GetWorld(), "No Weapon On CurSlot", FColor::Cyan, 10.f);
 
     m_Weapons[TargetSlotIdx] = WeaponToEquip; // 새로 들어온 무기로 교체
     
     if (!m_Weapons[TargetSlotIdx]) // Slot에 새로 지정한 무기가 nullptr -> early return
     {
+    	PRINT_LOCAL(GetWorld(), "WOWWOWWOW", FColor::Cyan, 10.f);
         if (m_CurWeaponTypeIdx == TargetSlotIdx) // 현재 손에 들고 있는 무기를 Slot에서 강제로 뺀 상황
         {
             m_NextWeaponTypeIdx  = static_cast<uint8>(EWeaponSlot::None);
@@ -87,7 +89,29 @@ void UC_EquippedComponent::SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* 
 		PRINT_LOCAL(GetWorld(), "Current holding weapon swapped to new Same SlotWeapon", FColor::Red, 10.f);
 		m_Weapons[TargetSlotIdx]->AttachToHand(m_OwnerPlayer->GetMesh());
 	}
-    else m_Weapons[TargetSlotIdx]->AttachToHolster(m_OwnerPlayer->GetMesh());
+    else
+    {
+    	PRINT_LOCAL(GetWorld(), "New Weapon Attaching to holster", FColor::Cyan, 10.f);
+    	m_Weapons[TargetSlotIdx]->AttachToHolster(m_OwnerPlayer->GetMesh());
+    }
+}
+
+void UC_EquippedComponent::Multicast_SetSlotWeapon_Implementation(EWeaponSlot TargetSlot, AC_WeaponBase* WeaponToEquip)
+{
+	PRINT_LOCAL(GetWorld(), "Multicast_SetSlotWeapon Start", FColor::Cyan, 10.f);
+	
+	if (!m_OwnerPlayer)
+	{
+		PRINT_LOCAL(GetWorld(), "Multicast_SetSlotWeapon OwnerPlayer nullptr", FColor::Cyan, 10.f);
+		return;
+	}		
+	if (m_OwnerPlayer->HasAuthority()) return;
+
+	if (WeaponToEquip)
+		PRINT_LOCAL(GetWorld(), WeaponToEquip->GetWeaponRowName().ToString(), FColor::Green, 10.f);
+	
+	SetSlotWeapon(TargetSlot, WeaponToEquip);
+	UpdateAmmoWidget();
 }
 
 void UC_EquippedComponent::UpdateWeaponData(EWeaponSlot _TargetWeapon, FName InItemRow)
@@ -125,14 +149,16 @@ void UC_EquippedComponent::Server_RequestSpawnEquippedActor_Implementation(int32
 
 	PRINT_LOCAL(GetWorld(), "SpawnEquippedActor", FColor::Green, 5.f);
 
-	// 장착할 아이템 스폰.
 	AC_WeaponBase* SpawnedWeapon = (ItemData.CurCount > 0) ? ItemManager->SpawnEquippedActor(ItemData.ItemRowName, m_OwnerPlayer) : nullptr;
 
 	AC_WeaponBase* PrevWeapon = m_Weapons[SlotIndex];
 
 	// 추가적인 부수처리가 같이 있어서 Server_SetSlotWeapon으로 수정
+	// TODO : SetSlotWeapon -> RowName으로 해당 Weapon 찾아서  Set 해줄 것
 	Server_SetSlotWeapon(static_cast<EWeaponSlot>(SlotIndex), SpawnedWeapon);
 
+	if (m_OwnerPlayer) m_OwnerPlayer->ForceNetUpdate();
+	
 	if (!PrevWeapon) return;
 
 	AC_ThrowableWeaponBase* ThrowableWeapon = Cast<AC_ThrowableWeaponBase>(PrevWeapon);
@@ -155,30 +181,15 @@ void UC_EquippedComponent::Server_SetSlotWeapon_Implementation(EWeaponSlot _Targ
 	PRINT_LOCAL(GetWorld(), "Server_SetSlotWeapon_Implementation", FColor::Red, 10.f);
 
 	SetSlotWeapon(_TargetSlot, _WeaponToEquip); // 서버 환경에서의 SetSlotWeapon 처리
+	// Multicast_SetSlotWeapon(_TargetSlot, _WeaponToEquip);	
 
 	// 서버 환경 자기자신일 때의 UI 업데이트
-	if (m_OwnerPlayer->IsLocallyControlled())
+	if (m_OwnerPlayer->IsLocallyControlled()) UpdateAmmoWidget();
+	/*else
 	{
-		UpdateAmmoWidget();
-		return;
-	}
-
-	// 서버 플레이어가 아닌 경우, 대응되는 Client의 HUD 화면을 업데이트 처리
-	
-	if (!GetCurWeapon())
-	{
-		Client_UpdateAmmoWidget(FAmmoUIInfo());
-	}
-	else
-	{
-		// 현재 들고 있는 무기 상태에 맞게끔 UI 수정
-		FAmmoUIInfo AmmoUIInfo{};
-		GetCurWeapon()->SetAmmoUIInfo(AmmoUIInfo);
-		
-		Client_UpdateAmmoWidget(AmmoUIInfo);
-	}
-	
-	// Multicast_SetSlotWeapon(_TargetSlot, _WeaponToEquip); // 클라이언트단의 SetSlotWeapon도 호출해줌으로써 동기화 처리
+		// m_Weapons가 Replicate 처리된 상황에서(기다림) AmmoWidget을 업데이트 처리할 것임
+		// Client_UpdateAmmoWidget();
+	}*/
 }
 
 void UC_EquippedComponent::Client_UpdateWeaponData_Implementation(EWeaponSlot _TargetWeapon, FName InItemRow)
@@ -188,6 +199,8 @@ void UC_EquippedComponent::Client_UpdateWeaponData_Implementation(EWeaponSlot _T
 
 bool UC_EquippedComponent::ChangeCurWeapon(EWeaponSlot _ChangeTo)
 {
+	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled()) return false;
+	
 	const uint8 ChangeToIdx = static_cast<uint8>(_ChangeTo);
 	const uint8 NoneSlotIdx = static_cast<uint8>(EWeaponSlot::None);
 
@@ -342,26 +355,18 @@ void UC_EquippedComponent::LoadEquippedWeaponFromInven(int32 SlotIndex, const FI
 
 	// TODO : m_Ownerplayer가 nullptr로 SpawnedWeapon이 Nullptr라 서버만 안되는 거였음.
 	
-	
-	// 기존 코드.
-	// 1. 아이템 매니저를 통해 새 레벨에 무기 액터 복구 스폰(서버에서 아이템 생성해서 붙여줌.)
-	//AC_WeaponBase* SpawnedWeapon = (ItemData.CurCount > 0) ? ItemManager->SpawnEquippedActor(ItemData.ItemRowName, m_OwnerPlayer) : nullptr;
+	// 1. 아이템 매니저를 통해 새 레벨에 무기 액터 복구 스폰
+	AC_WeaponBase* SpawnedWeapon = (ItemData.CurCount > 0) ? ItemManager->SpawnEquippedActor(ItemData.ItemRowName, m_OwnerPlayer) : nullptr;
 
-	// 클라에서 장비를 장착한 채로 레벨 전환 했을 때 총기 재장전 모션이나 격발음등이 안들린 이유는 서버에서만 장착된 상태이기 때문.
-	// 근데 EquippedComponent에서 m_Weapons가 Replicated되어 있는데?
-	//if (SpawnedWeapon)
-	//{
-	//	// 2. 슬롯에 등록 및 물리적 부착(AttachToHand/Holster 등) 및 변수 복제 처리
-	//	// RPC인 Server_SetSlotWeapon 대신, 서버 내부 로직인 SetSlotWeapon을 직접 호출합니다.
-	//	SetSlotWeapon(static_cast<EWeaponSlot>(SlotIndex), SpawnedWeapon);
-    //    
-	//	// 추가로 필요한 초기화나 데이터 업데이트가 있다면 처리
-	//	UpdateWeaponData(static_cast<EWeaponSlot>(SlotIndex), ItemData.ItemRowName);
-	//}
-	
-	// TODO : 서버에서 아이템을 장착하는 함수를 실행. 테스트 필요, 만약 클라에서 제대로 초기화가 안된다면 다른 방법 모색 해야 함.
-	Server_RequestSpawnEquippedActor(SlotIndex, ItemData);
-
+	if (SpawnedWeapon)
+	{
+		// 2. 슬롯에 등록 및 물리적 부착(AttachToHand/Holster 등) 및 변수 복제 처리
+		// RPC인 Server_SetSlotWeapon 대신, 서버 내부 로직인 SetSlotWeapon을 직접 호출합니다.
+		SetSlotWeapon(static_cast<EWeaponSlot>(SlotIndex), SpawnedWeapon);
+        
+		// 추가로 필요한 초기화나 데이터 업데이트가 있다면 처리
+		UpdateWeaponData(static_cast<EWeaponSlot>(SlotIndex), ItemData.ItemRowName);
+	}
 }
 
 void UC_EquippedComponent::OnInventorySlotChanged(int32 SlotIndex, const FInventoryEntry& ItemData)
@@ -502,24 +507,6 @@ void UC_EquippedComponent::UpdateAmmoWidget()
 	Weapon->UpdateAmmoInfoHUDForDrawEnd();
 }
 
-void UC_EquippedComponent::Client_UpdateAmmoWidget_Implementation(const FAmmoUIInfo& _AmmoUIInfo)
-{
-	// if (_AmmoUIInfo.Visible)
-
-	if (_AmmoUIInfo.Visible)
-		PRINT_LOCAL(GetWorld(), "RECEIVED CLIENT UPDATE AMMO_WIDGET : VISIBLE", FColor::Cyan, 20.f);
-	else
-		PRINT_LOCAL(GetWorld(), "RECEIVED CLIENT UPDATE AMMO_WIDGET : HIDDEN", FColor::Cyan, 20.f);
-	
-	UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility
-	(
-		_AmmoUIInfo.Visible,
-		_AmmoUIInfo.FireMode,
-		_AmmoUIInfo.MagazineAmmo,
-		_AmmoUIInfo.LeftAmmoTotalCount
-	);
-}
-
 void UC_EquippedComponent::Server_PlayDrawMontage_Implementation(AC_WeaponBase* _TargetWeapon)
 {
 	Multicast_PlayDrawMontage(_TargetWeapon);
@@ -568,8 +555,15 @@ void UC_EquippedComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProp
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
 	// 리플리케이트 하고싶은 멤버를 등록 여기서
-	DOREPLIFETIME(UC_EquippedComponent, m_Weapons);
+	// DOREPLIFETIME(UC_EquippedComponent, m_Weapons);
 	DOREPLIFETIME(UC_EquippedComponent, m_CurWeaponTypeIdx);
 	
 	// DOREPLIFETIME(UC_EquippedComponent, m_bIsCurrentlyChangingWeapon);
+}
+
+void UC_EquippedComponent::OnRep_Weapons()
+{
+	PRINT_LOCAL(GetWorld(), "OnRep_Weapons", FColor::Cyan, 10.f);
+	
+	if (m_OwnerPlayer && m_OwnerPlayer->IsLocallyControlled()) UpdateAmmoWidget();
 }

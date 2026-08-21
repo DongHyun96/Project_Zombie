@@ -36,7 +36,7 @@ void UC_InvenComponent::LoadInventoryFromBackup(const TArray<FInventoryEntry>& I
 	InventoryContainer.MarkArrayDirty();
     
 	// 로컬 델리게이트 알림 혹은 강제 동기화 보정용 함수 호출
-	//ForceRepInven();
+	ForceRepInven();
     
 	UE_LOG(LogTemp, Log, TEXT("[InvenComp] %d개의 아이템을 성공적으로 복구했습니다."), InventoryContainer.Items.Num());
 }

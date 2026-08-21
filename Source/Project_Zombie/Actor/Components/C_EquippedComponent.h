@@ -73,6 +73,9 @@ private:
 	/// <param name="WeaponToEquip"> : 해당 slot에 장착할 무기 객체 / 장착 해제는 nullptr </param>
 	void SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* WeaponToEquip);
 
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* WeaponToEquip);
+
 public:
 	
 	/// <summary>
@@ -83,8 +86,6 @@ public:
 	UFUNCTION(Server, Reliable)
 	void Server_RequestSpawnEquippedActor(int32 SlotIndex, const FInventoryEntry& ItemData);
 
-	
-	// 아이템 업그레이드시 장착중인 아이템에 즉시 적용하게 업데이트 하는 함수.
 	void UpdateWeaponData(EWeaponSlot _TargetWeapon, FName InItemRow);
 	
 	UFUNCTION(Client, Reliable)
@@ -144,8 +145,8 @@ private:
 	/// <summary>
 	/// SetSlotWeapon 처리 시, AmmoWidget 업데이트 이 Client RPC Call을 통해 처리할 것 
 	/// </summary>
-	UFUNCTION(Client, Reliable)
-	void Client_UpdateAmmoWidget(const FAmmoUIInfo& _AmmoUIInfo);
+	/*UFUNCTION(Client, Reliable)
+	void Client_UpdateAmmoWidget(const FAmmoUIInfo& _AmmoUIInfo);*/
 	
 private:
 	
@@ -184,6 +185,11 @@ private:
 public:
 	
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+
+private:
+	
+	UFUNCTION()
+	void OnRep_Weapons();
 	
 private: /* This component owner Player */
 
@@ -196,7 +202,7 @@ protected: /* 장착 무기 Slot */
 	// 장착된 무기가 없는 슬롯은 nullptr가 들어간다
 	/*UPROPERTY(ReplicatedUsing = , VisibleAnywhere, BlueprintReadOnly, DisplayName =  "Weapons")*/
 	// UPROPERTY(ReplicatedUsing = OnRep_Weapons, VisibleAnywhere, BlueprintReadOnly, DisplayName =  "Weapons")
-	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, DisplayName =  "Weapons")
+	UPROPERTY(ReplicatedUsing = OnRep_Weapons, VisibleAnywhere, BlueprintReadOnly, DisplayName =  "Weapons")
 	TArray<AC_WeaponBase*> m_Weapons{};
 
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)

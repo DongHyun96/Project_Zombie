@@ -53,15 +53,15 @@ protected:
 	bool m_bIsHost{};
 	
 	UPROPERTY()
-	TArray<FInventoryEntry> SavedInventoryContainers{};		// 플레이어의 인벤토리 목록 복사
+	TArray<FInventoryEntry> SavedInventoryContainers{};
 	
 	UPROPERTY()
-	TArray<AC_WeaponBase*> SavedWeapons{};					// 플레이어가 장착중인 아이템 복사
+	TArray<AC_WeaponBase*> SavedWeapons{};	
 	
 	UPROPERTY()
-	TMap<FName, float> SavedStats{};						// 플레이어의 스탯 복사
+	TMap<FName, float> SavedStats{};
 
 	UPROPERTY()
-	TMap<FName, uint8> SavedStatGrades{};					// 플레이어의 스탯 단계 복사
+	TMap<FName, uint8> SavedStatGrades{};
 };
 

@@ -18,43 +18,44 @@ public:
 	AC_ShotGun();
 
 	virtual bool OnStartFire(AC_BasicPlayer* _WeaponUser) override;
-	virtual bool Reload(AC_BasicPlayer* _WeaponUser) override;
 
-	virtual void EndReload();
 	virtual void OnSheathStart() override;
 
-protected:
-	virtual void PullTrigger() override;
-	virtual void Client_ExecuteFire() override;
+private:
+	
+	virtual bool ExecuteFire() override;
 	virtual void AIFire(const FVector& TargetLocation) override;
 
 	UFUNCTION(Server, Reliable)
 	void Server_ShotgunFireEffects(const TArray<FVector_NetQuantize>& ImpactPoints);
 
-	virtual void Server_StartReload_Implementation() override;
-
-	// 클라이언트 UI 및 탄약 동기화 RPC
-	UFUNCTION(Client, Reliable)
-	void Client_OnSingleShellInserted(int32 NewAmmo);
-
-	// 클라이언트 재장전 종료 동기화 RPC
-	UFUNCTION(Client, Reliable)
-	void Client_EndReload();
-
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_PlayShotgunFireEffects(const TArray<FVector_NetQuantize>& ImpactPoints);
 
+private:
+	
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_StopReloadAnimation();
 
+public:
+	
+	/// <summary>
+	/// SingleReload AN 도달 시, 호출 
+	/// </summary>
+	virtual void AN_OnSingleReloadEnd() override;
+
+	/// <summary>
+	/// 빈 호출로 통상적으로 GunReloadEnd 처리 자체를 기능하지 못하도록 막음 (ShotGun의 경우, SingleReloadEnd로 재장전 처리를 모두 수행한다)
+	/// </summary>
+	virtual void AN_OnGunReloadEnd() override {}
+	
 private:
-	void InsertSingleShell();
+	
 	void ResetFireCooldown();
 
 private:
 	int32 m_PelletCount;
-	float m_SingleShellInsertTime;
-	FTimerHandle m_ReloadLoopTimer;
+	
 	FTimerHandle m_ShotCooldownTimer;
 	bool m_bCanFire = false;
 };

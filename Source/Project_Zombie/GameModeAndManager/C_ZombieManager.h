@@ -86,11 +86,8 @@ public: /* Spawn 관련 함수들 */
 	/// <summary>
 	/// 현재 거점 웨이브 좀비 스폰 루프 시작
 	/// </summary>
-	/// <param name="_SpawnArea">
-	/// 이번 웨이브에서 사용할 SpawnArea 목록
-	/// </param>
-	/// <param name="_Settings"></param>
-	/// 스폰간격, 최대 활성 수 등,, 웨이브 설정
+	/// <param name="_SpawnArea"> 이번 웨이브에서 사용할 SpawnArea 목록 </param>
+	/// <param name="_Settings"> 스폰간격, 최대 활성 수 등,, 웨이브 설정 </param>
 	/// <returns></returns>
 	bool StartSpawnLoop(const TArray<AC_SpawnArea*>& _SpawnArea, const FZombieWaveSetting& _Settings);
 
