@@ -27,6 +27,8 @@ void UC_StatComponentBase::LoadStatsFromBackup(const TMap<FName, float>& InStats
 {
 	if (!GetOwner()->HasAuthority()) return;
 
+	// TODO : 여기서 StatComponent를 통해서 즉석에서 업그레이드하기?
+	
 	// 1. 서버 메모리 즉시 복구
 	m_Stats = InStats;
 	m_StatGrades = InGrades;
