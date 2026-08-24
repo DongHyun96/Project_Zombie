@@ -42,6 +42,7 @@ public:
 	// OwnerPlayer Setter가 안보여서 급히 만듬.
 	void SetOwnerPlayer(AC_BasicPlayer* _Player) { m_OwnerPlayer = _Player; }
 
+	AC_BasicPlayer* GetOwnerPlayer() const { return m_OwnerPlayer; }
 protected:
 
 	virtual void BeginPlay() override;
