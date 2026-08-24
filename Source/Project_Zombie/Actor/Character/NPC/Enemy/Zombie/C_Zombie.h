@@ -171,7 +171,7 @@ public:
 	/// </summary>
 	/// <param name="_SpawnTransform"> : 스폰위치 </param>
 	/// <returns></returns>
-	bool ActivateFromPool(const FTransform& _SpawnTransform);
+	virtual bool ActivateFromPool(const FTransform& _SpawnTransform);
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 

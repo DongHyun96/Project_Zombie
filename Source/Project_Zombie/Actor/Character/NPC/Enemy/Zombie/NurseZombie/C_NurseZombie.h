@@ -93,6 +93,10 @@ private:
 private:
 	
 	virtual void OnDead(AC_BasicCharacter* _DeadCharacter) override;
+
+public:
+	
+	virtual bool ActivateFromPool(const FTransform& _SpawnTransform) override;
 	
 protected:
 

@@ -169,8 +169,6 @@ void AC_NurseZombie::OnHealSkillEnd(AC_BasicEnemy* _Enemy)
 
 void AC_NurseZombie::OnDead(AC_BasicCharacter* _DeadCharacter)
 {
-	UC_Util::Print("OnDead", FColor::Cyan, 10.f);
-	
 	ToggleHealingAura(false);
 
 	Super::OnDead(_DeadCharacter);
@@ -185,4 +183,14 @@ void AC_NurseZombie::OnDead(AC_BasicCharacter* _DeadCharacter)
 		HealTarget->DecreaseHealRequestRegisterCount();
 	}
 	m_HealProjectileTargets.Empty();
+}
+
+bool AC_NurseZombie::ActivateFromPool(const FTransform& _SpawnTransform)
+{
+	if (!Super::ActivateFromPool(_SpawnTransform)) return false; // 제대로 Spawn처리가 이루어지지 않았을 때
+	
+	// 제대로 Spawn 처리가 이루어짐 -> HealingAura 비활성화 처리 (여기서 한번 더 처리를 해둠 -> 계속해서 HealingAura Effect가 비활성화 되지 않는 버그 때문에 넣어둠)
+	ToggleHealingAura(false);		
+	
+	return true;
 }
