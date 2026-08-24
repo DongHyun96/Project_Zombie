@@ -31,7 +31,7 @@ bool UC_NurseHealing::Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data, 
 	
 	_PlayedMontageSectionIdx = PickedIdx;
 	
-	// Skill End Delegate 여기서 구독 -> 이거 구독 처리가 여러번 되어버림
+	// Skill End Delegate 구독 -> Heal Aura Effect 끄기 등 처리
 	_Owner->GetSkillComponent()->m_SkillEndDelegate.AddUObject(Nurse, &AC_NurseZombie::OnHealSkillEnd);
 	
 	return true;
