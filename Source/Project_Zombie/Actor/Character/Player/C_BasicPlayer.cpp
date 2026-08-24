@@ -73,40 +73,7 @@ void AC_BasicPlayer::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
     
-	// 오직 서버에서만 실행되는 안전지대
-	if (!HasAuthority()) return;
-
-	if (AC_PlayerState* PS = NewController->GetPlayerState<AC_PlayerState>())
-	{
-		// 1. 인벤토리 컴포넌트 복구 (저장된 데이터가 유효할 때만)
-		if (PS->GetSavedInventory().Num() > 0)
-		{
-			if (UC_InvenComponent* InvenComp = FindComponentByClass<UC_InvenComponent>())
-			{
-				InvenComp->LoadInventoryFromBackup(PS->GetSavedInventory());
-			}
-			
-			if (m_EquippedComponent && HasAuthority())
-			{
-				// 서버는 이 시점에 EquippedComponent의 OwnerPlayer가 없음.(비긴에서 넣어주고 있음)
-				m_EquippedComponent->SetOwnerPlayer(this);
-				
-				for (int32 i = 0 ; i < static_cast<int32>(EWeaponSlot::None) ; ++i)
-					m_EquippedComponent->LoadEquippedWeaponFromInven(i,m_InvenComponent->GetItemAt(i));
-			}
-		}
-
-		// 2. 스탯 컴포넌트 복구
-		if (PS->GetSavedStats().Num() > 0)
-		{
-			if (UC_StatComponentBase* StatComp = FindComponentByClass<UC_StatComponentBase>())
-			{
-				StatComp->LoadStatsFromBackup(PS->GetSavedStats(), PS->GetSavedStatGrades());
-			}
-		}
-        
-		UE_LOG(LogTemp, Log, TEXT("[Character] PossessedBy 타이밍에 백업 데이터 정상 로드 완료."));
-	}
+	TryRestoreFromPlayerState();
 }
 
 AC_BasicPlayer::AC_BasicPlayer()
@@ -278,8 +245,12 @@ void AC_BasicPlayer::BeginPlay()
 
 	if (m_StatComponent)
 	{
+		
 		UIManager->GetInventoryWidget()->GetPlayerStatUpgradeWidget()->BindStatEvents(m_StatComponent);
 		UIManager->GetMainHUDWidget()->GetPlayerStatWidget()->BindCurHPUpdate(m_StatComponent);
+		
+		m_StatComponent->OnCurHPUpdatedDelegate.Broadcast(m_StatComponent->GetCurHPRatio());
+		
 		//UIManager->GetMainHUDWidget()->GetPlayerStatWidget()->UpdateHPBar(m_StatComponent->GetCurHPRatio());
 	}
 	
@@ -287,7 +258,23 @@ void AC_BasicPlayer::BeginPlay()
 	if (UC_GameLevelManager* LevelManager = GetWorld()->GetSubsystem<UC_GameLevelManager>())
 		LevelManager->AddPlayer(this);
 	
-	UpdateBoostBarHUD();
+	if (IsLocallyControlled())
+	{
+		TryRestoreFromPlayerState();
+		UpdateBoostBarHUD();
+	}
+	
+	// 클라가 남의 아이템에 대한 정보를 불러와야 하기 때문에 호출해봄.
+	if (m_EquippedComponent)
+	{
+		// 서버는 이 시점에 EquippedComponent의 OwnerPlayer가 없음.(비긴에서 넣어주고 있음)
+		if (!m_EquippedComponent->GetOwnerPlayer())
+			m_EquippedComponent->SetOwnerPlayer(this);
+			
+		for (int32 i = 0 ; i < static_cast<int32>(EWeaponSlot::None) ; ++i)
+			m_EquippedComponent->LoadEquippedWeaponFromInven(i,m_InvenComponent->GetItemAt(i));
+	}
+	
 }
 
 void AC_BasicPlayer::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -513,6 +500,48 @@ void AC_BasicPlayer::OnRep_PlayerState()
 	UI_MANAGER(GetWorld())->GetMainHUDWidget()->GetPlayerStatWidget()->UpdateBoostBar(m_StatComponent->GetStat(StatName::CurBoost),  m_StatComponent->GetStat(StatName::MaxBoost));
 	
 	UI_MANAGER(GetWorld())->GetMainHUDWidget()->GetPlayerStatWidget()->RepPlayerStateInit(m_StatComponent->GetCurHPRatio());
+	
+	// 클라단에서 레벨 전환 시 초기화 시도. 
+	TryRestoreFromPlayerState();
+}
+
+void AC_BasicPlayer::TryRestoreFromPlayerState()
+{
+	AC_PlayerState* PS = GetPlayerState<AC_PlayerState>();
+
+	if (!PS) return;
+	
+	// 1. 인벤토리 컴포넌트 복구 (저장된 데이터가 유효할 때만)
+	if (PS->GetSavedInventory().Num() > 0)
+	{
+		if (UC_InvenComponent* InvenComp = FindComponentByClass<UC_InvenComponent>())
+		{
+			InvenComp->LoadInventoryFromBackup(PS->GetSavedInventory());
+			//PS->ClearSavedInventory();
+			//PS->ClearSavedWeapons();
+		}
+		
+		if (m_EquippedComponent && HasAuthority())
+		{
+			// 서버는 이 시점에 EquippedComponent의 OwnerPlayer가 없음.(비긴에서 넣어주고 있음)
+			if (!m_EquippedComponent->GetOwnerPlayer())
+				m_EquippedComponent->SetOwnerPlayer(this);
+			
+			for (int32 i = 0 ; i < static_cast<int32>(EWeaponSlot::None) ; ++i)
+				m_EquippedComponent->LoadEquippedWeaponFromInven(i,m_InvenComponent->GetItemAt(i));
+		}
+	}
+	
+	// 2. 스탯 컴포넌트 복구
+	if (PS->GetSavedStats().Num() > 0)
+	{
+		if (UC_StatComponentBase* StatComp = FindComponentByClass<UC_StatComponentBase>())
+		{
+			StatComp->LoadStatsFromBackup(PS->GetSavedStats(), PS->GetSavedStatGrades());
+			//PS->ClearSavedStats();
+			//PS->ClearSavedStatGrades();
+		}
+	}
 }
 
 void AC_BasicPlayer::SetHandState(EHandState _HandState)

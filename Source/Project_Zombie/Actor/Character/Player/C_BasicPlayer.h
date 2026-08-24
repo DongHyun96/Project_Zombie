@@ -278,6 +278,8 @@ public:
 	//UFUNCTION()
 	virtual void OnRep_PlayerState() override;
 	
+	void TryRestoreFromPlayerState();
+	
 public:
 	
 	/// <summary>
@@ -598,6 +600,8 @@ public:
 	class UC_InvenComponent* GetInvenComponent() { return m_InvenComponent; }
 	
 	virtual void PossessedBy(AController* NewController) override;
+	
+	
 	
 	//UFUNCTION()
 	//virtual void OnRep_AC_PlayerState() override;
