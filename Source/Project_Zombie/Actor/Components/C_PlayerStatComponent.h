@@ -25,6 +25,9 @@ public:
 	void Server_RequestStatUpgrade(AC_StatUpgradeStation* InInteractableActor, const FName& UpStatName);
 	
 	void BindUpdateOtherPlayerHPBar();
+	
+	// 레벨 전환시 PlayerState로 부터 백업된 정보로 플레이어의 스탯을 초기화 하는 함수.
+	virtual void LoadStatsFromBackup(const TMap<FName, float>& InStats, const TMap<FName, uint8>& InGrades) override;
 private:
 	
 	virtual UScriptStruct* GetStatDataStruct() const override;
