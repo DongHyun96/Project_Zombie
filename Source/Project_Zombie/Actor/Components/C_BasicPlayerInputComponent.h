@@ -114,6 +114,7 @@ private: // Equip Weapon input 관련
 private: // FreeLook 관련
 	
 	void FreeLookHoldStart();
+	void FreeLooking();
 	void FreeLookHoldEnd();
 	
 private: // Ping system 관련

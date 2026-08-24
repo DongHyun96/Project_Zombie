@@ -217,9 +217,17 @@ protected:
 	//float m_GetUpTime;
 
 private:
-	// Free look 상태 (Hold Alt 상태)
-	bool m_IsFreeLook{};
+	// Alt를 holding 중인 상황
+	bool m_bIsFreeLook{};
+	
+	// Alt가 눌렸었는지 체킹하는 Flag 변수
+	bool m_bAltFlag{};
+	
+	FRotator m_CharacterMovingDirection{};
 
+	// 현재 Valid한 무기를 손에 들고 있고 사격중인지
+	bool m_bIsFiring{};
+	
 	// [Weapon] - EquippedComponent에서 관리할 예정
 protected:
 
@@ -350,8 +358,9 @@ public:
 	bool IsJumpInput() const { return m_IsJumpInput; }
 	void SetIsJumpInput(bool _IsJumpInput) { m_IsJumpInput = _IsJumpInput; }
 	
-	bool IsFreeLook() const { return m_IsFreeLook; }
-	void SetIsFreeLook(bool _IsFreeLook) { m_IsFreeLook = _IsFreeLook; }
+	bool IsFreeLook() const { return m_bIsFreeLook; }
+	void SetIsFreeLook(bool _IsFreeLook) { m_bIsFreeLook = _IsFreeLook; }
+	void SetAltFlag(bool _Flag) { m_bAltFlag = _Flag; }
 
 	bool IsSprintInput() const { return m_IsSprintInput; }
 	void SetIsSprintInput(bool _IsSprintInput) { m_IsSprintInput = _IsSprintInput; }
@@ -363,7 +372,11 @@ public:
 
 	bool IsFalling() const;
 
+	bool IsFiring() const { return m_bIsFiring; }
+	void SetIsFiring(bool _IsFiring) { m_bIsFiring = _IsFiring; }
 
+	void SetPlayerMovingDirection(const FRotator& _MovingDirection) { m_CharacterMovingDirection = _MovingDirection; }
+	
 public:
 	/// <summary>
 	/// 캐릭터가 착지했을 때 실행되는 함수
@@ -582,6 +595,10 @@ public:
 	UFUNCTION(BlueprintImplementableEvent)
 	void SetNameTagWidgetInfo(const FString& _Name, const FColor& _Color);
 
+private:
+	
+	void HandleFreeLookControllerRotation(float _DeltaTime);
+	
 public:
 	// 데미지 처리 함수 
 	virtual float TakeDamage(float _Damage, struct FDamageEvent const& _DamageEvent
