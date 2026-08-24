@@ -47,6 +47,14 @@ public:
 	void SaveInventoryToState(const TArray<FInventoryEntry>& InContainer) { SavedInventoryContainers = InContainer; }
 	const TArray<FInventoryEntry>& GetSavedInventory() const { return SavedInventoryContainers; }
 	
+	void ClearSavedInventory() { SavedInventoryContainers.Empty(); }
+	
+	void ClearSavedWeapons() { SavedWeapons.Empty(); }
+	
+	void ClearSavedStats() { SavedStats.Empty(); }
+	
+	void ClearSavedStatGrades() { SavedStatGrades.Empty(); }
+	
 protected:
 	
 	UPROPERTY(Replicated, BlueprintReadOnly)
