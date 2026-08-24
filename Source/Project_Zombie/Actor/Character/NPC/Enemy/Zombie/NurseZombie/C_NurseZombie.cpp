@@ -14,6 +14,7 @@
 #include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/AudioComponent.h"
+#include "GameModeAndManager/C_UIManager.h"
 #include "Sound/SoundBase.h"
 #include "Utility/C_Util.h"
 
@@ -48,6 +49,9 @@ void AC_NurseZombie::BeginPlay()
 	
 	ToggleHealingAura(false);
 	m_HealingAuraCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	
+	// 테스트용으로 월드에 배치한 NurseZombie의 경우, ZombieManager에서의 ActiveZombie set에 바로 집어넣어주어야 함 -> 이거를 어떤식으로? 처리를 해야 좋을지 모르겠네
+	
 }
 
 void AC_NurseZombie::GetHealingAuraOverlappingEnemies(TArray<AActor*>& _OutOverlappingEnemies) const
@@ -158,6 +162,7 @@ void AC_NurseZombie::OnHealTargetDeadOrReachedFullHP(AC_BasicCharacter* _HealTar
 void AC_NurseZombie::OnHealSkillEnd(AC_BasicEnemy* _Enemy)
 {
 	if (!IsLocallyControlled()) return;
+	PRINT_LOCAL(GetWorld(), "OnHealSkillEnd", FColor::Cyan, 10.f); 
 	ToggleHealingAura(false);
 }
 

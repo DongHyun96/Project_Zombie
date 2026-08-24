@@ -18,6 +18,7 @@ enum class EZombieType : uint8
 	NurseZombie,
 	CopZombie,
 	TankZombie,
+	End			UMETA(Hidden)
 };
 
 UCLASS()
@@ -25,6 +26,8 @@ class PROJECT_ZOMBIE_API AC_Zombie : public AC_BasicEnemy
 {
 	GENERATED_BODY()
 
+	friend class UC_ZombieManager;
+	
 protected:
 	
 	const EZombieType m_ZombieType{};
@@ -91,6 +94,14 @@ protected: /* 사운드 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound")
 	TArray<TObjectPtr<USoundBase>> m_ChaseSounds;
 
+private:
+
+	// ZombieManager에 의해 SpawnActor처리된(또는 처리예정인) Zombie가 아닌, Level에 직접 배치한 좀비인지 체킹
+	// ZombieManager에서는 DeferredSpawn을 이용하여 BeginPlay 이전에 해당값을 false로 처리함
+	// 거의 테스트용이지만, 레벨에 배치를 시킨 좀비의 경우, ZombieManager의 ActiveZombies TSet에 들어가 있어야 정상동작을 하는 경우가 존재(NurseZombie가 그러함)
+	// 이 flag를 통해 BeginPlay에서 실질적으로 ActiveZombies 컨테이너에 미리 집어넣고 시작할지 말지 결정함
+	bool m_bIsLevelPlaced = true;
+	
 protected:
 	virtual void BeginPlay() override;
 

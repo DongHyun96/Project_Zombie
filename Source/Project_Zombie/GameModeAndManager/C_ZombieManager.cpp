@@ -34,8 +34,7 @@ UC_ZombieManager::UC_ZombieManager()
 	if (TankFinder.Succeeded())
 		m_ZombieClasses.Add(EZombieType::TankZombie, TankFinder.Class);
 
-	// TODO : 이거 5마리 종류보다 늘어나면 늘릴 것
-	for (uint8 i = 0; i < static_cast<uint8>(5); ++i)
+	for (uint8 i = 0; i < static_cast<uint8>(EZombieType::End); ++i)
 	{
 		EZombieType ZombieType = static_cast<EZombieType>(i);
 		m_ActiveZombies.Add(ZombieType, {});
@@ -150,15 +149,27 @@ void UC_ZombieManager::InitializeZombiePool()
 			// 생성 즉시 Deactivateforpool 에서 숨김처리와 충돌처리를 끄기때문에
 			// 월드 원점에 생성되도 무방
 			// 나중에 ActivateFromPool 에서 실제 스폰위치로 Teleport하기 때문에 괜찮음
-			AC_Zombie* SpawnZombie = World->SpawnActor<AC_Zombie>(*ZombieClass, FTransform::Identity, SpawnParams);
-
+			// AC_Zombie* SpawnZombie = World->SpawnActor<AC_Zombie>(*ZombieClass, FTransform::Identity, SpawnParams);
+			AC_Zombie* SpawnZombie = World->SpawnActorDeferred<AC_Zombie>
+			(
+				*ZombieClass,
+				FTransform::Identity,
+				nullptr, nullptr,
+				ESpawnActorCollisionHandlingMethod::AlwaysSpawn
+			);
+			
 			if (!IsValid(SpawnZombie))
 			{
 				UC_Util::Print("From InitializeZombiePool : Zombie Spawn Failed !!", FColor::Red, 10.f);
 				continue;
 			}
 
-
+			// 레벨에 사용자가 직접 넣은 좀비가 아님 -> ZombieManager에 의해 스폰된 ZombieActor임
+			SpawnZombie->m_bIsLevelPlaced = false;
+			
+			// 위의 설정값 이후, BeginPlay 처리
+			SpawnZombie->FinishSpawning(FTransform::Identity);
+			
 			// 생성된 좀비를 즉시 풀 대기상태로 전환
 			if (!SpawnZombie->DeactivateForPool())
 			{
@@ -319,6 +330,13 @@ void UC_ZombieManager::StopSpawnLoop()
 	m_bSpawnLoopActive = false;
 
 	m_CurrentSpawnAreas.Reset();
+}
+
+bool UC_ZombieManager::AddZombieToActivePoolManually(EZombieType _ZombieType, AC_Zombie* _Zombie)
+{
+	if (_ZombieType == EZombieType::End || !IsValid(_Zombie)) return false;
+	m_ActiveZombies[_ZombieType].Add(_Zombie);
+	return true;
 }
 
 void UC_ZombieManager::HandleSpawnLoopTick()
