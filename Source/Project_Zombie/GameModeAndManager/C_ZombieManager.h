@@ -25,7 +25,7 @@ public:
 
 	void OnWorldBeginPlay();
 
-public: /* Spawn 관련 함수들 */
+public:
 
 	/// <summary>
 	/// Healer 좀비의 HealingProjectile 스폰 시키기
@@ -53,6 +53,8 @@ public: /* Spawn 관련 함수들 */
 	bool ReturnHealingProjectileToPool(class AC_HealingProjectile* _HealingProjectile);
 
 	const TSet<AC_Zombie*>& GetActiveNurseZombies() const { return m_ActiveZombies[EZombieType::NurseZombie]; }
+
+private:
 	
 	/// <summary>
 	/// 게임 시작 시 설정된 좀비 타입, 수량만큼 미리 생성하여
@@ -62,26 +64,22 @@ public: /* Spawn 관련 함수들 */
 	void InitializeZombiePool();
 
 	/// <summary>
+	/// 지정한 타입의 좀비를 풀에서 꺼내
+	/// 전달받은 위치에서 스폰
+	/// </summary>
+	/// <param name="_ZombieType"> 활성화된 좀비 </param>
+	/// <param name="_SpawnTransform"> 스폰 위치 </param>
+	/// <returns> 실패하면 nullptr </returns>
+	AC_Zombie* SpawnZombieFromPool(EZombieType _ZombieType, const FTransform& _SpawnTransform);
+	
+public:
+	
+	/// <summary>
 	/// 죽음 처리가 끝난 Zombie를 대기 Pool로 반환
 	/// </summary>
 	/// <param name="_Zombie"> : Pool로 반환할 Zombie </param>
 	/// <returns> : 반환에 실패하면 false </returns> 
 	bool ReturnZombieToPool(class AC_Zombie* _Zombie);
-
-	/// <summary>
-	/// 지정한 타입의 좀비를 풀에서 꺼내
-	/// 전달받은 위치에서 스폰
-	/// </summary>
-	/// <param name="_ZombieType">
-	/// 활성화된 좀비
-	/// </param>
-	/// <param name="_SpawnTransform">
-	/// 스폰 위치
-	/// </param>
-	/// <returns>
-	/// 실패하면 nullptr
-	/// </returns>
-	AC_Zombie* SpawnZombieFromPool(EZombieType _ZombieType, const FTransform& _SpawnTransform);
 
 	/// <summary>
 	/// 현재 거점 웨이브 좀비 스폰 루프 시작
@@ -98,6 +96,14 @@ public: /* Spawn 관련 함수들 */
 	void StopSpawnLoop();
 
 	/// <summary>
+	/// 수동적으로 직접 ActiveZombies 컨테이너에 Active한 Zombie 집어넣기 (주의 : Level에 직접 배치시킨 좀비의 경우에만 한해 이 함수 사용중)
+	/// </summary>
+	/// <returns> : Valid하지 않은 ZombieType이거나 Zombie 자체가 Valid하지 않다면 집어넣지 않고 return false </returns>
+	bool AddZombieToActivePoolManually(EZombieType _ZombieType, AC_Zombie* _Zombie);	
+
+private:
+	
+	/// <summary>
 	/// 현재 웨이브 스폰구역 중
 	/// 해당 좀비타입을 허용하는 영역 중 하나를 랜덤으로 선택
 	/// </summary>
@@ -111,7 +117,8 @@ public: /* Spawn 관련 함수들 */
 	/// <returns></returns>
 	bool TrySpawnZombieFromArea(EZombieType _ZombieType, AC_SpawnArea* _SpawnArea);
 
-protected:
+private:
+	
 	/// <summary>
 	/// SpawnInterval마다 호출
 	/// 실제 좀비 스폰 시도

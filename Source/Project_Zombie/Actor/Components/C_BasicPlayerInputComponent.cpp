@@ -16,6 +16,7 @@
 #include "StatComponent/C_StatComponentBase.h"
 #include "UI/InvenUI/C_InventoryWidget.h"
 #include "UI/InvenUI/DivideWIdget/C_DivideItemWidget.h"
+#include "UI/MainHUD/C_GameMainHUD.h"
 
 #include "Utility/C_Util.h"
 
@@ -130,7 +131,7 @@ void UC_BasicPlayerInputComponent::InitializePlayerInput(UInputComponent* Player
 	
 	if (const UInputAction* IA = FindIAByName(TEXT("IA_FreeLook")))
 	{
-		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Started, this, &UC_BasicPlayerInputComponent::FreeLookHoldStart);
+		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Triggered, this, &UC_BasicPlayerInputComponent::FreeLooking);
 		EnhancedInputComponent->BindAction(IA, ETriggerEvent::Completed, this, &UC_BasicPlayerInputComponent::FreeLookHoldEnd);
 	}
 	
@@ -274,7 +275,19 @@ void UC_BasicPlayerInputComponent::InteractionAction()
 void UC_BasicPlayerInputComponent::FireStarted()
 {
 	if (AC_WeaponBase* CurWeapon = Player->GetEquippedComponent()->GetCurWeapon())
+	{
 		CurWeapon->OnStartFire(Player);
+		Player->SetIsFiring(true);
+		if (Player->IsFreeLook())
+		{
+			Player->SetIsFreeLook(false); // 사격 시작 시, FreeLook 기능이 만약 활성화 중이었다면 해당 기능 비활성화 처리
+			if (AC_UIManager* UIManager = UI_MANAGER(GetWorld()))
+			{
+				if (UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget())
+					MainHUD->AddPlayerWarningLog("FREE LOOK RELEASED");
+			}
+		}
+	}
 }
 
 void UC_BasicPlayerInputComponent::FireOnGoing()
@@ -286,7 +299,10 @@ void UC_BasicPlayerInputComponent::FireOnGoing()
 void UC_BasicPlayerInputComponent::FireEnd()
 {
 	if (AC_WeaponBase* CurWeapon = Player->GetEquippedComponent()->GetCurWeapon())
+	{
 		CurWeapon->OnFireEnd(Player);
+		Player->SetIsFiring(false);
+	}
 }
 
 
@@ -358,18 +374,45 @@ void UC_BasicPlayerInputComponent::ToggleArmed()
 
 void UC_BasicPlayerInputComponent::FreeLookHoldStart()
 {
+	// 이미 무기의 사격(LMB)를 진행중이라면 Warning Log 띄우기
+	if (Player->IsFiring())
+	{
+		if (AC_UIManager* UIManager = UI_MANAGER(GetWorld()))
+		{
+			if (UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget())
+				MainHUD->AddPlayerWarningLog("CANNOT USE FREE LOOK WHILE USING WEAPON");
+		}
+	}
+}
+
+void UC_BasicPlayerInputComponent::FreeLooking()
+{
+	// 이미 무기의 사격(LMB)를 진행중이라면 return
+	if (Player->IsFiring()) return;
+	
 	Player->SetIsFreeLook(true);
-	
-	/*// TODO : 여기 지울 것 For testing
-	Player->GetEquippedComponent()->Server_SetSlotWeapon(EWeaponSlot::MainWeapon, nullptr);*/
-	
-	// TODO : 이 Test 코드 지우기
-	// Player->GetEquippedComponent()->Server_TestSpawnAllWeapons();
+	Player->SetAltFlag(false);
+
+	// AimDown을 하던 중이었던 아니든, Gun을 들고 있는 경우, Aim 풀어줌
+	if (Cast<AC_GunBase>(Player->GetEquippedComponent()->GetCurWeapon()))
+		Player->GetAimComponent()->OnAimReleased();
+
+	if (Player->GetController())
+	{
+		const FRotator PlayerActorRotation = Player->GetActorRotation();
+		FRotator CharacterMovingDirection{};
+		CharacterMovingDirection.Yaw   = PlayerActorRotation.Yaw;
+		CharacterMovingDirection.Pitch = PlayerActorRotation.Pitch;
+		CharacterMovingDirection.Roll  = Player->GetController()->GetControlRotation().Roll;
+		
+		Player->SetPlayerMovingDirection(CharacterMovingDirection);
+	}
 }
 
 void UC_BasicPlayerInputComponent::FreeLookHoldEnd()
 {
 	Player->SetIsFreeLook(false);
+	Player->SetAltFlag(true);
 }
 
 void UC_BasicPlayerInputComponent::MarkPing()

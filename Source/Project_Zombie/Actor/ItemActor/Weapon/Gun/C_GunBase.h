@@ -211,7 +211,8 @@ protected:
 	// HUD 갱신
 	void UpdateAmmoUI();
 
-	virtual FVector LineTraceDamage
+	/// <returns> :  실질적으로 총알이 맞은 위치 </returns>
+	FVector LineTraceDamage
 	(
 		const FVector& CameraStart,
 		const FRotator& CameraRot,

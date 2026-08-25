@@ -376,19 +376,21 @@ bool UC_StatComponentBase::Local_IncreaseStat(const FName& _StatName, float _Inc
 	
 	float* pTargetStatValue = m_Stats.Find(_StatName);
 	if (!pTargetStatValue) return false;
-	
-	*pTargetStatValue += _IncreaseAmount;
+
+	const float PrevStatValue  = *pTargetStatValue;
+	*pTargetStatValue         += _IncreaseAmount;
 
 	// CurHP Set인 경우
 	if (_StatName == TEXT("CurHP"))
 	{
-		// CurHP Full을 찍었으면 해당 Delegate 호출 처리
 		const float CurMaxHP = GetStat(StatName::MaxHP);
-		if (*pTargetStatValue >= CurMaxHP)
-			OnCurHPReachedFullDelegate.Broadcast(m_OwnerCharacter);
-
-		if (CurMaxHP != 0.f)
-			OnCurHPUpdatedDelegate.Broadcast(*pTargetStatValue / CurMaxHP);
+		*pTargetStatValue = FMath::Min(*pTargetStatValue, CurMaxHP); // 체력 최대치 넘어가는 것 방지 -> 이걸 다른 스탯 또한 해주는게 좋긴 한데
+		
+		// 이미 MaxHP인 경우, 처리하지 않아야 함
+		if (PrevStatValue >= CurMaxHP) return false;
+		
+		if (*pTargetStatValue == CurMaxHP)	OnCurHPReachedFullDelegate.Broadcast(m_OwnerCharacter);			// CurHP Full을 찍었으면 해당 Delegate 호출 처리
+		if (CurMaxHP != 0.f)				OnCurHPUpdatedDelegate.Broadcast(*pTargetStatValue / CurMaxHP); // CurHP Updated Delegate 호출 처리
 	}
 	
 	return true;
@@ -425,17 +427,19 @@ bool UC_StatComponentBase::Local_DecreaseStat(const FName& _StatName, float _Dec
 	float* pTargetStatValue = m_Stats.Find(_StatName);
 	if (!pTargetStatValue) return false;
 
+	const float PrevStatValue = *pTargetStatValue;
 	*pTargetStatValue = FMath::Max(0.f, *pTargetStatValue - _DecreaseAmount); // 음수값 방지
 
 	// CurHP Set인 경우, CurHP 0을 찍었으면 Delegate 호출 처리
 	if (_StatName == TEXT("CurHP"))
 	{
-		if (*pTargetStatValue <= 0.f)
-			OnCurHPReachedZeroDelegate.Broadcast(m_OwnerCharacter);
+		// 이미 Zero HP에 한 번 도달했을 경우, 처리하지 않아야 함
+		if (PrevStatValue <= 0.f) return false;
+		
+		if (*pTargetStatValue <= 0.f) OnCurHPReachedZeroDelegate.Broadcast(m_OwnerCharacter);
 
 		const float CurMaxHP = GetStat(StatName::MaxHP);
-		if (CurMaxHP != 0.f)
-			OnCurHPUpdatedDelegate.Broadcast(*pTargetStatValue / CurMaxHP);
+		if (CurMaxHP != 0.f) OnCurHPUpdatedDelegate.Broadcast(*pTargetStatValue / CurMaxHP);
 	}
 	
 	return true;
@@ -588,6 +592,7 @@ bool UC_StatComponentBase::IsCurHPZero() const
 
 bool UC_StatComponentBase::Local_DecreaseCurHP(float _DecreaseAmount)
 {
+	if (m_Stats[StatName::CurHP] <= 0.f) return false; // 이미 사망한 HP일 경우
 	if (_DecreaseAmount < 0.f) return false;
 
 	float* pCurHP = m_Stats.Find(StatName::CurHP);

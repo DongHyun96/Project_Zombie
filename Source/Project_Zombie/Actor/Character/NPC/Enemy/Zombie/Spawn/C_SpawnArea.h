@@ -98,7 +98,7 @@ public:
 		FTransform& _OutTransform
 	) const;
 
-protected:
+private:
 
 	/// <summary>
 	/// SpawnBox의 로컬 범위 안에서 무작위 월드 위치 생성

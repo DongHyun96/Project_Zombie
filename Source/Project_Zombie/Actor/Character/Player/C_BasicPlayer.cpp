@@ -376,6 +376,8 @@ void AC_BasicPlayer::Tick(float DeltaTime)
 			Server_SetAimYaw(ReplicatedAimYaw);
 		}
 	}
+	
+	HandleFreeLookControllerRotation(DeltaTime);
 }
 
 void AC_BasicPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -553,6 +555,37 @@ void AC_BasicPlayer::SetHandState(EHandState _HandState)
 UC_InteractionComponent* AC_BasicPlayer::GetInteractionComponent() const
 {
 	return m_InteractionComponent;
+}
+
+void AC_BasicPlayer::HandleFreeLookControllerRotation(float _DeltaTime)
+{
+	if (!IsLocallyControlled()) return;
+	
+	// Alt를 누른적 없으면 return
+	if (!m_bAltFlag) return;
+	
+	if (GetController())
+	{
+		GetController()->SetControlRotation
+		(
+			UKismetMathLibrary::RLerp
+			(
+				Controller->GetControlRotation(),
+				m_CharacterMovingDirection,
+				_DeltaTime * 10.0f,
+				true
+			)
+		);
+	}
+	
+	const float DeltaYawTemp   = FMath::Abs(UKismetMathLibrary::NormalizedDeltaRotator(GetControlRotation(), m_CharacterMovingDirection).Yaw);
+	const float DeltaPitchTemp = FMath::Abs(UKismetMathLibrary::NormalizedDeltaRotator(GetControlRotation(), m_CharacterMovingDirection).Pitch);
+
+	if (DeltaYawTemp < 5.f && DeltaPitchTemp < 5.f)
+	{
+		Controller->SetControlRotation(m_CharacterMovingDirection);
+		m_bAltFlag = false;
+	}
 }
 
 float AC_BasicPlayer::TakeDamage(float _Damage, FDamageEvent const& _DamageEvent, AController* _InstigatorController, AActor* _InstigatorActor)

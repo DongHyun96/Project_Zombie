@@ -17,6 +17,8 @@
 #include "Components/ShapeComponent.h"
 #include "Sound/SoundBase.h"
 #include "Controller/C_ZombieController.h"
+#include "GameModeAndManager/C_GameMode_GameLv.h"
+#include "GameModeAndManager/C_ZombieManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISense_Damage.h"
@@ -54,6 +56,14 @@ void AC_Zombie::BeginPlay()
 			NormalAttackCollider->OnComponentBeginOverlap.AddDynamic(this, &AC_Zombie::OnNormalAttackColliderBeginOverlap);
 		
 		NormalAttackCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+	
+	// 레벨에 사용자가 직접 놓은 좀비의 경우, ZombieManager의 ActiveZombies에 직접 등록시켜준다. -> 주로 테스팅용 좀비로 Level에 직접 배치한 좀비인 경우 이 경우에 해당
+	if (HasAuthority() && m_bIsLevelPlaced)
+	{
+		if (UC_ZombieManager* ZombieManager = ZOMBIE_MANAGER(this))
+			ZombieManager->AddZombieToActivePoolManually(m_ZombieType, this);
+		else UC_Util::Print("[AC_Zombie::BeginPlay] : ZombieManager nullptr", FColor::Red, 10.f);
 	}
 }
 

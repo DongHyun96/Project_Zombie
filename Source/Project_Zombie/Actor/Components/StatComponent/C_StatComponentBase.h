@@ -263,9 +263,11 @@ public:
 	// HP 가 업데이트 되었을 시, 호출
 	FOnCurHPUpdated OnCurHPUpdatedDelegate{};
 	
-private:
+protected:
 
-	// 게임 오버 시, 피격을 당해도 Immortal로 인하여 1.f 이하로 피 떯어지지 않게끔 
+	// 게임 오버 시, 피격을 당해도 Immortal로 인하여 1.f 이하로 피 떯어지지 않게끔
+	// test용으로 PROPERTY 뚫어둠 -> TODO : 에디터에서 조작 불가능하도록 설정할 것
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool m_bIsImmortal{};
 	
 public:

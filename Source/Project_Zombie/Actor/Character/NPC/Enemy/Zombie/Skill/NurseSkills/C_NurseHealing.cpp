@@ -21,10 +21,7 @@ bool UC_NurseHealing::Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data, 
 
 	// 힐을 줄 대상이 없음
 	if (Nurse->GetHealProjectileTargets().IsEmpty())
-	{
-		UC_Util::Print("asdfkjhadsjkhfg", FColor::Red, 10.f);
 		return false;
-	}
 	
 	const int32 NumSections       = _Data->Montage->CompositeSections.Num();
 	const int32 PickedIdx         = FMath::RandRange(0, NumSections - 1);
@@ -34,13 +31,13 @@ bool UC_NurseHealing::Activate(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data, 
 	
 	_PlayedMontageSectionIdx = PickedIdx;
 	
-	// Skill End Delegate 여기서 구독
+	// Skill End Delegate 구독 -> Heal Aura Effect 끄기 등 처리
 	_Owner->GetSkillComponent()->m_SkillEndDelegate.AddUObject(Nurse, &AC_NurseZombie::OnHealSkillEnd);
 	
 	return true;
 }
 
-// TODO : 예외적으로 여기서는 Notify 호출로 인한 처리로 들어오지 않음 -> AnimMontage Section의 길이가 모두 달라서 Loop 시에 Heal 구슬 생성 Timeing이 뒤죽박죽 되어버림
+// TODO : 예외적으로 여기서는 Notify 호출로 인한 처리로 들어오지 않음 -> AnimMontage Section의 길이가 모두 달라서 Loop 시에 Heal 구슬 생성 Timing이 뒤죽박죽 되어버림
 // Nurse BT Healing Task에서 Interval 계산해서 Fire 처리될 예정
 void UC_NurseHealing::Fire(AC_BasicEnemy* _Owner, UC_EnemySkillData* _Data)
 {
