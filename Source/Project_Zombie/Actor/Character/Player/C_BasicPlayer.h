@@ -269,6 +269,9 @@ private:
 	// 부활 후 무적 타이머
 	FTimerHandle m_InvincibleTimerHandle;
 
+	// PlayerState OnRep 시, 초기화 처리 관련 Waiting Timer
+	FTimerHandle m_PlayerStateRepTimerHandle{};
+	
 private:
 	
 	int32 m_KillCount{};

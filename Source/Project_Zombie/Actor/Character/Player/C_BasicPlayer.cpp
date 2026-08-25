@@ -494,17 +494,27 @@ void AC_BasicPlayer::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
 	// TODO : HP, Stat Update
-	
-	if (!UI_MANAGER(GetWorld())) return;
-	
-	if (!m_StatComponent) return;
-	
-	UI_MANAGER(GetWorld())->GetMainHUDWidget()->GetPlayerStatWidget()->UpdateBoostBar(m_StatComponent->GetStat(StatName::CurBoost),  m_StatComponent->GetStat(StatName::MaxBoost));
-	
-	UI_MANAGER(GetWorld())->GetMainHUDWidget()->GetPlayerStatWidget()->RepPlayerStateInit(m_StatComponent->GetCurHPRatio());
-	
-	// 클라단에서 레벨 전환 시 초기화 시도. 
-	TryRestoreFromPlayerState();
+
+	// CreateWeakLambda: this가 파괴되면 엔진이 람다 실행을 아예 차단함
+	FTimerDelegate InitDelegate = FTimerDelegate::CreateWeakLambda(this, [this]()
+	{
+		AC_UIManager* UIManager = UI_MANAGER(GetWorld());
+		if (!UIManager || !UIManager->GetMainHUDWidget() || !m_StatComponent) return;
+
+		UC_PlayerStatWidget* PlayerStatWidget = UIManager->GetMainHUDWidget()->GetPlayerStatWidget();
+		
+		// 모두 준비되었을 때 비로소 초기화 수행
+		PlayerStatWidget->UpdateBoostBar(m_StatComponent->GetStat(StatName::CurBoost),  m_StatComponent->GetStat(StatName::MaxBoost));
+		PlayerStatWidget->RepPlayerStateInit(m_StatComponent->GetCurHPRatio());
+        
+		TryRestoreFromPlayerState();
+
+		// 초기화 성공 및 탈출 처리
+		GetWorldTimerManager().ClearTimer(m_PlayerStateRepTimerHandle);
+	});
+
+	// 0.1초 단위로 반복 검사 처리 실행
+	GetWorldTimerManager().SetTimer(m_PlayerStateRepTimerHandle, InitDelegate, 0.1f, true);
 }
 
 void AC_BasicPlayer::TryRestoreFromPlayerState()

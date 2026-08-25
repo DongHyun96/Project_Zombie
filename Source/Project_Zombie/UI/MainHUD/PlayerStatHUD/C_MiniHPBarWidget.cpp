@@ -5,9 +5,11 @@
 
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/Components/PlayerProfileComponent/C_PlayerProfileComponent.h"
+#include "Actor/Components/StatComponent/C_StatComponentBase.h"
 #include "Components/Image.h"
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
+#include "GameFramework/PlayerState.h"
 #include "Utility/C_Util.h"
 
 void UC_MiniHPBarWidget::NativeOnInitialized()
@@ -33,11 +35,26 @@ void UC_MiniHPBarWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTi
 
 void UC_MiniHPBarWidget::Activate(AC_BasicPlayer* _TargetPlayer)
 {
-	const FString& PlayerName = _TargetPlayer->GetPlayerProfileComponent()->GetPlayerName();
+	if (!_TargetPlayer)
+	{
+		UC_Util::Print("[UC_MiniHPBarWidget::Activate] : _TargetPlayer nullptr", FColor::Red, 10.f);
+		return;
+	}
+
+	if (!_TargetPlayer->GetPlayerState())
+	{
+		UC_Util::Print("[UC_MiniHPBarWidget::Activate] : _TargetPlayer's PlayerState nullptr", FColor::Red, 10.f);
+		return;
+	}
+	
+	const FString& PlayerName = _TargetPlayer->GetPlayerState()->GetPlayerName();
 	const FColor& PlayerColor = _TargetPlayer->GetPlayerProfileComponent()->GetPlayerSelectedColor();
 
 	PlayerColorImage->SetColorAndOpacity(PlayerColor);
-	PlayerNameText->SetText(FText::FromString(PlayerName));
+	PlayerNameText->SetText(FText::FromString(PlayerName.IsEmpty() ? "Anonymous" : PlayerName));
+	
+	// Activate와 동시에 현 HP Ratio 갱신 처리 또한 해준다
+	UpdateHPBar(_TargetPlayer->GetStatComponent()->GetCurHPRatio());
 	
 	SetVisibility(ESlateVisibility::HitTestInvisible);
 }
