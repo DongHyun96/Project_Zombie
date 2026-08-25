@@ -151,7 +151,7 @@ bool UC_PointTowerManager::RegisterPointTower(AC_PointTower* _PointTower)
 				m_FirstPointOpenWaitTimerHandle, this, &UC_PointTowerManager::StartActivateCurrentPointsSequence, 20.f, false
 			);
 			
-			Multicast_ShowGameStartPanel();
+			ShowGameStartPanel(); // 서버 쪽은 바로 GameStartPanel 보이기 -> Client들은 GameOverChecker(Actor)의 RPC Call을 통해 해당 Widget 활성화 처리됨
 			m_GameStartTimerSet = true;
 		}
 		
@@ -274,8 +274,10 @@ TArray<AC_SpawnArea*> UC_PointTowerManager::GetCurrentSequenceSpawnAreas() const
 	return Result;
 }
 
-void UC_PointTowerManager::Multicast_ShowGameStartPanel_Implementation()
+void UC_PointTowerManager::ShowGameStartPanel()
 {
+	PRINT_LOCAL(GetWorld(), "Multicast_ShowGameStartPanel", FColor::Yellow, 10.f);
+	
 	GetWorld()->GetTimerManager().SetTimer
 	(
 	TempTimerHandle,

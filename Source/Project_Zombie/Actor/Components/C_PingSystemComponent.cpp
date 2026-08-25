@@ -129,8 +129,10 @@ void UC_PingSystemComponent::Multicast_SpawnPing_Implementation
 )
 {
 	// 자기자신의 Ping Spawn은 바로 Local 환경에서 이미 띄운 상황
-	// TODO : 이거 외부에 의한 Ping spawn은 실질적으로 스폰 처리를 해주어야 함
-	if (!m_OwnerPlayer && m_OwnerPlayer->IsLocallyControlled()) return;
+
+	// 아직 BeginPlay 호출 이전인 경우, 남의 PingSpawn 자체를 넘어감
+	if (!HasBegunPlay()) return;
+	if (m_OwnerPlayer->IsLocallyControlled()) return;
 	
 	m_WorldPingActor->SetPingColor(m_OwnerPlayer->GetPlayerProfileComponent()->GetPlayerSelectedColor());
 	m_WorldPingActor->SpawnPingActorToWorld(_SpawnedLocation, _GamePingType, _PingShapeType);
@@ -144,6 +146,9 @@ void UC_PingSystemComponent::Multicast_MustSpawnAll_Implementation
 	AActor*			_LastInstigator
 )
 {
+	// 아직 BeginPlay 호출 이전인 경우, 남의 PingSpawn 자체를 넘어감
+	if (!HasBegunPlay()) return;
+	
 	// 무조건 스폰 처리
 	
 	m_WorldPingActor->SetPingColor(m_OwnerPlayer->GetPlayerProfileComponent()->GetPlayerSelectedColor());
@@ -163,6 +168,8 @@ bool UC_PingSystemComponent::Server_HidePing_Validate()
 
 void UC_PingSystemComponent::Multicast_HidePing_Implementation()
 {
+	if (!HasBegunPlay()) return;
+	
 	if (m_OwnerPlayer->IsLocallyControlled()) return;
 	m_WorldPingActor->HidePing();
 }

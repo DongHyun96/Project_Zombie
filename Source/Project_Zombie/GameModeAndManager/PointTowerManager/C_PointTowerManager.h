@@ -80,8 +80,7 @@ private:
 
 private:
 
-	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_ShowGameStartPanel();
+	void ShowGameStartPanel();
 	
 public:
 	void SetZombieManager(class UC_ZombieManager* _ZombieManager) { m_ZombieManager = _ZombieManager; }
