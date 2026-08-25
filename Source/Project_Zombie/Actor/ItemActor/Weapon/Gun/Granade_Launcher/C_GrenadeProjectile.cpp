@@ -48,6 +48,10 @@ void AC_GrenadeProjectile::BeginPlay()
 	{
 		CollisionComp->IgnoreActorWhenMoving(GetInstigator(), true);
 	}
+
+	// 스폰처리 하자마자 폭파처리를 해야하는 경우(ex - Muzzle Awareness)
+	if (HasAuthority() && m_bHasToExplodeOnSpawn)
+		OnExplodeStart();
 }
 
 void AC_GrenadeProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
@@ -55,37 +59,7 @@ void AC_GrenadeProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActo
 	if (m_bHasExploded) return;
 
 	if (OtherActor && OtherActor != this && OtherActor != GetInstigator())
-	{
-		m_bHasExploded = true;
-
-		CollisionComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		if (ProjectileMovement)
-		{
-			ProjectileMovement->StopMovementImmediately();
-			ProjectileMovement->Deactivate();
-		}
-		if (ProjectileMesh)
-		{
-			ProjectileMesh->SetVisibility(false);
-		}
-
-		const FVector HitLocation = GetActorLocation();
-
-		if (m_ExplosionEffect)
-		{
-			float EffectScale = (m_ExplosionEffectScale > 0.0f) ? m_ExplosionEffectScale : 1.0f;
-			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), m_ExplosionEffect, HitLocation, FRotator::ZeroRotator, FVector(EffectScale));
-		}
-
-		if (HasAuthority())
-		{
-			ExplodeInternal(HitLocation);
-		}
-		else
-		{
-			Server_RequestExplode(HitLocation);
-		}
-	}
+		OnExplodeStart();
 }
 
 bool AC_GrenadeProjectile::Server_RequestExplode_Validate(FVector ExplosionLocation)
@@ -147,6 +121,39 @@ void AC_GrenadeProjectile::ExplodeInternal(FVector ExplosionLocation)
 	}
 
 	SetLifeSpan(0.1f);
+}
+
+void AC_GrenadeProjectile::OnExplodeStart()
+{
+	m_bHasExploded = true;
+
+	CollisionComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	if (ProjectileMovement)
+	{
+		ProjectileMovement->StopMovementImmediately();
+		ProjectileMovement->Deactivate();
+	}
+	if (ProjectileMesh)
+	{
+		ProjectileMesh->SetVisibility(false);
+	}
+
+	const FVector HitLocation = GetActorLocation();
+
+	if (m_ExplosionEffect)
+	{
+		float EffectScale = (m_ExplosionEffectScale > 0.0f) ? m_ExplosionEffectScale : 1.0f;
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), m_ExplosionEffect, HitLocation, FRotator::ZeroRotator, FVector(EffectScale));
+	}
+
+	if (HasAuthority())
+	{
+		ExplodeInternal(HitLocation);
+	}
+	else
+	{
+		Server_RequestExplode(HitLocation);
+	}
 }
 
 void AC_GrenadeProjectile::Multicast_PlayExplosionFX_Implementation(FVector ExplosionLocation)

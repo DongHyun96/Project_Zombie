@@ -111,6 +111,12 @@ protected:
 	//FVector m_CachedCameraLoc;
 	//FRotator m_CachedCameraRot;
 
+protected: /* Muzzle Awareness 관련 */
+
+	UPROPERTY()
+	AActor* m_MuzzleAwareActor{};		// Muzzle Aware 거리에 걸린 Actor (없다면 nullptr)
+	FVector m_MuzzleAwareImpactPoint{};	// Muzzle Aware 거리에 걸린 ImpactPoint
+	
 private:
 
 	// 이거 희민님이 지정한 오른손 소켓 그냥 써도 되면 그냥 쓰기
@@ -285,6 +291,14 @@ public:
 	/// 원상태 복구 처리 필요한 내역 여기서 처리
 	/// </summary>
 	virtual void OnSheathStart() override;
+
+private:
+	
+	/// <summary>
+	/// 총을 손에 쥐었을 때, 총구 앞을 가로막는 물체가 있는지에 관한 정보 전반적인 업데이트 처리
+	/// 만약 총구가 파고드는 상황이라면, -> 총구가 파고드는 물체에 대해 바로 사격처리를 해버린다
+	/// </summary>
+	void UpdateMuzzleAwareness();
 	
 protected:
 	virtual void BeginPlay() override;

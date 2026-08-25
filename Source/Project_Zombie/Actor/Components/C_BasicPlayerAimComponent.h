@@ -52,6 +52,11 @@ private:
 	float m_HandIKAlpha = 0.0f; // 0.0 (미조준, IK 고정 안함), 1.0 (조준, IK 고정)
 
 protected:
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	class UWidgetComponent* m_MuzzleAwareWidgetComponent{}; 
+	
+protected:
 	virtual void BeginPlay() override;
 
 public:
@@ -69,6 +74,12 @@ public:
 
 public:
 	bool IsAiming() { return bIsAiming; }
+	
+public: /* Muzzle Awareness 관련 */
+	
+	void ToggleMuzzleAwareCrossHair(bool _Visible);
+	
+	void UpdateMuzzleAwareCrossHairLocation(const FVector& _WorldLocation);
 
 public:
 	UC_BasicPlayerAimComponent();

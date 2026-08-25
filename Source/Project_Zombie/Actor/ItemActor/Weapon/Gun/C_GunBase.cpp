@@ -66,6 +66,7 @@ void AC_GunBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	
+	UpdateMuzzleAwareness();
 }
 
 bool AC_GunBase::InitializeItemActor(const FWeaponData* InRawData)
@@ -621,6 +622,13 @@ FVector AC_GunBase::LineTraceDamage
 	if (!m_WeaponMesh || !GetWorld() || !m_OwnerPlayer)
 		return FVector::ZeroVector;
 
+	// 만약 MuzzleAwareness 거리에 잡힌 Actor가 있는 경우, 해당 Actor로 바로 처리하고 Early return 처리
+	if (m_MuzzleAwareActor)
+	{
+		OutHitActor = m_MuzzleAwareActor;
+		return m_MuzzleAwareImpactPoint;
+	}
+	
 	const FVector CameraForward   = CameraRot.Vector();
 	const FVector MuzzleStart     = m_WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
 	static const float TraceRange = 10000.0f;
@@ -789,6 +797,10 @@ void AC_GunBase::OnSheathStart()
 	ReleaseTrigger();
 
 	if (!m_OwnerPlayer) return;
+
+	// Muzzle Aware UI 관련 모두 해제
+	m_MuzzleAwareActor = nullptr;
+	m_OwnerPlayer->GetAimComponent()->ToggleMuzzleAwareCrossHair(false);
 	
 	// Aim 카메라 및 UI 등 조준 관련 원위치
 	if (m_OwnerPlayer->GetAimComponent())
@@ -807,6 +819,60 @@ void AC_GunBase::OnSheathStart()
 
 	m_bIsReloading = false;
 	Server_CancelReload();
+}
+
+void AC_GunBase::UpdateMuzzleAwareness()
+{
+	// 오로지 LocalOwnerPlayer인 경우에만 해당 정보를 띄워주면 됨
+	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled()) return;
+	
+	// 손에 들고 있지 않은 경우 return
+	if (m_OwnerPlayer->GetHandState() != EHandState::WeaponGun) return;
+
+	// 손에 들고 있는 경우, 상시로 MuzzleAwareness 체킹을 해줌
+
+	const FVector ButtStockLocation  = m_WeaponMesh->GetSocketLocation(TEXT("ButtStock"));
+	const FVector MuzzleLocation     = m_WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
+	const FVector AwarenessDirection = (MuzzleLocation - ButtStockLocation).GetSafeNormal();
+
+	// 총구 위치로부터 얼만큼 전방방향까지가 Awareness 거리인지
+	static const float AwarenessDistance = 45.f;
+
+	FHitResult HitResult{};
+	FCollisionQueryParams CollisionParams{};
+	CollisionParams.AddIgnoredActor(this);
+	CollisionParams.AddIgnoredActor(m_OwnerPlayer);
+	
+	const bool bHit = GetWorld()->LineTraceSingleByChannel
+	(
+		HitResult,
+		ButtStockLocation,
+		MuzzleLocation + AwarenessDistance * AwarenessDirection,
+		ECC_Visibility,
+		CollisionParams
+	);
+
+	// 전방방향으로 아무 물체도 없음
+	if (!bHit)
+	{
+		if (m_MuzzleAwareActor) // 이전까지 MuzzleAware에 잡힌 물체가 있었음 -> UI Visibility 비활성화
+			m_OwnerPlayer->GetAimComponent()->ToggleMuzzleAwareCrossHair(false);
+		
+		m_MuzzleAwareActor = nullptr;
+		return;
+	}
+	
+	// MuzzleAware 거리에 걸린 상황
+
+	// 처음 걸린 상황 -> UI Visibility 활성화
+	if (!m_MuzzleAwareActor)
+		m_OwnerPlayer->GetAimComponent()->ToggleMuzzleAwareCrossHair(true);
+
+	// LineTrace 및 발사 처리와 관련한 과정에서 최적화 관련 정보를 미리 여기서 저장해둠 (어차피 코앞에 붙은 물체에 맞을 것이고, 더욱이 벽에 파고든 경우 자기쪽 벽면에 총알이 박혀야함) 
+	m_MuzzleAwareActor       = HitResult.GetActor();
+	m_MuzzleAwareImpactPoint = HitResult.ImpactPoint;
+	
+	m_OwnerPlayer->GetAimComponent()->UpdateMuzzleAwareCrossHairLocation(m_MuzzleAwareImpactPoint);
 }
 
 void AC_GunBase::Multicast_PlayAIFireEffects_Implementation(FVector_NetQuantize ImpactPoint)

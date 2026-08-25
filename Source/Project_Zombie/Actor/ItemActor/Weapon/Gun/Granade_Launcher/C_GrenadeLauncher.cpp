@@ -35,9 +35,9 @@ bool AC_GrenadeLauncher::Reload(AC_BasicPlayer* _WeaponUser)
 void AC_GrenadeLauncher::Server_ExecuteFire_Implementation(FVector_NetQuantize ImpactPoint, AActor* HitActor)
 {
 	if (m_OwnerPlayer && m_OwnerPlayer->IsDead()) return;
-		
-	// 서버에서 클라이언트가 전달한 에임 타겟 지점으로 유탄 스폰
-	SpawnGrenadeProjectile(FVector(ImpactPoint));
+	
+	// HitActor의 경우, MuzzleAwareness에 잡힌 Actor를 사용 (없다면 자동적으로 nullptr를 넘겨서 일반 유탄 사격처리로 넘어간다)
+	SpawnGrenadeProjectile(FVector(ImpactPoint), HitActor);
 }
 
 void AC_GrenadeLauncher::Server_EjectAllSpentShells_Implementation(int32 SpentShellCount)
@@ -72,35 +72,53 @@ bool AC_GrenadeLauncher::OnStartFire(AC_BasicPlayer* _WeaponUser)
 	// 발사 Animation 재생
 	PlayFireEffects();
 
-	const FVector TargetPoint = GetCameraTargetPoint();
-	Server_ExecuteFire(TargetPoint, nullptr); // 어차피 클라이든, 서버든 처리 같음
+	// Muzzle Aware 위치라면 해당 TargetPoint를 벽면(또는 물체 등)으로 둠
+	const FVector TargetPoint = m_MuzzleAwareActor == nullptr ? GetCameraTargetPoint() : m_MuzzleAwareImpactPoint;
+	
+	Server_ExecuteFire(TargetPoint, m_MuzzleAwareActor); // 어차피 클라이든, 서버든 처리 같음
 
 	GetWorldTimerManager().SetTimer(m_ShotCooldownTimer, this, &AC_GrenadeLauncher::ResetFireCooldown, m_FireRate, false);
 	return true;
 }
 
-void AC_GrenadeLauncher::SpawnGrenadeProjectile(const FVector& TargetPoint)
+void AC_GrenadeLauncher::SpawnGrenadeProjectile(const FVector& TargetPoint, AActor* MuzzleAwareActor)
 {
 	if (!HasAuthority() || !m_WeaponMesh || !GetWorld() || !m_GrenadeClass)
 		return;
 
-	FVector StartLocation = m_WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
-	FVector LaunchDirection = (TargetPoint - StartLocation).GetSafeNormal();
-
-	FRotator SpawnRotation = LaunchDirection.Rotation();
-
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.Owner = this;
-	SpawnParams.Instigator = m_OwnerPlayer ? Cast<APawn>(m_OwnerPlayer) : Cast<APawn>(GetOwner());
+	
+	// Muzzle Aware 거리에 파묻힌 경우, 예외처리로 스폰 및 바로 터쳐버림
+	if (MuzzleAwareActor)
+	{
+		AC_GrenadeProjectile* Grenade = GetWorld()->SpawnActorDeferred<AC_GrenadeProjectile>
+		(
+			m_GrenadeClass,
+			FTransform(TargetPoint),
+			this, Cast<APawn>(GetOwner()),
+			ESpawnActorCollisionHandlingMethod::AlwaysSpawn
+		);
+		
+		Grenade->SetHasToExplodeOnSpawn(); // 바로 폭파 처리 세팅
+		Grenade->FinishSpawning(FTransform(TargetPoint));
+		return;
+	}
+	
+	const FVector StartLocation   = m_WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
+	const FVector LaunchDirection = (TargetPoint - StartLocation).GetSafeNormal();
+	const FRotator SpawnRotation  = LaunchDirection.Rotation();
+	
+	FActorSpawnParameters SpawnParams{};
+	SpawnParams.Owner                          = this;
+	SpawnParams.Instigator                     = Cast<APawn>(GetOwner());
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	AC_GrenadeProjectile* Grenade = GetWorld()->SpawnActor<AC_GrenadeProjectile>(
+	GetWorld()->SpawnActor<AC_GrenadeProjectile>
+	(
 		m_GrenadeClass,
 		StartLocation,
 		SpawnRotation,
 		SpawnParams
 	);
-
 }
 
 FVector AC_GrenadeLauncher::GetCameraTargetPoint() const
