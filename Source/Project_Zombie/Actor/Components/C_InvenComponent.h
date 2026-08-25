@@ -135,8 +135,6 @@ protected:
 	// InventoryContainer가 가지고 있는 TArray<FInventoryEntry>의 크기를 초기화 해주는 함수.
 	void InitInventoryContainerMaxSlots(int32 InMax);
 	
-	UFUNCTION(BlueprintCallable)
-	void OnRep_InventoryContainer();
 
 protected:
     // C_IneventoryGridWidget에서 grid slot의 갯수와 일치 시킬 변수
@@ -145,7 +143,7 @@ protected:
 	
 	// Fast Array Container
 	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
-	UPROPERTY(ReplicatedUsing = OnRep_InventoryContainer,EditAnywhere, BlueprintReadWrite, Category = "Inventory")
+	UPROPERTY(Replicated,EditAnywhere, BlueprintReadWrite, Category = "Inventory")
 	FInventoryContainer InventoryContainer;
 	
 	// TODO : 현재 미사용 중, 현재 포인터를 패킷으로 보내고 있는데(엔진에서 GUID로 변환해줌.)

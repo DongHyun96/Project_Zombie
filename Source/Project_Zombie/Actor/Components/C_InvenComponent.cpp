@@ -1,12 +1,7 @@
 #include "Actor/Components/C_InvenComponent.h"
 
 #include "C_EquippedComponent.h"
-#include "Actor/Character/Player/C_BasicPlayer.h"
-#include "GameFramework/GameSession.h"
-#include "GameFramework/PlayerState.h"
 #include "GameModeAndManager/C_ItemManager.h"
-#include "Utility/C_Util.h"
-#include "UI/InvenUI/C_InventoryGridWidget.h"
 #include "Net/UnrealNetwork.h"
 UC_InvenComponent::UC_InvenComponent()
 {
@@ -17,6 +12,7 @@ UC_InvenComponent::UC_InvenComponent()
 	// 컴포넌트 리플리케이션 활성화. 
 	SetIsReplicatedByDefault(true);
 	
+	InventoryContainer.OwnerComponent = this;
 	//if (GetOwner())
 	//{
 	//	ContainerID = GetOwner()->GetUniqueID();
@@ -29,14 +25,24 @@ void UC_InvenComponent::LoadInventoryFromBackup(const TArray<FInventoryEntry>& I
 	// 서버 권한 검사
 	if (!GetOwner()->HasAuthority()) return;
 
+	InventoryContainer.Items.Empty();
+	
+	int32 count = InSavedItems.Num();
+	
+	// 하나씩 넣으면 broadcast의 호출등이 너무 많음.
+	//for (int32 i = 0; i < count; ++i)
+	//{
+	//	AddItem(InSavedItems[i]);
+	//}
+	
 	// Fast Array 내부의 TArray에 백업본 데이터 주입
 	InventoryContainer.Items = InSavedItems;
-    
+	
 	// 중요: Fast Array가 내부 요소를 모두 감지하여 클라이언트들에게 Replicate 하도록 마킹
 	InventoryContainer.MarkArrayDirty();
     
 	// 로컬 델리게이트 알림 혹은 강제 동기화 보정용 함수 호출
-	ForceRepInven();
+	//ForceRepInven();
     
 	UE_LOG(LogTemp, Log, TEXT("[InvenComp] %d개의 아이템을 성공적으로 복구했습니다."), InventoryContainer.Items.Num());
 }
@@ -608,8 +614,8 @@ void UC_InvenComponent::CancelDragItemSlot(int32 SlotIndex, int32 InPlayerId)
 	SetSlotLockState(SlotIndex, INDEX_NONE);
 }
 
-void UC_InvenComponent::OnRep_InventoryContainer()
-{
-	InventoryContainer.OwnerComponent = this;
-	//InventoryContainer.MarkArrayDirty();
-}
+//void UC_InvenComponent::OnRep_InventoryContainer()
+//{
+//	InventoryContainer.OwnerComponent = this;
+//	//InventoryContainer.MarkArrayDirty();
+//}

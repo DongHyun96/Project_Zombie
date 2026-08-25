@@ -7,6 +7,7 @@
 #include "Actor/Character/C_BasicCharacter.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Controller/C_BasicPlayerController.h"
+#include "GameModeAndManager/C_ItemManager.h"
 #include "GameModeAndManager/C_UIManager.h"
 #include "Item/Interact/ItemUpgrade/C_ItemUpgradeStation.h"
 #include "Item/Interact/StatUpgrade/C_StatUpgradeStation.h"
@@ -71,6 +72,23 @@ void UC_PlayerStatComponent::Server_RequestStatUpgrade(AC_StatUpgradeStation* In
 void UC_PlayerStatComponent::BindUpdateOtherPlayerHPBar()
 {
 	this->OnCurHPUpdatedDelegate.AddUObject(this, &UC_PlayerStatComponent::UpdateOtherPlayerHPBar);
+}
+
+void UC_PlayerStatComponent::LoadStatsFromBackup(const TMap<FName, float>& InStats, const TMap<FName, uint8>& InGrades)
+{
+	if (!m_OwnerPlayer) return;
+	
+	//UC_PlayerStatComponent* PlayerStatComp = Cast<UC_PlayerStatComponent>(m_OwnerPlayer->GetStatComponent());
+	//if (!PlayerStatComp) return;
+	//
+	//UC_ItemManager* ItemManager = m_OwnerPlayer->GetGameInstance()->GetSubsystem<UC_ItemManager>();
+	//if (!ItemManager) return;
+	
+	m_StatGrades = InGrades;
+	m_Stats = InStats;
+
+	if (m_OwnerPlayer->IsLocallyControlled())
+		OnCurHPUpdatedDelegate.Broadcast(GetCurHPRatio());
 }
 
 UScriptStruct* UC_PlayerStatComponent::GetStatDataStruct() const

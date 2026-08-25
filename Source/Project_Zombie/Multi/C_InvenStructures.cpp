@@ -3,6 +3,7 @@
 
 #include "Multi/C_InvenStructures.h"
 
+#include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/Components/C_InvenComponent.h"
 #include "Utility/C_Util.h"
 
