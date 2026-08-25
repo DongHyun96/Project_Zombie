@@ -10,6 +10,8 @@ class UC_InteractionStrategyBase;
 class UPrimitiveComponent;
 class UMaterialInterface;
 
+// traceChannels 로 상호작용 
+
 // TODO : CancelInteract 구현 보고 없애야 할 수 있음.
 DECLARE_MULTICAST_DELEGATE(OnEndOverlap);
 // TODO : CancelInteract 구현 보고 없애야 할 수 있음.
