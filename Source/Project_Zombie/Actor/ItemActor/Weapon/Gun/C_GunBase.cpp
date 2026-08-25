@@ -634,12 +634,12 @@ FVector AC_GunBase::LineTraceDamage
 		QueryParams
 	);
 
-	if (bCameraHit)
+	/*if (bCameraHit)
 	{
 		DrawDebugLine(GetWorld(), CameraStart, CameraHitResult.ImpactPoint, FColor::Yellow, false, 5.f);
 		DrawDebugSphere(GetWorld(), CameraHitResult.ImpactPoint, 5.f, 10, FColor::Green, false, 5.f);
 	}
-	else DrawDebugLine(GetWorld(), CameraStart, CameraEnd, FColor::Yellow, false, 5.f);
+	else DrawDebugLine(GetWorld(), CameraStart, CameraEnd, FColor::Yellow, false, 5.f);*/
 
 	const FVector TargetPoint = bCameraHit ? CameraHitResult.ImpactPoint : CameraEnd;
 	const FVector MuzzleStart = m_WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
@@ -663,12 +663,12 @@ FVector AC_GunBase::LineTraceDamage
 		QueryParams
 	);
 	
-	if (bMuzzleHit)
+	/*if (bMuzzleHit)
 	{
 		DrawDebugLine(GetWorld(), MuzzleStart, MuzzleHitResult.ImpactPoint, FColor::Red, false, 5.f);
 		DrawDebugSphere(GetWorld(), MuzzleHitResult.ImpactPoint, 5.f, 10, FColor::Blue, false, 5.f);
 	}
-	else DrawDebugLine(GetWorld(), MuzzleStart, FinalMuzzleEnd, FColor::Red, false, 5.f);
+	else DrawDebugLine(GetWorld(), MuzzleStart, FinalMuzzleEnd, FColor::Red, false, 5.f);*/
 
 	// 최종으로 맞은 Actor
 	if (bMuzzleHit)
