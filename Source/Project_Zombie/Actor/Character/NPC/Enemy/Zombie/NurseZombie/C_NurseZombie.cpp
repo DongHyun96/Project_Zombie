@@ -162,8 +162,8 @@ void AC_NurseZombie::OnHealTargetDeadOrReachedFullHP(AC_BasicCharacter* _HealTar
 void AC_NurseZombie::OnHealSkillEnd(AC_BasicEnemy* _Enemy)
 {
 	if (!IsLocallyControlled()) return;
-	PRINT_LOCAL(GetWorld(), "OnHealSkillEnd", FColor::MakeRandomColor(), 10.f); 
 	ToggleHealingAura(false);
+	
 	m_SkillCom->m_SkillEndDelegate.RemoveAll(this);
 }
 
