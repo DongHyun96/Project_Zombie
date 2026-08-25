@@ -272,7 +272,15 @@ void AC_GunBase::UpdateAmmoUI()
 {
 	if (m_OwnerPlayer && m_OwnerPlayer->IsLocallyControlled())
 	{
-		UI_MANAGER(GetWorld())->GetMainHUDWidget()->UpdateMagazineAmmoCount(m_CurrentAmmo);
+		if (UI_MANAGER(GetWorld()) && UI_MANAGER(GetWorld())->GetMainHUDWidget())
+			UI_MANAGER(GetWorld())->GetMainHUDWidget()->UpdateMagazineAmmoCount(m_CurrentAmmo);
+		else
+		{
+			GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
+			{
+				UI_MANAGER(GetWorld())->GetMainHUDWidget()->UpdateMagazineAmmoCount(m_CurrentAmmo);
+			});
+		}
 	}
 }
 
