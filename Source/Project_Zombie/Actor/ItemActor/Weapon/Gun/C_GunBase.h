@@ -120,6 +120,10 @@ private:
 	// 모든 무기 RifleHolster 사용처리
 	static const FName s_HolsterSocketName;
 
+	// Gun 발사 시, 카메라의 정면 방면 Trace처리할 Channel -> 모든 물체에 대한 Overlap 처리로 검사 및 Multi처리로 검사할 예정
+	// TODO : 만약 Numbering 바뀌면 확인해야 함(절대적이지가 않음)
+	const ECollisionChannel m_GunCrossHairTraceChannel = ECC_GameTraceChannel7;
+	
 public:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;

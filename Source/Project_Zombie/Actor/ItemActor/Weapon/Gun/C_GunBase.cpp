@@ -52,8 +52,6 @@ AC_GunBase::AC_GunBase()
 	//m_DataCom = CreateDefaultSubobject<UC_GunDataTableComponent>(TEXT("DataComponent"));
 	
 	m_AIGunUsageComponent = CreateDefaultSubobject<UC_AIGunUsageComponent>(TEXT("AIGunUsageComponent"));
-	
-
 }
 
 void AC_GunBase::BeginPlay()
@@ -624,6 +622,7 @@ FVector AC_GunBase::LineTraceDamage
 		return FVector::ZeroVector;
 
 	const FVector CameraForward   = CameraRot.Vector();
+	const FVector MuzzleStart     = m_WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
 	static const float TraceRange = 10000.0f;
 
 	FCollisionQueryParams QueryParams{};
@@ -631,26 +630,39 @@ FVector AC_GunBase::LineTraceDamage
 	QueryParams.AddIgnoredActor(m_OwnerPlayer);
 
 	const FVector CameraEnd = CameraStart + (CameraForward * TraceRange);
-	FHitResult CameraHitResult{};
 
-	const bool bCameraHit = GetWorld()->LineTraceSingleByChannel
+	TArray<FHitResult> CamHitResults{};
+	
+	GetWorld()->LineTraceMultiByChannel
 	(
-		CameraHitResult,
+		CamHitResults,
 		CameraStart,
 		CameraEnd,
-		ECC_Visibility,
+		m_GunCrossHairTraceChannel,
 		QueryParams
 	);
 
-	/*if (bCameraHit)
-	{
-		DrawDebugLine(GetWorld(), CameraStart, CameraHitResult.ImpactPoint, FColor::Yellow, false, 5.f);
-		DrawDebugSphere(GetWorld(), CameraHitResult.ImpactPoint, 5.f, 10, FColor::Green, false, 5.f);
-	}
-	else DrawDebugLine(GetWorld(), CameraStart, CameraEnd, FColor::Yellow, false, 5.f);*/
+	// Muzzle -> Cam Ray에 투영
+	const float MuzzleDepth = FVector::DotProduct(MuzzleStart - CameraStart, CameraForward);
 
-	const FVector TargetPoint = bCameraHit ? CameraHitResult.ImpactPoint : CameraEnd;
-	const FVector MuzzleStart = m_WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
+	FVector TargetPoint = CameraEnd; // Default로 LineTrace가 모두 실패했거나, Muzzle 전방방향으로 Hit된 물체가 없을 때를 위한 Default값 적용
+	
+	// Muzzle보다 앞선 가장 가까운 ImpactPoint 찾기
+	for (const FHitResult& CamHitResult : CamHitResults)
+	{
+		const float HitDepth = FVector::DotProduct(CamHitResult.ImpactPoint - CameraStart, CameraForward);
+
+		// Muzzle보다 앞에 있는 최초의 지점
+		if (HitDepth >= MuzzleDepth)
+		{
+			TargetPoint = CamHitResult.ImpactPoint;
+			break;
+		}
+	}
+	
+	/*DrawDebugLine(GetWorld(), CameraStart, TargetPoint, FColor::Yellow, false, 5.f);
+	DrawDebugSphere(GetWorld(), TargetPoint, 5.f, 10, FColor::Green, false, 5.f);*/
+
 	FVector ShootDirection = (TargetPoint - MuzzleStart).GetSafeNormal();
 
 	if (m_SpreadAngle > 0.0f)
@@ -685,12 +697,6 @@ FVector AC_GunBase::LineTraceDamage
 		return MuzzleHitResult.ImpactPoint;
 	}
 	
-	/*if (bCameraHit)
-	{
-		OutHitActor = CameraHitResult.GetActor();
-		return CameraHitResult.ImpactPoint;
-	}*/
-
 	return FinalMuzzleEnd;
 }
 
