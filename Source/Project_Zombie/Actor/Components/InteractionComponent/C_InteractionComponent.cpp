@@ -9,6 +9,9 @@
 
 #include "TimerManager.h"
 
+#include "Item/PickUp/C_ItemPickUp.h"
+#include "Actor/Character/NPC/Enemy/Zombie/C_Zombie.h"
+
 #include "Utility/C_Util.h"
 
 #include "Net/UnrealNetwork.h"
@@ -676,14 +679,39 @@ bool UC_InteractionComponent::HasClearLineOfSight(AActor* _TargetActor) const
 	QueryParams.AddIgnoredActor(m_OwnerPlayer); // 플레이어 자신은 무시
 	QueryParams.AddIgnoredActor(_TargetActor); // 상호작용 컴포넌트 소유 Actor 무시
 
-	const bool bBlocked = World->LineTraceTestByChannel(
-		TraceStart,
-		TraceEnd,
-		ECC_Visibility,
-		QueryParams
-	);
+	while (true)
+	{
+		FHitResult HitResult;
 
-	return !bBlocked;
+		const bool bBlocked = World->LineTraceSingleByChannel(
+			HitResult,
+			TraceStart,
+			TraceEnd,
+			ECC_Visibility,
+			QueryParams
+		);
+
+		if (!bBlocked)
+			return true;
+
+		AActor* HitActor = HitResult.GetActor();
+		if (!HitActor)
+			return false;
+
+		if (Cast<AC_ItemPickUp>(HitActor))
+		{
+			QueryParams.AddIgnoredActor(HitActor);
+			continue;
+		}
+
+		if (Cast<AC_Zombie>(HitActor))
+		{
+			QueryParams.AddIgnoredActor(HitActor);
+			continue;
+		}
+
+		return false;
+	}
 }
 
 void UC_InteractionComponent::ClearCurrentInteraction()
