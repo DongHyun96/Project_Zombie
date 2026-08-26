@@ -260,20 +260,21 @@ void AC_BasicPlayer::BeginPlay()
 	
 	if (IsLocallyControlled())
 	{
-		TryRestoreFromPlayerState();
 		UpdateBoostBarHUD();
 	}
 	
+	TryRestoreFromPlayerState();
+	
 	// 클라가 남의 아이템에 대한 정보를 불러와야 하기 때문에 호출해봄.
-	if (m_EquippedComponent)
-	{
-		// 서버는 이 시점에 EquippedComponent의 OwnerPlayer가 없음.(비긴에서 넣어주고 있음)
-		if (!m_EquippedComponent->GetOwnerPlayer())
-			m_EquippedComponent->SetOwnerPlayer(this);
-			
-		for (int32 i = 0 ; i < static_cast<int32>(EWeaponSlot::None) ; ++i)
-			m_EquippedComponent->LoadEquippedWeaponFromInven(i,m_InvenComponent->GetItemAt(i));
-	}
+	//if (m_EquippedComponent)
+	//{
+	//	// 서버는 이 시점에 EquippedComponent의 OwnerPlayer가 없음.(비긴에서 넣어주고 있음)
+	//	if (!m_EquippedComponent->GetOwnerPlayer())
+	//		m_EquippedComponent->SetOwnerPlayer(this);
+	//		
+	//	for (int32 i = 0 ; i < static_cast<int32>(EWeaponSlot::None) ; ++i)
+	//		m_EquippedComponent->LoadEquippedWeaponFromInven(i,m_InvenComponent->GetItemAt(i));
+	//}
 	
 }
 

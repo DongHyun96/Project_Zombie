@@ -23,7 +23,7 @@ UC_InvenComponent::UC_InvenComponent()
 void UC_InvenComponent::LoadInventoryFromBackup(const TArray<FInventoryEntry>& InSavedItems)
 {
 	// 서버 권한 검사
-	if (!GetOwner()->HasAuthority()) return;
+	//if (!GetOwner()->HasAuthority()) return;
 
 	InventoryContainer.Items.Empty();
 	

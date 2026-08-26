@@ -331,16 +331,14 @@ void UC_EquippedComponent::ClearInventoryComponent()
 
 void UC_EquippedComponent::LoadEquippedWeaponFromInven(int32 SlotIndex, const FInventoryEntry& ItemData)
 {
-	// 💡 PossessedBy는 100% 서버에서 실행되므로 Authority 체크 및 월드 체크
-	if (!GetWorld() || !GetOwner() || !GetOwner()->HasAuthority()) return;
 	if (SlotIndex < 0 || SlotIndex >= static_cast<int32>(EWeaponSlot::None)) return;
 
 	// 이미 해당 슬롯에 무기가 있다면 중복 스폰 방지를 위해 리턴 또는 파괴 처리
-	if (m_Weapons.IsValidIndex(SlotIndex) && m_Weapons[SlotIndex] != nullptr)
-	{
-		// 심리스 트래블 직후라면 기존 무기가 nullptr이겠지만, 혹시 모를 예외 처리
-		return; 
-	}
+	//if (m_Weapons.IsValidIndex(SlotIndex) && m_Weapons[SlotIndex] != nullptr)
+	//{
+	//	// 심리스 트래블 직후라면 기존 무기가 nullptr이겠지만, 혹시 모를 예외 처리
+	//	return; 
+	//}
 
 	//if (!m_OwnerPlayer)
 	//{
