@@ -116,6 +116,10 @@ protected: /* Muzzle Awareness 관련 */
 	UPROPERTY()
 	AActor* m_MuzzleAwareActor{};		// Muzzle Aware 거리에 걸린 Actor (없다면 nullptr)
 	FVector m_MuzzleAwareImpactPoint{};	// Muzzle Aware 거리에 걸린 ImpactPoint
+
+protected: /* Ammo UI 업데이트 관련 */
+	
+	
 	
 private:
 

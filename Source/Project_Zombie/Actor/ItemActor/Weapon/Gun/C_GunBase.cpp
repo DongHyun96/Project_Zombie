@@ -269,17 +269,21 @@ void AC_GunBase::Multicast_PlayReloadEffects_Implementation()
 
 void AC_GunBase::UpdateAmmoUI()
 {
-	if (m_OwnerPlayer && m_OwnerPlayer->IsLocallyControlled())
+	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled()) return;
+	
+	if (UI_MANAGER(GetWorld()) && UI_MANAGER(GetWorld())->GetMainHUDWidget())
+		UI_MANAGER(GetWorld())->GetMainHUDWidget()->UpdateMagazineAmmoCount(m_CurrentAmmo);
+	else
 	{
-		if (UI_MANAGER(GetWorld()) && UI_MANAGER(GetWorld())->GetMainHUDWidget())
-			UI_MANAGER(GetWorld())->GetMainHUDWidget()->UpdateMagazineAmmoCount(m_CurrentAmmo);
-		else
+		TWeakObjectPtr<AC_GunBase> WeakThis(this);
+
+		GetWorld()->GetTimerManager().SetTimerForNextTick([WeakThis]()
 		{
-			GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
-			{
-				UI_MANAGER(GetWorld())->GetMainHUDWidget()->UpdateMagazineAmmoCount(m_CurrentAmmo);
-			});
-		}
+			if (!WeakThis.IsValid()) return; // 이미 파괴된 객체
+
+			if (UI_MANAGER(WeakThis->GetWorld()) && UI_MANAGER(WeakThis->GetWorld())->GetMainHUDWidget())
+				UI_MANAGER(WeakThis->GetWorld())->GetMainHUDWidget()->UpdateMagazineAmmoCount(WeakThis->m_CurrentAmmo);
+		});
 	}
 }
 
@@ -601,8 +605,9 @@ void AC_GunBase::UpdateAmmoInfoHUDForDrawEnd()
 		
 	}
 	
-	if (UI_MANAGER(GetWorld()))
-		UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility(true, m_FireMode, m_CurrentAmmo, m_MaxAmmo);
+	if (AC_UIManager* UIManager = UI_MANAGER(GetWorld()))
+		if (UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget())
+			MainHUD->ToggleAmmoInfoVisibility(true, m_FireMode, m_CurrentAmmo, m_MaxAmmo);
 }
 
 void AC_GunBase::ReleaseTrigger()

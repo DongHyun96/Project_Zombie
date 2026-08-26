@@ -374,7 +374,7 @@ void UC_BasicPlayerInputComponent::ToggleArmed()
 
 void UC_BasicPlayerInputComponent::FreeLookHoldStart()
 {
-	// 이미 무기의 사격(LMB)를 진행중이라면 Warning Log 띄우기
+	// 이미 무기의 사격(LMB)를 진행중이라면 Warning Log 띄우기 (이 Start trigger는 오로지 UI Log 한번 띄우기용)
 	if (Player->IsFiring())
 	{
 		if (AC_UIManager* UIManager = UI_MANAGER(GetWorld()))
