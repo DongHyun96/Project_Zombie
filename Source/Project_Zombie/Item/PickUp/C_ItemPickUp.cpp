@@ -63,6 +63,27 @@ AC_ItemPickUp::AC_ItemPickUp()
     //SetReplicateMovement(true);
 }
 
+void AC_ItemPickUp::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+    Super::EndPlay(EndPlayReason);
+    
+
+    
+    // endplay호출 시 풀로 돌려도 되는가? 아니면 그냥 삭제되게 두어야 하는가?
+    if (UGameInstance* GI = GetGameInstance())
+    {
+        if (UC_ItemManager* ItemMgr = GI->GetSubsystem<UC_ItemManager>())
+        {
+            ItemMgr->ReturnToPool(this);
+        }
+    }
+    
+    if (UWorld* World = GetWorld())
+    {
+        GetWorldTimerManager().ClearTimer(DespawnTimerHandle);
+    }
+}
+
 void AC_ItemPickUp::BeginPlay()
 {
 	Super::BeginPlay();
@@ -357,13 +378,16 @@ void AC_ItemPickUp::StartDespawnTimer(float InLifeTime)
         DespawnTimerHandle,
         [this]()
         {
-            // 시간 다 되면 알아서 풀로 반환
-            if (UGameInstance* GI = GetGameInstance())
+            if (this)
             {
-                if (UC_ItemManager* ItemMgr = GI->GetSubsystem<UC_ItemManager>())
-                {
-                    ItemMgr->ReturnToPool(this);
-                }
+                // 시간 다 되면 알아서 풀로 반환
+               if (UGameInstance* GI = GetGameInstance())
+               {
+                   if (UC_ItemManager* ItemMgr = GI->GetSubsystem<UC_ItemManager>())
+                   {
+                       ItemMgr->ReturnToPool(this);
+                   }
+               }
             }
         },
         InLifeTime,

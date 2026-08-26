@@ -20,6 +20,8 @@ class PROJECT_ZOMBIE_API AC_ItemPickUp : public AActor
 public:	
 	// Sets default values for this actor's properties
 	AC_ItemPickUp();
+	
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 protected:
 	// Called when the game starts or when spawned
