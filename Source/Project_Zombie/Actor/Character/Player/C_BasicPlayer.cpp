@@ -524,7 +524,7 @@ void AC_BasicPlayer::TryRestoreFromPlayerState()
 			//PS->ClearSavedWeapons();
 		}
 		
-		if (m_EquippedComponent && HasAuthority())
+		if (m_EquippedComponent)
 		{
 			// 서버는 이 시점에 EquippedComponent의 OwnerPlayer가 없음.(비긴에서 넣어주고 있음)
 			if (!m_EquippedComponent->GetOwnerPlayer())
