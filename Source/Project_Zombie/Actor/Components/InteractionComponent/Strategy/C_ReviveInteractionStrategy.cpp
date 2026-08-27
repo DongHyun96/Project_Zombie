@@ -36,7 +36,7 @@ bool UC_ReviveInteractionStrategy::StartInteraction(AC_BasicPlayer* _Interactor,
 	
 	UC_Util::Print("----------->StartReviveInteraction", FColor::Red, 10.f);
 
-	_Interactor->SetPlayerStateOnServer(EPlayerState::Reviving);
+	_Interactor->SetPlayerStateOnServer(EPlayerMainState::Reviving);
 
 	return true;
 }
@@ -46,7 +46,7 @@ void UC_ReviveInteractionStrategy::CancleInteraction(AC_BasicPlayer* _Interactor
 	if (!_Interactor || !_TargetActor)
 		return;
 
-	_Interactor->SetPlayerStateOnServer(EPlayerState::Idle);
+	_Interactor->SetPlayerStateOnServer(EPlayerMainState::Idle);
 }
 
 void UC_ReviveInteractionStrategy::CompleteInteraction(AC_BasicPlayer* _Interactor, AActor* _TargetActor)
@@ -65,7 +65,7 @@ void UC_ReviveInteractionStrategy::CompleteInteraction(AC_BasicPlayer* _Interact
 	if (!TargetPlayer->IsDead())
 		return;
 
-	_Interactor->SetPlayerStateOnServer(EPlayerState::Idle);
+	_Interactor->SetPlayerStateOnServer(EPlayerMainState::Idle);
 
 	// 구조 대상 일으키기 시작
 	TargetPlayer->StartGettingUp();

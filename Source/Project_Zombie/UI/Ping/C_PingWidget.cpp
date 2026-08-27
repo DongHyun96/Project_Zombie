@@ -17,12 +17,30 @@ void UC_PingWidget::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
 	
-	// OnInitialized 시점에는 폰이 없을 수 있으므로 여기서는 캐싱을 시도만 합니다.
 	APlayerController* PC = GetOwningPlayer();
-	if (PC)
+	if (PC) m_MyPlayer = Cast<AC_BasicPlayer>(PC->GetPawn());
+	
+	FTimerDelegate RegDelegate = FTimerDelegate::CreateWeakLambda(this, [this]()
 	{
-		m_MyPlayer = Cast<AC_BasicPlayer>(PC->GetPawn());
-	}
+		if (!m_OwnerPlayer) return;
+	
+		AC_UIManager* UIManager = UI_MANAGER(GetWorld());
+		if (!UIManager) return;	
+		
+		UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget();
+		if (!MainHUD) return;
+		
+		UC_CompassBarWidget* CompassBar = MainHUD->GetCompassBarWidget();
+		if (!CompassBar) return;
+
+		// CompassPingMarker 등록 처리
+		m_TargetCompassMarkerWidget = CompassBar->RegisterPlayerCompassPingMarker(m_OwnerPlayer);
+
+		// 제대로 등록 처리가 완료됨
+		GetWorld()->GetTimerManager().ClearTimer(m_RegisterPlayerCompassPingMarkerTimer);
+	});
+
+	GetWorld()->GetTimerManager().SetTimer(m_RegisterPlayerCompassPingMarkerTimer, RegDelegate, 0.1f, true); 
 }
 
 void UC_PingWidget::NativeConstruct()
@@ -35,19 +53,6 @@ void UC_PingWidget::NativeConstruct()
 		PlayAnimation(SpawnAnimation);
 		PauseAnimation(SpawnAnimation);
 	}
-
-	if (!m_OwnerPlayer) return;
-	
-	AC_UIManager* UIManager = UI_MANAGER(GetWorld());
-	if (!UIManager) return;	
-	
-	UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget();
-	if (!MainHUD) return;
-	
-	UC_CompassBarWidget* CompassBar = MainHUD->GetCompassBarWidget();
-	if (!CompassBar) return;
-	
-	m_TargetCompassMarkerWidget = CompassBar->RegisterPlayerCompassPingMarker(m_OwnerPlayer);
 }
 
 void UC_PingWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)

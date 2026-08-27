@@ -95,7 +95,7 @@ AC_BasicPlayer::AC_BasicPlayer()
 
 
 	// 캐릭터 상태 초기화
-	m_PlayerState = EPlayerState::Idle;
+	m_PlayerState = EPlayerMainState::Idle;
 	m_PlayerPoseState = EPlayerPoseState::Walk;
 
 	// 부활 변수 여부 초기화
@@ -164,6 +164,8 @@ AC_BasicPlayer::AC_BasicPlayer()
 	m_InteractionComponent = CreateDefaultSubobject<UC_InteractionComponent>(TEXT("InteractionComponent"));
 
 	m_FeetComponent = CreateDefaultSubobject<UC_FeetComponent>(TEXT("FeetComponent"));
+	
+	bAlwaysRelevant = true;
 }
 
 
@@ -201,11 +203,8 @@ void AC_BasicPlayer::BeginPlay()
 	m_InteractionComponent->SetupInteraction(m_InteractionSphere);
 
 	// GameLevelManager에 해당 Player 등록
-	GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
-	{
-		if (UC_GameLevelManager* LevelManager = GetWorld()->GetSubsystem<UC_GameLevelManager>())
-			LevelManager->AddPlayer(this);
-	});
+	if (UC_GameLevelManager* LevelManager = GetWorld()->GetSubsystem<UC_GameLevelManager>())
+		LevelManager->AddPlayer(this);
 
 	// 웅크리기 완료 시 호출할 OnPoseTransitionFinished 바인딩
 	if (m_PoseColliderHandlerComponent)
@@ -254,10 +253,6 @@ void AC_BasicPlayer::BeginPlay()
 		
 		//UIManager->GetMainHUDWidget()->GetPlayerStatWidget()->UpdateHPBar(m_StatComponent->GetCurHPRatio());
 	}
-	
-	// GameLevelManager에 해당 Player 등록
-	if (UC_GameLevelManager* LevelManager = GetWorld()->GetSubsystem<UC_GameLevelManager>())
-		LevelManager->AddPlayer(this);
 	
 	if (IsLocallyControlled())
 	{
@@ -709,7 +704,7 @@ void AC_BasicPlayer::Landed(const FHitResult& Hit)
 	m_IsPendingDead = false;
 	m_IsJumpInput = false;
 
-	SetPlayerStateOnServer(EPlayerState::Dead);
+	SetPlayerStateOnServer(EPlayerMainState::Dead);
 }
 
 bool AC_BasicPlayer::UseBoost(float _UseAmount)
@@ -1026,7 +1021,7 @@ ETeamAttitude::Type AC_BasicPlayer::GetTeamAttitudeTowards(const AActor& _Other)
 	return ETeamAttitude::Neutral;
 }
 
-void AC_BasicPlayer::SetPlayerStateOnServer(EPlayerState _NewState)
+void AC_BasicPlayer::SetPlayerStateOnServer(EPlayerMainState _NewState)
 {
 	if (!HasAuthority())
 		return;
@@ -1141,7 +1136,7 @@ void AC_BasicPlayer::Server_EnterDownedState_Implementation()
 		return;
 	}
 
-	SetPlayerStateOnServer(EPlayerState::Dead); 
+	SetPlayerStateOnServer(EPlayerMainState::Dead); 
 	
 	// 게임 오버 상황인지 체크 (모든 플레이어들이 그로기 상태로 접어든 상황인 경우)
 	if (LEVEL_MANAGER && LEVEL_MANAGER->HasAllPlayerDead())
@@ -1161,7 +1156,7 @@ void AC_BasicPlayer::StartGettingUp()
 		return;
 
 	// 타이머 중복 방지
-	SetPlayerStateOnServer(EPlayerState::GettingUp);
+	SetPlayerStateOnServer(EPlayerMainState::GettingUp);
 
 	if (UWorld* World = GetWorld())
 	{
@@ -1203,7 +1198,7 @@ void AC_BasicPlayer::FinishGettingUp()
 
 	m_StatComponent->SetCurHP(10.0f);
 
-	SetPlayerStateOnServer(EPlayerState::Idle);
+	SetPlayerStateOnServer(EPlayerMainState::Idle);
 }
 
 void AC_BasicPlayer::ApplyPlayerState()
@@ -1214,7 +1209,7 @@ void AC_BasicPlayer::ApplyPlayerState()
 
 	switch (m_PlayerState)
 	{
-	case EPlayerState::Idle:
+	case EPlayerMainState::Idle:
 	{
 		if (MovementComponent->MovementMode == MOVE_None)
 		{
@@ -1227,20 +1222,20 @@ void AC_BasicPlayer::ApplyPlayerState()
 		ApplyMovementSpeed();
 		break;
 	}
-	case EPlayerState::Reviving:
+	case EPlayerMainState::Reviving:
 	{
 		MovementComponent->StopMovementImmediately();
 		MovementComponent->DisableMovement();
 		break;
 	}
-	case EPlayerState::Dead:
+	case EPlayerMainState::Dead:
 	{
 		MovementComponent->StopMovementImmediately();
 		MovementComponent->DisableMovement();
 		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		break;
 	}
-	case EPlayerState::GettingUp:
+	case EPlayerMainState::GettingUp:
 	{
 		MovementComponent->StopMovementImmediately();
 		MovementComponent->DisableMovement();
