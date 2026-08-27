@@ -70,11 +70,7 @@ void UC_PingWidget::SetOwnerPlayer(AC_BasicPlayer* _OwnerPlayer)
 	
 	FTimerDelegate RegDelegate = FTimerDelegate::CreateWeakLambda(this, [this]()
 	{
-		if (!m_OwnerPlayer)
-		{
-			PRINT_LOCAL(GetWorld(), "UC_PingWidget::NativeOnInitialized : OwnerPlayer nullptr", FColor::Red, 5.f);
-			return;
-		}
+		if (!m_OwnerPlayer) return;
 	
 		AC_UIManager* UIManager = UI_MANAGER(GetWorld());
 		if (!UIManager) return;
@@ -88,8 +84,6 @@ void UC_PingWidget::SetOwnerPlayer(AC_BasicPlayer* _OwnerPlayer)
 		// CompassPingMarker 등록 처리
 		m_TargetCompassMarkerWidget = CompassBar->RegisterPlayerCompassPingMarker(m_OwnerPlayer);
 
-		PRINT_LOCAL(GetWorld(), "REGISTERED", FColor::Cyan, 10.f);
-		
 		// 제대로 등록 처리가 완료됨
 		GetWorld()->GetTimerManager().ClearTimer(m_RegisterPlayerCompassPingMarkerTimer);
 	});
