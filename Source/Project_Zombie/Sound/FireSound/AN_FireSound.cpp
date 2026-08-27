@@ -32,5 +32,7 @@ void UAN_FireSound::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* 
 		return;
 	}
 
+	UE_LOG(LogTemp, Warning, TEXT("[FireSound] REMOTE"));
+
 	UGameplayStatics::PlaySoundAtLocation(MeshComp, m_RemoteSound, MeshComp->GetComponentLocation());
 }
