@@ -11,7 +11,6 @@
 
 
 class AC_ItemUpgradeStation;
-// TODO: PlayerState 랑 PlayerLifeState 를 하나로 통합할지...
 // 캐릭터 상태
 UENUM(BlueprintType)
 enum class EPlayerState : uint8
@@ -215,6 +214,11 @@ protected:
 	// 부활 후 플레이어가 일어나기까지 걸리는 시간 
 	//UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Status")
 	//float m_GetUpTime;
+
+	// [Hit]
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation|Hit")
+	class UAnimMontage* m_HitReactMontage;
 
 private:
 	// Alt를 holding 중인 상황
@@ -487,6 +491,9 @@ protected:
 
 	UFUNCTION(Server, Unreliable)
 	void Server_SetAimYaw(float InAimYaw);
+
+	UFUNCTION(NetMulticast, Unreliable)
+	void Multicast_PlayHitReact();
 
 	// Server함수 
 public:

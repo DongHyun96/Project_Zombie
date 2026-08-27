@@ -53,6 +53,7 @@
 
 #include "GameModeAndManager/PlayerState/C_PlayerState.h"
 
+#include "Actor/PointTower/C_PointTower.h"
 
 #include "Net/UnrealNetwork.h"
 #include "Kismet/KismetMathLibrary.h"
@@ -595,7 +596,16 @@ float AC_BasicPlayer::TakeDamage(float _Damage, FDamageEvent const& _DamageEvent
 	if (m_IsInvincible)
 		return 0.0f;
 
-	return Super::TakeDamage(_Damage, _DamageEvent, _InstigatorController, _InstigatorActor);
+	const float Damage = Super::TakeDamage(_Damage, _DamageEvent, _InstigatorController, _InstigatorActor);
+
+	const bool IsPointTowerDamage = Cast<AC_PointTower>(_InstigatorActor) != nullptr;
+
+	if (HasAuthority() && Damage > 0.f && IsAlive() && !IsPointTowerDamage)
+	{
+		Multicast_PlayHitReact();
+	}
+
+	return Damage;
 }
 
 bool AC_BasicPlayer::SetCurDraggedItem(struct FInventoryEntry InEntry, UC_InvenComponent* SrcInvenComp, int32 SrcSlotIdx)
@@ -1277,6 +1287,14 @@ void AC_BasicPlayer::SetPoseStateOnServer(EPlayerPoseState _NewPoseState)
 
 	// 상태를 가능한 빨리 변경
 	ForceNetUpdate();
+}
+
+void AC_BasicPlayer::Multicast_PlayHitReact_Implementation()
+{
+	if (!m_HitReactMontage)
+		return;
+
+	PlayAnimMontage(m_HitReactMontage);
 }
 
 void AC_BasicPlayer::Server_RequestSetPoseState_Implementation(EPlayerPoseState _NewPoseState)
