@@ -841,7 +841,7 @@ void AC_GunBase::UpdateMuzzleAwareness()
 	const FVector AwarenessDirection = (MuzzleLocation - ButtStockLocation).GetSafeNormal();
 
 	// 총구 위치로부터 얼만큼 전방방향까지가 Awareness 거리인지
-	static const float AwarenessDistance = 45.f;
+	static const float AwarenessDistance = 60.f;
 
 	FHitResult HitResult{};
 	FCollisionQueryParams CollisionParams{};
