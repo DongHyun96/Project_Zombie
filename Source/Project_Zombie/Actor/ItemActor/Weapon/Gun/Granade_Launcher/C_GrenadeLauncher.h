@@ -28,7 +28,7 @@ public:
 	
 private:
 	
-	void SpawnGrenadeProjectile(const FVector& TargetPoint);
+	void SpawnGrenadeProjectile(const FVector& TargetPoint, AActor* MuzzleAwareActor = nullptr);
 	void ResetFireCooldown();
 	FVector GetCameraTargetPoint() const;
 

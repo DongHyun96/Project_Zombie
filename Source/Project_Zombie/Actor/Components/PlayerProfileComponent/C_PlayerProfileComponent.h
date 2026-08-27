@@ -22,7 +22,6 @@ protected:
 
 public:
 	
-	const FString& GetPlayerName() const { return m_PlayerName; }
 	const FColor& GetPlayerSelectedColor() const { return m_PlayerSelectedColor; }
 
 public:
@@ -30,9 +29,6 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 private:
-	
-	/*UFUNCTION()
-	void OnRep_PlayerName();*/
 	
 	UFUNCTION()
 	void OnRep_PlayerSelectedColor();
@@ -44,10 +40,11 @@ private:
 	
 protected:
 
-	// 게임 시작 시, 플레이어가 지정한 이름 (TODO : Dongman 지우기)
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PlayerProfile", meta = (DisplayName = "PlayerName"))
-	FString m_PlayerName = "Anonymous";
-
 	UPROPERTY(ReplicatedUsing = OnRep_PlayerSelectedColor, VisibleAnywhere, BlueprintReadOnly, Category = "PlayerProfile", meta = (DisplayName = "PlayerSelectedColor"))
 	FColor m_PlayerSelectedColor{};
+	
+private:
+
+	FTimerHandle m_OtherPlayerRegTimerHandle{};
+	
 };

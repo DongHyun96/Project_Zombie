@@ -35,24 +35,19 @@ void UC_PingWidget::NativeConstruct()
 		PlayAnimation(SpawnAnimation);
 		PauseAnimation(SpawnAnimation);
 	}
-    
-	// 1. 연쇄 참조 안전하게 쪼개기 (포인터 방어막 형성)
-	if (m_OwnerPlayer)
-	{
-		AC_UIManager* UIManager = UI_MANAGER(GetWorld());
-		if (UIManager)
-		{
-			UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget();
-			if (MainHUD)
-			{
-				UC_CompassBarWidget* CompassBar = MainHUD->GetCompassBarWidget();
-				if (CompassBar)
-				{
-					m_TargetCompassMarkerWidget = CompassBar->RegisterPlayerCompassPingMarker(m_OwnerPlayer);
-				}
-			}
-		}
-	}
+
+	if (!m_OwnerPlayer) return;
+	
+	AC_UIManager* UIManager = UI_MANAGER(GetWorld());
+	if (!UIManager) return;	
+	
+	UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget();
+	if (!MainHUD) return;
+	
+	UC_CompassBarWidget* CompassBar = MainHUD->GetCompassBarWidget();
+	if (!CompassBar) return;
+	
+	m_TargetCompassMarkerWidget = CompassBar->RegisterPlayerCompassPingMarker(m_OwnerPlayer);
 }
 
 void UC_PingWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)

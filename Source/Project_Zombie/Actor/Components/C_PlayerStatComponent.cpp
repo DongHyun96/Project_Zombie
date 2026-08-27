@@ -104,6 +104,9 @@ void UC_PlayerStatComponent::UpdateOtherPlayerHPBar(float _Ratio)
 		UC_Util::Print("[UC_PlayerStatComponent::UpdateOtherPlayerHPBar] : UI Manager not inited", FColor::Red, 10.f);
 		return;
 	}
+
+	UC_GameMainHUD* MainHUD = Cast<UC_GameMainHUD>(UIManager->GetMainHUDWidget());
+	if (!MainHUD) return;
 	
 	UIManager->GetMainHUDWidget()->GetOtherPlayerStatWidget()->UpdateHPBar(m_OwnerPlayer, _Ratio);
 }

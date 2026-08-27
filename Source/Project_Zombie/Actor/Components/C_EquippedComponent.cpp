@@ -1,5 +1,6 @@
 #include "Actor/Components/C_EquippedComponent.h"
 
+#include "C_BasicPlayerAimComponent.h"
 #include "C_InvenComponent.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/ItemActor/Weapon/C_WeaponBase.h"
@@ -61,7 +62,6 @@ void UC_EquippedComponent::SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* 
     
     if (!m_Weapons[TargetSlotIdx]) // Slot에 새로 지정한 무기가 nullptr -> early return
     {
-    	PRINT_LOCAL(GetWorld(), "WOWWOWWOW", FColor::Cyan, 10.f);
         if (m_CurWeaponTypeIdx == TargetSlotIdx) // 현재 손에 들고 있는 무기를 Slot에서 강제로 뺀 상황
         {
             m_NextWeaponTypeIdx  = static_cast<uint8>(EWeaponSlot::None);
@@ -178,13 +178,18 @@ void UC_EquippedComponent::Server_RequestSpawnEquippedActor_Implementation(int32
 
 void UC_EquippedComponent::Server_SetSlotWeapon_Implementation(EWeaponSlot _TargetSlot, AC_WeaponBase* _WeaponToEquip)
 {
-	PRINT_LOCAL(GetWorld(), "Server_SetSlotWeapon_Implementation", FColor::Red, 10.f);
-
 	SetSlotWeapon(_TargetSlot, _WeaponToEquip); // 서버 환경에서의 SetSlotWeapon 처리
 	// Multicast_SetSlotWeapon(_TargetSlot, _WeaponToEquip);	
 
 	// 서버 환경 자기자신일 때의 UI 업데이트
-	if (m_OwnerPlayer->IsLocallyControlled()) UpdateAmmoWidget();
+	if (m_OwnerPlayer->IsLocallyControlled())
+	{
+		UpdateAmmoWidget();
+		
+		// MainWeapon을 제거한 경우, MuzzleAwareCrossHair UI 끄기(꺼져있어도 무방하게 처리)
+		if (!m_Weapons[static_cast<uint8>(EWeaponSlot::MainWeapon)])
+			m_OwnerPlayer->GetAimComponent()->ToggleMuzzleAwareCrossHair(false);
+	} 
 	/*else
 	{
 		// m_Weapons가 Replicate 처리된 상황에서(기다림) AmmoWidget을 업데이트 처리할 것임
@@ -563,5 +568,12 @@ void UC_EquippedComponent::OnRep_Weapons()
 {
 	PRINT_LOCAL(GetWorld(), "OnRep_Weapons", FColor::Cyan, 10.f);
 	
-	if (m_OwnerPlayer && m_OwnerPlayer->IsLocallyControlled()) UpdateAmmoWidget();
+	if (m_OwnerPlayer && m_OwnerPlayer->IsLocallyControlled())
+	{
+		UpdateAmmoWidget();
+
+		// MainWeapon을 제거한 경우, MuzzleAwareCrossHair UI 끄기(꺼져있어도 무방하게 처리)
+		if (!m_Weapons[static_cast<uint8>(EWeaponSlot::MainWeapon)])
+			m_OwnerPlayer->GetAimComponent()->ToggleMuzzleAwareCrossHair(false);
+	}
 }

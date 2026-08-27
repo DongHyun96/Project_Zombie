@@ -33,62 +33,13 @@ void UC_PlayerProfileComponent::BeginPlay()
 		UC_Util::Print("From UC_PlayerProfileComponent::BeginPlay : OwnerPlayer casting failed!", FColor::Red, 10.f);
 		return;
 	}
-	
-	UC_Util::Print("UC_PlayerProfileComponent::BeginPlay", FColor::Cyan, 10.f);
-	
-	// TODO : 이 Test 라인 지울 것 (일단 서버에서 일괄 랜덤 적용한 색상으로 적용)
+
+	// 서버 환경에서 랜덤한 Color를 부여하고, 만약 이 캐릭터가 내 플레이어가 아니라면, 서버의 경우 바로 등록처리를 한다
 	if (m_OwnerPlayer->HasAuthority())
+	{
 		m_PlayerSelectedColor = FColor::MakeRandomColor();
-	
-	if (!m_OwnerPlayer->IsLocallyControlled())
-	{
-		FTimerHandle Temp{};
-		
-		GetWorld()->GetTimerManager().SetTimer(Temp, [this]()
-		{
-			APlayerState* PlayerState = m_OwnerPlayer->GetPlayerState();
-			if (PlayerState)
-			{
-				m_PlayerName = PlayerState->GetPlayerName();
-
-				if (m_PlayerName.IsEmpty())
-				{
-					UC_Util::Print("Empty PlayerName", FColor::Red, 10.f);
-					m_PlayerName = TEXT("Anonymous");
-				}
-
-				if (!m_OwnerPlayer->IsLocallyControlled())
-				{
-					GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
-					{
-						if (UI_MANAGER(GetWorld()))
-							UI_MANAGER(GetWorld())->GetMainHUDWidget()->GetOtherPlayerStatWidget()->RegisterOtherPlayer(m_OwnerPlayer);
-					});
-				}
-			}
-		}, 1.5f, false);
+		OnRep_PlayerSelectedColor();
 	}
-	
-	/*if (!m_OwnerPlayer->IsLocallyControlled())
-	{
-		FTimerHandle TimerHandle{};
-
-		GetWorld()->GetTimerManager().SetTimer
-		(
-			TimerHandle,
-			[this]()
-			{
-				// 3초 후 실행
-				UI_MANAGER(GetWorld())->GetMainHUDWidget()->GetOtherPlayerStatWidget()->RegisterOtherPlayer(m_OwnerPlayer);
-			},
-			3.f,
-			false
-		);
-	}*/
-	/*else // 자기자신 이름 초기화
-	{*/
-		
-	// }
 }
 
 void UC_PlayerProfileComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -97,31 +48,38 @@ void UC_PlayerProfileComponent::GetLifetimeReplicatedProps(TArray<FLifetimePrope
 	DOREPLIFETIME(UC_PlayerProfileComponent, m_PlayerSelectedColor);
 }
 
-/*void UC_PlayerProfileComponent::OnRep_PlayerName()
-{
-	if (!m_OwnerPlayer) return;
-	
-	if (!m_OwnerPlayer->IsLocallyControlled())
-	{
-		GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
-		{
-			if (UI_MANAGER(GetWorld()))
-				UI_MANAGER(GetWorld())->GetMainHUDWidget()->GetOtherPlayerStatWidget()->RegisterOtherPlayer(m_OwnerPlayer);
-		});	
-	}
-}*/
-
 void UC_PlayerProfileComponent::OnRep_PlayerSelectedColor()
 {
-	if (!m_OwnerPlayer) return;
+	// 아직 이 Component의 BeginPlay가 불리지 않은 시점
+	if (!m_OwnerPlayer) m_OwnerPlayer = Cast<AC_BasicPlayer>(GetOwner());
+	if (!m_OwnerPlayer)
+	{
+		// 그래도 OwnerPlayer가 제대로 초기화 처리가 되지 않은 상황
+		UC_Util::Print("[UC_PlayerProfileComponent::OnRep_PlayerSelectedColor] : OwnerPlayer casting failed!", FColor::Red, 10.f);
+		return;
+	}
 	
 	if (!m_OwnerPlayer->IsLocallyControlled())
 	{
-		GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
+		FTimerDelegate RegDelegate = FTimerDelegate::CreateWeakLambda(this, [this]()
 		{
-			if (UI_MANAGER(GetWorld()))
-				UI_MANAGER(GetWorld())->GetMainHUDWidget()->GetOtherPlayerStatWidget()->RegisterOtherPlayer(m_OwnerPlayer);
-		});	
+			// 아직 이름을 구할 수 없을 경우 기다림
+			if (!m_OwnerPlayer->GetPlayerState()) return;
+			
+			AC_UIManager* UIManager = UI_MANAGER(GetWorld());
+			if (!UIManager) return;
+
+			UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget();
+			UC_OtherPlayerStatWidget* OtherStatWidget = MainHUD ? MainHUD->GetOtherPlayerStatWidget() : nullptr;
+			if (!OtherStatWidget) return;
+			
+
+			// UI가 제대로 초기화되었을 때 등록하고 타이머 종료
+			OtherStatWidget->RegisterOtherPlayer(m_OwnerPlayer);
+			GetWorld()->GetTimerManager().ClearTimer(m_OtherPlayerRegTimerHandle);
+		});
+
+		GetWorld()->GetTimerManager().SetTimer(m_OtherPlayerRegTimerHandle, RegDelegate, 0.1f, true);
 	}
 }
 

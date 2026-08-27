@@ -6,6 +6,7 @@
 #include "C_MiniHPBarWidget.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/Components/PlayerProfileComponent/C_PlayerProfileComponent.h"
+#include "GameFramework/PlayerState.h"
 #include "Utility/C_Util.h"
 
 void UC_OtherPlayerStatWidget::NativeOnInitialized()
@@ -42,6 +43,7 @@ void UC_OtherPlayerStatWidget::RegisterOtherPlayer(AC_BasicPlayer* _Player)
 		return;
 	}
 
+	// 이미 등록된 Widget이 존재하는 상황이라면, 해당 Player의 정보에 맞게끔 TargetWidget 세팅 처리
 	if (UC_MiniHPBarWidget** TargetWidget = m_RegisteredWidget.Find(_Player))
 	{
 		(*TargetWidget)->Activate(_Player);
@@ -54,7 +56,12 @@ void UC_OtherPlayerStatWidget::RegisterOtherPlayer(AC_BasicPlayer* _Player)
 	m_RegisteredWidget.Add(_Player, MiniHPBarWidget);
 	
 	_Player->ToggleNameTagVisible(true);
-	_Player->SetNameTagWidgetInfo(_Player->GetPlayerProfileComponent()->GetPlayerName(), _Player->GetPlayerProfileComponent()->GetPlayerSelectedColor());
+
+	FString PlayerName{};
+	if (!_Player->GetPlayerState() || _Player->GetPlayerState()->GetPlayerName().IsEmpty()) PlayerName = "Anonymous";
+	else PlayerName = _Player->GetPlayerState()->GetPlayerName();
+	
+	_Player->SetNameTagWidgetInfo(PlayerName, _Player->GetPlayerProfileComponent()->GetPlayerSelectedColor());
 }
 
 void UC_OtherPlayerStatWidget::UpdateHPBar(AC_BasicPlayer* _TargetPlayer, float _HPRatio)

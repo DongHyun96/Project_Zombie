@@ -43,6 +43,8 @@ protected:
 
 	bool m_bHasExploded = false;
 
+	bool m_bHasToExplodeOnSpawn{}; // 총구가 Muzzle Awareness 거리에 들어간 경우, 바로 해당 위치에서 폭파시켜버림
+	
 protected:
 	virtual void BeginPlay() override;
 
@@ -59,6 +61,17 @@ protected:
 
 	void ExplodeInternal(FVector ExplosionLocation);
 
+private:
+	
+	/// <summary>
+	/// 폭파 시작 처리
+	/// </summary>
+	void OnExplodeStart();
+	
+public:
+	
+	void SetHasToExplodeOnSpawn() { m_bHasToExplodeOnSpawn = true; }
+	
 public:
 	AC_GrenadeProjectile();
 };

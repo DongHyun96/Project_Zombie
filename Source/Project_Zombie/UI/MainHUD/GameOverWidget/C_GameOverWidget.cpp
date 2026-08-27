@@ -10,6 +10,7 @@
 #include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "OnlineSubsystem.h"
+#include "GameFramework/PlayerState.h"
 #include "Interfaces/OnlineSessionInterface.h"
 
 void UC_GameOverWidget::NativeOnInitialized()
@@ -42,7 +43,7 @@ void UC_GameOverWidget::ActivateWinningSequence()
 	
 	AC_BasicPlayer* MyPlayer = LEVEL_MANAGER->GetLocalPlayer();
 	
-	PlayerCharacterName->SetText(FText::FromString(MyPlayer->GetPlayerProfileComponent()->GetPlayerName()));
+	PlayerCharacterName->SetText(FText::FromString(MyPlayer->GetPlayerState()->GetPlayerName()));
 	
 	FString TotalCharacterString = " / " + FString::FromInt(LEVEL_MANAGER->GetPlayers().Num());
 	
@@ -76,7 +77,7 @@ void UC_GameOverWidget::ActivateLoseSequence()
 	PlayerController->SetShowMouseCursor(true);
 	PlayerController->SetIgnoreLookInput(true);
 
-	PlayerCharacterName->SetText(FText::FromString(MyPlayer->GetPlayerProfileComponent()->GetPlayerName()));
+	PlayerCharacterName->SetText(FText::FromString(MyPlayer->GetPlayerState()->GetPlayerName()));
 	RankingTextTopRight->SetText(FText::FromString(FString::FromInt(m_Ranking)));
 	
 	FString TotalCharacterString = " / " + FString::FromInt(LEVEL_MANAGER->GetPlayers().Num());

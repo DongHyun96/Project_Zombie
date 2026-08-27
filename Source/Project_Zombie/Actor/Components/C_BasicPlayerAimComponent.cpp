@@ -9,6 +9,7 @@
 
 #include "../Character/Player/C_BasicPlayer.h"
 #include "../ItemActor/Weapon/Gun/C_GunBase.h"
+#include "Components/WidgetComponent.h"
 
 #include "GameModeAndManager/C_UIManager.h"
 #include "UI/MainHUD/CrosshairWidget/C_CrosshairWidget.h"
@@ -18,6 +19,7 @@ UC_BasicPlayerAimComponent::UC_BasicPlayerAimComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
 
+	m_MuzzleAwareWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("MuzzleAwareWidgetComponent"));
 }
 
 void UC_BasicPlayerAimComponent::BeginPlay()
@@ -39,6 +41,8 @@ void UC_BasicPlayerAimComponent::BeginPlay()
 			BaseCameraOffset = m_CurPlayer->GetSpringArm()->SocketOffset;
 		}
 	}
+
+	m_MuzzleAwareWidgetComponent->SetHiddenInGame(true);
 }
 
 void UC_BasicPlayerAimComponent::OnAimPressed()
@@ -139,4 +143,14 @@ void UC_BasicPlayerAimComponent::UpdateCameraInterpolation(float DeltaTime)
 			bIsTransitioningCamera = false;
 		}
 	}
+}
+
+void UC_BasicPlayerAimComponent::ToggleMuzzleAwareCrossHair(bool _Visible)
+{
+	m_MuzzleAwareWidgetComponent->SetHiddenInGame(!_Visible);
+}
+
+void UC_BasicPlayerAimComponent::UpdateMuzzleAwareCrossHairLocation(const FVector& _WorldLocation)
+{
+	m_MuzzleAwareWidgetComponent->SetWorldLocation(_WorldLocation);
 }
