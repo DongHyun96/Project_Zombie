@@ -22,7 +22,12 @@ UC_ZombieManager::UC_ZombieManager()
 	static ConstructorHelpers::FClassFinder<AC_Zombie> NormalFinder(TEXT("/Game/Harang/BP/Zombie/BP_NormalZombie"));
 
 	if (NormalFinder.Succeeded())
-		m_ZombieClasses.Add(EZombieType::NormalZombie, NormalFinder.Class);
+		m_NormalZombieClasses.Add(NormalFinder.Class);
+
+	static ConstructorHelpers::FClassFinder<AC_Zombie> Normal2Finder(TEXT("/Game/Harang/BP/Zombie/BP_NormalZombie2"));
+
+	if (Normal2Finder.Succeeded())
+		m_NormalZombieClasses.Add(Normal2Finder.Class);
 
 	static ConstructorHelpers::FClassFinder<AC_Zombie> PoisonFinder(TEXT("/Game/Harang/BP/Zombie/BP_ToxicZombie"));
 
@@ -121,24 +126,45 @@ void UC_ZombieManager::InitializeZombiePool()
 		if (PoolCount == 0)
 			continue;
 
-		// 해당 타입의 ZombieClass 검색
-		const TSubclassOf<AC_Zombie>* ZombieClass = m_ZombieClasses.Find(ZombieType);
-		if (!ZombieClass || !(*ZombieClass))
-		{
-			UC_Util::Print(
-				"From InitializeZombiePool : ZombieClass not found",
-				FColor::Red,
-				10.f);
-
-			continue;
-		}
-
 		// 해당 타입의 대기 풀 가져오기
 		TArray<AC_Zombie*>& pPool = m_ZombiePool.FindOrAdd(ZombieType);
 
 		// 설정된 수만큼 생성
 		for (uint32 i = 0; i < PoolCount; ++i)
 		{
+			// ======== 생성할 좀비 클래스 결정 ========
+			TSubclassOf<AC_Zombie> SpawnClass;
+
+			// NormalZombie는 랜덤외형 선택
+			if (ZombieType == EZombieType::NormalZombie && !m_NormalZombieClasses.IsEmpty())
+			{
+				const int32 RandomIndex = FMath::RandRange(0, m_NormalZombieClasses.Num() - 1);
+
+				SpawnClass = m_NormalZombieClasses[RandomIndex];
+			}
+
+			// 그 외의 좀비들
+			else
+			{
+				const TSubclassOf<AC_Zombie>* ZombieClass = m_ZombieClasses.Find(ZombieType);
+				if (!ZombieClass || !(*ZombieClass))
+				{
+					UC_Util::Print(
+						"From InitializeZombiePool : ZombieClass not found",
+						FColor::Red,
+						10.f);
+
+					continue;
+				}
+
+				SpawnClass = *ZombieClass;
+			}
+
+			// SpawnClass가 유효한지 확인
+			if (!SpawnClass)
+			{
+				UC_Util::Print("From InitializeZombiePool : SpawnClass not found", FColor::Red, 10.f);
+			}
 
 			FActorSpawnParameters SpawnParams;
 
@@ -152,7 +178,7 @@ void UC_ZombieManager::InitializeZombiePool()
 			// AC_Zombie* SpawnZombie = World->SpawnActor<AC_Zombie>(*ZombieClass, FTransform::Identity, SpawnParams);
 			AC_Zombie* SpawnZombie = World->SpawnActorDeferred<AC_Zombie>
 			(
-				*ZombieClass,
+				SpawnClass,
 				FTransform::Identity,
 				nullptr, nullptr,
 				ESpawnActorCollisionHandlingMethod::AlwaysSpawn
@@ -545,17 +571,32 @@ bool UC_ZombieManager::TrySpawnZombieFromArea(EZombieType _ZombieType, AC_SpawnA
 		return false;
 
 	// 해당 좀비 클래스 가져오기
-	const TSubclassOf<AC_Zombie>* ZombieClass = m_ZombieClasses.Find(_ZombieType);
+	TSubclassOf<AC_Zombie> ZombieClass;
 
-	if (!ZombieClass || !(*ZombieClass))
+	if (_ZombieType == EZombieType::NormalZombie && !m_NormalZombieClasses.IsEmpty())
 	{
-		UC_Util::Print(
-			"From TrySpawnZombieFromArea : ZombieClass not found",
-			FColor::Red,
-			5.f);
-
-		return false;
+		// 노말좀비의 외형은 여러개지만
+		// 위치검사는 캡슐만 필요하므로
+		// 첫번째 좀비의 CDO 사용
+		ZombieClass = m_NormalZombieClasses[0];
 	}
+	else
+	{
+		const TSubclassOf<AC_Zombie>* FoundClass = m_ZombieClasses.Find(_ZombieType);
+
+		if (!FoundClass || !(*FoundClass))
+		{
+			UC_Util::Print(
+				"From TrySpawnZombieFromArea : ZombieClass not found",
+				FColor::Red,
+				5.f);
+
+			return false;
+		}
+
+		ZombieClass = *FoundClass;
+	}
+	
 
 	// 실제 Spawn하지 않고 클래스 기본 객체(CDO)에서
 	// 캡슐 크기만 가져오기

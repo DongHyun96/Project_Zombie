@@ -158,6 +158,9 @@ protected: /* 좀비 스폰 기반 클래스 정보 및 PoolCount 정보 -> TODO
 	UPROPERTY(EditDefaultsOnly, Category = "Zombie")
 	TMap<EZombieType, TSubclassOf<class AC_Zombie>> m_ZombieClasses{};
 
+	// 노말좀비 외형 2개 랜덤 BP
+	TArray<TSubclassOf<AC_Zombie>> m_NormalZombieClasses;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Zombie")
 	TMap<EZombieType, uint32> m_PoolCounts{};
 
