@@ -358,18 +358,20 @@ void UC_EquippedComponent::LoadEquippedWeaponFromInven(int32 SlotIndex, const FI
 
 	// TODO : m_Ownerplayer가 nullptr로 SpawnedWeapon이 Nullptr라 서버만 안되는 거였음.
 	
-	// 1. 아이템 매니저를 통해 새 레벨에 무기 액터 복구 스폰
-	AC_WeaponBase* SpawnedWeapon = (ItemData.CurCount > 0) ? ItemManager->SpawnEquippedActor(ItemData.ItemRowName, m_OwnerPlayer) : nullptr;
-
-	if (SpawnedWeapon)
-	{
-		// 2. 슬롯에 등록 및 물리적 부착(AttachToHand/Holster 등) 및 변수 복제 처리
-		// RPC인 Server_SetSlotWeapon 대신, 서버 내부 로직인 SetSlotWeapon을 직접 호출합니다.
-		SetSlotWeapon(static_cast<EWeaponSlot>(SlotIndex), SpawnedWeapon);
-        
-		// 추가로 필요한 초기화나 데이터 업데이트가 있다면 처리
-		UpdateWeaponData(static_cast<EWeaponSlot>(SlotIndex), ItemData.ItemRowName);
-	}
+	// 서버 처리로 변경해보기.
+	Server_RequestSpawnEquippedActor(SlotIndex, ItemData);
+	
+	//// 1. 아이템 매니저를 통해 새 레벨에 무기 액터 복구 스폰
+	//AC_WeaponBase* SpawnedWeapon = (ItemData.CurCount > 0) ? ItemManager->SpawnEquippedActor(ItemData.ItemRowName, m_OwnerPlayer) : nullptr;
+	//
+	//if (SpawnedWeapon)
+	//{
+	//	// 2. 슬롯에 등록 및 물리적 부착(AttachToHand/Holster 등) 및 변수 복제 처리
+	//	// RPC인 Server_SetSlotWeapon 대신, 서버 내부 로직인 SetSlotWeapon을 직접 호출합니다.
+    //    
+	//	// 추가로 필요한 초기화나 데이터 업데이트가 있다면 처리
+	//	UpdateWeaponData(static_cast<EWeaponSlot>(SlotIndex), ItemData.ItemRowName);
+	//}
 }
 
 void UC_EquippedComponent::OnInventorySlotChanged(int32 SlotIndex, const FInventoryEntry& ItemData)
