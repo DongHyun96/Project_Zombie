@@ -8,7 +8,7 @@
 
 //class AC_BasicPlayer;
 
-enum class EPlayerState : uint8;
+enum class EPlayerMainState : uint8;
 enum class EHandState : uint8;
 
 UCLASS()
@@ -24,7 +24,7 @@ protected:
 	class AC_BasicPlayer* m_Character;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player Basic State")
-	EPlayerState m_PlayerState;
+	EPlayerMainState m_PlayerState;
 
 	// HandState
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player Basic State")

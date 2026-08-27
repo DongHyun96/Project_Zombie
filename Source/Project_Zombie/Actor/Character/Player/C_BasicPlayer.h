@@ -13,7 +13,7 @@
 class AC_ItemUpgradeStation;
 // 캐릭터 상태
 UENUM(BlueprintType)
-enum class EPlayerState : uint8
+enum class EPlayerMainState : uint8
 {
 	Idle,
 	Reviving,
@@ -122,7 +122,7 @@ protected:
 	// [Status]
 protected:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Status")
-	EPlayerState		m_PlayerState;
+	EPlayerMainState		m_PlayerState;
 
 	
 	UPROPERTY(ReplicatedUsing = OnRep_PlayerPoseState, VisibleAnywhere, BlueprintReadOnly, Category = "Status")
@@ -304,7 +304,7 @@ public:
 	UFUNCTION(Client, Reliable)
 	void Client_NotifyConqueringPointTower(bool _IsCurrentlyConquering);
 	
-	EPlayerState GetPlayerMainState() const { return m_PlayerState; }
+	EPlayerMainState GetPlayerMainState() const { return m_PlayerState; }
 	//void SetPlayerState(EPlayerState _NewState) { m_PlayerState = _NewState; }
 	
 	EPlayerPoseState GetPlayerMoveState() const { return m_PlayerPoseState; }
@@ -358,10 +358,10 @@ public:
 	void ClearCurDraggedItem();
 public:
 
-	bool IsAlive() const { return m_PlayerState == EPlayerState::Idle; }
-	bool IsReviving() const { return m_PlayerState == EPlayerState::Reviving; }
-	bool IsGettingUp() const { return m_PlayerState == EPlayerState::GettingUp; }
-	bool IsDead() const { return m_PlayerState == EPlayerState::Dead; }
+	bool IsAlive() const { return m_PlayerState == EPlayerMainState::Idle; }
+	bool IsReviving() const { return m_PlayerState == EPlayerMainState::Reviving; }
+	bool IsGettingUp() const { return m_PlayerState == EPlayerMainState::GettingUp; }
+	bool IsDead() const { return m_PlayerState == EPlayerMainState::Dead; }
 
 	// TODO : bPressedJump를 안쓰고 이걸 쓰는 이유는?
 	bool IsJumpInput() const { return m_IsJumpInput; }
@@ -440,7 +440,7 @@ public:
 	void FinishGettingUp();
 
 	// 서버에 플레이어 상태 변경 요청
-	void SetPlayerStateOnServer(EPlayerState _NewState);
+	void SetPlayerStateOnServer(EPlayerMainState _NewState);
 
 	// Interaction UI 관련
 public:

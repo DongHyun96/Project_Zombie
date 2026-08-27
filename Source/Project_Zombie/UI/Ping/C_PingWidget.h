@@ -79,4 +79,8 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta = (DisplayName = "PingMarkerTextures"))
 	TMap<EGamePingType, UTexture2D*> m_PingMarkerTextures{};
 	
+private:
+	
+	FTimerHandle m_RegisterPlayerCompassPingMarkerTimer{};
+	
 };
