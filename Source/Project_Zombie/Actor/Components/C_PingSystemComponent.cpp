@@ -39,6 +39,7 @@ void UC_PingSystemComponent::BeginPlay()
 	
 	FActorSpawnParameters Param{};
 	Param.Owner      = m_OwnerPlayer;
+	UC_Util::Print("Spawning WorldPingActor", FColor::Red, 15.f);
 	m_WorldPingActor = GetWorld()->SpawnActor<AC_PlayerWorldPingActor>(m_WorldPingActorClass, Param);
 	// PingActor BeginPlay에 자기자신 비활성화 처리 들어가 있음
 }

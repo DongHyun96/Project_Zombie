@@ -28,6 +28,8 @@ private:
 	UPROPERTY()
 	class AC_BasicPlayer* m_OwnerPlayer{};
 	
+private:
 	
+	FTimerHandle m_TimerHandle{};
 	
 };

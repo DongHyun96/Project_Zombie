@@ -20,27 +20,6 @@ void UC_PingWidget::NativeOnInitialized()
 	APlayerController* PC = GetOwningPlayer();
 	if (PC) m_MyPlayer = Cast<AC_BasicPlayer>(PC->GetPawn());
 	
-	FTimerDelegate RegDelegate = FTimerDelegate::CreateWeakLambda(this, [this]()
-	{
-		if (!m_OwnerPlayer) return;
-	
-		AC_UIManager* UIManager = UI_MANAGER(GetWorld());
-		if (!UIManager) return;	
-		
-		UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget();
-		if (!MainHUD) return;
-		
-		UC_CompassBarWidget* CompassBar = MainHUD->GetCompassBarWidget();
-		if (!CompassBar) return;
-
-		// CompassPingMarker 등록 처리
-		m_TargetCompassMarkerWidget = CompassBar->RegisterPlayerCompassPingMarker(m_OwnerPlayer);
-
-		// 제대로 등록 처리가 완료됨
-		GetWorld()->GetTimerManager().ClearTimer(m_RegisterPlayerCompassPingMarkerTimer);
-	});
-
-	GetWorld()->GetTimerManager().SetTimer(m_RegisterPlayerCompassPingMarkerTimer, RegDelegate, 0.1f, true); 
 }
 
 void UC_PingWidget::NativeConstruct()
@@ -83,6 +62,39 @@ void UC_PingWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 	const FText DistText = FText::FromString(DistTextStr);
 	
 	DistanceText->SetText(DistText);
+}
+
+void UC_PingWidget::SetOwnerPlayer(AC_BasicPlayer* _OwnerPlayer)
+{
+	m_OwnerPlayer = _OwnerPlayer;
+	
+	FTimerDelegate RegDelegate = FTimerDelegate::CreateWeakLambda(this, [this]()
+	{
+		if (!m_OwnerPlayer)
+		{
+			PRINT_LOCAL(GetWorld(), "UC_PingWidget::NativeOnInitialized : OwnerPlayer nullptr", FColor::Red, 5.f);
+			return;
+		}
+	
+		AC_UIManager* UIManager = UI_MANAGER(GetWorld());
+		if (!UIManager) return;
+		
+		UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget();
+		if (!MainHUD) return;
+		
+		UC_CompassBarWidget* CompassBar = MainHUD->GetCompassBarWidget();
+		if (!CompassBar) return;
+
+		// CompassPingMarker 등록 처리
+		m_TargetCompassMarkerWidget = CompassBar->RegisterPlayerCompassPingMarker(m_OwnerPlayer);
+
+		PRINT_LOCAL(GetWorld(), "REGISTERED", FColor::Cyan, 10.f);
+		
+		// 제대로 등록 처리가 완료됨
+		GetWorld()->GetTimerManager().ClearTimer(m_RegisterPlayerCompassPingMarkerTimer);
+	});
+
+	GetWorld()->GetTimerManager().SetTimer(m_RegisterPlayerCompassPingMarkerTimer, RegDelegate, 0.1f, true); 
 }
 
 void UC_PingWidget::SetPingMarkerColor(const FColor& _Color) const

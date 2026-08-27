@@ -275,6 +275,9 @@ private:
 
 	// PlayerState OnRep 시, 초기화 처리 관련 Waiting Timer
 	FTimerHandle m_PlayerStateRepTimerHandle{};
+
+	// BeginPlay에서 처리하는 Init 관련 TimerHandle
+	FTimerHandle m_BeginPlayInitTimerHandle{};
 	
 private:
 	

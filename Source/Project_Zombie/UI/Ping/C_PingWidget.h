@@ -26,7 +26,7 @@ public:
 
 public:
 	
-	void SetOwnerPlayer(class AC_BasicPlayer* _OwnerPlayer) { m_OwnerPlayer = _OwnerPlayer; }
+	void SetOwnerPlayer(class AC_BasicPlayer* _OwnerPlayer);
 	
 public:
 	

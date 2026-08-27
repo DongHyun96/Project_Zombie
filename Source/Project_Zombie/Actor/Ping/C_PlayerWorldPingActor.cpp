@@ -18,11 +18,19 @@ void AC_PlayerWorldPingActor::BeginPlay()
 	Super::BeginPlay();
 	
 	// SpawnActor Param을 BasicPlayer로 지정해줌
-	m_OwnerPlayer = Cast<AC_BasicPlayer>(GetOwner());
-	if (!m_OwnerPlayer)
-		UC_Util::Print("[AC_PlayerWorldPingActor::BeginPlay] : OwnerPlayer casting failed", FColor::Red, 10.f);
+	FTimerDelegate BeginPlayDelegate = FTimerDelegate::CreateWeakLambda(this, [this]()
+	{
+		m_OwnerPlayer = Cast<AC_BasicPlayer>(GetOwner());
+		if (!m_OwnerPlayer) return;
 
-	if (m_PingWidget) m_PingWidget->SetOwnerPlayer(m_OwnerPlayer);
+		if (!m_PingWidget) return;
+		
+		m_PingWidget->SetOwnerPlayer(m_OwnerPlayer);
+		
+		GetWorldTimerManager().ClearTimer(m_TimerHandle);
+	});
+	
+	GetWorldTimerManager().SetTimer(m_TimerHandle, BeginPlayDelegate, 0.1f, true);
 }
 
 void AC_PlayerWorldPingActor::Tick(float DeltaTime)
