@@ -215,63 +215,69 @@ void AC_BasicPlayer::BeginPlay()
 
 	//UpdateBoostBarHUD();
 
-	// InventoryWidget에 Player의 InvenComponent 초기화 및 델리게이트 진행
-	APlayerController* PC = Cast<APlayerController>(GetController());
-	
-	if (!PC) return;
-	
-	AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD());
-	
-	if (!UIManager) return;
-	
-	if (m_InvenComponent)
+	FTimerDelegate TimerDelegate = FTimerDelegate::CreateWeakLambda(this, [this]()
 	{
-		m_InvenComponent->SetHasEquipmentSlots(true);
+		// InventoryWidget에 Player의 InvenComponent 초기화 및 델리게이트 진행
+		APlayerController* PC = Cast<APlayerController>(GetController());
 		
-		UIManager->GetInventoryWidget()->InitializeInventoryWidget();
+		if (!PC) return;
 		
-		UIManager->GetInventoryWidget()->GetPlayerGridWidget()->SetInvenComponent(m_InvenComponent);
-	
-		UIManager->GetInventoryWidget()->GetEquipmentWidget()->InitEquipmentWidget(m_InvenComponent);
+		AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD());
 		
-		UIManager->GetInventoryWidget()->GetItemUpgradeWidget()->BindingUpdateWidget(m_InvenComponent);
-	}
-	
-	if (m_InvenComponent && m_EquippedComponent)
-	{
-		m_EquippedComponent->SetupInventoryComponent(m_InvenComponent);
+		if (!UIManager) return;
 		
-	}
+		if (m_InvenComponent)
+		{
+			m_InvenComponent->SetHasEquipmentSlots(true);
+			
+			UIManager->GetInventoryWidget()->InitializeInventoryWidget();
+			
+			UIManager->GetInventoryWidget()->GetPlayerGridWidget()->SetInvenComponent(m_InvenComponent);
+		
+			UIManager->GetInventoryWidget()->GetEquipmentWidget()->InitEquipmentWidget(m_InvenComponent);
+			
+			UIManager->GetInventoryWidget()->GetItemUpgradeWidget()->BindingUpdateWidget(m_InvenComponent);
+		}
+		
+		if (m_InvenComponent && m_EquippedComponent)
+		{
+			m_EquippedComponent->SetupInventoryComponent(m_InvenComponent);
+			
+		}
 
-	if (m_StatComponent)
-	{
+		if (m_StatComponent)
+		{
+			
+			UIManager->GetInventoryWidget()->GetPlayerStatUpgradeWidget()->BindStatEvents(m_StatComponent);
+			UIManager->GetMainHUDWidget()->GetPlayerStatWidget()->BindCurHPUpdate(m_StatComponent);
+			
+			m_StatComponent->OnCurHPUpdatedDelegate.Broadcast(m_StatComponent->GetCurHPRatio());
+			
+			//UIManager->GetMainHUDWidget()->GetPlayerStatWidget()->UpdateHPBar(m_StatComponent->GetCurHPRatio());
+		}
 		
-		UIManager->GetInventoryWidget()->GetPlayerStatUpgradeWidget()->BindStatEvents(m_StatComponent);
-		UIManager->GetMainHUDWidget()->GetPlayerStatWidget()->BindCurHPUpdate(m_StatComponent);
+		if (IsLocallyControlled())
+		{
+			UpdateBoostBarHUD();
+		}
 		
-		m_StatComponent->OnCurHPUpdatedDelegate.Broadcast(m_StatComponent->GetCurHPRatio());
+		TryRestoreFromPlayerState();
 		
-		//UIManager->GetMainHUDWidget()->GetPlayerStatWidget()->UpdateHPBar(m_StatComponent->GetCurHPRatio());
-	}
+		// 클라가 남의 아이템에 대한 정보를 불러와야 하기 때문에 호출해봄.
+		//if (m_EquippedComponent)
+		//{
+		//	// 서버는 이 시점에 EquippedComponent의 OwnerPlayer가 없음.(비긴에서 넣어주고 있음)
+		//	if (!m_EquippedComponent->GetOwnerPlayer())
+		//		m_EquippedComponent->SetOwnerPlayer(this);
+		//		
+		//	for (int32 i = 0 ; i < static_cast<int32>(EWeaponSlot::None) ; ++i)
+		//		m_EquippedComponent->LoadEquippedWeaponFromInven(i,m_InvenComponent->GetItemAt(i));
+		//}
+		
+		GetWorldTimerManager().ClearTimer(m_BeginPlayInitTimerHandle);
+	});
 	
-	if (IsLocallyControlled())
-	{
-		UpdateBoostBarHUD();
-	}
-	
-	TryRestoreFromPlayerState();
-	
-	// 클라가 남의 아이템에 대한 정보를 불러와야 하기 때문에 호출해봄.
-	//if (m_EquippedComponent)
-	//{
-	//	// 서버는 이 시점에 EquippedComponent의 OwnerPlayer가 없음.(비긴에서 넣어주고 있음)
-	//	if (!m_EquippedComponent->GetOwnerPlayer())
-	//		m_EquippedComponent->SetOwnerPlayer(this);
-	//		
-	//	for (int32 i = 0 ; i < static_cast<int32>(EWeaponSlot::None) ; ++i)
-	//		m_EquippedComponent->LoadEquippedWeaponFromInven(i,m_InvenComponent->GetItemAt(i));
-	//}
-	
+	GetWorldTimerManager().SetTimer(m_BeginPlayInitTimerHandle, TimerDelegate, 0.1f, true);
 }
 
 void AC_BasicPlayer::EndPlay(const EEndPlayReason::Type EndPlayReason)

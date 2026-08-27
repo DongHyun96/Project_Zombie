@@ -868,7 +868,7 @@ void AC_GunBase::UpdateMuzzleAwareness()
 	}
 	
 	// MuzzleAware 거리에 걸린 상황
-
+	
 	// 처음 걸린 상황 -> UI Visibility 활성화
 	if (!m_MuzzleAwareActor)
 		m_OwnerPlayer->GetAimComponent()->ToggleMuzzleAwareCrossHair(true);
