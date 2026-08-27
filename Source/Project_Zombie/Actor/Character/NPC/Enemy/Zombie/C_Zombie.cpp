@@ -121,7 +121,7 @@ void AC_Zombie::OnNormalAttackColliderBeginOverlap
 	);
 
 	// 플레이어가 맞았을때 skilldata의 hitsound 재생
-	if ((Player || PointTower) && AppliedDamage > 0.f)
+	if (Player && AppliedDamage > 0.f)
 	{
 		PlayCurrentSkillHitSound(OtherActor->GetActorLocation());
 	}

@@ -67,6 +67,8 @@ public:
 	
 	void TestFunction();
 	void TestFunction2();
+
+	void PlayHitSound();
 	
 private:
 	
@@ -82,6 +84,9 @@ private:
 	// 점령 활성화 되면 true, 점령 활성화가 중단되면 false
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_SetConqueringSound(bool _Play);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_PlayHitSound();
 	
 private:
 	
@@ -328,4 +333,8 @@ private: // 사운드
 	// 점령 완료 후 반복 재생되는 전기 소리
 	UPROPERTY(EditAnywhere, Category = "Sound")
 	USoundBase* m_ElectricSound{};
+
+	// 거점 HitSound
+	UPROPERTY(EditAnywhere, Category = "Sound")
+	TObjectPtr<USoundBase> m_Hitsound;
 };

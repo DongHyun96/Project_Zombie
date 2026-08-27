@@ -17,6 +17,7 @@
 #include "Net/UnrealNetwork.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
 #include "UI/MainHUD/CompassBarWidget/C_CompassBarWidget.h"
+#include "Sound/SoundBase.h"
 
 #include "UI/Misc/C_PointTowerWidget.h"
 #include "Utility/C_Util.h"
@@ -266,6 +267,7 @@ void AC_PointTower::Multicast_UpdateConquerAmountInt_Implementation(uint8 _Curre
 	if (m_PointTowerWidget) m_PointTowerWidget->SetPercentText(m_CurConquerAmountInt);
 }
 
+
 void AC_PointTower::OnApproachEffectTogglerColliderBeginOverlap
 (
 	UPrimitiveComponent* OverlappedComponent,
@@ -399,12 +401,19 @@ float AC_PointTower::TakeDamage
 	AActor*				DamageCauser
 )
 {
+	UC_Util::Print("TackDamage", FColor::Red, 10.f);
+
 	// 현재 데미지를 입을 수 없는 상황인데 공격을 당한 경우
 	if (!CanCurrentlyAttackedByZombie()) return 0.f;
 	
 	float ReceivedDamageAmount = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 	const float Damage = ReceivedDamageAmount * m_ZombieDamageRatio; // Damage 만큼 현재 Conquered 펀센트에서 제거
-	m_CurConquerAmount -= Damage; // TODO : 이 주석 풀것
+	
+	m_CurConquerAmount -= Damage;
+
+	// 거점 피격음
+	PlayHitSound();
+
 
 	// 공격을 받을 수 있는 상황에서, 다시금 Active로 넘어간 상태
 	if (m_State == EPointTowerState::Conquered)
@@ -573,4 +582,23 @@ void AC_PointTower::Multicast_SetConqueringSound_Implementation(bool _Play)
 	{
 		m_ConqueringAudioCom->Stop();
 	}
+}
+
+void AC_PointTower::PlayHitSound()
+{
+	if (!HasAuthority())
+		return;
+
+	if (!IsValid(m_Hitsound))
+		return;
+
+	Multicast_PlayHitSound();
+}
+
+void AC_PointTower::Multicast_PlayHitSound_Implementation()
+{
+	if (!IsValid(m_Hitsound))
+		return;
+
+	UGameplayStatics::PlaySoundAtLocation(this, m_Hitsound, GetActorLocation());
 }
