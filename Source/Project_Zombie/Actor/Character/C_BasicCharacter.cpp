@@ -48,6 +48,9 @@ float AC_BasicCharacter::TakeDamage
 	// Invalid DamageAmount early return
 	if (DamageAmount <= 0.f) return 0.f;
 	
+	// 이미 사망한 캐릭터의 경우, 피격 처리를 하지 않는다
+	if (m_StatComponent->IsCurHPZero()) return 0.f;
+	
 	m_StatComponent->DecreaseCurHP(DamageAmount);
 	
 	return DamageAmount;
