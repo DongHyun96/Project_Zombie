@@ -239,9 +239,14 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void Server_ExecuteFire(FVector_NetQuantize ImpactPoint, AActor* HitActor);
 
-	// 클라이언트들에게 사격 연출 Multicast
-	// FVector_NetQuantize = 소수점 아래 아주 미세한 수치는 버리고 정수 단위 위주로 압축해서 
-	// 서버/클라이언트 간 주고받는 데이터 크기를 줄이는 FVector 변종
+	/// <summary>
+	/// <para> 클라이언트들에게 사격 연출 Multicast </para>
+	/// <para> FVector_NetQuantize = 소수점 아래 아주 미세한 수치는 버리고 정수 단위 위주로 압축해서 </para>
+	/// <para> 서버/클라이언트 간 주고받는 데이터 크기를 줄이는 FVector 변종 </para>
+	/// <para> Unreliable -> 이 RPC 패킷이 네트워크에서 유실되어도 괜찮다는 의미 </para>
+	/// <para> 이러한 시각 효과는 몇 개 패킷 유실되어도 실질적인 게임 플레이에 무방함 </para>
+	/// <para> 이러한 이펙트를 UnReliable로 두는 이유는 연발발사의 경우 RPC call 빈도가 높을 수 있기 때문 </para> 
+	/// </summary>
 	UFUNCTION(NetMulticast, Unreliable)
 	void Multicast_PlayFireEffects(FVector_NetQuantize ImpactPoint);
 

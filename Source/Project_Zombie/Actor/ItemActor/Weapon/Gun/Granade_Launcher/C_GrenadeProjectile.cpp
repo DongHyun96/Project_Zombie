@@ -144,6 +144,7 @@ void AC_GrenadeProjectile::OnExplodeStart()
 	{
 		float EffectScale = (m_ExplosionEffectScale > 0.0f) ? m_ExplosionEffectScale : 1.0f;
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), m_ExplosionEffect, HitLocation, FRotator::ZeroRotator, FVector(EffectScale));
+		UGameplayStatics::SpawnSoundAtLocation(GetWorld(), m_ExplosionSound, GetActorLocation());
 	}
 
 	if (HasAuthority())
@@ -171,5 +172,7 @@ void AC_GrenadeProjectile::Multicast_PlayExplosionFX_Implementation(FVector Expl
 			FRotator::ZeroRotator,
 			FVector(EffectScale)
 		);
+		
+		UGameplayStatics::SpawnSoundAtLocation(GetWorld(), m_ExplosionSound, GetActorLocation());
 	}
 }

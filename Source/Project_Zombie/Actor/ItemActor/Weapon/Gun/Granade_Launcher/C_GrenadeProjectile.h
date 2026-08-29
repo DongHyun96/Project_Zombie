@@ -44,6 +44,11 @@ protected:
 	bool m_bHasExploded = false;
 
 	bool m_bHasToExplodeOnSpawn{}; // 총구가 Muzzle Awareness 거리에 들어간 경우, 바로 해당 위치에서 폭파시켜버림
+
+protected: // 폭파음
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	USoundBase* m_ExplosionSound{};
 	
 protected:
 	virtual void BeginPlay() override;

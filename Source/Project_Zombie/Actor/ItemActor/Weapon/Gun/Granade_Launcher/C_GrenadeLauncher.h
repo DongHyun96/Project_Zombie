@@ -44,6 +44,11 @@ public:
 
 	// virtual void Server_PlayReloadEffects_Implementation() override;
 
+	/*UFUNCTION(NetMulticast, Reliable)
+	void Multicast_PlayFireEffects();*/
+	
+	virtual void Multicast_PlayFireEffects_Implementation(FVector_NetQuantize ImpactPoint) override;
+
 private:
 	
 	UFUNCTION(Server, Reliable)

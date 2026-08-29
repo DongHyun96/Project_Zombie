@@ -6,6 +6,7 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
+#include "GameModeAndManager/C_UIManager.h"
 #include "Kismet/GameplayStatics.h"
 
 AC_GrenadeLauncher::AC_GrenadeLauncher()
@@ -38,6 +39,19 @@ void AC_GrenadeLauncher::Server_ExecuteFire_Implementation(FVector_NetQuantize I
 	
 	// HitActor의 경우, MuzzleAwareness에 잡힌 Actor를 사용 (없다면 자동적으로 nullptr를 넘겨서 일반 유탄 사격처리로 넘어간다)
 	SpawnGrenadeProjectile(FVector(ImpactPoint), HitActor);
+	
+	// 사격 모션 재생 처리 Multicast로 다른 Player들에게 자기자신의 모습 알림 처리
+	// ImpactPoint는 Dummy data
+	Multicast_PlayFireEffects(ImpactPoint);
+}
+
+void AC_GrenadeLauncher::Multicast_PlayFireEffects_Implementation(FVector_NetQuantize ImpactPoint)
+{
+	PRINT_LOCAL(GetWorld(), "PlayFireEffects", FColor::Cyan, 10.f);
+	
+	// 자기 자신의 FireEffect Animation은 이미 재생한 상황
+	if (m_OwnerPlayer && m_OwnerPlayer->IsLocallyControlled()) return;
+	PlayFireEffects(); // 다른 Player의 FireEffect Animation 재생 처리
 }
 
 void AC_GrenadeLauncher::Server_EjectAllSpentShells_Implementation(int32 SpentShellCount)
