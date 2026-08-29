@@ -30,7 +30,8 @@ void AC_PlayerState::CopyProperties(APlayerState* NewPlayerState)
 
 			// 2. 인벤토리 항목 리스트(TArray) 이사
 			NewPS->SavedInventoryContainers = this->SavedInventoryContainers;
-
+			NewPS->SavedWeapons = this->SavedWeapons;
+			
 			// 3. 스탯 및 단계 TMap 이사
 			NewPS->SavedStats = this->SavedStats;
 			NewPS->SavedStatGrades = this->SavedStatGrades;
