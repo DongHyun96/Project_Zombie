@@ -96,3 +96,13 @@ enum class EUpgradableStats : uint8
     MoveSpeed       UMETA(DisplayName = "이동 속도"),
 	//Max
 };
+
+UENUM(BlueprintType)
+enum class EPlayerSkin : uint8
+{
+    Origin  UMETA(DisplayName = "Origin"),
+    Purple  UMETA(DisplayName = "Purple"),
+    Red     UMETA(DisplayName = "Red"),
+    Green   UMETA(DisplayName = "Green"),
+    Blue    UMETA(DisplayName = "Blue")
+};
