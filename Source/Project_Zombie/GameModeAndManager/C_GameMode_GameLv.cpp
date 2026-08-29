@@ -102,6 +102,31 @@ void AC_GameMode_GameLv::Logout(AController* Exiting)
     Super::Logout(Exiting);
 }
 
+void AC_GameMode_GameLv::StartToLeaveMap()
+{
+	Super::StartToLeaveMap();
+	
+	// 현재 월드에 접속해 있는 모든 플레이어 컨트롤러 순회
+	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+	{
+		APlayerController* PC = It->Get();
+		if (!PC) continue;
+
+		AC_PlayerState* PS = PC->GetPlayerState<AC_PlayerState>();
+		APawn* Pawn = PC->GetPawn();
+		if (!PS || !Pawn) continue;
+
+		// 인벤토리 컴포넌트에서 데이터 추출 후 PlayerState에 저장
+		if (UC_InvenComponent* InvenComp = Pawn->FindComponentByClass<UC_InvenComponent>())
+		{
+			PS->SaveInventoryToState(InvenComp->GetInventoryItems());
+			UE_LOG(LogTemp, Log, TEXT("[StartToLeaveMap] 플레이어 %s 인벤토리 데이터 백업 완료 (항목 수: %d)"), 
+			   *PC->GetName(), InvenComp->GetInventoryItems().Num());
+		}
+	}
+	
+}
+
 void AC_GameMode_GameLv::HandleSeamlessTravelPlayer(AController*& C)
 {
    // 1. 엔진 로직 선행 (캐릭터 스폰 및 빙의 완료)
