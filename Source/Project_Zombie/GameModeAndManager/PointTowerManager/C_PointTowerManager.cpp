@@ -283,9 +283,9 @@ void UC_PointTowerManager::ShowGameStartPanel()
 	TempTimerHandle,
 	[this]()
 	{
-		if (UI_MANAGER(GetWorld()))
+		if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
 		{
-			UI_MANAGER(GetWorld())->GetMainHUDWidget()->GetInformWidget()->ToggleGameStartPanel(true);
+			MainHUD->GetInformWidget()->ToggleGameStartPanel(true);
 			GetWorld()->GetTimerManager().ClearTimer(TempTimerHandle);
 		}
 	},

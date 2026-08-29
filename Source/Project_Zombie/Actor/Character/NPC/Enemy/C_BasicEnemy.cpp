@@ -182,17 +182,18 @@ float AC_BasicEnemy::TakeDamage
 )
 {
 	const float DamageAmount = Super::TakeDamage(_DamageAmount, _DamageEvent, _EventInstigator, _DamageCauser);
-	if (DamageAmount <= 0.f) return 0.f; // Damage가 들어오지 않음 (클라이언트단, TakeDamage 로컬 호출인 경우에 그럴 수 있음 -> 알아서 서버 쪽으로 Damage 입은 사실 전달)
 	
-	// 죽지 않은 경우에만 피격모션 재생
-	if (IsValid(m_StatComponent) && m_StatComponent->GetCurHP() > 0.f)
-	{
-		const int32 HitIdx = SelectHitMontageIndex();
+	// Damage가 들어오지 않음 
+	// 클라이언트단, TakeDamage 로컬 호출인 경우에 그럴 수 있음 -> 알아서 서버 쪽으로 Damage 입은 사실 전달)
+	// or 이미 사망한 캐릭터인 경우에도 피격처리 자체가 진행되지 않게끔 함
+	if (DamageAmount <= 0.f) return 0.f;
 
-		if (HitIdx != INDEX_NONE)
-		{
-			Multicast_PlayHit(HitIdx);
-		}
+	// 피격모션 재생
+	const int32 HitIdx = SelectHitMontageIndex();
+
+	if (HitIdx != INDEX_NONE)
+	{
+		Multicast_PlayHit(HitIdx);
 	}
 
 	/* PerceptionComponent에 Damage를 받았다고 보고 처리 */

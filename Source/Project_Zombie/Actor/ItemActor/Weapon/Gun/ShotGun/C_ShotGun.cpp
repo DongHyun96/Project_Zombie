@@ -164,6 +164,9 @@ void AC_ShotGun::Multicast_PlayShotgunFireEffects_Implementation(const TArray<FV
 {
 	if (!m_WeaponMesh || !GetWorld()) return;
 
+	// 사격 Animation (Gun이든, OwnerPlayer 든) 재생 처리
+	PlayFireEffects();
+	
 	FVector MuzzleStart = m_WeaponMesh->GetSocketLocation(TEXT("MuzzleFlash"));
 
 	for (const FVector_NetQuantize& ImpactPoint : ImpactPoints)

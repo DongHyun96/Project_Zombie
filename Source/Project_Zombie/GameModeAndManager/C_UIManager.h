@@ -26,16 +26,9 @@ class PROJECT_ZOMBIE_API AC_UIManager : public AHUD
 
 public:
 	
-	static AC_UIManager* Get(const UWorld* _World)
-	{
-		if (!_World) return nullptr;
-		
-		// 클라이언트/리슨서버 호스트 화면의 로컬 PlayerController(0번)를 구합니다.
-		APlayerController* PC = _World->GetFirstPlayerController();
-		
-		if (PC && PC->IsLocalController()) return Cast<AC_UIManager>(PC->GetHUD());
-		return nullptr;
-	}
+	static AC_UIManager* Get(const UWorld* _World);
+	
+	static class UC_GameMainHUD* GetMainHUD(const UWorld* _World);
 	
 public:
 	
@@ -45,7 +38,7 @@ public:
 	
 public:
 
-	class UC_GameMainHUD* GetMainHUDWidget() const { return m_MainHUDWidget; }
+	// UC_GameMainHUD* GetMainHUDWidget() const { return m_MainHUDWidget; }
 	
 	class UC_InventoryWidget* GetInventoryWidget() const { return m_InventoryWidget; }
 	
@@ -88,7 +81,7 @@ private:
 };
 
 #define UI_MANAGER(_World) AC_UIManager::Get(_World)
-
+#define MAIN_HUD(_World) AC_UIManager::GetMainHUD(_World)
 
 /// <summary>
 /// 리슨 서버 환경에서의 프린트 출력  
@@ -104,3 +97,4 @@ UIMgr->PrintLocalDebugMessage(_Msg, _Color, _Duration); \
 #else
 #define PRINT_LOCAL(_World, _Msg, _Color, _Duration) do {} while (0)
 #endif
+

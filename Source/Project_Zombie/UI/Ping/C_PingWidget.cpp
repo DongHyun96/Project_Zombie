@@ -72,10 +72,7 @@ void UC_PingWidget::SetOwnerPlayer(AC_BasicPlayer* _OwnerPlayer)
 	{
 		if (!m_OwnerPlayer) return;
 	
-		AC_UIManager* UIManager = UI_MANAGER(GetWorld());
-		if (!UIManager) return;
-		
-		UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget();
+		UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld());
 		if (!MainHUD) return;
 		
 		UC_CompassBarWidget* CompassBar = MainHUD->GetCompassBarWidget();

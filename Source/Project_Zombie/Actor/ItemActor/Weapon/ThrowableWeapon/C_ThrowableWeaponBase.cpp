@@ -1542,9 +1542,8 @@ void AC_ThrowableWeaponBase::UpdateAmmoInfoHUDForDrawEnd()
 	if (FInventoryEntry* Entry = ItemLinkComp->GetItemEntryPtr())
 		Count = Entry->CurCount;
 
-	if (AC_UIManager* UIManager = UI_MANAGER(GetWorld()))
-		if (UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget())
-			MainHUD->ToggleAmmoInfoVisibility(true, EFireMode::Single, 1, Count);
+	if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+		MainHUD->ToggleAmmoInfoVisibility(true, EFireMode::Single, 1, Count);
 }
 
 void AC_ThrowableWeaponBase::SetAmmoUIInfo(FAmmoUIInfo& _AmmoUIInfo)

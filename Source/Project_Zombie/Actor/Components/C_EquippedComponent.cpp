@@ -379,16 +379,7 @@ void UC_EquippedComponent::OnInventorySlotChanged(int32 SlotIndex, const FInvent
 	if (SlotIndex < 0 || SlotIndex >= static_cast<int32>(EWeaponSlot::None)) return;   
 	if (GetOwner() == nullptr) return;
 
-	// 핵심: 만약 서버에서 실행 중이라면, RPC(Server_Request...)를 보낼 필요가 없습니다!
-	// 서버 환경에서 인벤토리가 바뀐 거라면 직접 내부 구현 함수를 호출하면 됩니다.
-	if (GetOwner()->HasAuthority())
-	{
-		// 서버 내부에서 일반적인 인벤토리 조작(예: 런타임 중 무기 교체 등)이 일어났을 때의 처리
-		Server_RequestSpawnEquippedActor_Implementation(SlotIndex, ItemData);
-		return;
-	}
-
-	// 오직 로컬 클라이언트 환경일 때만 서버에게 스폰을 요청(RPC)합니다.
+	// 어차피 서버 환경이라면 자동으로 로컬 Call로 처리되고, 클라이언트 환경인 경우, RPC 호출 처리가 됨
 	Server_RequestSpawnEquippedActor(SlotIndex, ItemData);
 }
 
@@ -397,7 +388,8 @@ void UC_EquippedComponent::OnSheathEnd()
 	if (!m_OwnerPlayer->IsLocallyControlled()) return;
 
 	// 다음으로 들 무기가 있을 때에도 Widget Animation을 위해, AmmoVisibility false로 일괄 처리
-	UI_MANAGER(GetWorld())->GetMainHUDWidget()->ToggleAmmoInfoVisibility(false);
+	if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+		MainHUD->ToggleAmmoInfoVisibility(false);
 	
 	/* 무기를 바꾸는 도중에 SlotWeapon 장착 해제 예외 처리 -> Sheath 처리를 진행 중이던 무기가 Slot에서 빠졌을 때 */
 	// 이 예외처리는 추후 좀비가 Player총기를 뺏을 수 있는 상황을 고려해서 넣어둠
@@ -496,15 +488,8 @@ void UC_EquippedComponent::UpdateAmmoWidget()
 	// 현재 들고 있는 무기가 없을 때
 	if (!Weapon)
 	{
-		if (!GetWorld()) return;
-		
-		AC_UIManager* UI_Manager = UI_MANAGER(GetWorld()); 
-		
-		if (!UI_Manager) return;
-		
-		if (UI_Manager->GetMainHUDWidget() == nullptr) return;
-		
-		UI_Manager->GetMainHUDWidget()->ToggleAmmoInfoVisibility(false);
+		if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+			MainHUD->ToggleAmmoInfoVisibility(false);
 		return;
 	}
 	

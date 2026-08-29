@@ -77,7 +77,7 @@ private:
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* WeaponToEquip);
 
-public:
+private:
 	
 	/// <summary>
 	/// 서버에게 실제 장착하는 아이템 스폰 요청.
@@ -87,6 +87,8 @@ public:
 	UFUNCTION(Server, Reliable)
 	void Server_RequestSpawnEquippedActor(int32 SlotIndex, const FInventoryEntry& ItemData);
 
+public:
+	
 	void UpdateWeaponData(EWeaponSlot _TargetWeapon, FName InItemRow);
 	
 	UFUNCTION(Client, Reliable)

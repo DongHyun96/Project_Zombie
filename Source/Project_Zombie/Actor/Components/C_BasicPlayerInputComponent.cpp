@@ -169,6 +169,9 @@ void UC_BasicPlayerInputComponent::SetPlayerIMCMode(EPlayerIMCMode _IMCMode)
 
 	if (_IMCMode == EPlayerIMCMode::OnlyMovementMapping)
 	{
+		if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+		MainHUD->AddPlayerWarningLog("ONLY MOVEMENT IS ALLOWED");
+		
 		// 1. 사격, 조준 등 누르고 있던 행동 상태를 명시적으로 끝냄
 		FireEnd();
 		KeepAimActionEnd();
@@ -281,11 +284,9 @@ void UC_BasicPlayerInputComponent::FireStarted()
 		if (Player->IsFreeLook())
 		{
 			Player->SetIsFreeLook(false); // 사격 시작 시, FreeLook 기능이 만약 활성화 중이었다면 해당 기능 비활성화 처리
-			if (AC_UIManager* UIManager = UI_MANAGER(GetWorld()))
-			{
-				if (UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget())
-					MainHUD->AddPlayerWarningLog("FREE LOOK RELEASED");
-			}
+			
+			if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+				MainHUD->AddPlayerWarningLog("FREE LOOK RELEASED");
 		}
 	}
 }
@@ -377,11 +378,8 @@ void UC_BasicPlayerInputComponent::FreeLookHoldStart()
 	// 이미 무기의 사격(LMB)를 진행중이라면 Warning Log 띄우기 (이 Start trigger는 오로지 UI Log 한번 띄우기용)
 	if (Player->IsFiring())
 	{
-		if (AC_UIManager* UIManager = UI_MANAGER(GetWorld()))
-		{
-			if (UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget())
-				MainHUD->AddPlayerWarningLog("CANNOT USE FREE LOOK WHILE USING WEAPON");
-		}
+		if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+			MainHUD->AddPlayerWarningLog("CANNOT USE FREE LOOK WHILE USING WEAPON");
 	}
 }
 
