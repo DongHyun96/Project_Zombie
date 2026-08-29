@@ -11,7 +11,6 @@
 #include "Net/UnrealNetwork.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
 #include "Controller/C_BasicPlayerController.h"
-#include "GameModeAndManager/PlayerState/C_PlayerState.h"
 #include "UI/InvenUI/Upgrade/C_ItemUpgradeWidget.h"
 #include "UI/InvenUI/C_InventoryWidget.h"
 #include "Utility/C_Util.h"
@@ -337,29 +336,7 @@ void UC_EquippedComponent::ClearInventoryComponent()
 
 void UC_EquippedComponent::LoadEquippedWeaponFromInven(int32 SlotIndex, const FInventoryEntry& ItemData)
 {
-	OnInventorySlotChanged(SlotIndex, ItemData);
-	
-	//AC_PlayerState* PS = Cast<AC_PlayerState>(m_OwnerPlayer->GetPlayerState());
-	//
-	//m_Weapons = PS->GetSavedWeapons();
-	//
-	//if (!PS) return;
-	//
-	//UC_ItemManager* ItemManager = GetWorld()->GetGameInstance()->GetSubsystem<UC_ItemManager>();
-	//
-	//if (!ItemManager) return;
-	//
-	//
-	//for (int32 i = 0; i < m_Weapons.Num(); ++i)
-	//{
-	//	const FWeaponData* WData = ItemManager->GetWeaponData(m_Weapons[i]->GetWeaponRowName()); 
-	//	
-	//	UC_Util::Print(m_Weapons[i]->GetWeaponRowName().ToString(), FColor::Green, 10.f);
-	//	
-	//	m_Weapons[i]->LoadAsyncAssets(WData);
-	//}
-	
-	//if (SlotIndex < 0 || SlotIndex >= static_cast<int32>(EWeaponSlot::None)) return;
+	if (SlotIndex < 0 || SlotIndex >= static_cast<int32>(EWeaponSlot::None)) return;
 
 	// 이미 해당 슬롯에 무기가 있다면 중복 스폰 방지를 위해 리턴 또는 파괴 처리
 	//if (m_Weapons.IsValidIndex(SlotIndex) && m_Weapons[SlotIndex] != nullptr)
@@ -373,14 +350,16 @@ void UC_EquippedComponent::LoadEquippedWeaponFromInven(int32 SlotIndex, const FI
 	//	m_OwnerPlayer = Cast<AC_BasicPlayer>(GetOwner());
 	//}
 	
+	UC_ItemManager* ItemManager = GetWorld()->GetGameInstance()->GetSubsystem<UC_ItemManager>();
+	
+	if (!ItemManager) return;
 
-	//
-	//UE_LOG(LogTemp, Log, TEXT("[Travel Restore] 슬롯 %d번에 무기 스폰 시작 (Row: %s)"), SlotIndex, *ItemData.ItemRowName.ToString());
-	//
-	//// TODO : m_Ownerplayer가 nullptr로 SpawnedWeapon이 Nullptr라 서버만 안되는 거였음.
-	//
-	//// 서버 처리로 변경해보기.
-	//Server_RequestSpawnEquippedActor(SlotIndex, ItemData);
+	UE_LOG(LogTemp, Log, TEXT("[Travel Restore] 슬롯 %d번에 무기 스폰 시작 (Row: %s)"), SlotIndex, *ItemData.ItemRowName.ToString());
+
+	// TODO : m_Ownerplayer가 nullptr로 SpawnedWeapon이 Nullptr라 서버만 안되는 거였음.
+	
+	// 서버 처리로 변경해보기.
+	Server_RequestSpawnEquippedActor(SlotIndex, ItemData);
 	
 	//// 1. 아이템 매니저를 통해 새 레벨에 무기 액터 복구 스폰
 	//AC_WeaponBase* SpawnedWeapon = (ItemData.CurCount > 0) ? ItemManager->SpawnEquippedActor(ItemData.ItemRowName, m_OwnerPlayer) : nullptr;

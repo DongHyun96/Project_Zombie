@@ -52,10 +52,10 @@ public:
 	UFUNCTION(NetMulticast, Unreliable)
 	void Multi_InitItemActor(UC_InvenComponent* InInvenComp, int32 Idx);
 	
+protected:
 
 	// 데이터 테이블의 에셋들을 비동기 로드하기 위한 함수, 무기마다 다를 수 있기 때문에 순수 가상 함수로 선언. return 값을 bool 처리 할까?
 	virtual void LoadAsyncAssets(const FWeaponData* InRawData) PURE_VIRTUAL(AC_WeaponBase::LoadAsyncAssets, );
-protected:
 	
 	void CancelAsyncLoad();
 	

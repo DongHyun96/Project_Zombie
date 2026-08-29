@@ -145,8 +145,8 @@ public:
 
 	virtual void SwitchFireMode();
 
-	virtual void LoadAsyncAssets(const FWeaponData* InRawData) override;
 protected:
+	virtual void LoadAsyncAssets(const FWeaponData* InRawData) override;
 
 	virtual void SetAmmoUIInfo(FAmmoUIInfo& _AmmoUIInfo) override;
 	
