@@ -232,9 +232,15 @@ void AC_PointTower::SetPointTowerState(EPointTowerState _PointTowerState)
 bool AC_PointTower::CanCurrentlyAttackedByZombie()
 {
 	if (m_State == EPointTowerState::Waiting) return false;
-	
-	// 현재 활성화된 시퀀스의 PointTower일 경우에만 공격 가능
-	return POINT_TOWER_MANAGER(this)->GetCurrentSequenceIdx() == m_ActivateSequenceIdx;
+
+	// 현재 활성화된 시퀀스의 PointTower가 아닌 경우
+	if (POINT_TOWER_MANAGER(this)->GetCurrentSequenceIdx() != m_ActivateSequenceIdx) return false;
+
+	// 현재 활성화된 시퀀스가 맞긴 하지만, 점령도가 0% 인 경우 공격 불가
+	if (m_CurConquerAmount <= 0.f) return false;
+
+	// 공격 가능한 PointTower 상태
+	return true;
 }
 
 bool AC_PointTower::CanBeInsertedToSensedTarget()
