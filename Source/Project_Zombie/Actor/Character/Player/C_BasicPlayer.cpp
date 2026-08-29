@@ -65,6 +65,7 @@
 #include "Kismet/GameplayStatics.h"
 
 #include "UI/InvenUI/Upgrade/C_PlayerStatUpgradeWidget.h"
+#include "UI/MainHUD/InformWidget/C_InformWidget.h"
 #include "UI/MainHUD/PlayerStatHUD/C_PlayerStatWidget.h"
 
 #define RECHARGED_BOOST 20.f
@@ -249,7 +250,8 @@ void AC_BasicPlayer::BeginPlay()
 		{
 			
 			UIManager->GetInventoryWidget()->GetPlayerStatUpgradeWidget()->BindStatEvents(m_StatComponent);
-			UIManager->GetMainHUDWidget()->GetPlayerStatWidget()->BindCurHPUpdate(m_StatComponent);
+			if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+				MainHUD->GetPlayerStatWidget()->BindCurHPUpdate(m_StatComponent);
 			
 			m_StatComponent->OnCurHPUpdatedDelegate.Broadcast(m_StatComponent->GetCurHPRatio());
 			
@@ -477,7 +479,15 @@ void AC_BasicPlayer::ToggleMenuWidget()
 
 void AC_BasicPlayer::Client_NotifyConqueringPointTower_Implementation(bool _IsCurrentlyConquering)
 {
-	m_PlayerInputComponent->SetPlayerIMCMode(_IsCurrentlyConquering ? EPlayerIMCMode::OnlyMovementMapping : EPlayerIMCMode::DefaultMapping);
+	if (_IsCurrentlyConquering)
+	{
+		m_PlayerInputComponent->SetPlayerIMCMode(EPlayerIMCMode::OnlyMovementMapping);
+
+		if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+			MainHUD->GetInformWidget()->ShowMainInstruction("ATTEMPTING TO ACTIVATE THE POINT TOWER");
+	}
+	else
+		m_PlayerInputComponent->SetPlayerIMCMode(EPlayerIMCMode::DefaultMapping);
 }
 
 void AC_BasicPlayer::Multicast_IncreaseKillCount_Implementation()
@@ -501,10 +511,11 @@ void AC_BasicPlayer::OnRep_PlayerState()
 	// CreateWeakLambda: this가 파괴되면 엔진이 람다 실행을 아예 차단함
 	FTimerDelegate InitDelegate = FTimerDelegate::CreateWeakLambda(this, [this]()
 	{
-		AC_UIManager* UIManager = UI_MANAGER(GetWorld());
-		if (!UIManager || !UIManager->GetMainHUDWidget() || !m_StatComponent) return;
+		UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld());
+		if (!MainHUD || !m_StatComponent) return;
 
-		UC_PlayerStatWidget* PlayerStatWidget = UIManager->GetMainHUDWidget()->GetPlayerStatWidget();
+		UC_PlayerStatWidget* PlayerStatWidget = MainHUD->GetPlayerStatWidget();
+		if (!PlayerStatWidget) return;
 		
 		// 모두 준비되었을 때 비로소 초기화 수행
 		PlayerStatWidget->UpdateBoostBar(m_StatComponent->GetStat(StatName::CurBoost),  m_StatComponent->GetStat(StatName::MaxBoost));
@@ -893,6 +904,9 @@ void AC_BasicPlayer::ToggleCrouch()
 	{
 		if (!m_PoseColliderHandlerComponent->CanStand())
 		{
+			if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+				MainHUD->AddPlayerWarningLog("STANDING BLOCKED");
+			
 			return;
 		}
 	}
@@ -971,11 +985,8 @@ void AC_BasicPlayer::UpdateBoostBarHUD() const
 	
 	if (APlayerController* PC = GetController<APlayerController>())
 	{
-		if (AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD()))
-		{
-			if (UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget())
-				MainHUD->UpdateBoostBar(m_StatComponent->GetStat(StatName::CurBoost), m_StatComponent->GetStat(StatName::MaxBoost));
-		}
+		if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+			MainHUD->UpdateBoostBar(m_StatComponent->GetStat(StatName::CurBoost), m_StatComponent->GetStat(StatName::MaxBoost));
 	}
 }
 
@@ -995,13 +1006,8 @@ void AC_BasicPlayer::OnRep_ChangedBoostExhausted()
 
 	if (APlayerController* PC = GetController<APlayerController>())
 	{
-		if (AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD()))
-		{
-			if (UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget())
-			{
-				MainHUD->ChangeBoostBarColor(m_bIsBoostExhausted);
-			}
-		}
+		if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+			MainHUD->ChangeBoostBarColor(m_bIsBoostExhausted);
 	}
 }
 
@@ -1047,16 +1053,8 @@ void AC_BasicPlayer::ActivateInteractionUI(const FText& _InteractionText)
 	if (!IsLocallyControlled())
 		return;
 
-	if (APlayerController* PC = GetController<APlayerController>())
-	{
-		if (AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD()))
-		{
-			if (UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget())
-			{
-				MainHUD->ActivateInteractionUI(_InteractionText);
-			}
-		}
-	}
+	if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+		MainHUD->ActivateInteractionUI(_InteractionText);
 }
 
 void AC_BasicPlayer::DeactivateInteractionUI()
@@ -1064,33 +1062,17 @@ void AC_BasicPlayer::DeactivateInteractionUI()
 	if (!IsLocallyControlled())
 		return;
 
-	if (APlayerController* PC = GetController<APlayerController>())
-	{
-		if (AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD()))
-		{
-			if (UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget())
-			{
-				MainHUD->DeactivateInteractionUI();
-			}
-		}
-	}
+	if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+		MainHUD->DeactivateInteractionUI();
 }
 
 void AC_BasicPlayer::ActivateInteractionTimerUI(float _Duration)
 {
 	if (!IsLocallyControlled())
 		return;
-
-	if (APlayerController* PC = GetController<APlayerController>())
-	{
-		if (AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD()))
-		{
-			if (UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget())
-			{
-				MainHUD->ActivateInteractionTimer(_Duration);
-			}
-		}
-	}
+	
+	if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+		MainHUD->ActivateInteractionTimer(_Duration);
 }
 
 void AC_BasicPlayer::DeactivateInteractionTimerUI()
@@ -1098,16 +1080,8 @@ void AC_BasicPlayer::DeactivateInteractionTimerUI()
 	if (!IsLocallyControlled())
 		return;
 
-	if (APlayerController* PC = GetController<APlayerController>())
-	{
-		if (AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD()))
-		{
-			if (UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget())
-			{
-				MainHUD->DeactivateInteractionTimer();
-			}
-		}
-	}
+	if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+		MainHUD->DeactivateInteractionTimer();
 }
 
 void AC_BasicPlayer::Server_EnterDownedState_Implementation()
@@ -1209,6 +1183,8 @@ void AC_BasicPlayer::FinishGettingUp()
 
 void AC_BasicPlayer::ApplyPlayerState()
 {
+	// 현재 오로지 서버 쪽에서만 실행이 되고 있는 함수
+	
 	UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
 	if (!MovementComponent)
 		return;
@@ -1239,6 +1215,13 @@ void AC_BasicPlayer::ApplyPlayerState()
 		MovementComponent->StopMovementImmediately();
 		MovementComponent->DisableMovement();
 		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+		if (IsLocallyControlled())
+		{
+			if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+				MainHUD->AddPlayerWarningLog("KNOCKED DOWN!", FColor::Red);
+		}
+		
 		break;
 	}
 	case EPlayerMainState::GettingUp:

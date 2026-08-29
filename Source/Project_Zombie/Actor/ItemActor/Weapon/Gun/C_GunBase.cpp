@@ -144,7 +144,8 @@ void AC_GunBase::InitializeItemData(const FWeaponData* InRawData)
 void AC_GunBase::SwitchFireMode()
 {
 	if (m_OwnerPlayer && m_OwnerPlayer->IsLocallyControlled())
-		UI_MANAGER(GetWorld())->GetMainHUDWidget()->UpdateFireMode(m_FireMode);
+	if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+		MainHUD->UpdateFireMode(m_FireMode);
 }
 
 void AC_GunBase::LoadAsyncAssets(const FWeaponData* InRawData)
@@ -271,8 +272,8 @@ void AC_GunBase::UpdateAmmoUI()
 {
 	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled()) return;
 	
-	if (UI_MANAGER(GetWorld()) && UI_MANAGER(GetWorld())->GetMainHUDWidget())
-		UI_MANAGER(GetWorld())->GetMainHUDWidget()->UpdateMagazineAmmoCount(m_CurrentAmmo);
+	if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+		MainHUD->UpdateMagazineAmmoCount(m_CurrentAmmo);
 	else
 	{
 		TWeakObjectPtr<AC_GunBase> WeakThis(this);
@@ -281,8 +282,8 @@ void AC_GunBase::UpdateAmmoUI()
 		{
 			if (!WeakThis.IsValid()) return; // 이미 파괴된 객체
 
-			if (UI_MANAGER(WeakThis->GetWorld()) && UI_MANAGER(WeakThis->GetWorld())->GetMainHUDWidget())
-				UI_MANAGER(WeakThis->GetWorld())->GetMainHUDWidget()->UpdateMagazineAmmoCount(WeakThis->m_CurrentAmmo);
+			if (UC_GameMainHUD* MainHUD = MAIN_HUD(WeakThis->GetWorld()))
+				MainHUD->UpdateMagazineAmmoCount(WeakThis->m_CurrentAmmo);
 		});
 	}
 }
@@ -522,7 +523,15 @@ bool AC_GunBase::OnStartFire(AC_BasicPlayer* _WeaponUser)
 
 	/* 모든 총기류 공통적으로 방아쇠 당길 수 있는 상황인지 검사할 항목 부모 클래스에서 일괄 구현 */
 	if (m_OwnerPlayer->IsDead()) return false;
-	if (m_bIsFiring || m_CurrentAmmo <= 0) return false; // 이미 PullTrigger를 한 상황, 또는 모든 Ammo를 소진한 경우
+	if (m_bIsFiring) return false; // 이미 PullTrigger를 한 상황
+
+	// 모든 Ammo를 소진한 경우
+	if (m_CurrentAmmo <= 0)
+	{
+		if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+			MainHUD->AddPlayerWarningLog("OUT OF AMMO RELOAD YOUR WEAPON");
+		return false;
+	}
 	
 	// 달리기 상태에서 사격 불가
 	if (m_OwnerPlayer && m_OwnerPlayer->GetPlayerMoveState() == EPlayerPoseState::Sprint) return false;
@@ -605,9 +614,8 @@ void AC_GunBase::UpdateAmmoInfoHUDForDrawEnd()
 		
 	}
 	
-	if (AC_UIManager* UIManager = UI_MANAGER(GetWorld()))
-		if (UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget())
-			MainHUD->ToggleAmmoInfoVisibility(true, m_FireMode, m_CurrentAmmo, m_MaxAmmo);
+	if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+		MainHUD->ToggleAmmoInfoVisibility(true, m_FireMode, m_CurrentAmmo, m_MaxAmmo);
 }
 
 void AC_GunBase::ReleaseTrigger()

@@ -29,28 +29,32 @@ void AC_GameOverChecker::Tick(float DeltaTime)
 
 void AC_GameOverChecker::Multicast_ShowMainInformConqueringPointTower_Implementation()
 {
-	AC_UIManager* UIManager = UI_MANAGER(GetWorld());
-	if (!UIManager) return;
+	UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld());
+	if (!MainHUD) return;
 	
-	UIManager->GetMainHUDWidget()->GetInformWidget()->ShowMainInstruction("CONQUER THE NEXT POINT TOWERS !");
+	MainHUD->GetInformWidget()->ShowMainInstruction("ACTIVATE THE NEXT POINT TOWERS !");
 	
 	// 혹시 모르니, GameStart 파넬 여기서 끄는 처리를 넣어줌
-	UIManager->GetMainHUDWidget()->GetInformWidget()->ToggleGameStartPanel(false);
+	MainHUD->GetInformWidget()->ToggleGameStartPanel(false);
 }
 
 void AC_GameOverChecker::Multicast_UpdateGameStartLeftTime_Implementation(int32 _LeftTime)
 {
-	AC_UIManager* UIManager = UI_MANAGER(GetWorld());
-	if (!UIManager) return;
+	UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld());
+    if (!MainHUD) return;
 
-	if (!UIManager->GetMainHUDWidget()) return;
-	
-	UIManager->GetMainHUDWidget()->GetInformWidget()->ToggleGameStartPanel(true);
-	UIManager->GetMainHUDWidget()->GetInformWidget()->UpdateGameStartLeftTime(_LeftTime);
+	MainHUD->GetInformWidget()->ToggleGameStartPanel(true);
+	MainHUD->GetInformWidget()->UpdateGameStartLeftTime(_LeftTime);
 }
 
 void AC_GameOverChecker::Multicast_GameOver_Implementation(bool _PlayerWin)
 {
-	if (_PlayerWin) UI_MANAGER(GetWorld())->GetMainHUDWidget()->GetGameOverWidget()->ActivateWinningSequence();
-	else UI_MANAGER(GetWorld())->GetMainHUDWidget()->GetGameOverWidget()->ActivateLoseSequence();
+	UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld());
+	if (!MainHUD)
+	{
+		UC_Util::Print("From AC_GameOverChecker::Multicast_GameOver : MainHUD nullptr", FColor::Red, 10.f);
+	}
+	
+	if (_PlayerWin) MainHUD->GetGameOverWidget()->ActivateWinningSequence();
+	else MainHUD->GetGameOverWidget()->ActivateLoseSequence();
 }

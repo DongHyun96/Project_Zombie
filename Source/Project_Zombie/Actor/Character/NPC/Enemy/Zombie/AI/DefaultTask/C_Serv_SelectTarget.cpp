@@ -54,6 +54,10 @@ void UC_Serv_SelectTarget::TickNode(UBehaviorTreeComponent& _OwnCom, uint8* _Nod
 		if (AC_PointTower* PointTower = Cast<AC_PointTower>(Info.Target))
 			if (!PointTower->CanCurrentlyAttackedByZombie()) continue;
 
+		// 감지된 Player 중 그로기 상태의 Player인 경우에도 넘어감
+		if (AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(Info.Target))
+			if (Player->IsDead()) continue;
+
 		// 어그로 수치 먼저 판단
 		if (MaxAggro < Info.AggroValue)
 		{
@@ -106,6 +110,7 @@ void UC_Serv_SelectTarget::TickNode(UBehaviorTreeComponent& _OwnCom, uint8* _Nod
 	for (AC_BasicPlayer* pPlayer : m_GameLevelManager->GetPlayers())
 	{
 		if (!pPlayer) continue;
+		if (pPlayer->IsDead()) continue; // 그로기 상태의 Player의 경우 넘어감
 
 		const float DistSqr = FVector::DistSquared(pPlayer->GetActorLocation(), pZombie->GetActorLocation());
 
@@ -119,6 +124,9 @@ void UC_Serv_SelectTarget::TickNode(UBehaviorTreeComponent& _OwnCom, uint8* _Nod
 	// 현재 sequence의 PointTower들 또한 확인
 	for (AC_PointTower* PointTower : POINT_TOWER_MANAGER(pZombie)->GetCurPointTowers())
 	{
+		// 현재 공격 불가능한 PointTower인 경우
+		if (!PointTower->CanCurrentlyAttackedByZombie()) continue;
+		
 		const float DistSqr = FVector::DistSquared(PointTower->GetActorLocation(), pZombie->GetActorLocation());
 
 		if (DistSqr < MinDistSqr)

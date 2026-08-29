@@ -11,6 +11,27 @@
 #include "UI/MenuUI/C_MenuWidget.h"
 #include "Utility/C_Util.h"
 
+AC_UIManager* AC_UIManager::Get(const UWorld* _World)
+{
+	if (!_World) return nullptr;
+		
+	// 클라이언트/리슨서버 호스트 화면의 로컬 PlayerController(0번)를 구합니다.
+	APlayerController* PC = _World->GetFirstPlayerController();
+		
+	if (PC && PC->IsLocalController()) return Cast<AC_UIManager>(PC->GetHUD());
+	return nullptr;
+}
+
+UC_GameMainHUD* AC_UIManager::GetMainHUD(const UWorld* _World)
+{
+	if (!_World) return nullptr;
+	
+	AC_UIManager* UIManager = Get(_World);
+	if (!UIManager) return nullptr;
+	
+	return UIManager->m_MainHUDWidget;
+}
+
 void AC_UIManager::BeginPlay()
 {
 	Super::BeginPlay();

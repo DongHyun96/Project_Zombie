@@ -445,9 +445,8 @@ void AC_MeleeWeaponBase::UpdateAmmoInfoHUDForDrawEnd()
 	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled()) return;
 	
 	// MeleeWeapon의 경우 띄워줄 AmmoInfo 정보 필요 없음
-	if (AC_UIManager* UIManager = UI_MANAGER(GetWorld()))
-		if (UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget())
-			MainHUD->ToggleAmmoInfoVisibility(false);
+	if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+		MainHUD->ToggleAmmoInfoVisibility(false);
 }
 
 void AC_MeleeWeaponBase::SetAmmoUIInfo(FAmmoUIInfo& _AmmoUIInfo)

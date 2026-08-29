@@ -324,8 +324,8 @@ void AC_PotionBase::UpdateAmmoInfoHUDForDrawEnd()
 	if (FInventoryEntry* Entry = ItemLinkComp->GetItemEntryPtr())
 		Count = Entry->CurCount;
 
-	if (AC_UIManager* UIManager = UI_MANAGER(GetWorld()))
-		UIManager->GetMainHUDWidget()->ToggleAmmoInfoVisibility(true, EFireMode::Single, 1, Count);
+	if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+		MainHUD->ToggleAmmoInfoVisibility(true, EFireMode::Single, 1, Count);
 }
 
 void AC_PotionBase::OnRep_UpdateAmmoWidget()
