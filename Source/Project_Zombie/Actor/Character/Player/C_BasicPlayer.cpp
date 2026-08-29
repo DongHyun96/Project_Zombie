@@ -844,6 +844,10 @@ void AC_BasicPlayer::StopSprint()
 {
 	m_IsSprintInput = false;
 
+	// Sprint 상태가 아니었다면 자세를 변경하지 않음 
+	if (m_PlayerPoseState != EPlayerPoseState::Sprint)
+		return;
+
 	if (HasAuthority())
 	{
 		SetPoseStateOnServer(EPlayerPoseState::Walk);
