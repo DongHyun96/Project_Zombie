@@ -54,8 +54,8 @@ void UC_BasicPlayerAimComponent::OnAimPressed()
 	if (m_CurPlayer->GetPlayerMoveState() == EPlayerPoseState::Sprint)
 		m_CurPlayer->StopSprint();
 
-	if (AC_UIManager* UIManager = Cast<AC_UIManager>(GetWorld()->GetFirstPlayerController()->GetHUD()))
-		UIManager->GetMainHUDWidget()->GetCrosshairWidget()->ZoomIn();
+	if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+		MainHUD->GetCrosshairWidget()->ZoomIn();
 
 }
 
@@ -67,8 +67,8 @@ void UC_BasicPlayerAimComponent::OnAimReleased()
 	if (m_CurPlayer)
 		m_CurPlayer->SetPlayerMoveState(EPlayerPoseState::Walk);
 
-	if (AC_UIManager* UIManager = Cast<AC_UIManager>(GetWorld()->GetFirstPlayerController()->GetHUD()))
-		UIManager->GetMainHUDWidget()->GetCrosshairWidget()->ZoomOut();
+	if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+		MainHUD->GetCrosshairWidget()->ZoomOut();
 }
 
 void UC_BasicPlayerAimComponent::UpdateCameraInterpolation(float DeltaTime)

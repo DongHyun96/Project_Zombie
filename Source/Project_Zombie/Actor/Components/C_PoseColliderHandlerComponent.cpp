@@ -10,6 +10,8 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameModeAndManager/C_UIManager.h"
+#include "UI/MainHUD/C_GameMainHUD.h"
 
 #include "Utility/C_Util.h"
 
@@ -149,6 +151,10 @@ bool UC_PoseColliderHandlerComponent::SetCrouched(bool _bIsCrouched)
 	// 일어서는 자세로 변환하려고 했는데 위에 공간이 없어서 못일어나는 경우 무시
 	if (!_bIsCrouched && !CanStand())
 	{
+		if (m_Player && m_Player->IsLocallyControlled())
+			if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+				MainHUD->AddPlayerWarningLog("STANDING BLOCKED");
+		
 		return false;
 	}
 

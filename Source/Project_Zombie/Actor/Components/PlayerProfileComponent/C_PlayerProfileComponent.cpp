@@ -66,10 +66,7 @@ void UC_PlayerProfileComponent::OnRep_PlayerSelectedColor()
 			// 아직 이름을 구할 수 없을 경우 기다림
 			if (!m_OwnerPlayer->GetPlayerState()) return;
 			
-			AC_UIManager* UIManager = UI_MANAGER(GetWorld());
-			if (!UIManager) return;
-
-			UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget();
+			UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld());
 			UC_OtherPlayerStatWidget* OtherStatWidget = MainHUD ? MainHUD->GetOtherPlayerStatWidget() : nullptr;
 			if (!OtherStatWidget) return;
 			

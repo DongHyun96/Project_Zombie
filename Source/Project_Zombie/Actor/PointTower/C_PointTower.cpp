@@ -499,9 +499,9 @@ void AC_PointTower::Multicast_Activate_Implementation()
 		
 		m_WorldPingActor->SpawnPingActorToWorld(GeneratorLocation, EGamePingType::AntennaMarker, EPingShapeType::FullPing);
 
-		if (UI_MANAGER(GetWorld()) && UI_MANAGER(GetWorld())->GetMainHUDWidget())
+		if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
 		{
-			m_ActivatedCompassMarkerWidget = UI_MANAGER(GetWorld())->GetMainHUDWidget()->GetCompassBarWidget()->SpawnGlobalPingMarker
+			m_ActivatedCompassMarkerWidget = MainHUD->GetCompassBarWidget()->SpawnGlobalPingMarker
 			(
 				EGamePingType::AntennaMarker,
 				GeneratorLocation
@@ -548,7 +548,8 @@ void AC_PointTower::Multicast_Conquered_Implementation()
 	if (m_WorldPingActor)
 	{
 		m_WorldPingActor->HidePing();
-		UI_MANAGER(GetWorld())->GetMainHUDWidget()->GetCompassBarWidget()->HideGlobalPingMarker(m_ActivatedCompassMarkerWidget);
+		if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+			MainHUD->GetCompassBarWidget()->HideGlobalPingMarker(m_ActivatedCompassMarkerWidget);
 	}
 	
 	// 근접 접근 시, EffectToggling 처리용 감지 Collider 비활성화

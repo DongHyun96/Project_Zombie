@@ -98,17 +98,8 @@ UScriptStruct* UC_PlayerStatComponent::GetStatDataStruct() const
 
 void UC_PlayerStatComponent::UpdateOtherPlayerHPBar(float _Ratio)
 {
-	AC_UIManager* UIManager = UI_MANAGER(GetWorld());
-	if (!UIManager)
-	{
-		UC_Util::Print("[UC_PlayerStatComponent::UpdateOtherPlayerHPBar] : UI Manager not inited", FColor::Red, 10.f);
-		return;
-	}
-
-	UC_GameMainHUD* MainHUD = Cast<UC_GameMainHUD>(UIManager->GetMainHUDWidget());
-	if (!MainHUD) return;
-	
-	UIManager->GetMainHUDWidget()->GetOtherPlayerStatWidget()->UpdateHPBar(m_OwnerPlayer, _Ratio);
+	if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+		MainHUD->GetOtherPlayerStatWidget()->UpdateHPBar(m_OwnerPlayer, _Ratio);
 }
 
 /*
