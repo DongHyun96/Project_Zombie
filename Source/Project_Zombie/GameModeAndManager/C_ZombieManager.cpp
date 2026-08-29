@@ -29,6 +29,11 @@ UC_ZombieManager::UC_ZombieManager()
 	if (Normal2Finder.Succeeded())
 		m_NormalZombieClasses.Add(Normal2Finder.Class);
 
+	static ConstructorHelpers::FClassFinder<AC_Zombie> Normal3Finder(TEXT("/Game/Harang/BP/Zombie/BP_NormalZombie3"));
+
+	if (Normal3Finder.Succeeded())
+		m_NormalZombieClasses.Add(Normal3Finder.Class);
+
 	static ConstructorHelpers::FClassFinder<AC_Zombie> PoisonFinder(TEXT("/Game/Harang/BP/Zombie/BP_ToxicZombie"));
 
 	if (PoisonFinder.Succeeded())
