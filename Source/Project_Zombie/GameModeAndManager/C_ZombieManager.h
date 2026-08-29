@@ -151,6 +151,13 @@ private:
 	/// </summary>
 	int32 GetActiveZombieCount(EZombieType _ZombieType) const;
 
+	/// <summary>
+	/// 해당 좀비의 연출 bool값 반환
+	/// </summary>
+	/// <param name="_Type"></param>
+	/// <returns></returns>
+	bool ShouldPlaySpecialZombieIntro(EZombieType _Type);
+
 
 protected: /* 좀비 스폰 기반 클래스 정보 및 PoolCount 정보 -> TODO : ZombieManager 블루프린트에 해당값 초기화시킬 것 */
 
@@ -205,4 +212,10 @@ protected: /* Healer 좀비 관련 */
 	UPROPERTY(VisibleAnywhere)
 	TArray<AC_HealingProjectile*> m_HealingProjectilePool{}; // 스폰 대기중인 HealingProjectile pool 
 	
+
+protected: /* 특수좀비 연출 했는지 확인하는 bool값 */
+	bool m_bToxicIntroPlayed = false;
+	bool m_bTankIntroPlayed = false;
+	bool m_bNurseIntroPlayed = false;
+	bool m_bCopIntroPlayed = false;
 };

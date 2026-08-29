@@ -549,6 +549,11 @@ int32 UC_ZombieManager::GetActiveZombieCount(EZombieType _ZombieType) const
 	return ActiveSet->Num();
 }
 
+bool UC_ZombieManager::ShouldPlaySpecialZombieIntro(EZombieType _Type)
+{
+	return false;
+}
+
 bool UC_ZombieManager::TrySpawnZombieFromArea(EZombieType _ZombieType, AC_SpawnArea* _SpawnArea)
 {
 	UWorld* World = GetWorld();
