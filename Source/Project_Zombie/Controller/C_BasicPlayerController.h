@@ -49,6 +49,12 @@ protected:
 	
 	// 리플리케이트 할 변수 등록
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+public:
+	/* 특수좀비 카메라 연출 */
+	UFUNCTION(Client, Reliable)
+	void Client_StartSpecialZombieIntro(class AC_Zombie* _Zombie);
+
 public:
 	// 서버 전용: 이 플레이어가 현재 잠그고 있는 인벤토리와 슬롯 인덱스
 	// TODO : 여기서 CursorItem을 사용할까?
@@ -67,4 +73,11 @@ protected:
 	// 서버에서 현재 Player Stat을 강화중인지 판단하는 함수. 
 	UPROPERTY(ReplicatedUsing = OnRep_IsUpgradingPlayerStat)
 	bool bIsUpgradingPlayerStat = false;
+
+protected: /* 특수좀비 카메라 연출 관련 */
+	UPROPERTY()
+	AActor* m_PreviousViewTarget = nullptr;
+
+	// 2초 타이머
+	FTimerHandle m_SpecialZombieIntroTimer;
 };

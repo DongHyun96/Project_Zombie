@@ -13,6 +13,8 @@
 #include "UI/InvenUI/Upgrade/C_ItemUpgradeWidget.h"
 #include "UI/InvenUI/Upgrade/C_PlayerStatUpgradeWidget.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
+#include "Actor/Character/NPC/Enemy/Zombie/C_Zombie.h"
+#include "Camera/PlayerCameraManager.h"
 
 
 void AC_BasicPlayerController::OnUnPossess()
@@ -138,4 +140,37 @@ void AC_BasicPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProper
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
 	DOREPLIFETIME(AC_BasicPlayerController, bIsUpgradingItem);
+}
+
+void AC_BasicPlayerController::Client_StartSpecialZombieIntro_Implementation(AC_Zombie* _Zombie)
+{
+	UE_LOG(
+		LogTemp,
+		Warning,
+		TEXT("[INTRO CLIENT] Zombie = %s"),
+		IsValid(_Zombie)
+		? *_Zombie->GetName()
+		: TEXT("NULL")
+	);
+
+	if (!IsValid(_Zombie))
+		return;
+
+	// 현재 카메라 대상 저장
+	m_PreviousViewTarget = GetViewTarget();
+
+	// 특수좀비를 카메라 대상으로 변경
+	SetViewTargetWithBlend(_Zombie, 0.2f);
+
+	// 2초동안 연출
+	GetWorldTimerManager().SetTimer(m_SpecialZombieIntroTimer,
+									[this]()
+									{
+										if (IsValid(m_PreviousViewTarget))
+										{
+											SetViewTargetWithBlend(m_PreviousViewTarget, 0.3f);
+										}
+									},
+									4.f,
+									false);
 }

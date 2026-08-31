@@ -8,6 +8,7 @@
 #include "Actor/Character/NPC/Enemy/Zombie/NurseZombie/C_HealingProjectile.h"
 #include "Actor/Character/NPC/Enemy/Zombie/Spawn/C_SpawnArea.h"
 
+#include "Controller/C_BasicPlayerController.h"
 #include "Components/CapsuleComponent.h"
 #include "Utility/C_Util.h"
 
@@ -551,6 +552,38 @@ int32 UC_ZombieManager::GetActiveZombieCount(EZombieType _ZombieType) const
 
 bool UC_ZombieManager::ShouldPlaySpecialZombieIntro(EZombieType _Type)
 {
+	switch (_Type)
+	{
+	case EZombieType::ToxicZombie:
+		if (!m_bToxicIntroPlayed)
+		{
+			m_bToxicIntroPlayed = true;
+			return true;
+		}
+		break;
+	case EZombieType::NurseZombie:
+		if (!m_bNurseIntroPlayed)
+		{
+			m_bNurseIntroPlayed = true;
+			return true;
+		}
+		break;
+	case EZombieType::CopZombie:
+		if (!m_bCopIntroPlayed)
+		{
+			m_bCopIntroPlayed = true;
+			return true;
+		}
+		break;
+	case EZombieType::TankZombie:
+		if (!m_bTankIntroPlayed)
+		{
+			m_bTankIntroPlayed = true;
+			return true;
+		}
+		break;
+	}
+
 	return false;
 }
 
@@ -642,5 +675,24 @@ bool UC_ZombieManager::TrySpawnZombieFromArea(EZombieType _ZombieType, AC_SpawnA
 	}
 
 	// 기존 Pool에서 좀비 활성화
-	return IsValid(SpawnZombieFromPool(_ZombieType, SpawnTransform));
+	AC_Zombie* SpawnedZombie = SpawnZombieFromPool(_ZombieType, SpawnTransform);
+
+	if (!IsValid(SpawnedZombie))
+		return false;
+
+	// 특수좀비 첫 등장이면 전체 플레이어에게 등장 연출 요청
+	if (ShouldPlaySpecialZombieIntro(_ZombieType))
+	{
+		for (FConstPlayerControllerIterator Iter = World->GetPlayerControllerIterator(); Iter; ++Iter)
+		{
+			AC_BasicPlayerController* PC = Cast<AC_BasicPlayerController>(Iter->Get());
+
+			if (!IsValid(PC))
+				continue;
+
+			PC->Client_StartSpecialZombieIntro(SpawnedZombie);
+		}
+	}
+
+	return true;
 }
