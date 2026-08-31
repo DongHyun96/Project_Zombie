@@ -23,7 +23,7 @@ public:
 
 public:
 	// 스킨 Material 비동기 로드
-	//void LoadSkinAsync(EPlayerSkin InSkin, FOnSkinLoaded OnLoaded);
+	void LoadSkinAsync(EPlayerSkin InSkin, FOnSkinLoaded OnLoaded);
 
 private:
 	// 동기 로드 완료된 데이터 에셋 포인터 (런타임 캐싱)
