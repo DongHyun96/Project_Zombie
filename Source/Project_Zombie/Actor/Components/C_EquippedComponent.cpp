@@ -591,6 +591,21 @@ void UC_EquippedComponent::OnRep_Weapons()
 {
 	PRINT_LOCAL(GetWorld(), "OnRep_Weapons", FColor::Cyan, 10.f);
 	
+	// TODO : 로딩되어 있는 에셋은 넘어가야 함.
+	int count = m_Weapons.Num();
+	
+	UC_ItemManager* ItemManager = GetWorld()->GetGameInstance()->GetSubsystem<UC_ItemManager>();
+	if (!ItemManager) return;
+	
+	for (int i = 0; i < count ; i++)
+	{
+		if (!IsValid(m_Weapons[i])) continue;
+		
+		const FWeaponData* WeaponData = ItemManager->GetWeaponData(m_Weapons[i]->GetWeaponRowName());
+		
+		m_Weapons[i]->LoadAsyncAssets(WeaponData);
+	}
+	
 	if (m_OwnerPlayer && m_OwnerPlayer->IsLocallyControlled())
 	{
 		UpdateAmmoWidget();
