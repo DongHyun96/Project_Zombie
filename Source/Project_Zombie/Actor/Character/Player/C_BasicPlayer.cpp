@@ -682,6 +682,26 @@ void AC_BasicPlayer::Multicast_SetHandState_Implementation(EHandState _HandState
 	m_HandState = _HandState;
 }
 
+void AC_BasicPlayer::Client_OnApplyingPlayerMainState_Implementation(EPlayerMainState _AppliedMainState)
+{
+	UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld());
+	if (!MainHUD) return;
+	
+	switch (_AppliedMainState)
+	{
+	case EPlayerMainState::Reviving:
+		MainHUD->AddPlayerWarningLog("REVIVING ANOTHER PLAYER!");
+		break;
+	case EPlayerMainState::GettingUp:
+		MainHUD->AddPlayerWarningLog("REVIVED!", FColor::Red);
+		break;
+	case EPlayerMainState::Dead:
+		MainHUD->AddPlayerWarningLog("KNOCKED DOWN!", FColor::Red);
+		break;
+	default: break;
+	}
+}
+
 void AC_BasicPlayer::ClearCurDraggedItem()
 {
 	// 해당 슬롯의 아이템의 잠금 상태를 해제 요청.
@@ -1219,13 +1239,6 @@ void AC_BasicPlayer::ApplyPlayerState()
 		MovementComponent->StopMovementImmediately();
 		MovementComponent->DisableMovement();
 		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-
-		if (IsLocallyControlled())
-		{
-			if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
-				MainHUD->AddPlayerWarningLog("KNOCKED DOWN!", FColor::Red);
-		}
-		
 		break;
 	}
 	case EPlayerMainState::GettingUp:
@@ -1235,6 +1248,9 @@ void AC_BasicPlayer::ApplyPlayerState()
 		break;
 	}
 	}
+	
+	// 게임 로그 띄우기용 RPC Call
+	Client_OnApplyingPlayerMainState(m_PlayerState);
 }
 
 void AC_BasicPlayer::OnRep_EPlayerState()

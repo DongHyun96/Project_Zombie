@@ -143,9 +143,22 @@ void AC_GunBase::InitializeItemData(const FWeaponData* InRawData)
 
 void AC_GunBase::SwitchFireMode()
 {
-	if (m_OwnerPlayer && m_OwnerPlayer->IsLocallyControlled())
-	if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
-		MainHUD->UpdateFireMode(m_FireMode);
+	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled()) return;
+
+	UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld());
+	if (!MainHUD) return;
+	
+	MainHUD->UpdateFireMode(m_FireMode);
+	switch (m_FireMode) 
+	{
+	case EFireMode::Single: MainHUD->AddPlayerWarningLog("FIRE MODE : SINGLE");
+		break;
+	case EFireMode::Burst: MainHUD->AddPlayerWarningLog("FIRE MODE : BURST");
+		break;
+	case EFireMode::FullAuto: MainHUD->AddPlayerWarningLog("FIRE MODE : FULL AUTO");
+		break;
+	default: break;
+	}
 }
 
 void AC_GunBase::LoadAsyncAssets(const FWeaponData* InRawData)
@@ -529,7 +542,7 @@ bool AC_GunBase::OnStartFire(AC_BasicPlayer* _WeaponUser)
 	if (m_CurrentAmmo <= 0)
 	{
 		if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
-			MainHUD->AddPlayerWarningLog("OUT OF AMMO RELOAD YOUR WEAPON");
+			MainHUD->AddPlayerWarningLog("OUT OF AMMO : Reload your weapon");
 		return false;
 	}
 	

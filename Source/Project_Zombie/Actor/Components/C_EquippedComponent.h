@@ -64,6 +64,15 @@ public:
 	/// </summary>
 	UFUNCTION(Server, Reliable)
 	void Server_SetSlotWeapon(EWeaponSlot _TargetSlot, AC_WeaponBase* _WeaponToEquip);
+
+private:
+	
+	/// <summary>
+	/// Valid한 Weapon을 서버 환경에서 Slot에 제대로 Set 처리했을 때, GameLog 띄우기용 해당 Client RPC 함수
+	/// _WeaponItemRowName 직접 보내는 이유는, 이 RPC 호출을 받았을 무렵 해당 Weapon이 아직 초기화되지 않았을 수 있기 때문
+	/// </summary>
+	UFUNCTION(Client, Reliable)
+	void Client_OnEquippedWeapon(const FName& _WeaponItemRowName);
 	
 private:
 	

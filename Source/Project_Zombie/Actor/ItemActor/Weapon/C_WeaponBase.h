@@ -142,7 +142,7 @@ public:
 	UAnimMontage* GetSheathMontage() const { return m_SheathMontage; }
 
 	
-	FName GetWeaponRowName() {return m_WeaponRowName;}
+	FName GetWeaponRowName() const {return m_WeaponRowName;}
 public:
 	
 	AC_BasicPlayer* GetOwnerPlayer() const { return m_OwnerPlayer; }

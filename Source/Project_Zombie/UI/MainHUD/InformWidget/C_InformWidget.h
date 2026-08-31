@@ -39,6 +39,8 @@ public:
 	/// <returns> : 제대로 추가되지 않았다면 return false </returns>
 	bool AddPlayerWarningLog(const FString& WarningLog, const FColor& _TextColor);
 
+	bool AddEquippedWeaponLog(const FName& _WeaponItemRowName);
+	
 	void ToggleGameStartPanel(bool _Visible);
 	void UpdateGameStartLeftTime(int32 _Time);
 	void ShowMainInstruction(const FString& _Construction);
@@ -72,6 +74,11 @@ private:
 	
 	UFUNCTION()
 	void OnLogLifeTimeExpired(UWidget* TargetWidget);
+
+private:
+
+	UFUNCTION()
+	void OnInvenSlotChanged(int32 _SlotIndex, const struct FInventoryEntry& _ItemData);
 	
 private: // Player Warning Log 관련
 
@@ -98,6 +105,13 @@ protected:
 	
 	UPROPERTY(meta = (BindWidgetAnim), Transient)
 	UWidgetAnimation* ShowMainInstructionAnim{};
+
+	// Key : ItemRowName | Value : 실질적인 아이템 명(인게임 플레이 아이템 이름)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	TMap<FName, FString> m_ItemNameMap{}; 
 	
+private:
+	
+	FTimerHandle m_TimerInvenGameLogRegister{};
 	
 };

@@ -13,6 +13,7 @@
 #include "Controller/C_BasicPlayerController.h"
 #include "UI/InvenUI/Upgrade/C_ItemUpgradeWidget.h"
 #include "UI/InvenUI/C_InventoryWidget.h"
+#include "UI/MainHUD/InformWidget/C_InformWidget.h"
 #include "Utility/C_Util.h"
 
 UC_EquippedComponent::UC_EquippedComponent()
@@ -38,6 +39,14 @@ void UC_EquippedComponent::BeginPlay()
 		UC_Util::Print("From UC_EquippedComponent::BeginPlay : OwnerPlayer init failed!", FColor::Red, 10.f);
 		UE_LOG(LogTemp, Error, TEXT("From UC_EquippedComponent::BeginPlay : OwnerPlayer init failed!"));
 	}
+}
+
+void UC_EquippedComponent::Client_OnEquippedWeapon_Implementation(const FName& _WeaponItemRowName)
+{
+	UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld());
+	if (!MainHUD) return;
+	
+	MainHUD->GetInformWidget()->AddEquippedWeaponLog(_WeaponItemRowName);
 }
 
 void UC_EquippedComponent::SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* WeaponToEquip)
@@ -189,7 +198,12 @@ void UC_EquippedComponent::Server_SetSlotWeapon_Implementation(EWeaponSlot _Targ
 		// MainWeapon을 제거한 경우, MuzzleAwareCrossHair UI 끄기(꺼져있어도 무방하게 처리)
 		if (!m_Weapons[static_cast<uint8>(EWeaponSlot::MainWeapon)])
 			m_OwnerPlayer->GetAimComponent()->ToggleMuzzleAwareCrossHair(false);
-	} 
+	}
+	
+	// 해당 TargetSlot에 Valid한 무기를 장착한 경우
+	if (AC_WeaponBase* EquippedWeapon = m_Weapons[static_cast<uint8>(_TargetSlot)])
+		Client_OnEquippedWeapon(EquippedWeapon->GetWeaponRowName());
+	
 	/*else
 	{
 		// m_Weapons가 Replicate 처리된 상황에서(기다림) AmmoWidget을 업데이트 처리할 것임

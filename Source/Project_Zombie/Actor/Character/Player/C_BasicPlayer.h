@@ -355,6 +355,12 @@ private:
 
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_SetHandState(EHandState _HandState);
+
+	/// <summary>
+	/// 서버 환경에서의 ApplyPlayerState 처리 시, 호출될 Client 함수 -> Game Log 띄우기 용
+	/// </summary>
+	UFUNCTION(Client, Reliable)
+	void Client_OnApplyingPlayerMainState(EPlayerMainState _AppliedMainState);
 	
 public:
 	// curDraggedItem 초기화 및 서버에 Drag로 인한 잠금 해제 요청

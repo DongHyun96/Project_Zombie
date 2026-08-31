@@ -3,9 +3,12 @@
 
 #include "C_InformWidget.h"
 
+#include "Actor/Character/Player/C_BasicPlayer.h"
+#include "Actor/Components/C_InvenComponent.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
 #include "Components/TextBlock.h"
+#include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 #include "Utility/C_Util.h"
 
 void UC_InformWidget::NativeOnInitialized()
@@ -32,6 +35,19 @@ void UC_InformWidget::NativeOnInitialized()
 
 		PlayerWarningLogSequence.Add(i);
 	}
+
+	FTimerDelegate TempDelegate = FTimerDelegate::CreateWeakLambda(this, [this]()
+	{
+		if (!LEVEL_MANAGER) return;
+		AC_BasicPlayer* LocalPlayer = LEVEL_MANAGER->GetLocalPlayer();
+		
+		if (!LocalPlayer) return;
+		LocalPlayer->GetInvenComponent()->OnInventorySlotChanged.AddDynamic(this, &UC_InformWidget::OnInvenSlotChanged);
+		
+		GetWorld()->GetTimerManager().ClearTimer(m_TimerInvenGameLogRegister);
+	});
+	
+	GetWorld()->GetTimerManager().SetTimer(m_TimerInvenGameLogRegister, TempDelegate, 0.1f, true);
 }
 
 void UC_InformWidget::NativeConstruct()
@@ -72,6 +88,15 @@ bool UC_InformWidget::AddPlayerWarningLog(const FString& WarningLog, const FColo
 	// Maximum 3초의 Log LifeTime 처리
 	ApplyNewLifeTimerToLog(TargetTextBlock, 3.f);
     
+	return true;
+}
+
+bool UC_InformWidget::AddEquippedWeaponLog(const FName& _WeaponItemRowName)
+{
+	const FString* pWeaponItemName = m_ItemNameMap.Find(_WeaponItemRowName);
+	if (!pWeaponItemName) return false;
+
+	AddPlayerWarningLog("EQUIPPED : " + *pWeaponItemName, FColor::White);
 	return true;
 }
 
@@ -198,4 +223,31 @@ void UC_InformWidget::OnLogLifeTimeExpired(UWidget* TargetWidget)
 	LogLifeTimers.Remove(TargetWidget);
 
 	if (TargetWidget) StartFadeOut(TargetWidget);
+}
+
+void UC_InformWidget::OnInvenSlotChanged(int32 _SlotIndex, const FInventoryEntry& _ItemData)
+{
+	/*PRINT_LOCAL(GetWorld(), "InvenSlotChanged(" + _ItemData.ItemRowName.ToString() + ") : " + FString::FromInt(_SlotIndex) + " | " + FString::FromInt(_ItemData.CurCount), FColor::MakeRandomColor(), 10.f);
+	PRINT_LOCAL(GetWorld(), "LockedBy : " + FString::FromInt(_ItemData.LockedByPlayerID), FColor::MakeRandomColor(), 10.f);
+	PRINT_LOCAL(GetWorld(), "", FColor::MakeRandomColor(), 10.f);
+	PRINT_LOCAL(GetWorld(), "", FColor::MakeRandomColor(), 10.f);*/
+	
+	// Inven에 아이템을 파밍을 하는 경우 -> 다음 조건을 모두 만족해야 함
+	// 0. CurCount가 1 이상
+	// 1. LockedBy -1(INDEX_NONE)
+	// 2. Slot index가 EquippedComponent 쪽 Slot index가 아닌 경우 (0 ~ 3 x)
+
+	if (_ItemData.CurCount <= 0) return;
+	if (_ItemData.LockedByPlayerID != INDEX_NONE) return;
+	if (_SlotIndex <= 3) return; // EquippedCom의 SlotIndex -> EquippedCom 장착 게임로그는 EquippedCom에서 담당할 것
+	
+	// Valid하게 파밍이 처리된 경우임
+	const FString* pItemName = m_ItemNameMap.Find(_ItemData.ItemRowName);
+	if (!pItemName)
+	{
+		UC_Util::Print("[UC_InformWidget::OnInvenSlotChanged] : Valid Acquired but no corresponding Item Name exists in Map", FColor::Red, 10.f);
+		return;
+	}
+	
+	AddPlayerWarningLog("ADDED TO INVENTORY : " + *pItemName + " x " + FString::FromInt(_ItemData.CurCount), FColor::White);
 }
