@@ -34,7 +34,11 @@ public:
 	 * 근데 컨트롤러쪽에서 따로 구현해두었는데 나중에 실제 Release버전에서 다시 한번 조정해야 할 수 있음.
 	 */
 	virtual void Logout(AController* Exiting) override;
+
+	// 레벨 전환 시 플레이어의 인벤 정보를 PlayerState에 저장하기 위해 오버라이드
+	virtual void StartToLeaveMap() override;
 	
+	// 레벨 전환 후 
 	virtual void HandleSeamlessTravelPlayer(AController*& C) override;
 	
 public:

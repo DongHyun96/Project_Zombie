@@ -42,6 +42,8 @@ public:
 	}
 	const TMap<FName, float>& GetSavedStats() const { return SavedStats; }
 	const TMap<FName, uint8>& GetSavedStatGrades() const { return SavedStatGrades; }
+	
+	TArray<AC_WeaponBase*> GetSavedWeapons() const { return SavedWeapons; }
 
 	// 인벤토리 데이터 입출력
 	void SaveInventoryToState(const TArray<FInventoryEntry>& InContainer) { SavedInventoryContainers = InContainer; }
@@ -57,6 +59,7 @@ public:
 	
 protected:
 	
+	// TODO : 의미 없어보임.
 	UPROPERTY(Replicated, BlueprintReadOnly)
 	bool m_bIsHost{};
 	
