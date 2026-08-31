@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "C_PlayerState.h"
@@ -14,6 +14,8 @@ void AC_PlayerState::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>&
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
 	DOREPLIFETIME(AC_PlayerState, m_bIsHost);
+
+	DOREPLIFETIME(AC_PlayerState, m_SelectedSkin);
 }
 
 void AC_PlayerState::CopyProperties(APlayerState* NewPlayerState)
@@ -30,12 +32,36 @@ void AC_PlayerState::CopyProperties(APlayerState* NewPlayerState)
 
 			// 2. 인벤토리 항목 리스트(TArray) 이사
 			NewPS->SavedInventoryContainers = this->SavedInventoryContainers;
-
+			NewPS->SavedWeapons = this->SavedWeapons;
+			
 			// 3. 스탯 및 단계 TMap 이사
 			NewPS->SavedStats = this->SavedStats;
 			NewPS->SavedStatGrades = this->SavedStatGrades;
 
+			// 4. 선택 스킨 이사
+			NewPS->m_SelectedSkin = this->m_SelectedSkin;
+
 			UE_LOG(LogTemp, Log, TEXT("[Seamless] PlayerState 데이터(Array/Map) 카피 완료!"));
 		}
 	}
+}
+
+void AC_PlayerState::SetSelectedSkin(EPlayerSkin InSkin)
+{
+	if (!HasAuthority())
+		return;
+
+	if (m_SelectedSkin == InSkin)
+		return;
+
+	m_SelectedSkin = InSkin;
+
+	OnSelectedSkinChanged.Broadcast(m_SelectedSkin);
+
+	ForceNetUpdate();
+}
+
+void AC_PlayerState::OnRep_SelectedSkin()
+{
+	OnSelectedSkinChanged.Broadcast(m_SelectedSkin);
 }

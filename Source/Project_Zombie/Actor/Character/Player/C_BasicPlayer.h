@@ -7,6 +7,7 @@
 #include "Actor/Components/InteractionComponent/Interface/I_Interactable.h"
 #include "GenericTeamAgentInterface.h"
 #include "GlobalData.h" // TODO : FCursorItem curDraggedItem 때문에 넣었는데 문제 생기면 구조 바꿔야함.
+#include "GlobalEnum.h" // SkinData 때문에 넣음 
 #include "C_BasicPlayer.generated.h"
 
 
@@ -55,6 +56,7 @@ class AC_InteractableBase;
 class UInputMappingContext;
 class UInputAction;
 class USphereComponent;
+class UMaterialInterface;
 struct FInputActionValue;
 
 UCLASS()
@@ -598,6 +600,16 @@ private:
 	/// </summary>
 	void ApplyMovementSpeed();
 
+public:
+	// Skin 로드해서 적용
+	void ApplySkin(EPlayerSkin InSkin);
+
+	// PlayerState 에 저장된 SkinData를 기반으로 Skin 적용
+	void RefreshSkin();
+
+private:
+	// Material 로드 완료 후 호출
+	void ApplySkinMaterial(UMaterialInterface* TopMaterial, UMaterialInterface* BottomMaterial);
 
 public:
 	virtual void Tick(float DeltaTime) override;

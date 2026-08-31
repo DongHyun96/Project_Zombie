@@ -51,6 +51,9 @@
 #include "Components/WidgetComponent.h"
 #include "GameModeAndManager/C_GameMode_GameLv.h"
 
+#include "GameModeAndManager/C_SkinManager.h"
+#include "Materials/MaterialInterface.h"
+
 #include "GameModeAndManager/PlayerState/C_PlayerState.h"
 
 #include "Actor/PointTower/C_PointTower.h"
@@ -76,6 +79,19 @@ void AC_BasicPlayer::PossessedBy(AController* NewController)
 	Super::PossessedBy(NewController);
     
 	TryRestoreFromPlayerState();
+
+	AC_PlayerState* PS = GetPlayerState<AC_PlayerState>();
+	if (!PS)
+		return;
+
+	// 서버 델리게이트 바인딩
+	PS->OnSelectedSkinChanged.RemoveAll(this);
+	PS->OnSelectedSkinChanged.AddUObject(
+		this,
+		&AC_BasicPlayer::ApplySkin
+	);
+
+	RefreshSkin();
 }
 
 AC_BasicPlayer::AC_BasicPlayer()
@@ -507,6 +523,21 @@ void AC_BasicPlayer::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
 	// TODO : HP, Stat Update
+
+	AC_PlayerState* PS = GetPlayerState<AC_PlayerState>();
+
+	if (PS)
+	{
+		// 클라이언트 델리게이트 바인딩
+		PS->OnSelectedSkinChanged.RemoveAll(this);
+		PS->OnSelectedSkinChanged.AddUObject(
+			this,
+			&AC_BasicPlayer::ApplySkin
+		);
+
+		// 스킨 적용
+		RefreshSkin();
+	}
 
 	// CreateWeakLambda: this가 파괴되면 엔진이 람다 실행을 아예 차단함
 	FTimerDelegate InitDelegate = FTimerDelegate::CreateWeakLambda(this, [this]()
@@ -1483,4 +1514,56 @@ EPlayerPoseState AC_BasicPlayer::DetermineMoveSpeedState() const
 float AC_BasicPlayer::GetMoveSpeedByState(EPlayerPoseState _MoveSpeedState) const
 {
 	return 0.0f;
+}
+
+void AC_BasicPlayer::ApplySkin(EPlayerSkin InSkin)
+{
+	UGameInstance* GameInstance = GetGameInstance();
+	if (!GameInstance)
+		return;
+
+	UC_SkinManager* SkinManager =
+		GameInstance->GetSubsystem<UC_SkinManager>();
+	if (!SkinManager)
+		return;
+
+	// 비동기 로드 후, 완료되면 ApplySkinMaterial 호출
+	SkinManager->LoadSkinAsync(
+		InSkin,
+		FOnSkinLoaded::CreateUObject(
+			this,
+			&AC_BasicPlayer::ApplySkinMaterial
+		)
+	);
+}
+
+void AC_BasicPlayer::RefreshSkin()
+{
+	AC_PlayerState* PS = GetPlayerState<AC_PlayerState>();
+	if (!PS)
+		return;
+
+	ApplySkin(PS->GetSelectedSkin());
+}
+
+void AC_BasicPlayer::ApplySkinMaterial(UMaterialInterface* TopMaterial, UMaterialInterface* BottomMaterial)
+{
+	if (!TopMaterial || !BottomMaterial)
+		return;
+
+	USkeletalMeshComponent* PlayerMesh = GetMesh();
+	if (!PlayerMesh)
+		return;
+
+	const int32 TopIndex = PlayerMesh->GetMaterialIndex(TEXT("Body_Top"));
+	const int32 BottomIndex = PlayerMesh->GetMaterialIndex(TEXT("Body_Bottom"));
+
+	if (TopIndex != INDEX_NONE)
+	{
+		PlayerMesh->SetMaterial(TopIndex, TopMaterial);
+	}
+	if (BottomIndex != INDEX_NONE)
+	{
+		PlayerMesh->SetMaterial(BottomIndex, BottomMaterial);
+	}
 }

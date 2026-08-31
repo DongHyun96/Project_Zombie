@@ -1,12 +1,15 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GlobalData.h"
+#include "GlobalEnum.h"
 #include "GameFramework/PlayerState.h"
 #include "Multi/C_InvenStructures.h"
 #include "C_PlayerState.generated.h"
+
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnSelectedSkinChanged, EPlayerSkin);
 
 class AC_WeaponBase;
 /**
@@ -32,6 +35,9 @@ public:
 	bool IsHost() const { return m_bIsHost; }
 	
 	virtual void CopyProperties(APlayerState* NewPlayerState);
+
+	void SetSelectedSkin(EPlayerSkin InSkin);
+	EPlayerSkin GetSelectedSkin() const { return m_SelectedSkin; }
 	
 public:
 	// 스탯 데이터 입출력
@@ -42,6 +48,8 @@ public:
 	}
 	const TMap<FName, float>& GetSavedStats() const { return SavedStats; }
 	const TMap<FName, uint8>& GetSavedStatGrades() const { return SavedStatGrades; }
+	
+	TArray<AC_WeaponBase*> GetSavedWeapons() const { return SavedWeapons; }
 
 	// 인벤토리 데이터 입출력
 	void SaveInventoryToState(const TArray<FInventoryEntry>& InContainer) { SavedInventoryContainers = InContainer; }
@@ -54,9 +62,15 @@ public:
 	void ClearSavedStats() { SavedStats.Empty(); }
 	
 	void ClearSavedStatGrades() { SavedStatGrades.Empty(); }
+
+public:
+	// BasicPlayer 를 PlayerState 에서 참조안하려고 델리게이트로 처리
+	FOnSelectedSkinChanged OnSelectedSkinChanged;
+
 	
 protected:
 	
+	// TODO : 의미 없어보임.
 	UPROPERTY(Replicated, BlueprintReadOnly)
 	bool m_bIsHost{};
 	
@@ -71,5 +85,11 @@ protected:
 
 	UPROPERTY()
 	TMap<FName, uint8> SavedStatGrades{};
+
+	UPROPERTY(ReplicatedUsing = OnRep_SelectedSkin)
+	EPlayerSkin m_SelectedSkin = EPlayerSkin::Origin;
+
+	UFUNCTION()
+	void OnRep_SelectedSkin();
 };
 
