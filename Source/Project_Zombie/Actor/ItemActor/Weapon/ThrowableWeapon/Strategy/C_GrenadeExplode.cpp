@@ -17,7 +17,7 @@ bool UC_GrenadeExplode::UseStrategy_Implementation(AC_ThrowableWeaponBase* _Thro
 	if (!_ThrowableWeapon)
 		return false;
 
-	AC_BasicPlayer* OwnerPlayer = _ThrowableWeapon->GetOwnerPlayer();
+	AC_BasicPlayer* OwnerPlayer = _ThrowableWeapon->GetPrevOwnerPlayer();
 	if (!OwnerPlayer)
 		return false;
 

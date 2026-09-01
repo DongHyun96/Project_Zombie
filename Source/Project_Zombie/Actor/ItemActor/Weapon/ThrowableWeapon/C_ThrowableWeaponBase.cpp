@@ -898,9 +898,9 @@ bool AC_ThrowableWeaponBase::OnStartCookInput()
 
 void AC_ThrowableWeaponBase::Explode()
 {
-	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled())
-		return;
-
+	// 이미 로컬환경에서 처리가 되고 있는 중 (OwnerPlayer가 충분히 nullptr 가 나올 수 있기 때문에(상황에 따라 다름) -> 검사 x)
+	// OwnerPlayer 없이도(조작하는 OwnerPlayer) 충분히 터칠 수 있어야 함
+	
 	if (m_ThrowableState == EThrowableState::Exploded)
 	{
 		UC_Util::Print("Already Exploded", FColor::MakeRandomColor(), 10.f);
@@ -957,11 +957,7 @@ void AC_ThrowableWeaponBase::Explode()
 	const FRotator ExplosionRotation = GetActorRotation();
 	
 	// 손에 들고 있는 상태에서 터졌을 때, OnThrowProcessEnd 처리와 동일하게, 다음 Throwable이 있다면 다음 Throwable을 드는 처리로 수정
-	if (bStopThrowMontage)
-	{
-		// if (m_OwnerPlayer && m_OwnerPlayer->IsLocallyControlled()) // 이미 위에서 검사함
-		Server_DecreaseCurCount();
-	}
+	if (bStopThrowMontage) Server_DecreaseCurCount();
 
 	// 서버
 	if (HasAuthority())
@@ -978,11 +974,10 @@ void AC_ThrowableWeaponBase::Explode()
 	// 클라이언트
 	if (bStopThrowMontage)
 	{
-		UAnimInstance* AnimInstance = m_OwnerPlayer->GetMesh()->GetAnimInstance();
-		if (AnimInstance)
-		{
+		if (!m_PrevOwnerPlayer)
+			UC_Util::Print("[AC_ThrowableWeaponBase::Explode] : PrevOwnerPlayer nullptr", FColor::Red, 10.f);
+		else if (UAnimInstance* AnimInstance = m_PrevOwnerPlayer->GetMesh()->GetAnimInstance())
 			AnimInstance->Montage_Stop(0.2f, m_ThrowMontage);
-		}
 	}
 
 	if (m_ExplosionEffect)
@@ -1294,6 +1289,11 @@ bool AC_ThrowableWeaponBase::StartFuseTimer()
 		m_FuseTime,
 		false
 	);
+
+	// 실질적으로 던졌을 때, SetSlotWeapon 과정에서 Weapon의 m_OwnerPlayer가 nullptr가 되어버리면서 생기는 버그 방지로,
+	// 터지는 일련의 과정은 PrevOwnerPlayer를 사용하여 처리한다
+	// 쿠킹이 한번이라도 시작되었을 시, 무조건 불발탄 없이 터져야 하는 수류탄이다
+	m_PrevOwnerPlayer = m_OwnerPlayer;
 	
 	PRINT_LOCAL(GetWorld(), "ThrowableWeaponBase - Start Fuse Timer", FColor::Red, 10.f);
 
@@ -1314,7 +1314,7 @@ void AC_ThrowableWeaponBase::ClearFuseTimer()
 void AC_ThrowableWeaponBase::OnFuseTimerFinished()
 {
 	// 로컬 환경에서만 폭발 처리
-	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled())
+	if (!m_PrevOwnerPlayer || !m_PrevOwnerPlayer->IsLocallyControlled())
 		return;
 
 	UC_Util::Print("Finish Fuse Timer", FColor::Red, 10.f);

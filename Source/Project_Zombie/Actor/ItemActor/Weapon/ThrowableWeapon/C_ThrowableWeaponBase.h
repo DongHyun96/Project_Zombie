@@ -145,6 +145,8 @@ public: // 쿠킹 입력
 	bool OnStartCookInput();
 
 public:  // Getter & Setter
+
+	AC_BasicPlayer* GetPrevOwnerPlayer() const { return m_PrevOwnerPlayer; }
 	
 	float GetExplosionRadius() const { return m_ExplosionRadius; }
 	void SetExplosionRadius(float _ExplosionRadius) { m_ExplosionRadius = _ExplosionRadius; }
@@ -487,4 +489,12 @@ private:
 	bool m_bWantsCook;
 
 	float m_LastPredictedPathUpdateTime = -1.f;
+
+private:
+
+	// 이미 던진 상태에서 OwnerPlayer가 Valid하지 않을 수 있음 (Slot에서 해제될 때 Weapon의 OwnerPlayer가 일괄 nullptr 처리가 된다)
+	// 위의 상황은 놔두고 Throwable에 한해, 이전 PrevOwnerPlayer를 기록해둔다.
+	UPROPERTY()
+	AC_BasicPlayer* m_PrevOwnerPlayer{};
+	
 };
