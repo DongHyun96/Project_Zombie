@@ -38,9 +38,9 @@ AC_ThrowableWeaponBase::AC_ThrowableWeaponBase()
 	PrimaryActorTick.bCanEverTick = true;
 	
 	SetReplicates(true);
-	SetReplicateMovement(true);
+	SetReplicatingMovement(true);
 
-	bAlwaysRelevant = false;
+	bAlwaysRelevant = true;
 
 	m_ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>("ProjectileMovement");
 	
@@ -573,7 +573,7 @@ void AC_ThrowableWeaponBase::Multicast_PlayExplosionFX_Implementation(bool _bSto
 		}
 
 		// 다른 클라이언트에서도 맨손 Idle로 보이게 처리
-		m_OwnerPlayer->SetHandState(EHandState::UnArmed);
+		// m_OwnerPlayer->SetHandState(EHandState::UnArmed);
 	}
 
 	// 폭발 이펙트 생성
@@ -902,17 +902,14 @@ void AC_ThrowableWeaponBase::Explode()
 		return;
 
 	if (m_ThrowableState == EThrowableState::Exploded)
+	{
+		UC_Util::Print("Already Exploded", FColor::MakeRandomColor(), 10.f);
 		return;
+	}
 
 	const EThrowableState PrevState = m_ThrowableState;
 	
 	const bool bStopThrowMontage = (PrevState != EThrowableState::Thrown && PrevState != EThrowableState::Throwing);
-
-	// 손에 들고 있는 상태에서 터졌다면 맨손 Idle로 전환
-	if (bStopThrowMontage)
-	{
-		m_OwnerPlayer->SetHandState(EHandState::UnArmed);
-	}
 
 	m_ThrowableState = EThrowableState::Exploded;
 
@@ -951,12 +948,20 @@ void AC_ThrowableWeaponBase::Explode()
 
 	if (!bExploded)
 	{
-		UC_Util::Print("[Throwable Explode] Strategy Failed");
+		UC_Util::Print("[Throwable Explode] Strategy Failed", FColor::Red, 10.f);
 	}
 	
 	// 로컬의 폭발 위치와 회전 정보
-	const FVector ExplosionLocation = GetActorLocation();
+	// 여기서 미리 구해두는 이유는, 손에 들고 있는 상태에서 터졌을 때, ActorLocation이 0, 0, 0 이 나와서 여기서 미리 구해둠
+	const FVector ExplosionLocation  = GetActorLocation();
 	const FRotator ExplosionRotation = GetActorRotation();
+	
+	// 손에 들고 있는 상태에서 터졌을 때, OnThrowProcessEnd 처리와 동일하게, 다음 Throwable이 있다면 다음 Throwable을 드는 처리로 수정
+	if (bStopThrowMontage)
+	{
+		// if (m_OwnerPlayer && m_OwnerPlayer->IsLocallyControlled()) // 이미 위에서 검사함
+		Server_DecreaseCurCount();
+	}
 
 	// 서버
 	if (HasAuthority())
@@ -1300,7 +1305,9 @@ void AC_ThrowableWeaponBase::ClearFuseTimer()
 	// 타이머 취소
 	UWorld* World = GetWorld();
 	World->GetTimerManager().ClearTimer(m_FuseTimerHandle);
-
+	
+	PRINT_LOCAL(GetWorld(), "ThrowableWeaponBase - Clear Fuse Timer", FColor::Red, 10.f);
+	
 	m_bWantsCook = false; // 쿠킹 취소했으므로 WantsCook 초기화
 }
 
@@ -1310,7 +1317,7 @@ void AC_ThrowableWeaponBase::OnFuseTimerFinished()
 	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled())
 		return;
 
-	UC_Util::Print("Finish Fuse Timer");
+	UC_Util::Print("Finish Fuse Timer", FColor::Red, 10.f);
 
 	Explode();
 }
