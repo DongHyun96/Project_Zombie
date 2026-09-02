@@ -461,7 +461,7 @@ void AC_ItemPickUp::Server_RequestPickup_Implementation(AC_BasicPlayer* Player)
     int32 LeftoverCount = PlayerInvenComp->AddItem(ItemEntry);
     
     const int32 ActualPickedcnt = ItemEntry.CurCount - LeftoverCount; // 실질적인 파밍 갯수
-    PlayerInvenComp->Server_RemoveItemByRowName(ItemEntry.ItemRowName, ActualPickedcnt);
+    PlayerInvenComp->Client_AddItemPickUpGameLog(ItemEntry.ItemRowName, ActualPickedcnt);
 
     if (LeftoverCount <= 0)
     {
