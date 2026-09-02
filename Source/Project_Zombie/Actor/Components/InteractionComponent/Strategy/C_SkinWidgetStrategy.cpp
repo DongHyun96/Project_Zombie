@@ -2,6 +2,8 @@
 
 
 #include "C_SkinWidgetStrategy.h"
+
+#include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Controller/C_BasicPlayerController.h"
 #include "GameModeAndManager/C_UIManager.h"
 #include "UI/SkinUI/C_SkinWidget.h"
