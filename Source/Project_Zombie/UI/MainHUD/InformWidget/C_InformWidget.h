@@ -39,6 +39,14 @@ public:
 	/// <returns> : 제대로 추가되지 않았다면 return false </returns>
 	bool AddPlayerWarningLog(const FString& WarningLog, const FColor& _TextColor);
 
+	/// <summary>
+	/// 아이템 파밍 시 띄울 로그 추가
+	/// </summary>
+	/// <param name="_ItemRowName"> : 해당 ItemRowName </param>
+	/// <param name="_ItemPickUpCount"> : 파밍한 갯수 </param>
+	/// <returns> : Valid하지 않은 값이 들어왔다면 return false </returns>
+	bool AddPlayerWarningLog(const FName& _ItemRowName, int32 _ItemPickUpCount);
+
 	bool AddEquippedWeaponLog(const FName& _WeaponItemRowName);
 	
 	void ToggleGameStartPanel(bool _Visible);

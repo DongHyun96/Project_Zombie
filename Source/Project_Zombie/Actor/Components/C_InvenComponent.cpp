@@ -3,6 +3,9 @@
 #include "C_EquippedComponent.h"
 #include "GameModeAndManager/C_ItemManager.h"
 #include "Net/UnrealNetwork.h"
+#include "UI/MainHUD/C_GameMainHUD.h"
+#include "UI/MainHUD/InformWidget/C_InformWidget.h"
+
 UC_InvenComponent::UC_InvenComponent()
 {
 
@@ -467,6 +470,14 @@ void UC_InvenComponent::InitInventoryContainerMaxSlots(int32 InMax)
 	}
 		
 	InventoryContainer.MarkArrayDirty();
+}
+
+void UC_InvenComponent::Client_AddItemPickUpGameLog_Implementation(const FName& _ItemRowName, int32 _PickUpCount)
+{
+	UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld());
+	if (!MainHUD) return;
+	
+	MainHUD->GetInformWidget()->AddPlayerWarningLog(_ItemRowName, _PickUpCount);
 }
 
 bool UC_InvenComponent::ProcessItemDivideMove(UC_InvenComponent* SrcComp, int32 SrcIdx, UC_InvenComponent* DstComp,

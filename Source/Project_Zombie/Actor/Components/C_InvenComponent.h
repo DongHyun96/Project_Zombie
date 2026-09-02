@@ -136,6 +136,11 @@ protected:
 	void InitInventoryContainerMaxSlots(int32 InMax);
 	
 
+public:
+
+	UFUNCTION(Client, Reliable)
+	void Client_AddItemPickUpGameLog(const FName& _ItemRowName, int32 _PickUpCount);
+	
 protected:
     // C_IneventoryGridWidget에서 grid slot의 갯수와 일치 시킬 변수
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")

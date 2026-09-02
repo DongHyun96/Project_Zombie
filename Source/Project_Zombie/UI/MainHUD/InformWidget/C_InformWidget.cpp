@@ -36,7 +36,7 @@ void UC_InformWidget::NativeOnInitialized()
 		PlayerWarningLogSequence.Add(i);
 	}
 
-	FTimerDelegate TempDelegate = FTimerDelegate::CreateWeakLambda(this, [this]()
+	/*FTimerDelegate TempDelegate = FTimerDelegate::CreateWeakLambda(this, [this]()
 	{
 		if (!LEVEL_MANAGER) return;
 		AC_BasicPlayer* LocalPlayer = LEVEL_MANAGER->GetLocalPlayer();
@@ -47,7 +47,7 @@ void UC_InformWidget::NativeOnInitialized()
 		GetWorld()->GetTimerManager().ClearTimer(m_TimerInvenGameLogRegister);
 	});
 	
-	GetWorld()->GetTimerManager().SetTimer(m_TimerInvenGameLogRegister, TempDelegate, 0.1f, true);
+	GetWorld()->GetTimerManager().SetTimer(m_TimerInvenGameLogRegister, TempDelegate, 0.1f, true);*/
 }
 
 void UC_InformWidget::NativeConstruct()
@@ -88,6 +88,17 @@ bool UC_InformWidget::AddPlayerWarningLog(const FString& WarningLog, const FColo
 	// Maximum 3초의 Log LifeTime 처리
 	ApplyNewLifeTimerToLog(TargetTextBlock, 3.f);
     
+	return true;
+}
+
+bool UC_InformWidget::AddPlayerWarningLog(const FName& _ItemRowName, int32 _ItemPickUpCount)
+{
+	const FString* TargetItemName = m_ItemNameMap.Find(_ItemRowName);
+	if (!TargetItemName) return false;
+
+	
+	AddPlayerWarningLog("ADDED TO INVENTORY : " + *TargetItemName + " x " + FString::FromInt(_ItemPickUpCount), FColor::White);
+	
 	return true;
 }
 
@@ -227,6 +238,8 @@ void UC_InformWidget::OnLogLifeTimeExpired(UWidget* TargetWidget)
 
 void UC_InformWidget::OnInvenSlotChanged(int32 _SlotIndex, const FInventoryEntry& _ItemData)
 {
+	/* NOT IN USED - DEPRECATED */
+	
 	/*PRINT_LOCAL(GetWorld(), "InvenSlotChanged(" + _ItemData.ItemRowName.ToString() + ") : " + FString::FromInt(_SlotIndex) + " | " + FString::FromInt(_ItemData.CurCount), FColor::MakeRandomColor(), 10.f);
 	PRINT_LOCAL(GetWorld(), "LockedBy : " + FString::FromInt(_ItemData.LockedByPlayerID), FColor::MakeRandomColor(), 10.f);
 	PRINT_LOCAL(GetWorld(), "", FColor::MakeRandomColor(), 10.f);
