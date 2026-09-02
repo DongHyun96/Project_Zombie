@@ -587,6 +587,53 @@ bool UC_ZombieManager::ShouldPlaySpecialZombieIntro(EZombieType _Type)
 	return false;
 }
 
+void UC_ZombieManager::UpdateSpecialZombieCamera()
+{
+	if (!IsValid(m_SpecialZombieIntroZombie))
+		return;
+
+	UWorld* World = GetWorld();
+
+	if (!IsValid(World))
+		return;
+
+	const FVector ZombieLocation = m_SpecialZombieIntroZombie->GetActorLocation();
+
+	for(FConstPlayerControllerIterator Iter = World->GetPlayerControllerIterator(); Iter; ++Iter)
+	{ 
+		AC_BasicPlayerController* PC = Cast<AC_BasicPlayerController>(Iter->Get());
+
+		if (!IsValid(PC))
+			continue;
+
+		PC->Client_UpdateSpecialZombieCamera(ZombieLocation);
+	}
+}
+
+void UC_ZombieManager::EndSpecialZombieIntro()
+{
+	UWorld* World = GetWorld();
+
+	if (!IsValid(World))
+		return;
+
+	// 위치 전송 중지
+	World->GetTimerManager().ClearTimer(m_SpecialZombieCameraTimer);
+
+	// 모든 플레이어에게 연출 종료
+	for (FConstPlayerControllerIterator Iter = World->GetPlayerControllerIterator(); Iter; ++Iter)
+	{
+		AC_BasicPlayerController* PC = Cast<AC_BasicPlayerController>(Iter->Get());
+
+		if (!IsValid(PC))
+			continue;
+
+		PC->Client_EndSpecialZombieIntro();
+	}
+
+	m_SpecialZombieIntroZombie = nullptr;
+}
+
 bool UC_ZombieManager::TrySpawnZombieFromArea(EZombieType _ZombieType, AC_SpawnArea* _SpawnArea)
 {
 	UWorld* World = GetWorld();
@@ -683,6 +730,11 @@ bool UC_ZombieManager::TrySpawnZombieFromArea(EZombieType _ZombieType, AC_SpawnA
 	// 특수좀비 첫 등장이면 전체 플레이어에게 등장 연출 요청
 	if (ShouldPlaySpecialZombieIntro(_ZombieType))
 	{
+		m_SpecialZombieIntroZombie = SpawnedZombie;
+
+		const FVector ZombieLocation = SpawnedZombie->GetActorLocation();
+
+		// 모든 플레이어에게 연출 시작
 		for (FConstPlayerControllerIterator Iter = World->GetPlayerControllerIterator(); Iter; ++Iter)
 		{
 			AC_BasicPlayerController* PC = Cast<AC_BasicPlayerController>(Iter->Get());
@@ -690,8 +742,14 @@ bool UC_ZombieManager::TrySpawnZombieFromArea(EZombieType _ZombieType, AC_SpawnA
 			if (!IsValid(PC))
 				continue;
 
-			PC->Client_StartSpecialZombieIntro(SpawnedZombie);
+			PC->Client_StartSpecialZombieIntro(ZombieLocation);
 		}
+
+		// 0.05초마다 좀비 위치 전송
+		World->GetTimerManager().SetTimer(m_SpecialZombieCameraTimer, this, &UC_ZombieManager::UpdateSpecialZombieCamera, 0.05f, true);
+
+		// 2초 후 연출 종료
+		World->GetTimerManager().SetTimer(m_SpecialZombieCameraEndTimer, this, &UC_ZombieManager::EndSpecialZombieIntro, 2.f, false);
 	}
 
 	return true;

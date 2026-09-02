@@ -158,6 +158,10 @@ private:
 	/// <returns></returns>
 	bool ShouldPlaySpecialZombieIntro(EZombieType _Type);
 
+	void UpdateSpecialZombieCamera();
+
+	void EndSpecialZombieIntro();
+
 
 protected: /* 좀비 스폰 기반 클래스 정보 및 PoolCount 정보 -> TODO : ZombieManager 블루프린트에 해당값 초기화시킬 것 */
 
@@ -218,4 +222,10 @@ protected: /* 특수좀비 연출 관련 */
 	bool m_bTankIntroPlayed = false;
 	bool m_bNurseIntroPlayed = false;
 	bool m_bCopIntroPlayed = false;
+
+	FTimerHandle m_SpecialZombieCameraTimer;
+	FTimerHandle m_SpecialZombieCameraEndTimer;
+
+	AC_Zombie* m_SpecialZombieIntroZombie = nullptr;
+
 };
