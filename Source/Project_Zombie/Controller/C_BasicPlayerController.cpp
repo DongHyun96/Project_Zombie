@@ -13,9 +13,7 @@
 #include "UI/InvenUI/Upgrade/C_ItemUpgradeWidget.h"
 #include "UI/InvenUI/Upgrade/C_PlayerStatUpgradeWidget.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
-#include "Actor/Character/NPC/Enemy/Zombie/C_Zombie.h"
-#include "Camera/PlayerCameraManager.h"
-
+#include "Actor/Character/Player/C_BasicPlayer.h"
 
 void AC_BasicPlayerController::OnUnPossess()
 {
@@ -142,35 +140,34 @@ void AC_BasicPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProper
 	DOREPLIFETIME(AC_BasicPlayerController, bIsUpgradingItem);
 }
 
-void AC_BasicPlayerController::Client_StartSpecialZombieIntro_Implementation(AC_Zombie* _Zombie)
+void AC_BasicPlayerController::Client_StartSpecialZombieIntro_Implementation(FVector _ZombieLocation)
 {
-	UE_LOG(
-		LogTemp,
-		Warning,
-		TEXT("[INTRO CLIENT] Zombie = %s"),
-		IsValid(_Zombie)
-		? *_Zombie->GetName()
-		: TEXT("NULL")
-	);
+	AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(GetPawn());
 
-	if (!IsValid(_Zombie))
+	if (!IsValid(Player))
 		return;
 
-	// 현재 카메라 대상 저장
-	m_PreviousViewTarget = GetViewTarget();
+	// 플레이어의 카메라를 특수좀비 연출용 카메라로 전환
+	Player->StartSpecialZombieCameraIntro(_ZombieLocation);
+}
 
-	// 특수좀비를 카메라 대상으로 변경
-	SetViewTargetWithBlend(_Zombie, 0.2f);
+void AC_BasicPlayerController::Client_UpdateSpecialZombieCamera_Implementation(FVector _ZombieLocation)
+{
+	AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(GetPawn());
 
-	// 2초동안 연출
-	GetWorldTimerManager().SetTimer(m_SpecialZombieIntroTimer,
-									[this]()
-									{
-										if (IsValid(m_PreviousViewTarget))
-										{
-											SetViewTargetWithBlend(m_PreviousViewTarget, 0.3f);
-										}
-									},
-									4.f,
-									false);
+	if (!IsValid(Player))
+		return;
+
+	// 특수좀비의 최신 위치를 플레이어의 카메라에 반영
+	Player->UpdateSpecialZombieCameraLocation(_ZombieLocation);
+}
+
+void AC_BasicPlayerController::Client_EndSpecialZombieIntro_Implementation()
+{
+	AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(GetPawn());
+
+	if (!IsValid(Player))
+		return;
+
+	Player->EndSpecialZombieCameraIntro();
 }

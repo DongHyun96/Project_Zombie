@@ -213,7 +213,7 @@ protected: /* Healer 좀비 관련 */
 	TArray<AC_HealingProjectile*> m_HealingProjectilePool{}; // 스폰 대기중인 HealingProjectile pool 
 	
 
-protected: /* 특수좀비 연출 했는지 확인하는 bool값 */
+protected: /* 특수좀비 연출 관련 */
 	bool m_bToxicIntroPlayed = false;
 	bool m_bTankIntroPlayed = false;
 	bool m_bNurseIntroPlayed = false;

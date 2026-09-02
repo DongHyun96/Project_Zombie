@@ -383,6 +383,12 @@ void AC_BasicPlayer::Tick(float DeltaTime)
 	}
 	
 	HandleFreeLookControllerRotation(DeltaTime);
+
+	// 특수좀비 카메라 연출 처리
+	if (m_bSpecialZombieCameraIntro)
+	{
+		UpdateSpecialZombieCamera(DeltaTime);
+	}
 }
 
 void AC_BasicPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -501,6 +507,77 @@ void AC_BasicPlayer::FinishInvincible()
 		return;
 
 	m_IsInvincible = false;
+}
+
+void AC_BasicPlayer::StartSpecialZombieCameraIntro(const FVector& _ZombieLocation)
+{
+	if (!IsLocallyControlled())
+		return;
+
+	m_bSpecialZombieCameraIntro = true;
+
+	m_SpecialZombieLocation = _ZombieLocation;
+
+	m_SpecialZombieCameraTime = 0.f;
+
+	// 현재 카메라 회전 저장
+	if (IsValid(m_Camera))
+	{
+		m_PreviousCameraRotation = m_Camera->GetComponentRotation();
+	}
+}
+
+void AC_BasicPlayer::UpdateSpecialZombieCameraLocation(const FVector& _ZombieLocation)
+{
+	if (!IsLocallyControlled())
+		return;
+
+	if (!m_bSpecialZombieCameraIntro)
+		return;
+
+	m_SpecialZombieLocation = _ZombieLocation;
+
+}
+
+void AC_BasicPlayer::EndSpecialZombieCameraIntro()
+{
+	if (!IsLocallyControlled())
+		return;
+
+	m_bSpecialZombieCameraIntro = false;
+
+	if (IsValid(m_Camera))
+	{
+		// 컨트롤러의 회전을 바꾸기
+		m_Camera->SetWorldRotation(m_PreviousCameraRotation);
+	}
+}
+
+void AC_BasicPlayer::UpdateSpecialZombieCamera(float _DeltaTime)
+{
+	if (!IsLocallyControlled())
+		return;
+
+	if (!m_bSpecialZombieCameraIntro)
+		return;
+
+	AController* Controller = GetController();
+
+	if (!Controller || !IsValid(m_Camera))
+		return;
+
+	// 카메라 위치에서 좀비 위치를 바라보는 방향 계산
+	const FVector CameraLocation = m_Camera->GetComponentLocation();
+
+	const FRotator TargetRotation = (m_SpecialZombieLocation - CameraLocation).Rotation();
+
+	// 현재 카메라 회전
+	const FRotator CurRotation = Controller->GetControlRotation();
+
+	// 회전 보간
+	const FRotator NewRotation = FMath::RInterpTo(CurRotation, TargetRotation, _DeltaTime, 8.f);
+
+	Controller->SetControlRotation(NewRotation);
 }
 
 void AC_BasicPlayer::OnRep_PlayerState()

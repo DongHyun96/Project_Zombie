@@ -53,7 +53,13 @@ protected:
 public:
 	/* 특수좀비 카메라 연출 */
 	UFUNCTION(Client, Reliable)
-	void Client_StartSpecialZombieIntro(class AC_Zombie* _Zombie);
+	void Client_StartSpecialZombieIntro(FVector _ZombieLocation);
+
+	UFUNCTION(Client, UnReliable)
+	void Client_UpdateSpecialZombieCamera(FVector _ZombieLocation);
+
+	UFUNCTION(Client, Reliable)
+	void Client_EndSpecialZombieIntro();
 
 public:
 	// 서버 전용: 이 플레이어가 현재 잠그고 있는 인벤토리와 슬롯 인덱스
