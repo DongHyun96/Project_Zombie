@@ -13,6 +13,9 @@ UCLASS()
 class PROJECT_ZOMBIE_API UC_SkinWidgetStrategy : public UC_InteractionStrategyBase
 {
 	GENERATED_BODY()
+
+public:
+	UC_SkinWidgetStrategy();
 	
 public:
 

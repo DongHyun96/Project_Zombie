@@ -1516,6 +1516,14 @@ float AC_BasicPlayer::GetMoveSpeedByState(EPlayerPoseState _MoveSpeedState) cons
 	return 0.0f;
 }
 
+void AC_BasicPlayer::Server_RequestApplySkin_Implementation(EPlayerSkin InSkin)
+{
+	AC_PlayerState* PS = GetPlayerState<AC_PlayerState>();
+	if (!PS) return;
+
+	PS->SetSelectedSkin(InSkin);
+}
+
 void AC_BasicPlayer::ApplySkin(EPlayerSkin InSkin)
 {
 	UGameInstance* GameInstance = GetGameInstance();

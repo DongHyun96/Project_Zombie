@@ -9,6 +9,7 @@
 #include "UI/MainHUD/C_GameMainHUD.h"
 #include "UI/InvenUI/C_InventoryWidget.h"
 #include "UI/MenuUI/C_MenuWidget.h"
+#include "UI/SkinUI/C_SkinWidget.h"
 #include "Utility/C_Util.h"
 
 AC_UIManager* AC_UIManager::Get(const UWorld* _World)
@@ -93,6 +94,22 @@ void AC_UIManager::BeginPlay()
 	m_MenuWidget->AddToViewport();
 	m_MenuWidget->SetVisibility(ESlateVisibility::Collapsed);
 
+	if (!m_SkinWidgetClass)
+	{
+		UC_Util::Print("From AC_UIManager::BeginPlay : SkinWidgetClass Subclass nullptr", FColor::Red, 5.f);
+		return;
+	}
+
+	m_SkinWidget = Cast<UC_SkinWidget>(CreateWidget(GetOwningPlayerController(), m_SkinWidgetClass));
+
+	if (!m_SkinWidget)
+	{
+		UC_Util::Print("From AC_UIManager::BeginPlay : SkinWidget creation failed", FColor::Red, 5.f);
+		return;
+	}
+
+	m_SkinWidget->AddToViewport();
+	m_SkinWidget->SetVisibility(ESlateVisibility::Collapsed);
 }
 
 void AC_UIManager::DrawHUD()

@@ -44,6 +44,8 @@ public:
 	
 	class UC_MenuWidget* GetMenuWidget() const { return m_MenuWidget; };
 
+	class UC_SkinWidget* GetSkinWidget() const { return m_SkinWidget; };
+
 public:
 	
 	void PrintLocalDebugMessage(const FString& _Message, const FColor& _Color, float _Duration);
@@ -59,6 +61,10 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "UI")
 	TSubclassOf<UC_MenuWidget> m_MenuWidgetClass{};
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "UI")
+	TSubclassOf<UC_SkinWidget> m_SkinWidgetClass{};
+
 protected:
 
 	// 생성된 MainHUD Widget 객체
@@ -73,7 +79,8 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	UC_MenuWidget* m_MenuWidget{};
 	
-	
+	UPROPERTY(BlueprintReadOnly)
+	UC_SkinWidget* m_SkinWidget{};
 	
 private:
 	
