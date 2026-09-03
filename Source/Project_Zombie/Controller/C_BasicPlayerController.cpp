@@ -140,7 +140,7 @@ void AC_BasicPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProper
 	DOREPLIFETIME(AC_BasicPlayerController, bIsUpgradingItem);
 }
 
-void AC_BasicPlayerController::Client_StartSpecialZombieIntro_Implementation(FVector _ZombieLocation)
+void AC_BasicPlayerController::Client_StartSpecialZombieIntro_Implementation(FVector _ZombieLocation, FRotator _ZombieRotation)
 {
 	AC_BasicPlayer* pPlayer = Cast<AC_BasicPlayer>(GetPawn());
 
@@ -148,10 +148,10 @@ void AC_BasicPlayerController::Client_StartSpecialZombieIntro_Implementation(FVe
 		return;
 
 	// 플레이어의 카메라를 특수좀비 연출용 카메라로 전환
-	pPlayer->StartSpecialZombieCameraIntro(_ZombieLocation);
+	pPlayer->StartSpecialZombieCameraIntro(_ZombieLocation, _ZombieRotation);
 }
 
-void AC_BasicPlayerController::Client_UpdateSpecialZombieCamera_Implementation(FVector _ZombieLocation)
+void AC_BasicPlayerController::Client_UpdateSpecialZombieCamera_Implementation(FVector _ZombieLocation, FRotator _ZombieRotation)
 {
 	AC_BasicPlayer* pPlayer = Cast<AC_BasicPlayer>(GetPawn());
 
@@ -159,7 +159,7 @@ void AC_BasicPlayerController::Client_UpdateSpecialZombieCamera_Implementation(F
 		return;
 
 	// 특수좀비의 최신 위치를 플레이어의 카메라에 반영
-	pPlayer->UpdateSpecialZombieCameraLocation(_ZombieLocation);
+	pPlayer->UpdateSpecialZombieCameraLocation(_ZombieLocation, _ZombieRotation);
 }
 
 void AC_BasicPlayerController::Client_EndSpecialZombieIntro_Implementation()

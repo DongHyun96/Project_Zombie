@@ -226,6 +226,6 @@ protected: /* 특수좀비 연출 관련 */
 	FTimerHandle m_SpecialZombieCameraTimer;
 	FTimerHandle m_SpecialZombieCameraEndTimer;
 
-	AC_Zombie* m_SpecialZombieIntroZombie = nullptr;
+	TObjectPtr<AC_Zombie> m_SpecialZombieIntroZombie = nullptr;
 
 };

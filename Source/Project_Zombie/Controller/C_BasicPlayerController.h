@@ -53,10 +53,10 @@ protected:
 public:
 	/* 특수좀비 카메라 연출 */
 	UFUNCTION(Client, Reliable)
-	void Client_StartSpecialZombieIntro(FVector _ZombieLocation);
+	void Client_StartSpecialZombieIntro(FVector _ZombieLocation, FRotator _ZombieRotation);
 
 	UFUNCTION(Client, UnReliable)
-	void Client_UpdateSpecialZombieCamera(FVector _ZombieLocation);
+	void Client_UpdateSpecialZombieCamera(FVector _ZombieLocation, FRotator _ZombieRotation);
 
 	UFUNCTION(Client, Reliable)
 	void Client_EndSpecialZombieIntro();

@@ -90,6 +90,11 @@ AC_BasicPlayer::AC_BasicPlayer()
 	m_Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("MainCamera"));
 	m_Camera->SetupAttachment(m_SpringArm);
 
+	m_SpecialZombieCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("SpecialZombieCamera"));
+	m_SpecialZombieCamera->SetupAttachment(RootComponent);
+	m_SpecialZombieCamera->SetActive(false);
+	m_SpecialZombieCamera->SetMobility(EComponentMobility::Movable);
+
 	m_InteractionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("InteractionSphere"));
 	m_InteractionSphere->SetupAttachment(RootComponent);
 	m_InteractionSphere->SetSphereRadius(150.0f);
@@ -383,12 +388,6 @@ void AC_BasicPlayer::Tick(float DeltaTime)
 	}
 	
 	HandleFreeLookControllerRotation(DeltaTime);
-
-	// 특수좀비 카메라 연출 처리
-	if (m_bSpecialZombieCameraIntro)
-	{
-		UpdateSpecialZombieCamera(DeltaTime);
-	}
 }
 
 void AC_BasicPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -509,6 +508,64 @@ void AC_BasicPlayer::FinishInvincible()
 	m_IsInvincible = false;
 }
 
+
+void AC_BasicPlayer::StartSpecialZombieCameraIntro(const FVector& _ZombieLocation, const FRotator& _ZombieRotation)
+{
+	if (!IsLocallyControlled())
+		return;
+
+	if (!IsValid(m_SpecialZombieCamera))
+		return;
+
+	m_bSpecialZombieCameraIntro = true;
+
+	UpdateSpecialZombieCameraLocation(_ZombieLocation, _ZombieRotation);
+
+	// 기존 플레이어 카메라는 두고
+	// 특수좀비 연출 카메라 활성화
+	m_SpecialZombieCamera->SetActive(true);
+}
+
+void AC_BasicPlayer::UpdateSpecialZombieCameraLocation(const FVector& _ZombieLocation, const FRotator& _ZombieRotation)
+{
+	if (!IsLocallyControlled())
+		return;
+
+	if (!m_bSpecialZombieCameraIntro)
+		return;
+
+	if (!IsValid(m_SpecialZombieCamera))
+		return;
+
+	const FVector ZombieForward = _ZombieRotation.Vector();
+
+	// 카메라 거리
+	constexpr float CameraDistance = 350.f;
+
+	// 카메라 높이
+	constexpr float CameraHeight = 100.f;
+
+	const FVector CameraLocation = _ZombieLocation - ZombieForward * CameraDistance + FVector(0.f, 0.f, CameraHeight);
+
+	// 카메라가 좀비를 바라보도록 회전
+	const FRotator CameraRotation = (_ZombieLocation - CameraLocation).Rotation();
+
+	m_SpecialZombieCamera->SetWorldLocation(CameraLocation);
+	m_SpecialZombieCamera->SetWorldRotation(CameraRotation);
+}
+
+void AC_BasicPlayer::EndSpecialZombieCameraIntro()
+{
+	if (!IsLocallyControlled())
+		return;
+
+	m_bSpecialZombieCameraIntro = false;
+
+	if (IsValid(m_SpecialZombieCamera))
+	{
+		m_SpecialZombieCamera->SetActive(false);
+	}
+}
 
 void AC_BasicPlayer::OnRep_PlayerState()
 {
@@ -1476,71 +1533,3 @@ float AC_BasicPlayer::GetMoveSpeedByState(EPlayerPoseState _MoveSpeedState) cons
 	return 0.0f;
 }
 
-void AC_BasicPlayer::StartSpecialZombieCameraIntro(const FVector& _ZombieLocation)
-{
-	if (!IsLocallyControlled())
-		return;
-
-	m_bSpecialZombieCameraIntro = true;
-
-	m_SpecialZombieLocation = _ZombieLocation;
-
-	m_SpecialZombieCameraTime = 0.f;
-
-	// 현재 카메라 회전 저장
-	m_PreviousCameraRotation = GetControlRotation();
-}
-
-void AC_BasicPlayer::UpdateSpecialZombieCameraLocation(const FVector& _ZombieLocation)
-{
-	if (!IsLocallyControlled())
-		return;
-
-	if (!m_bSpecialZombieCameraIntro)
-		return;
-
-	m_SpecialZombieLocation = _ZombieLocation;
-
-}
-
-void AC_BasicPlayer::EndSpecialZombieCameraIntro()
-{
-	if (!IsLocallyControlled())
-		return;
-
-	m_bSpecialZombieCameraIntro = false;
-
-	AController* pController = GetController();
-
-	if (pController)
-	{
-		pController->SetControlRotation(m_PreviousCameraRotation);
-	}
-}
-
-void AC_BasicPlayer::UpdateSpecialZombieCamera(float _DeltaTime)
-{
-	if (!IsLocallyControlled())
-		return;
-
-	if (!m_bSpecialZombieCameraIntro)
-		return;
-
-	AController* pController = GetController();
-
-	if (!pController || !IsValid(m_Camera))
-		return;
-
-	// 카메라 위치에서 좀비 위치를 바라보는 방향 계산
-	const FVector CameraLocation = m_Camera->GetComponentLocation();
-
-	const FRotator TargetRotation = (m_SpecialZombieLocation - CameraLocation).Rotation();
-
-	// 현재 카메라 회전
-	const FRotator CurRotation = pController->GetControlRotation();
-
-	// 회전 보간
-	const FRotator NewRotation = FMath::RInterpTo(CurRotation, TargetRotation, _DeltaTime, 8.f);
-
-	pController->SetControlRotation(NewRotation);
-}

@@ -598,6 +598,7 @@ void UC_ZombieManager::UpdateSpecialZombieCamera()
 		return;
 
 	const FVector ZombieLocation = m_SpecialZombieIntroZombie->GetActorLocation();
+	const FRotator ZombieRotation = m_SpecialZombieIntroZombie->GetActorRotation();
 
 	for(FConstPlayerControllerIterator Iter = World->GetPlayerControllerIterator(); Iter; ++Iter)
 	{ 
@@ -606,7 +607,7 @@ void UC_ZombieManager::UpdateSpecialZombieCamera()
 		if (!IsValid(PC))
 			continue;
 
-		PC->Client_UpdateSpecialZombieCamera(ZombieLocation);
+		PC->Client_UpdateSpecialZombieCamera(ZombieLocation, ZombieRotation);
 	}
 }
 
@@ -733,6 +734,7 @@ bool UC_ZombieManager::TrySpawnZombieFromArea(EZombieType _ZombieType, AC_SpawnA
 		m_SpecialZombieIntroZombie = SpawnedZombie;
 
 		const FVector ZombieLocation = SpawnedZombie->GetActorLocation();
+		const FRotator ZombieRotation = SpawnedZombie->GetActorRotation();
 
 		// 모든 플레이어에게 연출 시작
 		for (FConstPlayerControllerIterator Iter = World->GetPlayerControllerIterator(); Iter; ++Iter)
@@ -742,10 +744,10 @@ bool UC_ZombieManager::TrySpawnZombieFromArea(EZombieType _ZombieType, AC_SpawnA
 			if (!IsValid(PC))
 				continue;
 
-			PC->Client_StartSpecialZombieIntro(ZombieLocation);
+			PC->Client_StartSpecialZombieIntro(ZombieLocation, ZombieRotation);
 		}
 
-		// 0.05초마다 좀비 위치 전송
+		// 0.05초마다 좀비 위치, 회전값 전송
 		World->GetTimerManager().SetTimer(m_SpecialZombieCameraTimer, this, &UC_ZombieManager::UpdateSpecialZombieCamera, 0.05f, true);
 
 		// 2초 후 연출 종료

@@ -283,29 +283,23 @@ private:
 	
 	int32 m_KillCount{};
 
-private: /* 특수좀비 카메라 연출 관련 */
+protected: /* 특수좀비 카메라 연출 관련 */
 	// 특수좀비 카메라 연출 중인지
 	bool m_bSpecialZombieCameraIntro = false;
 
-	// 서버에서 받은 최신 좀비 위치
-	FVector m_SpecialZombieLocation = FVector::ZeroVector;
-
-	// 연출 시작 전 카메라 회전
-	FRotator m_PreviousCameraRotation = FRotator::ZeroRotator;
-
-	float m_SpecialZombieCameraTime = 0.f;
+	// 특수좀비 연출 카메라 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (DisplayName = "SpecialZombieIntroCamera"))
+	TObjectPtr<UCameraComponent> m_SpecialZombieCamera;
 
 public: /* 특수좀비 카메라 연출 관련 */
 	// 특수좀비 카메라 연출 시작
-	void StartSpecialZombieCameraIntro(const FVector& _ZombieLocation);
+	void StartSpecialZombieCameraIntro(const FVector& _ZombieLocation, const FRotator& _ZombieRotation);
 
 	// 서버에서 전달받은 좀비 최신위치 갱신
-	void UpdateSpecialZombieCameraLocation(const FVector& _ZombieLocation);
+	void UpdateSpecialZombieCameraLocation(const FVector& _ZombieLocation, const FRotator& _ZombieRotation);
 
 	// 카메라 연출 종료
 	void EndSpecialZombieCameraIntro();
-
-	void UpdateSpecialZombieCamera(float _DeltaTime);
 
 public:
 	
