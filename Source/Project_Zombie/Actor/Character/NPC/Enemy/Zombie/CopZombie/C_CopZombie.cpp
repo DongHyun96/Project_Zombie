@@ -3,6 +3,7 @@
 
 #include "C_CopZombie.h"
 
+#include "Actor/Character/NPC/Enemy/Zombie/Controller/C_ZombieController.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/Components/C_InvenComponent.h"
 #include "Actor/Components/ItemLinkComponent/C_ItemLinkComponent.h"
@@ -49,6 +50,12 @@ void AC_CopZombie::BeginPlay()
 void AC_CopZombie::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+}
+
+void AC_CopZombie::SetCopZombieState(ECopZombieState _State)
+{
+	m_CopZombieState = _State;
+	if (m_ZombieController) m_ZombieController->SetBBValueAsEnum(TEXT("MainState"), static_cast<uint8>(_State));
 }
 
 void AC_CopZombie::OnANSGrabStart()
@@ -157,8 +164,9 @@ bool AC_CopZombie::EquipWeapon(AC_GunBase* _StolenWeapon)
 		
 		Entry.SlotIndex = -1;
 	}
-	
-	m_CopZombieState = ECopZombieState::WeaponEarned; // ABP 무기 자세로 자세전환
+
+	// ABP 무기 자세로 자세전환 및 대응되는 BB Key value 해당 값으로 변환 일괄 처리
+	SetCopZombieState(ECopZombieState::WeaponEarned); 
 	return true;
 }
 
@@ -185,19 +193,38 @@ void AC_CopZombie::DropWeapon()
 			m_EquippedGun->GetAIGunUsageComponent()->GetPrevOwnerPlayer()->GetPingSystemComponent()
 		);
 	}
-	
+
+	PRINT_LOCAL(GetWorld(), "CopZombie DropWeapon done", FColor::MakeRandomColor(), 20.f);
 	m_EquippedGun->Destroy();
 	m_EquippedGun = nullptr;
 
 }
 
+bool AC_CopZombie::ActivateFromPool(const FTransform& _SpawnTransform)
+{
+	// 스폰 처리 실패 시
+	if (!Super::ActivateFromPool(_SpawnTransform)) return false;
+
+	// 초기값 초기화 안정성 측면에서 한번 더 처리
+	SetCopZombieState(ECopZombieState::Idle);
+	m_GrabRangeEnteredPlayers.Empty();
+	
+	return true;
+}
+
 void AC_CopZombie::OnDead(AC_BasicCharacter* _DeadCharacter)
 {
 	Super::OnDead(_DeadCharacter);
+
+	PRINT_LOCAL(GetWorld(), "CopZombie::OnDead", FColor::Cyan, 50.f);
 	
 	// 죽었을 때, 만약 무기를 들고 있는 상황이라면 DropWeapon 처리
 	if (m_EquippedGun)
 		DropWeapon();
+	
+	// 나머지 정리할 부분 정리
+	SetCopZombieState(ECopZombieState::Idle);
+	m_GrabRangeEnteredPlayers.Empty();
 }
 
 void AC_CopZombie::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
