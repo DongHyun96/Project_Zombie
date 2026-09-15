@@ -109,6 +109,8 @@ bool AC_PotionBase::InitializeItemActor(const FWeaponData* InRawData)
 void AC_PotionBase::InitializeItemData(const FWeaponData* InRawData)
 {
 	const FPotionData* PotionData = static_cast<const FPotionData*>(InRawData);
+
+	PRINT_LOCAL(GetWorld(), "AC_PotionBase::InitializeItemData", FColor::Cyan, 10.f);
 	
 	if (!PotionData)
 	{

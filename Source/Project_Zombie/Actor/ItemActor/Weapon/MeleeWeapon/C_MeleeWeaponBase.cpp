@@ -24,7 +24,7 @@ AC_MeleeWeaponBase::AC_MeleeWeaponBase()
 	RootComponent = m_WeaponMesh;
 
 	bReplicates = true;
-	SetReplicateMovement(true);
+	SetReplicatingMovement(true);
 }
 
 void AC_MeleeWeaponBase::BeginPlay()
@@ -51,6 +51,8 @@ bool AC_MeleeWeaponBase::InitializeItemActor(const FWeaponData* InRawData)
 
 void AC_MeleeWeaponBase::InitializeItemData(const FWeaponData* InRawData)
 {
+	PRINT_LOCAL(GetWorld(), "AC_MeleeWeaponBase::InitializeItemData", FColor::Cyan, 10.f);
+	
 	const FMeleeData* MeleeData = static_cast<const FMeleeData*>(InRawData);
 
 	float BaseDamage = MeleeData->BaseDamage;

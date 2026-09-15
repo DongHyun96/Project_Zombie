@@ -278,9 +278,10 @@ void AC_ItemPickUp::DeactivateItem()
 
         // StolenPlayerPingSystemComponent 정리
         if (m_StolenPlayerPingSystemComponent && m_StolenPlayerPingSystemComponent->GetLastInstigator() == this)
-        {
             m_StolenPlayerPingSystemComponent->Multicast_MustHidePingAll();
-        }
+        
+        m_StolenPlayerPingSystemComponent = nullptr;
+        Multicast_ToggleOutline(false);
     }
 
     // 1. 비동기 로드 핸들 즉시 취소 (메모리 릭 및 지연 로드 방지)

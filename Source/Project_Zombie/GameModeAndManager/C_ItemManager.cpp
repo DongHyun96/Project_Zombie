@@ -399,17 +399,27 @@ AC_WeaponBase* UC_ItemManager::SpawnEquippedActor(FName InRowName, AActor* InOwn
     const FItemData* GeneralData = GetItemData<FItemData>(EItemTableType::General, InRowName);
     if (!GeneralData)
     {
-        UE_LOG(LogTemp, Warning, TEXT("[ItemManager] '%s' Row is missing in General Table!"), *InRowName.ToString());
+        const FString TempLog = FString::Printf(TEXT("[ItemManager] '%s' Row is missing in General Table!"), *InRowName.ToString()); 
+        UE_LOG(LogTemp, Warning, TEXT("%s"), *TempLog);
+        PRINT_LOCAL(GetWorld(), TempLog, FColor::Cyan, 10.f);
         return nullptr;
     }
     
     AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(InOwner);
         
-    if (!Player) return nullptr;
+    if (!Player)
+    {
+        PRINT_LOCAL(GetWorld(), "UC_ItemManager::SpawnEquippedActor : Player nullptr", FColor::Cyan, 10.f);
+        return nullptr;
+    }
         
     UC_InvenComponent* InvenComp = Cast<UC_InvenComponent>(Player->GetInvenComponent());
         
-    if (!InvenComp) return nullptr;
+    if (!InvenComp)
+    {
+        PRINT_LOCAL(GetWorld(), "UC_ItemManager::SpawnEquippedActor : InvenComp nullptr", FColor::Cyan, 10.f);
+        return nullptr;
+    }
     
     
     FActorSpawnParameters SpawnParams;
@@ -469,48 +479,54 @@ AC_WeaponBase* UC_ItemManager::SpawnEquippedActor(FName InRowName, AActor* InOwn
 
     if (!TargetClass || SlotIdx == -1)
     {
-        UE_LOG(LogTemp, Warning, TEXT("[ItemManager] Failed to resolve EquippedActorClass for Row: %s"), *InRowName.ToString());
+        const FString LogStr = FString::Printf(TEXT("[UC_ItemManager::SpawnEquippedActor] Failed to resolve EquippedActorClass for Row: %s"), *InRowName.ToString());
+        UE_LOG(LogTemp, Warning, TEXT("%s"), *LogStr);
+        PRINT_LOCAL(GetWorld(), LogStr, FColor::Cyan, 10.f);
         return nullptr;
     }
     
     // 무기 스폰 및 ItemEntry 주입 초기화
     AC_WeaponBase* SpawnedWeapon = World->SpawnActor<AC_WeaponBase>(TargetClass, SpawnTransform, SpawnParams);
-    if (SpawnedWeapon)
+    if (!SpawnedWeapon)
     {
-        // 스폰 된 무기의 ItemLinkComponent의 초기화
-        UC_ItemLinkComponent* LinkComp = SpawnedWeapon->GetLinkComp();
-        
-        if (!LinkComp)
-        {
-            UC_Util::Print("ItemLinkComponent of SpawnedWeapon is nullptr in SpawnedWeapon Spawn Equipped Actor", FColor::Red, 10.f);
-            SpawnedWeapon->Destroy();
-            return nullptr;
-        }
-        
-        
-        SpawnedWeapon->SetOwnerPlayer(Player);
-        
-        SpawnedWeapon->SetItemRowName(InRowName);
-        
-        LinkComp->InitializeLink(InvenComp, SlotIdx);
-        
-        SpawnedWeapon->InitializeItemActor(InRawData);
-        
-        
-        SpawnedWeapon->Multi_InitItemActor(InvenComp, SlotIdx);
-        // 무기의 초기화
-        //if (Player->IsLocallyControlled())
-        //{
-        //    SpawnedWeapon->SetItemRowName(InRowName);
-        //    UC_Util::Print("UP");
-        //}  
-        
-        
-        //if (!Player->IsLocallyControlled())
-        //{
-            UC_Util::Print("Down");
-        //}
+        PRINT_LOCAL(GetWorld(), "[UC_ItemManager::SpawnEquippedActor] SpawnActor(Weapon) failed", FColor::Cyan, 10.f);
+        return nullptr;
     }
+    
+    // 스폰 된 무기의 ItemLinkComponent의 초기화
+    UC_ItemLinkComponent* LinkComp = SpawnedWeapon->GetLinkComp();
+    
+    if (!LinkComp)
+    {
+        UC_Util::Print("ItemLinkComponent of SpawnedWeapon is nullptr in SpawnedWeapon Spawn Equipped Actor", FColor::Red, 10.f);
+        SpawnedWeapon->Destroy();
+        return nullptr;
+    }
+
+    PRINT_LOCAL(GetWorld(), "[UC_ItemManager::SpawnEquippedActor] : Spawning Weapon succeeded -> Setting Additional info", FColor::Cyan ,10.f);
+    
+    SpawnedWeapon->SetOwnerPlayer(Player);
+    
+    SpawnedWeapon->SetItemRowName(InRowName);
+    
+    LinkComp->InitializeLink(InvenComp, SlotIdx);
+    
+    SpawnedWeapon->InitializeItemActor(InRawData);
+    
+    
+    SpawnedWeapon->Multi_InitItemActor(InvenComp, SlotIdx);
+    // 무기의 초기화
+    //if (Player->IsLocallyControlled())
+    //{
+    //    SpawnedWeapon->SetItemRowName(InRowName);
+    //    UC_Util::Print("UP");
+    //}  
+    
+    
+    //if (!Player->IsLocallyControlled())
+    //{
+        UC_Util::Print("Down");
+    //}
 
     return SpawnedWeapon;
 }

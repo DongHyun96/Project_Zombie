@@ -185,6 +185,8 @@ void AC_ThrowableWeaponBase::InitializeItemData(const FWeaponData* InRawData)
 {
 	const FThrowableData* ThrowableData = static_cast<const FThrowableData*>(InRawData);
 
+	PRINT_LOCAL(GetWorld(), "AC_ThrowableWeaponBase::InitializeItemData", FColor::Cyan, 10.f);
+	
 	if (!ThrowableData)
 	{
 		UC_Util::Print("Failed Cast to const FThrowableData*", FColor::Red, 10.f);

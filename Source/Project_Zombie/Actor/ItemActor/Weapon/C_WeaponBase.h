@@ -46,7 +46,7 @@ public:
 	UFUNCTION()
 	void OnRep_WeaponRowName();
 	
-	UFUNCTION()
+	UFUNCTION() // Not in used
 	void OnRep_OwnerPlayer();
 	
 	UFUNCTION(NetMulticast, Unreliable)
@@ -164,7 +164,7 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	
 protected:
-	UPROPERTY(ReplicatedUsing = OnRep_OwnerPlayer, Transient)
+	UPROPERTY(ReplicatedUsing = OnRep_OwnerPlayer, Transient) // OnRep_OwnerPlayer -> Not in used dummy (빈 함수)
 	AC_BasicPlayer* m_OwnerPlayer{};
 	
 

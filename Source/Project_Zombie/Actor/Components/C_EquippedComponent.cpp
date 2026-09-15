@@ -57,16 +57,21 @@ void UC_EquippedComponent::SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* 
 		UC_Util::Print("From UC_EquippedComponent::SetSlotWeapon : wrong TargetSlot received", FColor::Red, 10.f);
 		return;
 	}
+
+	const FColor RandomPrintColor = FColor::MakeRandomColor();
+	const FString SlotStr         = UEnum::GetValueAsString(TargetSlot);
 	
-	const uint8 TargetSlotIdx = static_cast<uint8>(TargetSlot); 
+	PRINT_LOCAL(GetWorld(), "SetSlotWeapon Slot-> " + SlotStr, RandomPrintColor, 10.f);
+	
+	const uint8 TargetSlotIdx = static_cast<uint8>(TargetSlot);
 	
     // 들어온 슬롯의 이전 무기가 존재할 때, 이전 무기 해제 및 OwnerPlayer 초기화
     if (AC_WeaponBase* PrevSlotWeapon = m_Weapons[TargetSlotIdx])
     {
-    	PRINT_LOCAL(GetWorld(), "Detaching PrevSlotWeapon", FColor::Cyan, 10.f);
+    	PRINT_LOCAL(GetWorld(), "Detaching PrevSlotWeapon", RandomPrintColor, 10.f);
     	PrevSlotWeapon->DetachFromActor(FDetachmentTransformRules::KeepRelativeTransform);
     	PrevSlotWeapon->SetOwnerPlayer(nullptr);
-    } else PRINT_LOCAL(GetWorld(), "No Weapon On CurSlot", FColor::Cyan, 10.f);
+    } else PRINT_LOCAL(GetWorld(), "No Weapon On CurSlot", RandomPrintColor, 10.f);
 
     m_Weapons[TargetSlotIdx] = WeaponToEquip; // 새로 들어온 무기로 교체
     
@@ -96,17 +101,17 @@ void UC_EquippedComponent::SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* 
 	// 현재 들고 있는 무기의 종류에 따른 처리
 	if (m_CurWeaponTypeIdx == TargetSlotIdx)
 	{
-		PRINT_LOCAL(GetWorld(), "Current holding weapon swapped to new Same SlotWeapon", FColor::Red, 10.f);
+		PRINT_LOCAL(GetWorld(), "Current holding weapon swapped to new Same SlotWeapon", RandomPrintColor, 10.f);
 		m_Weapons[TargetSlotIdx]->AttachToHand(m_OwnerPlayer->GetMesh());
 	}
     else
     {
-    	PRINT_LOCAL(GetWorld(), "New Weapon Attaching to holster", FColor::Cyan, 10.f);
+    	PRINT_LOCAL(GetWorld(), "New Weapon Attaching to holster", RandomPrintColor, 10.f);
     	m_Weapons[TargetSlotIdx]->AttachToHolster(m_OwnerPlayer->GetMesh());
     }
 }
 
-void UC_EquippedComponent::Multicast_SetSlotWeapon_Implementation(EWeaponSlot TargetSlot, AC_WeaponBase* WeaponToEquip)
+/*void UC_EquippedComponent::Multicast_SetSlotWeapon_Implementation(EWeaponSlot TargetSlot, AC_WeaponBase* WeaponToEquip)
 {
 	PRINT_LOCAL(GetWorld(), "Multicast_SetSlotWeapon Start", FColor::Cyan, 10.f);
 	
@@ -122,7 +127,7 @@ void UC_EquippedComponent::Multicast_SetSlotWeapon_Implementation(EWeaponSlot Ta
 	
 	SetSlotWeapon(TargetSlot, WeaponToEquip);
 	UpdateAmmoWidget();
-}
+}*/
 
 void UC_EquippedComponent::UpdateWeaponData(EWeaponSlot _TargetWeapon, FName InItemRow)
 {
@@ -152,13 +157,11 @@ void UC_EquippedComponent::Server_RequestSpawnEquippedActor_Implementation(int32
 	if (!GetWorld()) return;
 
 	UC_ItemManager* ItemManager = GetWorld()->GetGameInstance()->GetSubsystem<UC_ItemManager>();
-
-	PRINT_LOCAL(GetWorld(), "ItemManager", FColor::Green, 5.f);
-
 	if (!ItemManager) return;
 
-	PRINT_LOCAL(GetWorld(), "SpawnEquippedActor", FColor::Green, 5.f);
-
+	// 애당초 여기서 CurCount 자체가 0으로 잡혀버림 -> Spawn 처리가 안되고 있는 중 (모든 장착된 무기에 대해서 0)
+	PRINT_LOCAL(GetWorld(), "[Server_RequestingSpawnEquippedActor] : SlotIndex(" + FString::FromInt(SlotIndex) + ")" + ", CurCount(" + FString::FromInt(ItemData.CurCount) + ")", FColor::Red, 10.f);
+	
 	AC_WeaponBase* SpawnedWeapon = (ItemData.CurCount > 0) ? ItemManager->SpawnEquippedActor(ItemData.ItemRowName, m_OwnerPlayer) : nullptr;
 
 	AC_WeaponBase* PrevWeapon = m_Weapons[SlotIndex];

@@ -73,7 +73,7 @@ bool AC_GunBase::InitializeItemActor(const FWeaponData* InRawData)
 {
 	//return Super::InitializeItemActor(InRawData);
 	
-	PRINT_LOCAL(GetWorld(), "InitializeItemActor", FColor::Red, 5.0f);
+	PRINT_LOCAL(GetWorld(), "InitializeItemActor", FColor::Red, 10.f);
 	
 	const FGunData* GunData = static_cast<const FGunData*>(InRawData);
 	
@@ -94,6 +94,8 @@ void AC_GunBase::InitializeItemData(const FWeaponData* InRawData)
 {
 	const FGunData* GunData = static_cast<const FGunData*>(InRawData);
 
+	PRINT_LOCAL(GetWorld(), "AC_GunBase::InitializeItemData", FColor::Cyan, 10.f);
+	
 	if (!GunData)
 	{
 		UC_Util::Print("Failed Cast to const FGunData*", FColor::Red, 10.f);

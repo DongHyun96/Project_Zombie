@@ -83,8 +83,9 @@ private:
 	/// <param name="WeaponToEquip"> : 해당 slot에 장착할 무기 객체 / 장착 해제는 nullptr </param>
 	void SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* WeaponToEquip);
 
-	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* WeaponToEquip);
+	// Not in use
+	/*UFUNCTION(NetMulticast, Reliable)
+	void Multicast_SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* WeaponToEquip);*/
 
 private:
 	

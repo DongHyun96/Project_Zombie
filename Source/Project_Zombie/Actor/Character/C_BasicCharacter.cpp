@@ -6,6 +6,7 @@
 #include "Actor/Components/StatComponent/C_StatComponentBase.h"
 #include "Engine/DamageEvents.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameModeAndManager/C_UIManager.h"
 
 AC_BasicCharacter::AC_BasicCharacter()
 {
@@ -41,6 +42,8 @@ float AC_BasicCharacter::TakeDamage
 		Server_TakeDamage(_DamageAmount, _DamageEvent, _EventInstigator, _DamageCauser);
 		return 0.f;
 	}
+
+	PRINT_LOCAL(GetWorld(), "TAKE DAMAGE : " + FString::SanitizeFloat(_DamageAmount), FColor::MakeRandomColor(), 10.f);
 	
 	// Damage 총량 계산
 	const float DamageAmount = Super::TakeDamage(_DamageAmount, _DamageEvent, _EventInstigator, _DamageCauser);
