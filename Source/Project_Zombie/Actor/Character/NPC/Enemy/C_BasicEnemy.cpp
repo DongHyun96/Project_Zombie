@@ -228,7 +228,8 @@ float AC_BasicEnemy::TakeDamage
 	
 	// 현재 생명력 Ratio 50% ~ 70% 랜덤 수치 이하면, 가능한 힐러 좀비에게 힐 요청 시도
 	// TODO : 이거 요청 빈도가 너무 높으면 여기서 병목 생길수도 있음 -> 추후 최적화할 때 고려할 것
-	if (m_StatComponent->GetCurHPRatio() < FMath::RandRange(0.5f, 0.7f))
+	const float CurHPRatio = m_StatComponent->GetCurHPRatio();
+	if (0.f < CurHPRatio && CurHPRatio < FMath::RandRange(0.5f, 0.7f))
 	{
 		for (AC_Zombie* Zombie : ZOMBIE_MANAGER(this)->GetActiveNurseZombies())
 		{
