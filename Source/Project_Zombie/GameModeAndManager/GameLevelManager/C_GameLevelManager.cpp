@@ -31,10 +31,28 @@ void UC_GameLevelManager::OnWorldBeginPlay(UWorld& InWorld)
 	Super::OnWorldBeginPlay(InWorld);
 }
 
+void UC_GameLevelManager::Deinitialize()
+{
+	m_Players.Empty();
+	m_LocalPlayer = nullptr;
+	
+	Super::Deinitialize();
+}
+
 void UC_GameLevelManager::AddPlayer(AC_BasicPlayer* _Player)
 {
 	m_Players.Add(_Player);
 	if (_Player->IsLocallyControlled()) m_LocalPlayer = _Player;
+}
+
+void UC_GameLevelManager::RemovePlayer(AC_BasicPlayer* _Player)
+{
+	if (!_Player) return;
+	
+	m_Players.Remove(_Player);
+	
+	if (m_LocalPlayer == _Player)
+		m_LocalPlayer = nullptr;
 }
 
 bool UC_GameLevelManager::HasAllPlayerDead() const

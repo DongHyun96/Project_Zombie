@@ -29,9 +29,13 @@ public:
 	/// </summary>
 	virtual void OnWorldBeginPlay(UWorld& InWorld) override;
 
+	virtual void Deinitialize() override;
+	
 public:
 	
 	void AddPlayer(class AC_BasicPlayer* _Player);
+	void RemovePlayer(AC_BasicPlayer* _Player);
+	
 	const TSet<AC_BasicPlayer*>& GetPlayers() const { return m_Players; }
 
 	AC_BasicPlayer* GetLocalPlayer() const { return m_LocalPlayer; }

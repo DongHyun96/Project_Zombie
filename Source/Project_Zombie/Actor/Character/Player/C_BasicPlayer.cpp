@@ -304,6 +304,10 @@ void AC_BasicPlayer::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	
 	// 팅기거나 접속을 종료하면 드래그하고 있던 아이템 잠금 해제.
 	Server_CancelDragItemSlot(curDraggedItem.SourceSlotIndex, curDraggedItem.SourceInvenComp);
+	
+	// GameLevelManager에 등록된 Player 제거
+	if (UC_GameLevelManager* GameLevelManager = LEVEL_MANAGER)
+		GameLevelManager->RemovePlayer(this);
 }
 
 void AC_BasicPlayer::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
