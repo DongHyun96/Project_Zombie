@@ -302,7 +302,8 @@ AC_Zombie* UC_ZombieManager::SpawnZombieFromPool(EZombieType _ZombieType, const 
 	return Zombie;
 }
 
-bool UC_ZombieManager::StartSpawnLoop(const TArray<AC_SpawnArea*>& _SpawnArea, const FZombieWaveSetting& _Settings)
+// Not in used
+bool UC_ZombieManager::StartSpawnLoop(const TSet<AC_SpawnArea*>& _SpawnArea, const FZombieWaveSetting& _Settings)
 {
 	UWorld* World = GetWorld();
 

@@ -72,7 +72,13 @@ void UC_PointTowerManager::StartActivateCurrentPointsSequence()
 	
 	// ============ 현재 Sequence SpawnArea 가져오기 ===============
 
-	TArray<AC_SpawnArea*> CurrentSpawnAreas = GetCurrentSequenceSpawnAreas();
+	if (!m_SpawnArea.IsValidIndex(m_CurrentSequenceIndex))
+	{
+		UC_Util::Print("[UC_PointTowerManager::StartActivateCurrentPointsSequence] : Current Sequence SpawnArea invalid index", FColor::Red, 10.f);
+		return;
+	}
+	
+	const TSet<AC_SpawnArea*>& CurrentSpawnAreas = m_SpawnArea[m_CurrentSequenceIndex];
 
 	if (CurrentSpawnAreas.IsEmpty())
 	{
@@ -203,12 +209,13 @@ void UC_PointTowerManager::OnPointTowerConquered()
 	}
 
 	// 현재 Sequence SpawnArea 비활성화
-	for (AC_SpawnArea* SpawnArea : GetCurrentSequenceSpawnAreas())
+	if (m_SpawnArea.IsValidIndex(m_CurrentSequenceIndex))
 	{
-		if (!IsValid(SpawnArea))
-			continue;
-
-		SpawnArea->SetEnabled(false);
+		for (AC_SpawnArea* SpawnArea : m_SpawnArea[m_CurrentSequenceIndex])
+		{
+			if (!IsValid(SpawnArea)) continue;
+			SpawnArea->SetEnabled(false);
+		}
 	}
 
 	// 다음 라운드로 넘기기
@@ -256,9 +263,11 @@ bool UC_PointTowerManager::RegisterSpawnArea(AC_SpawnArea* _SpawnArea)
 	return true;
 }
 
-TArray<AC_SpawnArea*> UC_PointTowerManager::GetCurrentSequenceSpawnAreas() const
+// Deprecated
+/*TArray<AC_SpawnArea*> UC_PointTowerManager::GetCurrentSequenceSpawnAreas() const
 {
-	// TODO : 최적화 하여, 게임 시작 시 미리 구해둘 것 -> 어차피 서버환경에서만 사용을 하는 함수인듯?
+	// TODO : 최적화 하여, 게임 시작 시 미리 구해둘 것 -> 어차피 서버환경에서만 사용을 하는 함수인듯? (직접 TSet Loop 처리 가능해서 그렇게 처리함)
+	
 	
 	TArray<AC_SpawnArea*> Result;
 
@@ -274,7 +283,7 @@ TArray<AC_SpawnArea*> UC_PointTowerManager::GetCurrentSequenceSpawnAreas() const
 	}
 
 	return Result;
-}
+}*/
 
 void UC_PointTowerManager::ShowGameStartPanel()
 {

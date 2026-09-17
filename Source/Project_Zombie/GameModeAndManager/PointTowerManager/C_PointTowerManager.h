@@ -73,13 +73,6 @@ public:
 
 private:
 
-	/// <summary>
-	/// 현재 Sequence에 등록된 SpawnArea들을 반환 
-	/// </summary>
-	TArray<AC_SpawnArea*> GetCurrentSequenceSpawnAreas() const;
-
-private:
-
 	void ShowGameStartPanel();
 	
 public:
