@@ -224,15 +224,10 @@ void AC_BasicPlayer::BeginPlay()
 	if (UC_GameLevelManager* LevelManager = GetWorld()->GetSubsystem<UC_GameLevelManager>())
 		LevelManager->AddPlayer(this);
 
-	// 웅크리기 완료 시 호출할 OnPoseTransitionFinished 바인딩
-	if (m_PoseColliderHandlerComponent)
-	{
-		m_PoseColliderHandlerComponent
-			->OnPoseTransitionFinished.AddUObject(this, &AC_BasicPlayer::OnPoseTransitionFinished);
-	}
-
 	//UpdateBoostBarHUD();
-
+	// 이 안에서 Early return 처리되면 알아서 다음 Timer Tick에 다시금 확인하고 nullptr가 아닌 겨우에만 초기화 작업이 안전하게 이루어짐
+	// Timer 무한 루프 안정성 측면에서 Timer 자체는 초기화 처리가 모두 이루어졌다면 해제,
+	// 또는 얘기치 못하게 이 Player 자체가 메모리 해제되어도 알아서 Timer 해제처리가 됨
 	FTimerDelegate TimerDelegate = FTimerDelegate::CreateWeakLambda(this, [this]()
 	{
 		// InventoryWidget에 Player의 InvenComponent 초기화 및 델리게이트 진행
@@ -243,42 +238,39 @@ void AC_BasicPlayer::BeginPlay()
 		AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD());
 		
 		if (!UIManager) return;
-		
-		if (m_InvenComponent)
-		{
-			m_InvenComponent->SetHasEquipmentSlots(true);
-			
-			UIManager->GetInventoryWidget()->InitializeInventoryWidget();
-			
-			UIManager->GetInventoryWidget()->GetPlayerGridWidget()->SetInvenComponent(m_InvenComponent);
-		
-			UIManager->GetInventoryWidget()->GetEquipmentWidget()->InitEquipmentWidget(m_InvenComponent);
-			
-			UIManager->GetInventoryWidget()->GetItemUpgradeWidget()->BindingUpdateWidget(m_InvenComponent);
-		}
-		
-		if (m_InvenComponent && m_EquippedComponent)
-		{
-			m_EquippedComponent->SetupInventoryComponent(m_InvenComponent);
-			
-		}
 
-		if (m_StatComponent)
+		if (!m_InvenComponent || !m_EquippedComponent || !m_StatComponent) return;
+
+		// 웅크리기 완료 시 호출할 OnPoseTransitionFinished 바인딩
+		if (!m_PoseColliderHandlerComponent) return;
+		m_PoseColliderHandlerComponent->OnPoseTransitionFinished.AddUObject(this, &AC_BasicPlayer::OnPoseTransitionFinished);
+		
+		m_InvenComponent->SetHasEquipmentSlots(true);
+		
+		UIManager->GetInventoryWidget()->InitializeInventoryWidget();
+		UIManager->GetInventoryWidget()->GetPlayerGridWidget()->SetInvenComponent(m_InvenComponent);
+		UIManager->GetInventoryWidget()->GetEquipmentWidget()->InitEquipmentWidget(m_InvenComponent);
+		UIManager->GetInventoryWidget()->GetItemUpgradeWidget()->BindingUpdateWidget(m_InvenComponent);
+
+		m_EquippedComponent->SetupInventoryComponent(m_InvenComponent);
+
+		UIManager->GetInventoryWidget()->GetPlayerStatUpgradeWidget()->BindStatEvents(m_StatComponent);
+		
+		// Main Stat HUD HP 업데이트 바인딩 관련
+		if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
 		{
+			UC_PlayerStatWidget* StatWidget = MainHUD->GetPlayerStatWidget();
+			if (!StatWidget) return;
 			
-			UIManager->GetInventoryWidget()->GetPlayerStatUpgradeWidget()->BindStatEvents(m_StatComponent);
-			if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
-				MainHUD->GetPlayerStatWidget()->BindCurHPUpdate(m_StatComponent);
-			
-			m_StatComponent->OnCurHPUpdatedDelegate.Broadcast(m_StatComponent->GetCurHPRatio());
-			
-			//UIManager->GetMainHUDWidget()->GetPlayerStatWidget()->UpdateHPBar(m_StatComponent->GetCurHPRatio());
+			if (IsLocallyControlled()) StatWidget->BindCurHPUpdate(this);
 		}
+		
+		m_StatComponent->OnCurHPUpdatedDelegate.Broadcast(m_StatComponent->GetCurHPRatio());
+		
+		//UIManager->GetMainHUDWidget()->GetPlayerStatWidget()->UpdateHPBar(m_StatComponent->GetCurHPRatio());
 		
 		if (IsLocallyControlled())
-		{
 			UpdateBoostBarHUD();
-		}
 		
 		TryRestoreFromPlayerState();
 		

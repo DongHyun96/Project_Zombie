@@ -32,7 +32,7 @@ public:
 	
 	void RepPlayerStateInit(float _Ratio);
 	
-	void BindCurHPUpdate(UC_StatComponentBase* InPlayerStatComponent);
+	void BindCurHPUpdate(AC_BasicPlayer* _Player);
 public: // HPBar 및 BoostBar 관련
 	
 	/// <summary>

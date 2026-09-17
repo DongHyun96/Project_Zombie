@@ -73,33 +73,17 @@ void UC_PlayerStatWidget::RepPlayerStateInit(float _Ratio)
 	UpdateHPBarRatio(_Ratio);
 }
 
-void UC_PlayerStatWidget::BindCurHPUpdate(UC_StatComponentBase* InPlayerStatComponent)
+void UC_PlayerStatWidget::BindCurHPUpdate(AC_BasicPlayer* _Player)
 {
-	
-	UC_PlayerStatComponent* PlayerStatComp= Cast<UC_PlayerStatComponent>(InPlayerStatComponent);
-	
-	if (!PlayerStatComp) return;
-	
-	AC_BasicPlayer* OwnerPlayer = Cast<AC_BasicPlayer>(InPlayerStatComponent->GetOwnerCharacter());
-	
-	if (!OwnerPlayer) return;
-	
-	if (OwnerPlayer->IsLocallyControlled())
+	UC_PlayerStatComponent* StatCom = Cast<UC_PlayerStatComponent>(_Player->GetStatComponent());
+	if (!StatCom)
 	{
-		
-			//AC_UIManager* UIManager = UI_MANAGER(GetWorld());
-			//if (!UIManager) return;
-			//
-			//UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget();
-			//if (!MainHUD) return;
-			//
-			//UC_PlayerStatWidget* StatWidget = MainHUD->GetPlayerStatWidget();
-			//if (StatWidget)
-		PlayerStatComp->OnCurHPUpdatedDelegate.AddUObject(this, &UC_PlayerStatWidget::UpdateHPBarRatio);
-		
-		UpdateHPBarRatio(PlayerStatComp->GetCurHPRatio());
+		PRINT_LOCAL(GetWorld(), "[UC_PlayerStatWidget::BindCurHPUpdate] : PlayerStatCom nullptr, Should not be happened!", FColor::Red, 10.f);
+		return;
 	}
-	// else PlayerStatComp->BindUpdateOtherPlayerHPBar();
+	
+	StatCom->OnCurHPUpdatedDelegate.AddUObject(this, &UC_PlayerStatWidget::UpdateHPBarRatio);
+	UpdateHPBarRatio(StatCom->GetCurHPRatio());
 }
 
 bool UC_PlayerStatWidget::UpdateHPBar(float _HP, float _MaxHP)
