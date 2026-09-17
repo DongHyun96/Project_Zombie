@@ -99,18 +99,20 @@ void AC_PointTower::BeginPlay()
 	
 	m_InteractionTestingCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	
-	if (HasAuthority()) // 오로지 서버 쪽에서만 이벤트 처리 (간단하게 그냥 함)
+	if (HasAuthority()) 
 	{
+		// 오로지 서버 쪽에서만 이벤트 처리 (간단하게 그냥 함)
 		m_InteractionTestingCollider->OnComponentBeginOverlap.AddDynamic(this, &AC_PointTower::OnInteractionColliderBeginOverlap);
 		m_InteractionTestingCollider->OnComponentEndOverlap.AddDynamic(this, &AC_PointTower::OnInteractionColliderEndOverlap);
-	}
-
-	if (HasAuthority() && m_PointTowerElectroEffectClass)
-	{
-		FActorSpawnParameters Param{};
-		Param.Owner = this;
-		m_PointTowerInteractEffect = GetWorld()->SpawnActor<AC_PointTowerElectroEffect>(m_PointTowerElectroEffectClass, Param);
-		if (m_PointTowerInteractEffect) m_PointTowerInteractEffect->SetActorLocation(m_StaticMeshComGenerator->GetComponentLocation());
+		
+		// ElectroEffect 스폰처리
+		if (m_PointTowerElectroEffectClass)
+		{
+			FActorSpawnParameters Param{};
+			Param.Owner = this;
+			m_PointTowerInteractEffect = GetWorld()->SpawnActor<AC_PointTowerElectroEffect>(m_PointTowerElectroEffectClass, Param);
+			if (m_PointTowerInteractEffect) m_PointTowerInteractEffect->SetActorLocation(m_StaticMeshComGenerator->GetComponentLocation());
+		}
 	}
 	
 	// For Testing

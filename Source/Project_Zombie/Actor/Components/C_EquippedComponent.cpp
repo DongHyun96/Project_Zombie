@@ -604,7 +604,8 @@ void UC_EquippedComponent::OnRep_Weapons()
 		if (!IsValid(m_Weapons[i])) continue;
 		
 		const FWeaponData* WeaponData = ItemManager->GetWeaponData(m_Weapons[i]->GetWeaponRowName());
-		
+
+		// TODO : 만약 m_MeleeWeapon의 m_Damage값 제대로 처리 안된다면, 여기에 Weapons들의 InitializeItemActor 호출처리할 것
 		m_Weapons[i]->LoadAsyncAssets(WeaponData);
 	}
 	

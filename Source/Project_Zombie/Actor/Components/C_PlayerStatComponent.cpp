@@ -7,6 +7,7 @@
 #include "Actor/Character/C_BasicCharacter.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Controller/C_BasicPlayerController.h"
+#include "GameModeAndManager/C_GameMode_GameLv.h"
 #include "GameModeAndManager/C_ItemManager.h"
 #include "GameModeAndManager/C_UIManager.h"
 #include "Item/Interact/ItemUpgrade/C_ItemUpgradeStation.h"
@@ -30,6 +31,10 @@ void UC_PlayerStatComponent::BeginPlay()
 	Super::BeginPlay();
 
 	m_OwnerPlayer = Cast<AC_BasicPlayer>(GetOwner());
+
+	// Player immortal check (테스트용 무적 처리 확인)
+	if (AC_GameMode_GameLv* GameLevelGameMode = GetWorld()->GetAuthGameMode<AC_GameMode_GameLv>())
+		m_bIsImmortal = GameLevelGameMode->GetPlayerImmortal();
 	
 	/*if (m_OwnerCharacter->IsLocallyControlled())
 	{

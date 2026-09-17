@@ -24,7 +24,7 @@ protected:
 
 protected:
 
-	
+	UPROPERTY(Replicated)
 	float						m_Damage;
 
 	// 현재 공격 버튼을 누르고 있는 상태인지 확인
@@ -40,7 +40,6 @@ protected:
 
 	FVector						m_PrevHitBoxSockPos;
 
-	// TODO : 이건 무슨 구조지? 순수 궁금증 - 상연
 	TSet<TWeakObjectPtr<AActor>>	m_HitActors;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hit|Sound")

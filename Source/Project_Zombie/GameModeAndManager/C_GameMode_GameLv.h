@@ -47,6 +47,8 @@ public:
 	class UC_PointTowerManager* GetPointTowerManager() const { return m_PointTowerManager; }
 	
 	class AC_GameOverChecker* GetGameOverChecker() const { return m_GameOverChecker; }
+	
+	bool GetPlayerImmortal() const { return m_bPlayerImmortal; }
 
 protected: /* ZombieManager 관련 */
 	
@@ -63,6 +65,12 @@ protected:
 
 	UPROPERTY()
 	AC_GameOverChecker* m_GameOverChecker{};
+	
+protected:
+
+	// Player 일괄적으로 Immortal처리 (테스트용 처리) -> true로 둘 경우 무적처리됨
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	bool m_bPlayerImmortal{};
 	
 };
 

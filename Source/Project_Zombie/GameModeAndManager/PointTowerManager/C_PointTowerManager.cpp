@@ -258,6 +258,8 @@ bool UC_PointTowerManager::RegisterSpawnArea(AC_SpawnArea* _SpawnArea)
 
 TArray<AC_SpawnArea*> UC_PointTowerManager::GetCurrentSequenceSpawnAreas() const
 {
+	// TODO : 최적화 하여, 게임 시작 시 미리 구해둘 것 -> 어차피 서버환경에서만 사용을 하는 함수인듯?
+	
 	TArray<AC_SpawnArea*> Result;
 
 	if (!m_SpawnArea.IsValidIndex(m_CurrentSequenceIndex))
