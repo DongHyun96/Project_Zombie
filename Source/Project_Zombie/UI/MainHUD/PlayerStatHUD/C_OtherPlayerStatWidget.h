@@ -34,6 +34,11 @@ public:
 	/// <param name="_Player"></param>
 	void RegisterOtherPlayer(class AC_BasicPlayer* _Player);
 
+	/// <summary>
+	/// 다른 Player의 게임이 종료된 경우, 해당 Player의 Stat UI 제거
+	/// </summary>
+	void DeregisterOtherPlayer(AC_BasicPlayer* _Player);
+
 	void UpdateHPBar(AC_BasicPlayer* _TargetPlayer, float _HPRatio);
 
 protected:

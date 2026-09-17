@@ -6,6 +6,7 @@
 #include "CompassMarkerWidget/C_CompassMarkerWidget.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
+#include "GameModeAndManager/C_UIManager.h"
 #include "Utility/C_Util.h"
 #include "WorldPartition/HLOD/HLODRuntimeSubsystem.h"
 
@@ -107,6 +108,21 @@ UC_CompassMarkerWidget* UC_CompassBarWidget::RegisterPlayerCompassPingMarker(AC_
 
 	m_mapCompassPingMarkers.Add(_Player, TargetMarker);
 	return TargetMarker;
+}
+
+void UC_CompassBarWidget::DeregisterPlayerCompassPingMarker(AC_BasicPlayer* _Player)
+{
+	if (!m_mapCompassPingMarkers.Contains(_Player))
+	{
+		PRINT_LOCAL(GetWorld(), "[UC_CompassBarWidget::DeregisterPlayerCompassPingMarker] : No such player on registered Markers", FColor::Red, 10.f);
+		return;
+	}
+	
+	UC_CompassMarkerWidget* RemovedWidget = m_mapCompassPingMarkers[_Player]; 
+	RemovedWidget->TogglePingMarker(false); // Pool로 다시 되돌아가기 전, 한번 더 비활성화 처리
+	
+	m_mapCompassPingMarkers.Remove(_Player);
+	m_CompassPingMarkerPool.Add(RemovedWidget);
 }
 
 UC_CompassMarkerWidget* UC_CompassBarWidget::SpawnGlobalPingMarker(EGamePingType _GamePingType, const FVector& _WorldPingLocation)

@@ -64,6 +64,17 @@ void UC_OtherPlayerStatWidget::RegisterOtherPlayer(AC_BasicPlayer* _Player)
 	_Player->SetNameTagWidgetInfo(PlayerName, _Player->GetPlayerProfileComponent()->GetPlayerSelectedColor());
 }
 
+void UC_OtherPlayerStatWidget::DeregisterOtherPlayer(AC_BasicPlayer* _Player)
+{
+	if (!m_RegisteredWidget.Contains(_Player)) return;
+	
+	UC_MiniHPBarWidget* RemovedWidget = m_RegisteredWidget[_Player];
+	RemovedWidget->Deactivate();
+	m_RegisteredWidget.Remove(_Player);
+	
+	m_MiniHPs.Add(RemovedWidget); // 다시금 등록가능하게끔 일단 집어넣어둠
+}
+
 void UC_OtherPlayerStatWidget::UpdateHPBar(AC_BasicPlayer* _TargetPlayer, float _HPRatio)
 {
 	if (!_TargetPlayer) return;

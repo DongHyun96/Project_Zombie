@@ -29,6 +29,8 @@ public:
 	/// </summary>
 	void Activate(class AC_BasicPlayer* _TargetPlayer);
 	
+	void Deactivate();
+	
 	void UpdateHPBar(float _Ratio);
 	
 private:

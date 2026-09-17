@@ -34,6 +34,11 @@ public:
 	/// </summary>
 	/// <returns> : 대응되는 CompassMarkerWidget </returns> 
 	class UC_CompassMarkerWidget* RegisterPlayerCompassPingMarker(class AC_BasicPlayer* _Player);
+
+	/// <summary>
+	/// 해당 Player로 등록된 CompassPingMarker 등록 해제 
+	/// </summary>
+	void DeregisterPlayerCompassPingMarker(AC_BasicPlayer* _Player);
 	
 public:
 	

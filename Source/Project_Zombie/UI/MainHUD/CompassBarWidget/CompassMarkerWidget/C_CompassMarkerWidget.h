@@ -41,9 +41,12 @@ private:
 	void UpdateCurrentDynamicMtrl(EGamePingType _PingType);
 	
 private:
+
+	UPROPERTY()
+	class AC_BasicPlayer* m_LocalPlayer{};
 	
-	class AC_BasicPlayer*	m_LocalPlayer{};
-	APlayerController*		m_LocalPlayerController{};
+	UPROPERTY()
+	APlayerController* m_LocalPlayerController{};
 	
 private:
 	

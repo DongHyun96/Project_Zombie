@@ -43,6 +43,14 @@ void AC_WorldPingActor::BeginPlay()
 	// Effect의 경우, 직접적인 Spawn 처리가 들어가야 실질적으로 Spawn 처리됨(처음에는 어차피 보이지 않음)
 }
 
+void AC_WorldPingActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	Super::EndPlay(EndPlayReason);
+	
+	// Effect만 따로 활성화되어있다하면, 이것 또한 꺼줘야 됨
+	if (m_PingEffectComp) m_PingEffectComp->DeactivateImmediate();
+}
+
 void AC_WorldPingActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);

@@ -69,6 +69,7 @@
 
 #include "UI/InvenUI/Upgrade/C_PlayerStatUpgradeWidget.h"
 #include "UI/MainHUD/InformWidget/C_InformWidget.h"
+#include "UI/MainHUD/PlayerStatHUD/C_OtherPlayerStatWidget.h"
 #include "UI/MainHUD/PlayerStatHUD/C_PlayerStatWidget.h"
 
 #define RECHARGED_BOOST 20.f
@@ -304,10 +305,21 @@ void AC_BasicPlayer::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	
 	// 팅기거나 접속을 종료하면 드래그하고 있던 아이템 잠금 해제.
 	Server_CancelDragItemSlot(curDraggedItem.SourceSlotIndex, curDraggedItem.SourceInvenComp);
+
+	/* 등록된 Player 정보 제거 관련 */
 	
-	// GameLevelManager에 등록된 Player 제거
+	// GameLevelManager에 등록된 Player 제거 & UI 업데이트 제거
 	if (UC_GameLevelManager* GameLevelManager = LEVEL_MANAGER)
 		GameLevelManager->RemovePlayer(this);
+	
+	// WorldPingActor 및 CompassBar Ping 정보 Hiding 처리 -> EndPlay에서 WorldPingActor를 삭제처리하는 식으로 함
+	// m_PingSystemComponent->HidePing();
+		
+	if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+	{
+		MainHUD->GetCompassBarWidget()->DeregisterPlayerCompassPingMarker(this);
+		MainHUD->GetOtherPlayerStatWidget()->DeregisterOtherPlayer(this);
+	}
 }
 
 void AC_BasicPlayer::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

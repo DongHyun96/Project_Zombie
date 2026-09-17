@@ -59,6 +59,12 @@ void UC_MiniHPBarWidget::Activate(AC_BasicPlayer* _TargetPlayer)
 	SetVisibility(ESlateVisibility::HitTestInvisible);
 }
 
+void UC_MiniHPBarWidget::Deactivate()
+{
+	PlayerNameText->SetText(FText());
+	SetVisibility(ESlateVisibility::Collapsed);
+}
+
 void UC_MiniHPBarWidget::UpdateHPBar(float _Ratio)
 {
 	if (_Ratio < 0.f || _Ratio > 1.f)
