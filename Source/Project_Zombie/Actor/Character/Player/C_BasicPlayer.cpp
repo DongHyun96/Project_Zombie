@@ -827,6 +827,8 @@ void AC_BasicPlayer::RecoverBoost(float _RecoverAmount)
 
 void AC_BasicPlayer::StartSprint()
 {
+	// PRINT_LOCAL(GetWorld(), "StartPrint called", FColor::Cyan, 10.f);
+	
 	if (!IsAlive())
 		return;
 
@@ -914,9 +916,14 @@ void AC_BasicPlayer::StopSprint()
 {
 	m_IsSprintInput = false;
 
+	// PRINT_LOCAL(GetWorld(), "Stop Sprint called", FColor::Red, 10.f);
+	
 	// Sprint 상태가 아니었다면 자세를 변경하지 않음 
 	if (m_PlayerPoseState != EPlayerPoseState::Sprint)
+	{
+		// PRINT_LOCAL(GetWorld(), "Stop Sprint::Not sprinting", FColor::Red, 10.f);
 		return;
+	}
 
 	if (HasAuthority())
 	{
@@ -1318,7 +1325,8 @@ void AC_BasicPlayer::SetPoseStateOnServer(EPlayerPoseState _NewPoseState)
 	if (m_PlayerPoseState == _NewPoseState)
 		return;
 
-	if (GetCharacterMovement()->IsFalling())
+	// 떨어지는 와중에도 Sprint 취소는 Sprint키 뗄수도 있어서 여기서 Early return 처리는 빼버림
+	if (GetCharacterMovement()->IsFalling() && _NewPoseState != EPlayerPoseState::Walk)
 		return;
 
 	const bool bWasCrouching = m_PlayerPoseState == EPlayerPoseState::Crouch;
