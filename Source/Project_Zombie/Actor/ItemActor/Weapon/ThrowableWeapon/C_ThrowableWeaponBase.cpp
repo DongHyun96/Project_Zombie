@@ -994,6 +994,19 @@ void AC_ThrowableWeaponBase::Explode()
 		);	// 재생 종료 후 자동 제거
 	}
 
+	// 폭발 사운드 재생
+	if (m_ExplosionSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(GetWorld()
+			, m_ExplosionSound
+			, ExplosionLocation
+			, 1.0f				// Volume
+			, 1.0f				// Pitch
+			, 0.0f
+			, m_ExplosionSoundAttenuation
+		);
+	}
+
 	SetActorHiddenInGame(true);
 	// Destory() => 실제 제거는 서버에서만 호출하도록 변경
 
