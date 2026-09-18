@@ -406,6 +406,7 @@ protected:
 
 protected:
 	// Throwable Weapon의 상태
+	UPROPERTY(BlueprintReadOnly)
 	EThrowableState m_ThrowableState;
 
 	// 폭발 실제 Object

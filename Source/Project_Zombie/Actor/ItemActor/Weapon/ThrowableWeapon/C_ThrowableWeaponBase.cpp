@@ -185,7 +185,7 @@ void AC_ThrowableWeaponBase::InitializeItemData(const FWeaponData* InRawData)
 {
 	const FThrowableData* ThrowableData = static_cast<const FThrowableData*>(InRawData);
 
-	PRINT_LOCAL(GetWorld(), "AC_ThrowableWeaponBase::InitializeItemData", FColor::Cyan, 10.f);
+	// PRINT_LOCAL(GetWorld(), "AC_ThrowableWeaponBase::InitializeItemData", FColor::Cyan, 10.f);
 	
 	if (!ThrowableData)
 	{
@@ -615,7 +615,7 @@ void AC_ThrowableWeaponBase::Server_DecreaseCurCount_Implementation()
 	{
 		if (FInventoryEntry* SlotEntry = ItemLinkComp->GetItemEntryPtr())
 		{
-			UC_Util::Print("Throwable Decrease");
+			UC_Util::Print("Throwable Decrease", FColor::MakeRandomColor(), 10.f);
 			--SlotEntry->CurCount;
 			//m_LeftCount = SlotEntry->CurCount;
 			int32 Idx = ItemLinkComp->GetSlotIndex();
@@ -816,6 +816,8 @@ void AC_ThrowableWeaponBase::OnThrowThrowable()
 
 	const FVector LaunchLocation = GetLaunchLocation(ThrowDirection);
 
+	UC_Util::Print("Throwed : " + GetName(), FColor::MakeRandomColor(), 10.f);
+	
 	// 투척류 예측 경로 제거
 	ClearPredictedPath();
 
@@ -841,6 +843,10 @@ void AC_ThrowableWeaponBase::OnThrowThrowable()
 
 void AC_ThrowableWeaponBase::OnThrowProcessEnd()
 {
+	PRINT_LOCAL(GetWorld(), "", FColor::Red, 10.f);
+	PRINT_LOCAL(GetWorld(), "OnThrowProcessEnd", FColor::MakeRandomColor(), 10.f);
+	PRINT_LOCAL(GetWorld(), "", FColor::Red, 10.f);
+	
 	// TODO 
 	// 수류탄 던짐
 	// EquippedComponent의 CurrentWeapon은 nullptr 또는 다음 수류탄으로 변경
@@ -1310,7 +1316,7 @@ bool AC_ThrowableWeaponBase::StartFuseTimer()
 	// 쿠킹이 한번이라도 시작되었을 시, 무조건 불발탄 없이 터져야 하는 수류탄이다
 	m_PrevOwnerPlayer = m_OwnerPlayer;
 	
-	PRINT_LOCAL(GetWorld(), "ThrowableWeaponBase - Start Fuse Timer", FColor::Red, 10.f);
+	// PRINT_LOCAL(GetWorld(), "ThrowableWeaponBase - Start Fuse Timer", FColor::Red, 10.f);
 
 	return true;
 }
@@ -1321,7 +1327,7 @@ void AC_ThrowableWeaponBase::ClearFuseTimer()
 	UWorld* World = GetWorld();
 	World->GetTimerManager().ClearTimer(m_FuseTimerHandle);
 	
-	PRINT_LOCAL(GetWorld(), "ThrowableWeaponBase - Clear Fuse Timer", FColor::Red, 10.f);
+	// PRINT_LOCAL(GetWorld(), "ThrowableWeaponBase - Clear Fuse Timer", FColor::Red, 10.f);
 	
 	m_bWantsCook = false; // 쿠킹 취소했으므로 WantsCook 초기화
 }

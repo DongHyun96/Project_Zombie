@@ -4,6 +4,7 @@
 #include "C_BasicCharacterAnimInstance.h"
 #include "AnimMontagePriority/C_MontagePriorityMetaData.h"
 #include "DevloperSetting/C_MontagePrioritySettings.h"
+#include "GameModeAndManager/C_UIManager.h"
 #include "Utility/C_Util.h"
 
 float UC_BasicCharacterAnimInstance::Montage_PlayInternal
@@ -19,6 +20,7 @@ float UC_BasicCharacterAnimInstance::Montage_PlayInternal
 	if (!MontageToPlay) return 0.f;
 
 	const FName TargetGroup = MontageToPlay->GetGroupName();
+	PRINT_LOCAL(GetWorld(), "Playing Anim MontageGroup : " + TargetGroup.ToString(), FColor::MakeRandomColor(), 10.f);
 	
 	UAnimMontage** TargetGroupCurMontage = m_CurPriorityAnimMontage.Find(TargetGroup);
 	
