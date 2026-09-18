@@ -33,6 +33,14 @@ public:
 	void RepPlayerStateInit(float _Ratio);
 	
 	void BindCurHPUpdate(AC_BasicPlayer* _Player);
+
+public:
+	
+	/// <summary>
+	/// 현재 AmmoInfo 보여주고 있는 상황인지 
+	/// </summary>
+	bool IsAmmoInfoShowing() const { return !m_bAmmoInfoPlayedReverseFlag; }
+	
 public: // HPBar 및 BoostBar 관련
 	
 	/// <summary>

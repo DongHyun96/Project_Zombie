@@ -27,6 +27,7 @@
 
 #include "Interface/I_ExplodeStrategy.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
+#include "UI/MainHUD/PlayerStatHUD/C_PlayerStatWidget.h"
 #include "Utility/C_Util.h"
 
 const FName AC_ThrowableWeaponBase::s_HolsterSocketName = TEXT("ThrowableHolsterSocket");
@@ -824,6 +825,10 @@ void AC_ThrowableWeaponBase::OnThrowThrowable()
 	// 로컬 플레이어 신뢰 처리 // 여기서 먼저 처리
 	ExecuteThrowMovement(LaunchLocation, ThrowDirection);
 
+	// UI LeftAmmo 업데이트
+	if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+		MainHUD->UpdateMagazineAmmoCount(0);
+	
 	// 로컬에서 FuseTimer 시작
 	if (!m_bExplodeOnImpact && HasFuseTimer())
 	{
@@ -1568,10 +1573,23 @@ void AC_ThrowableWeaponBase::UpdateAmmoInfoHUDForDrawEnd()
 	int32 Count = 1;
 	
 	if (FInventoryEntry* Entry = ItemLinkComp->GetItemEntryPtr())
+	{
+		PRINT_LOCAL(GetWorld(), "InvenEntry valid : Setting valid count ", FColor::MakeRandomColor(), 10.f);
 		Count = Entry->CurCount;
-
+	}
+	else PRINT_LOCAL(GetWorld(), "Invalid InvenEntry : Setting default count ", FColor::MakeRandomColor(), 10.f);  
+		
 	if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
-		MainHUD->ToggleAmmoInfoVisibility(true, EFireMode::Single, 1, Count);
+	{
+		UC_PlayerStatWidget* PlayerStatWidget = MainHUD->GetPlayerStatWidget(); 
+		
+		if (PlayerStatWidget->IsAmmoInfoShowing())
+		{
+			PlayerStatWidget->UpdateMagazineAmmoCount(1);
+			PlayerStatWidget->UpdateLeftAmmoTotalCount(Count);
+		}
+		else PlayerStatWidget->ToggleAmmoInfoVisibility(true, EFireMode::Single, 1, Count);
+	}
 }
 
 void AC_ThrowableWeaponBase::SetAmmoUIInfo(FAmmoUIInfo& _AmmoUIInfo)

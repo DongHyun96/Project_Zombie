@@ -20,7 +20,7 @@ float UC_BasicCharacterAnimInstance::Montage_PlayInternal
 	if (!MontageToPlay) return 0.f;
 
 	const FName TargetGroup = MontageToPlay->GetGroupName();
-	PRINT_LOCAL(GetWorld(), "Playing Anim MontageGroup : " + TargetGroup.ToString(), FColor::MakeRandomColor(), 10.f);
+	// PRINT_LOCAL(GetWorld(), "Playing Anim MontageGroup : " + TargetGroup.ToString(), FColor::MakeRandomColor(), 10.f);
 	
 	UAnimMontage** TargetGroupCurMontage = m_CurPriorityAnimMontage.Find(TargetGroup);
 	

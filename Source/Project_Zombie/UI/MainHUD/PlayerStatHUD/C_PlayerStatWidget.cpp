@@ -191,7 +191,10 @@ bool UC_PlayerStatWidget::ToggleAmmoInfoVisibility
 		if (m_CurrentShowingFireMode != _FireMode)
 			UpdateFireMode(_FireMode);
 
-		// 2. 진행 중이던 Text 스왑 애니메이션이 있다면 즉시 중지 (위치/알파 꼬임 방지)
+		UpdateMagazineAmmoCount(_MagazineAmmo);
+		UpdateLeftAmmoTotalCount(_LeftAmmoTotalCount);
+		
+		/*// 2. 진행 중이던 Text 스왑 애니메이션이 있다면 즉시 중지 (위치/알파 꼬임 방지)
 		for (UWidgetAnimation* Anim : m_UpdateMagazineTextAnimations)
 			if (Anim && IsAnimationPlaying(Anim)) StopAnimation(Anim);
 		
@@ -204,7 +207,7 @@ bool UC_PlayerStatWidget::ToggleAmmoInfoVisibility
 
 		// 안 보이는 Hidden Text도 현재 값으로 동일하게 맞춰둠
 		PasteCurrentShowingMagTextToHidden();
-		PasteCurrentShowingLeftAmmoTextToHidden();
+		PasteCurrentShowingLeftAmmoTextToHidden();*/
 
 		return true;
 	}
@@ -251,6 +254,14 @@ void UC_PlayerStatWidget::UpdateLeftAmmoTotalCount(int32 _LeftAmmoTotalCount)
 {
 	// 현재 Ammo Info를 보여주고 있지 않은 상황
 	if (m_bAmmoInfoPlayedReverseFlag) return;
+
+	// UI가 등장하는 애니메이션이 아직 재생 중인지 체크
+	if (IsAnimationPlaying(m_ShowAmmoInfosAnims[m_CurrentShowingFireMode]))
+	{
+		// 애니메이션 없이 값만 즉시 덮어씌움
+		SetCurrentShowingLeftAmmoText(_LeftAmmoTotalCount);
+		return;
+	}
 	
 	// 다음으로 보여줄 Text로 지속적으로 Swapping
 	m_bCurrentShowingLeftAmmoTextIdx = !m_bCurrentShowingLeftAmmoTextIdx;
