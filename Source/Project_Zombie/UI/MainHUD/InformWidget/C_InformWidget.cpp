@@ -107,7 +107,6 @@ bool UC_InformWidget::AddEquippedWeaponLog(const FName& _WeaponItemRowName)
 	const FString* pWeaponItemName = m_ItemNameMap.Find(_WeaponItemRowName);
 	if (!pWeaponItemName) return false;
 
-	AddPlayerWarningLog("EQUIPPED : " + *pWeaponItemName, FColor::White);
 	return true;
 }
 

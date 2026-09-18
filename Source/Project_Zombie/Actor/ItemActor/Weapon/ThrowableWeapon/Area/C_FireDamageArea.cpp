@@ -13,10 +13,10 @@
 AC_FireDamageArea::AC_FireDamageArea()
 {
 	// Tick 이 아니라 Timer 를 사용하므로 비활성화
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true; // TODO : 이거 다시 false로 둘 것
 
 	SetReplicates(true);
-	SetReplicateMovement(false);
+	SetReplicatingMovement(false);
 	bAlwaysRelevant = false;
 
 	m_FirePatchEffectScale = 1.f;
