@@ -212,7 +212,7 @@ bool AC_MeleeWeaponBase::AttachToHand(USceneComponent* _ParentMesh)
 	if (bIsAttached)
 	{
     	Player->SetHandState(EHandState::WeaponMelee);
-		UpdateAmmoInfoHUDForDrawEnd();
+		// UpdateAmmoInfoHUDForDrawEnd();
 	}
 	
 	return bIsAttached;
@@ -450,9 +450,3 @@ void AC_MeleeWeaponBase::UpdateAmmoInfoHUDForDrawEnd()
 	if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
 		MainHUD->ToggleAmmoInfoVisibility(false);
 }
-
-void AC_MeleeWeaponBase::SetAmmoUIInfo(FAmmoUIInfo& _AmmoUIInfo)
-{
-	_AmmoUIInfo.Visible = false;
-}
-

@@ -231,6 +231,10 @@ void UC_PlayerStatWidget::UpdateMagazineAmmoCount(int32 _AmmoCount)
 {
 	// 현재 Ammo Info를 보여주고 있지 않은 상황
 	if (m_bAmmoInfoPlayedReverseFlag) return;
+	
+	// 이미 해당 AmmoCount로 보여주는 중이면 중복 재생하지 않음
+	UTextBlock* CurrentTextBlock = m_MagazineTexts[static_cast<int32>(m_bCurrentShowingMagTextIdx)];
+	if (CurrentTextBlock->GetText().EqualTo(FText::AsNumber(_AmmoCount))) return;
 
 	// UI가 등장하는 애니메이션이 아직 재생 중인지 체크
 	if (IsAnimationPlaying(m_ShowAmmoInfosAnims[m_CurrentShowingFireMode]))
@@ -255,6 +259,11 @@ void UC_PlayerStatWidget::UpdateLeftAmmoTotalCount(int32 _LeftAmmoTotalCount)
 	// 현재 Ammo Info를 보여주고 있지 않은 상황
 	if (m_bAmmoInfoPlayedReverseFlag) return;
 
+	// 이미 해당 LeftAmmoTotalCount로 보여주는 중이면 중복 재생하지 않음
+	UTextBlock* CurrentTextBlock = m_LeftAmmoTexts[static_cast<int32>(m_bCurrentShowingLeftAmmoTextIdx)];
+	if (CurrentTextBlock->GetText().ToString() == FString::Printf(TEXT("/ %d"), _LeftAmmoTotalCount))
+		return;
+	
 	// UI가 등장하는 애니메이션이 아직 재생 중인지 체크
 	if (IsAnimationPlaying(m_ShowAmmoInfosAnims[m_CurrentShowingFireMode]))
 	{

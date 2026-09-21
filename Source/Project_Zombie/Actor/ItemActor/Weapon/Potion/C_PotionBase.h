@@ -60,11 +60,6 @@ public:
 	virtual bool AttachToHand(USceneComponent* _ParentMesh) override;
 	
 public:
-	/// <summary>
-	/// 현재 무기 상태에 맞춘 AmmoUIInfo 초기화 처리 
-	/// </summary>
-	/// <param name="_AmmoUIInfo"></param>
-	virtual void SetAmmoUIInfo(FAmmoUIInfo& _AmmoUIInfo) override;
 	
 	/// <summary>
 	/// <para> DrawEnd 시, 각 무기에 맞는 표기할 무기 정보 띄우기 처리 (Local Player에 한해 처리) </para>
@@ -73,9 +68,6 @@ public:
 	/// <para> 해당 함수를 이용할 예정 </para>
 	/// </summary>
 	virtual void UpdateAmmoInfoHUDForDrawEnd() override;
-	
-	UFUNCTION()
-	void OnRep_UpdateAmmoWidget();
 	
 	// ThrowableBase에서 구조 가져와서 사용.
 private:
@@ -120,4 +112,10 @@ protected:
 	// 좌클릭시 사용을 시작 할 때부터 재생할 몽타주
 	UPROPERTY(Transient)
 	TObjectPtr<class UAnimMontage> m_UsingAnimation{};  
+
+private:
+
+	// EntryPtr가 valid할 때까지 기다리기용 TimerHandle
+	FTimerHandle m_UpdateAmmoInfoTimer{};
+	
 };

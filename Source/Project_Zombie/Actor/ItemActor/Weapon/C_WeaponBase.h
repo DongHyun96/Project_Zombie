@@ -121,12 +121,6 @@ public:
 public:
 	
 	/// <summary>
-	/// 현재 무기 상태에 맞춘 AmmoUIInfo 초기화 처리 
-	/// </summary>
-	/// <param name="_AmmoUIInfo"></param>
-	virtual void SetAmmoUIInfo(FAmmoUIInfo& _AmmoUIInfo) PURE_VIRTUAL(AC_WeaponBase::SetAmmoUIInfo);
-	
-	/// <summary>
 	/// <para> DrawEnd 시, 각 무기에 맞는 표기할 무기 정보 띄우기 처리 (Local Player에 한해 처리) </para>
 	/// <para> 이 무기의 주인이 Locally Controlled 되는 중인지 체킹하여 valid하면 띄움 </para>
 	/// <para> 실질적인 DrawEnd 시에 호출 및 리슨서버 환경에서 EquippedCom에서 현재 들고 있는 무기가 바뀌는 Rep 처리 시, </para>
@@ -135,6 +129,8 @@ public:
 	virtual void UpdateAmmoInfoHUDForDrawEnd() PURE_VIRTUAL(AC_WeaponBase::UpdateAmmoInformUIOnDrawEnd, );
 
 	void SetRelativeTransformToInitial() { SetActorRelativeTransform(m_InitialRelativeTransform); }
+
+	void Test();
 	
 public:
 	

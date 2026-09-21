@@ -102,14 +102,6 @@ bool UC_InformWidget::AddPlayerWarningLog(const FName& _ItemRowName, int32 _Item
 	return true;
 }
 
-bool UC_InformWidget::AddEquippedWeaponLog(const FName& _WeaponItemRowName)
-{
-	const FString* pWeaponItemName = m_ItemNameMap.Find(_WeaponItemRowName);
-	if (!pWeaponItemName) return false;
-
-	return true;
-}
-
 void UC_InformWidget::ToggleGameStartPanel(bool _Visible)
 {
 	GameStartsTimerPanel->SetVisibility(_Visible ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);

@@ -271,9 +271,6 @@ private: // 예상 경로 표시 관련
 public:
 	
 	virtual void UpdateAmmoInfoHUDForDrawEnd() override;
-	
-	virtual void SetAmmoUIInfo(FAmmoUIInfo& _AmmoUIInfo) override;
-
 
 	/* Socket Name 관련 */
 protected: 
@@ -497,5 +494,8 @@ private:
 	// 위의 상황은 놔두고 Throwable에 한해, 이전 PrevOwnerPlayer를 기록해둔다.
 	UPROPERTY()
 	AC_BasicPlayer* m_PrevOwnerPlayer{};
+
+	// EntryPtr가 valid할 때까지 기다리기용 TimerHandle
+	FTimerHandle m_UpdateAmmoInfoTimer{};
 	
 };

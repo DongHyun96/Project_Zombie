@@ -10,7 +10,7 @@ class AC_BasicPlayer;
 enum class EFireMode : uint8;
 class UC_InvenComponent;
 
-USTRUCT(BlueprintType)
+/*USTRUCT(BlueprintType)
 struct FAmmoUIInfo
 {
 	GENERATED_BODY()
@@ -26,7 +26,7 @@ struct FAmmoUIInfo
 	
 	UPROPERTY()
 	int32 		LeftAmmoTotalCount{};
-};
+};*/
 
 /// <summary>
 /// 장착된 무기 관리 및 무기전환, 현재 손에 들고 있는 무기 관리 처리 Component
@@ -68,24 +68,11 @@ public:
 private:
 	
 	/// <summary>
-	/// Valid한 Weapon을 서버 환경에서 Slot에 제대로 Set 처리했을 때, GameLog 띄우기용 해당 Client RPC 함수
-	/// _WeaponItemRowName 직접 보내는 이유는, 이 RPC 호출을 받았을 무렵 해당 Weapon이 아직 초기화되지 않았을 수 있기 때문
-	/// </summary>
-	UFUNCTION(Client, Reliable)
-	void Client_OnEquippedWeapon(const FName& _WeaponItemRowName);
-	
-private:
-	
-	/// <summary>
 	/// 슬롯에 무기 장착하기 / 해제는 Weapon에 nullptr를 줄 것 -> 장착/해제는 이 함수를 통해서 무조건 할 것
 	/// </summary>
 	/// <param name="TargetSlot"> : 장착할 슬롯 위치 </param>
 	/// <param name="WeaponToEquip"> : 해당 slot에 장착할 무기 객체 / 장착 해제는 nullptr </param>
 	void SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* WeaponToEquip);
-
-	// Not in use
-	/*UFUNCTION(NetMulticast, Reliable)
-	void Multicast_SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* WeaponToEquip);*/
 
 private:
 	

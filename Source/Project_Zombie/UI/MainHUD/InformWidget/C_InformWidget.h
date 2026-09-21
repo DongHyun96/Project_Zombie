@@ -47,8 +47,6 @@ public:
 	/// <returns> : Valid하지 않은 값이 들어왔다면 return false </returns>
 	bool AddPlayerWarningLog(const FName& _ItemRowName, int32 _ItemPickUpCount);
 
-	bool AddEquippedWeaponLog(const FName& _WeaponItemRowName);
-	
 	void ToggleGameStartPanel(bool _Visible);
 	void UpdateGameStartLeftTime(int32 _Time);
 	void ShowMainInstruction(const FString& _Construction);

@@ -42,14 +42,6 @@ void UC_EquippedComponent::BeginPlay()
 	}
 }
 
-void UC_EquippedComponent::Client_OnEquippedWeapon_Implementation(const FName& _WeaponItemRowName)
-{
-	UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld());
-	if (!MainHUD) return;
-	
-	MainHUD->GetInformWidget()->AddEquippedWeaponLog(_WeaponItemRowName);
-}
-
 void UC_EquippedComponent::SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* WeaponToEquip)
 {
 	if (TargetSlot == EWeaponSlot::None || TargetSlot == EWeaponSlot::Max)
@@ -110,24 +102,6 @@ void UC_EquippedComponent::SetSlotWeapon(EWeaponSlot TargetSlot, AC_WeaponBase* 
     	m_Weapons[TargetSlotIdx]->AttachToHolster(m_OwnerPlayer->GetMesh());
     }
 }
-
-/*void UC_EquippedComponent::Multicast_SetSlotWeapon_Implementation(EWeaponSlot TargetSlot, AC_WeaponBase* WeaponToEquip)
-{
-	PRINT_LOCAL(GetWorld(), "Multicast_SetSlotWeapon Start", FColor::Cyan, 10.f);
-	
-	if (!m_OwnerPlayer)
-	{
-		PRINT_LOCAL(GetWorld(), "Multicast_SetSlotWeapon OwnerPlayer nullptr", FColor::Cyan, 10.f);
-		return;
-	}		
-	if (m_OwnerPlayer->HasAuthority()) return;
-
-	if (WeaponToEquip)
-		PRINT_LOCAL(GetWorld(), WeaponToEquip->GetWeaponRowName().ToString(), FColor::Green, 10.f);
-	
-	SetSlotWeapon(TargetSlot, WeaponToEquip);
-	UpdateAmmoWidget();
-}*/
 
 void UC_EquippedComponent::UpdateWeaponData(EWeaponSlot _TargetWeapon, FName InItemRow)
 {

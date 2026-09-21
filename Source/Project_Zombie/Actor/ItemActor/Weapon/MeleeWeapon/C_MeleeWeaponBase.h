@@ -106,8 +106,6 @@ public:
 	
 	virtual void UpdateAmmoInfoHUDForDrawEnd() override;
 	
-	virtual void SetAmmoUIInfo(FAmmoUIInfo& _AmmoUIInfo) override;
-
 public:
 	void PlayAttackMotion(class AC_BasicPlayer* _WeaponUser);
 

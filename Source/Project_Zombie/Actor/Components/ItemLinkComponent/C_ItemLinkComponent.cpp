@@ -23,6 +23,12 @@ void UC_ItemLinkComponent::ClearLink()
 
 bool UC_ItemLinkComponent::IsLinkValid() const
 {
+	const FColor RandomColor = FColor::MakeRandomColor();
+
+	// 클라에서는 둘다 찍힘
+	if (!OwningInvenComp)		 PRINT_LOCAL(GetWorld(), "OwningInvenComp nullptr", RandomColor, 10.f);
+	if (SlotIndex == INDEX_NONE) PRINT_LOCAL(GetWorld(), "SlotIndex INDEX_NONE", RandomColor, 10.f);
+	
 	return OwningInvenComp != nullptr && SlotIndex != INDEX_NONE;
 }
 

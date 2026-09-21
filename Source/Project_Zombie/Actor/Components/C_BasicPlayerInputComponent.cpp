@@ -240,6 +240,9 @@ void UC_BasicPlayerInputComponent::JumpAction()
 {
 	if (!Player || !Player->CanJump()) return;
 
+	if (Player->GetEquippedComponent()->GetCurWeapon())
+		Player->GetEquippedComponent()->GetCurWeapon()->Test();
+	
 	// Crouch 상태라면, 먼저 Crouch를 풀어주도록 처리
 	if (Player->IsCrouching())
 	{

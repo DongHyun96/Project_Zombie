@@ -297,42 +297,68 @@ bool AC_PotionBase::AttachToHand(USceneComponent* _ParentMesh)
 	if (bIsAttached)
 	{
 		Player->SetHandState(EHandState::WeaponThrowable);
-		UpdateAmmoInfoHUDForDrawEnd();
+		// UpdateAmmoInfoHUDForDrawEnd();
 	}
 	
 	return bIsAttached;
 }
 
-void AC_PotionBase::SetAmmoUIInfo(FAmmoUIInfo& _AmmoUIInfo)
-{
-	_AmmoUIInfo.Visible            = true;
-	_AmmoUIInfo.FireMode           = EFireMode::Single;
-	_AmmoUIInfo.MagazineAmmo       = 1;
-	
-	int32 Count = 1;
-	
-	if (FInventoryEntry* Entry = ItemLinkComp->GetItemEntryPtr())
-		Count = Entry->CurCount;
-	
-	_AmmoUIInfo.LeftAmmoTotalCount = Count;
-}
-
 void AC_PotionBase::UpdateAmmoInfoHUDForDrawEnd()
 {
 	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled()) return;
+
+	// 이 시점에 MainHUD 없다는건 뭔가 문제가 있음
+	UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld());
+	if (!MainHUD)
+	{
+		PRINT_LOCAL(GetWorld(), "[AC_PotionBase::UpdateAmmoInfoHUDForDrawEnd] : MainHUD nullptr", FColor::Red, 10.f);
+		return;
+	}
+
+	UC_PlayerStatWidget* PlayerStatWidget = MainHUD->GetPlayerStatWidget();
 	
-	int32 Count = 1;
-	
+	// ItemEntry가 Valid한 경우에는 바로 처리 - 타이머 처리를 할 필요 x
 	if (FInventoryEntry* Entry = ItemLinkComp->GetItemEntryPtr())
-		Count = Entry->CurCount;
+	{
+		if (PlayerStatWidget->IsAmmoInfoShowing())
+		{
+			PlayerStatWidget->UpdateMagazineAmmoCount(1);
+			PlayerStatWidget->UpdateLeftAmmoTotalCount(Entry->CurCount);
+		} 
+		else PlayerStatWidget->ToggleAmmoInfoVisibility(true, EFireMode::Single, 1, Entry->CurCount);
+		
+		return;
+	}
+	
+	// 아직 ItemEntry가 valid하지 않음 -> Valid할 때까지 기다린 후, UI 업데이트 처리
+	
+	const FTimerDelegate TimerDelegate = FTimerDelegate::CreateWeakLambda(this, [this, PlayerStatWidget]()
+	{
+		// 시간이 흘러 OwnerPlayer가 nullptr 처리가 되어있을 수 있음
+		// 이 때에는 Draw에 해당하는 UI 업데이트 처리를 하지 않음 (이미 지난 정보)
+		if (!m_OwnerPlayer)
+		{
+			GetWorldTimerManager().ClearTimer(m_UpdateAmmoInfoTimer);
+			return;
+		}
+		
+		FInventoryEntry* Entry = ItemLinkComp->GetItemEntryPtr();
+		if (!Entry) return; // 다음 0.1초 기다려서 다음 tick에 시도
 
-	if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
-		MainHUD->ToggleAmmoInfoVisibility(true, EFireMode::Single, 1, Count);
-}
+		// 실질적인 Entry ptr가 valid한 상황 -> 이 시점에서야 실질적인 Count로 UI 업데이트 처리 진행
 
-void AC_PotionBase::OnRep_UpdateAmmoWidget()
-{
-	UpdateAmmoInfoHUDForDrawEnd();
+		// 이미 보이는 중이라면, Animation 처리를 위해 세부 Update Animation 재생처리로 둠
+		if (PlayerStatWidget->IsAmmoInfoShowing())
+		{
+			PlayerStatWidget->UpdateMagazineAmmoCount(1);
+			PlayerStatWidget->UpdateLeftAmmoTotalCount(Entry->CurCount);
+		}
+		else PlayerStatWidget->ToggleAmmoInfoVisibility(true, EFireMode::Single, 1, Entry->CurCount);
+		
+		GetWorldTimerManager().ClearTimer(m_UpdateAmmoInfoTimer);
+	});
+
+	GetWorldTimerManager().SetTimer(m_UpdateAmmoInfoTimer, TimerDelegate, 0.1f, true);
 }
 
 void AC_PotionBase::PlayUsingMontageSynced()

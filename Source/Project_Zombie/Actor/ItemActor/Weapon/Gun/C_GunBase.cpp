@@ -229,14 +229,6 @@ void AC_GunBase::LoadAsyncAssets(const FWeaponData* InRawData)
 	}
 }
 
-void AC_GunBase::SetAmmoUIInfo(FAmmoUIInfo& _AmmoUIInfo)
-{
-	_AmmoUIInfo.Visible            = true;
-	_AmmoUIInfo.FireMode           = m_FireMode;
-	_AmmoUIInfo.MagazineAmmo       = m_CurrentAmmo;
-	_AmmoUIInfo.LeftAmmoTotalCount = m_MaxAmmo;
-}
-
 void AC_GunBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	if (GetWorld())
@@ -483,7 +475,7 @@ bool AC_GunBase::AttachToHand(USceneComponent* _ParentMesh)
 		m_OwnerPlayer = Player;
 		
 		Player->SetHandState(EHandState::WeaponGun);
-		UpdateAmmoInfoHUDForDrawEnd();
+		// UpdateAmmoInfoHUDForDrawEnd();
 	}
 	else PRINT_LOCAL(GetWorld(), "AttachToComponent(hand) Failed", FColor::Red, 10.f);
 	
