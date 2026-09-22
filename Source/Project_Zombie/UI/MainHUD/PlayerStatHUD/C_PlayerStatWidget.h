@@ -51,7 +51,7 @@ public: // HPBar 및 BoostBar 관련
 	/// <returns> : 잘못된 값이 들어왔을 경우 return false </returns>
 	bool UpdateBoostBar(float _Boost, float _MaxBoost);
 	
-private:
+public:
 	
 	/// <summary>
 	/// HP Bar Percent 업데이트 
@@ -67,6 +67,8 @@ private:
 	/// <param name="_Ratio"> : HP 비율 </param>
 	/// <returns> : 잘못된 값이 들어왔을 경우 return false </returns>
 	void UpdateHPBarRatio(float _Ratio);
+
+private:
 	
 	void UpdateHPBarBoilerPlate(float _Ratio);
 	

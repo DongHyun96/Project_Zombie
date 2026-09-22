@@ -232,14 +232,20 @@ void AC_BasicPlayer::BeginPlay()
 	{
 		// InventoryWidget에 Player의 InvenComponent 초기화 및 델리게이트 진행
 		APlayerController* PC = Cast<APlayerController>(GetController());
-		
 		if (!PC) return;
 		
-		AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD());
+		AC_PlayerState* PS = GetPlayerState<AC_PlayerState>();
+		if (!PS) return;
 		
+		AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD());
 		if (!UIManager) return;
 
-		if (!m_InvenComponent || !m_EquippedComponent || !m_StatComponent) return;
+		UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld());
+		
+		if (!m_InvenComponent || !m_EquippedComponent || !m_StatComponent || !MainHUD) return;
+		
+		UC_PlayerStatWidget* StatWidget = MainHUD->GetPlayerStatWidget();
+		if (!StatWidget) return;
 
 		// 웅크리기 완료 시 호출할 OnPoseTransitionFinished 바인딩
 		if (!m_PoseColliderHandlerComponent) return;
@@ -257,22 +263,20 @@ void AC_BasicPlayer::BeginPlay()
 		UIManager->GetInventoryWidget()->GetPlayerStatUpgradeWidget()->BindStatEvents(m_StatComponent);
 		
 		// Main Stat HUD HP 업데이트 바인딩 관련
-		if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
-		{
-			UC_PlayerStatWidget* StatWidget = MainHUD->GetPlayerStatWidget();
-			if (!StatWidget) return;
-			
-			if (IsLocallyControlled()) StatWidget->BindCurHPUpdate(this);
-		}
-		
-		m_StatComponent->OnCurHPUpdatedDelegate.Broadcast(m_StatComponent->GetCurHPRatio());
+		if (IsLocallyControlled()) StatWidget->BindCurHPUpdate(this);
 		
 		//UIManager->GetMainHUDWidget()->GetPlayerStatWidget()->UpdateHPBar(m_StatComponent->GetCurHPRatio());
-		
-		if (IsLocallyControlled())
-			UpdateBoostBarHUD();
-		
+
 		TryRestoreFromPlayerState();
+		
+		// Stat 업데이트 이후, 매뉴얼하게 UI 업데이트 
+		if (IsLocallyControlled())
+		{
+			StatWidget->UpdateHPBarRatio(m_StatComponent->GetCurHPRatio());
+			MainHUD->UpdateBoostBar(m_StatComponent->GetStat(StatName::CurBoost), m_StatComponent->GetStat(StatName::MaxBoost));
+		}
+		else MainHUD->GetOtherPlayerStatWidget()->UpdateHPBar(this, m_StatComponent->GetCurHPRatio());
+		 
 		
 		// 클라가 남의 아이템에 대한 정보를 불러와야 하기 때문에 호출해봄.
 		//if (m_EquippedComponent)
