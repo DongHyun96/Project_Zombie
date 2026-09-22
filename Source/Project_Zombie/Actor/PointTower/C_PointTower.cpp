@@ -131,6 +131,143 @@ void AC_PointTower::BeginPlay()
 	// Activate(0.f);
 }
 
+#if WITH_EDITOR
+void AC_PointTower::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+
+	// 현재 플레이 중인 Level World
+	if (GetWorld() && GetWorld()->IsPlayInEditor()) return; // 따로 처리해줄 사항 x
+	
+	const FName PropertyName = PropertyChangedEvent.Property ? PropertyChangedEvent.Property->GetFName() : NAME_None;
+
+	// 동기화가 필요한 Property가 수정된 경우
+	if (PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ActivateSequenceIdx)) // 이미 세팅된 Idx의 PointTower를 찾아서 자기자신의 세팅값을 수정처리
+	{
+		TrySyncSelf();
+		return;
+	}
+
+	// Idx를 수정하는 것이 아닌, 기타 다른 설정을 수정할 때 -> 동일한 Idx PointTower들 모두 해당 멤버변수값을 수정한 값으로 일괄 처리
+	if (PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_DefaultDecreasingAmountOfConquerAmountPerSec) ||
+		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_IncreaseAmountPerSec) ||
+		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_DPSWhileConquering) ||
+		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ZombieDamageRatio) ||
+		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ZombieAttackRange)) // m_ZombieWaveSetting은 PostEditChangeChain 쪽에서 동기화 처리 중
+	{
+		TrySyncOther();
+	}
+}
+
+void AC_PointTower::PostEditChangeChainProperty(FPropertyChangedChainEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeChainProperty(PropertyChangedEvent);
+
+	if (GetWorld() && GetWorld()->IsPlayInEditor()) return;
+
+	const FEditPropertyChain::TDoubleLinkedListNode* ActiveMemberNode = PropertyChangedEvent.PropertyChain.GetActiveMemberNode();
+	if (!ActiveMemberNode) return;
+
+	const FProperty* ActiveMemberProperty = ActiveMemberNode->GetValue();
+	if (!ActiveMemberProperty) return;
+
+	if (ActiveMemberProperty->GetFName() == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ZombieWaveSetting))
+		TrySyncOther();
+}
+
+bool AC_PointTower::CanEditChange(const FProperty* InProperty) const
+{
+	if (!Super::CanEditChange(InProperty)) return false;
+
+	// 현재 Editing 모드의 world (Level 실행 중 x)
+	if (GetWorld() && !GetWorld()->IsPlayInEditor()) return true; // 수정 가능
+
+	const FName PropertyName = InProperty->GetFName();
+
+	// 오로지 에디팅 상태에서의 Level에서만 수정가능한 멤버변수들인 경우, 수정 불가능하게끔 처리
+	if (PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ActivateSequenceIdx) ||
+		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_DefaultDecreasingAmountOfConquerAmountPerSec) ||
+		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_IncreaseAmountPerSec) ||
+		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_DPSWhileConquering) ||
+		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ZombieDamageRatio) ||
+		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ZombieAttackRange) ||
+		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ZombieWaveSetting))
+		return false;
+	
+	return true;
+}
+
+/*void AC_PointTower::PostEditImport()
+{
+	Super::PostEditImport();
+	UE_LOG(LogTemp, Warning, TEXT("AC_PointTower::PostEditImport %s"), *GetName());
+	// TODO : 자기자신 Sync 맞추기
+}
+
+void AC_PointTower::PostDuplicate(bool bDuplicateForPIE)
+{
+	Super::PostDuplicate(bDuplicateForPIE);
+
+	if (bDuplicateForPIE) return;
+	
+	UE_LOG(LogTemp, Warning, TEXT("AC_PointTower::PostDuplicate %s"), *GetName());
+	// TODO : 자기자신 Sync 맞추기
+}*/
+
+void AC_PointTower::TrySyncSelf()
+{
+	if (!GetWorld()) return;
+
+	UE_LOG(LogTemp, Warning, TEXT("AC_PointTower::TrySyncSelf"));
+
+	
+	for (TActorIterator<AC_PointTower> It(GetWorld()); It; ++It)
+	{
+		AC_PointTower* PointTower = *It;
+		
+		if (!IsValid(PointTower) || PointTower == this) continue;
+		if (PointTower->m_ActivateSequenceIdx != m_ActivateSequenceIdx) continue;
+		
+		// 동일한 ActivateIdx를 찾음
+		CopyAllPointTowerSettings(PointTower);
+		return;
+	}
+}
+
+void AC_PointTower::TrySyncOther()
+{
+	if (!GetWorld()) return;
+
+	UE_LOG(LogTemp, Warning, TEXT("AC_PointTower::TrySyncOther"));
+	
+	for (TActorIterator<AC_PointTower> It(GetWorld()); It; ++It)
+	{
+		AC_PointTower* PointTower = *It;
+		
+		if (!IsValid(PointTower) || PointTower == this) continue;
+		if (PointTower->m_ActivateSequenceIdx != m_ActivateSequenceIdx) continue;
+		
+		// 동일한 ActivateIdx를 찾음
+		PointTower->CopyAllPointTowerSettings(this);
+	}
+}
+
+void AC_PointTower::CopyAllPointTowerSettings(AC_PointTower* _SrcPointTower)
+{
+	if (!_SrcPointTower) return;
+	
+	m_DefaultDecreasingAmountOfConquerAmountPerSec = _SrcPointTower->m_DefaultDecreasingAmountOfConquerAmountPerSec;
+	m_IncreaseAmountPerSec                         = _SrcPointTower->m_IncreaseAmountPerSec;
+	m_DPSWhileConquering                           = _SrcPointTower->m_DPSWhileConquering;
+	m_ZombieDamageRatio                            = _SrcPointTower->m_ZombieDamageRatio;
+	m_ZombieAttackRange                            = _SrcPointTower->m_ZombieAttackRange;
+	m_ZombieWaveSetting                            = _SrcPointTower->m_ZombieWaveSetting;
+	
+	// TODO : 세팅값 수정되지 않은채로 있다면 Modify 처리 넣어줄 것
+}
+
+#endif
+
 void AC_PointTower::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);

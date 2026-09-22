@@ -16,6 +16,11 @@
 				"DeveloperSettings",
 				"PhysicsCore"
 			]
+		},
+		{
+			"Name": "Project_ZombieEditor",
+			"Type": "Editor",
+			"LoadingPhase": "Default"
 		}
 	],
 	"Plugins": [

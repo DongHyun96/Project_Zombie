@@ -37,9 +37,56 @@ class PROJECT_ZOMBIE_API AC_PointTower : public APawn, public IGenericTeamAgentI
 public:
 	AC_PointTower();
 
-protected:
 	virtual void BeginPlay() override;
 
+#if WITH_EDITOR
+	
+	/// <summary>
+	/// 에디팅 상태에서 바로, m_ActivateSequenceIdx가 같은 PointTower들의 값 sync를 맞추기 위함
+	/// </summary>
+	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+	
+	virtual void PostEditChangeChainProperty(FPropertyChangedChainEvent& PropertyChangedEvent) override;
+
+	/// <summary>
+	/// EditInstanceOnly로 수정 가능한 값들, PIE 실행모드에서 수정 불가능하게끔 처리하기 위함 
+	/// </summary>
+	virtual bool CanEditChange(const FProperty* InProperty) const override;
+
+	/*/// <summary>
+	/// 레벨에 새로 배치 시(복붙되어 생성되었을 때), Idx 0번의 PointTower들과 동일한 세팅값으로 처리
+	/// </summary>
+	virtual void PostEditImport() override;
+
+	/// <summary>
+	/// 레벨에 새로 배치 시(복붙되어 생성되었을 때), Idx 0번의 PointTower들과 동일한 세팅값으로 처리 
+	/// </summary>
+	virtual void PostDuplicate(bool bDuplicateForPIE) override;*/
+
+public:
+	
+	/// <summary>
+	/// <para> 자신과 동일한 ActivateSeq를 가진 PointTower를 참고하여, 자신의 세팅값을 동기화 </para>
+	/// <para> ActivateSeq 수정 시, 또는 새로운 PointTower Level에 배치 시 호출할 것 </para>
+	/// </summary>
+	void TrySyncSelf();
+
+private:
+	
+	/// <summary>
+	/// <para> 자신의 세팅값으로 다른 동일한 ActivateSeq를 가진 PointTower들 세팅값 동기화 </para>
+	/// <para> 이 PointTower의 ActivateSeq를 제외한 세팅값을 세팅 시 호출할 것 </para>
+	/// </summary>
+	void TrySyncOther();
+
+	/// <summary>
+	/// Param으로 들어온 PointTower의 Setting값 자신에게 맞추기 (단, ActivateSeqIdx는 뺌)
+	/// </summary>
+	/// <param name="_SrcPointTower"> : 값을 복사할 PointTower </param>
+	void CopyAllPointTowerSettings(AC_PointTower* _SrcPointTower);
+	
+#endif
+	
 public:
 	
 	virtual void Tick(float DeltaTime) override;
@@ -297,11 +344,6 @@ private:
 
 	UPROPERTY(Replicated)
 	AC_PointTowerElectroEffect* m_PointTowerInteractEffect{};
-	
-private:
-	
-	FTimerHandle m_TestTimerHandle{};
-	FTimerHandle m_TestTimerHandle2{};
 	
 	float m_DamageTimer{}; // 1초 간격으로 Damage 입힐 것
 	
