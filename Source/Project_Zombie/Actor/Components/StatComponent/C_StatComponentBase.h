@@ -58,8 +58,11 @@ public:
 	AC_BasicCharacter* GetOwnerCharacter() {return m_OwnerCharacter;}
 	
 private:
-	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_InitializeAllStats(const TArray<FStatSyncPair>& InSyncArray);
+	/*UFUNCTION(NetMulticast, Reliable)
+	void Multicast_InitializeAllStats(const TArray<FStatSyncPair>& InSyncArray);*/
+	
+	UFUNCTION()
+	void OnRep_ReplicatedStatsArray();
 	
 public:
 	
@@ -226,6 +229,10 @@ private:
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_DecreaseCurHP(float _DecreaseAmount);
 
+public:
+	
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+	
 protected:
 	
 	UPROPERTY()
@@ -240,6 +247,8 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Stat")
 	FName m_RowName{};
 
+protected: /* 기존에 이 틀로 짜여진 StatCom 구조상, 이 멤버변수 형태는 놔둠 */
+	
 	// 보유 스탯 (MaxStat, CurStat 모두 포함)
 	// UPROPERTY(ReplicatedUsing = OnRep, VisibleAnywhere, BlueprintReadOnly, Category = "Stat") -> 사용 불가
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat")
@@ -249,6 +258,18 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat")
 	TMap<FName, uint8> m_StatGrades{};
 
+private:
+	
+	// Level 전환 시, 서버 쪽의 Stat 리플리케이션 받기 처리용 변수들
+	// TMap 멤버변수 리플리케이션 받을 수 없음 & RPC 콜로 해결 불가능(레벨 전환시에 컴포넌트 또는 Player가 생성되어 있지 않다면
+	// RPC call 누락되는것 까지 확인 (이전 Multicast_InitializeAllStats -> 클라이언트 환경에서 호출 안들어옴)
+	// 이 변수의 경우, 서버 쪽에서는 값을 대입하는 처리만 하고 클라 환경에서는 Replicate 받을 시에 제대로된 Stat 복원 처리용
+	UPROPERTY(ReplicatedUsing = OnRep_ReplicatedStatsArray)
+	TArray<FStatSyncPair> m_ReplicatedStatsArray{};
+	
+	FTimerHandle m_StatsArrayRepTimerHandle{};
+	
+	
 public:
 
 	// CurHP 가 모두 소진되었을 때 호출받을 Delegate

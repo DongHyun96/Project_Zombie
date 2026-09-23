@@ -87,3 +87,11 @@ void UC_OtherPlayerStatWidget::UpdateHPBar(AC_BasicPlayer* _TargetPlayer, float 
 	
 	UC_Util::Print("[UC_OtherPlayerStatWidget::UpdateHPBar] : No TargetWidget found", FColor::Red, 10.f);
 }
+
+void UC_OtherPlayerStatWidget::UpdateHPBar(AActor* _TargetPlayer, float _HPRatio)
+{
+	AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(_TargetPlayer);
+	if (!Player) return;
+	
+	UpdateHPBar(Player, _HPRatio);
+}

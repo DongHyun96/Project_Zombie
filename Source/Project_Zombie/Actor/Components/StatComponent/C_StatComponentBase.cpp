@@ -16,6 +16,7 @@
 #include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 #include "GameModeAndManager/PointTowerManager/C_PointTowerManager.h"
 #include "Kismet/GameplayStatics.h"
+#include "Net/UnrealNetwork.h"
 #include "Utility/C_UtilActor.h"
 
 
@@ -30,9 +31,6 @@ void UC_StatComponentBase::LoadStatsFromBackup(const TMap<FName, float>& InStats
 {
 	if (!GetOwner()->HasAuthority()) return;
 
-	// TODO : 여기서 StatComponent를 통해서 즉석에서 업그레이드하기?
-	// 애초에 서버든 클라이언트든 여기가 안들어오는 중
-	
 	// 1. 서버 메모리 즉시 복구
 	m_Stats = InStats;
 	m_StatGrades = InGrades;
@@ -42,13 +40,13 @@ void UC_StatComponentBase::LoadStatsFromBackup(const TMap<FName, float>& InStats
 	msg += FString::SanitizeFloat(m_Stats[StatName::MaxHP]);
 
 	PRINT_LOCAL(GetWorld(), "LoadStatsFromBackup - " + msg, CUR_TICK_COLOR, 10.f);
-	
+
+	// Valid한 CurHP가 여기서 잡힘 (서버 기준)
 	msg = FString("Current HP : ");
 	msg += FString::SanitizeFloat(m_Stats[StatName::CurHP]);
 	PRINT_LOCAL(GetWorld(), "LoadStatsFromBackup - " + msg, CUR_TICK_COLOR, 10.f);
 
-	// 2. RPC 전송을 위한 팩킹 (TMap -> TArray)
-	TArray<FStatSyncPair> SyncArray;
+	// 2. m_ReplicatedStatsArray Replicate 처리
     
 	// m_Stats나 m_StatGrades 중 하나를 기준으로 순회합니다. (키 값이 같다고 가정)
 	for (const auto& Pair : m_Stats)
@@ -67,17 +65,19 @@ void UC_StatComponentBase::LoadStatsFromBackup(const TMap<FName, float>& InStats
 			SyncData.StatGrade = 0; // 예외 처리용 기본값
 		}
 
-		SyncArray.Add(SyncData);
+		m_ReplicatedStatsArray.Add(SyncData);
 	}
 
 	// 3. 네트워크 전송이 가능한 TArray로 멀티캐스트 호출
 	// 이거 자체가 클라 쪽 전송 받질 못하는 중
-	Multicast_InitializeAllStats(SyncArray);
+	// -> 아마 레벨 전환하는 과정 중에, 아직 대응되는 객체(Player든, 이 Component든 제대로 생성처리가 안된 가능성이 꽤 농후)
+	// Multicast_InitializeAllStats(SyncArray);
 }
 
-void UC_StatComponentBase::Multicast_InitializeAllStats_Implementation(const TArray<FStatSyncPair>& InSyncArray)
+// DEPRECATED
+/*void UC_StatComponentBase::Multicast_InitializeAllStats_Implementation(const TArray<FStatSyncPair>& InSyncArray)
 {
-	// TODO : 이 Multicast 자체가 호출이 안되는 중
+	// TODO : 이 Multicast 자체가 호출이 안되는 중 -> 이거 아직 클라 쪽은 해당 StatCom 또는 Player가 아직 만들어지지 않은 시점이라서 그런 것 같음
 	
 	// 1. [클라이언트/프록시] 로컬 맵 데이터 동기화 복구 (서버는 이미 LoadStatsFromBackup에서 데이터가 들어감)
 	if (!GetOwner()->HasAuthority())
@@ -130,7 +130,7 @@ void UC_StatComponentBase::Multicast_InitializeAllStats_Implementation(const TAr
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("[StatComp] %d개의 스탯 복구 및 전 유저 UI 갱신 완료"), InSyncArray.Num());
-}
+}*/
 
 void UC_StatComponentBase::OnRegister()
 {
@@ -158,6 +158,45 @@ void UC_StatComponentBase::PostEditChangeProperty(FPropertyChangedEvent& _Event)
 	InitStat(true);
 }
 #endif
+
+void UC_StatComponentBase::OnRep_ReplicatedStatsArray()
+{
+	PRINT_LOCAL(GetWorld(), "OnRep_ReplicatedStatsArray", CUR_TICK_COLOR, 10.f);
+
+	// 여기서 주의할 점은, Replicate 콜백 함수가 StatCom의 BeginPlay보다 빠르게 호출될 수 있다는 점 ->
+	// Timer 걸어서 기다려주어야 함 (복원 처리할 실질적인 데이터는 복원 처리를 해주고, UI 업데이트의 경우 안정성을 고려 Timer 사용)
+	
+	// 1. [클라이언트/프록시] 로컬 맵 데이터 동기화 복구 (서버는 이미 LoadStatsFromBackup에서 데이터가 들어감)
+	for (const FStatSyncPair& Data : m_ReplicatedStatsArray)
+	{
+		m_Stats[Data.StatName]      = Data.StatValue;
+		m_StatGrades[Data.StatName] = Data.StatGrade;
+	}
+
+	// 여기서부터 안정성을 고려한 Timer 처리
+	FTimerDelegate TimerDelegate = FTimerDelegate::CreateWeakLambda(this, [this]()
+	{
+		UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld());
+		if (!OnStatGradeUpdatedDelegate.IsBound() || !OnCurHPUpdatedDelegate.IsBound() || !MainHUD) return;
+		
+		// 2. [서버 & 클라이언트 공통] 등급(Grade) UI 및 노티파이 트리거 갱신
+		for (const auto& Pair : m_StatGrades)
+			OnStatGradeUpdatedDelegate.Broadcast(Pair.Key, Pair.Value);
+	    
+		const float* pCurHP = m_Stats.Find(StatName::CurHP);
+		const float* pMaxHP = m_Stats.Find(StatName::MaxHP);
+	    
+		if (pCurHP && pMaxHP && *pMaxHP > 0.f)
+		{
+			float HPRatio = *pCurHP / *pMaxHP;
+			OnCurHPUpdatedDelegate.Broadcast(HPRatio);
+		}
+		
+		GetWorld()->GetTimerManager().ClearTimer(m_StatsArrayRepTimerHandle);
+	});
+	
+	GetWorld()->GetTimerManager().SetTimer(m_StatsArrayRepTimerHandle, TimerDelegate, 0.1f, true);
+}
 
 void UC_StatComponentBase::BeginPlay()
 {
@@ -616,6 +655,12 @@ bool UC_StatComponentBase::Local_DecreaseCurHP(float _DecreaseAmount)
 		OnCurHPUpdatedDelegate.Broadcast(*pCurHP / CurMaxHP);
 	
 	return true;
+}
+
+void UC_StatComponentBase::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(UC_StatComponentBase, m_ReplicatedStatsArray);
 }
 
 void UC_StatComponentBase::Server_DecreaseCurHP_Implementation(float _DecreaseAmount)

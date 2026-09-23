@@ -13,6 +13,7 @@
 #include "Actor/ItemActor/Weapon/C_WeaponBase.h"
 #include "Actor/Components/InteractionComponent/C_InteractionComponent.h"
 #include "GameModeAndManager/C_UIManager.h"
+#include "GameModeAndManager/PlayerState/C_PlayerState.h"
 #include "StatComponent/C_StatComponentBase.h"
 #include "UI/InvenUI/C_InventoryWidget.h"
 #include "UI/InvenUI/DivideWIdget/C_DivideItemWidget.h"

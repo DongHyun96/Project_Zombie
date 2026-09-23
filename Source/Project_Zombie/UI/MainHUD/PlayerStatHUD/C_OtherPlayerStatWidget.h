@@ -40,6 +40,7 @@ public:
 	void DeregisterOtherPlayer(AC_BasicPlayer* _Player);
 
 	void UpdateHPBar(AC_BasicPlayer* _TargetPlayer, float _HPRatio);
+	void UpdateHPBar(AActor* _TargetPlayer, float _HPRatio);
 
 protected:
 	

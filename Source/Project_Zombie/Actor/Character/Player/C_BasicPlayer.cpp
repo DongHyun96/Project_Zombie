@@ -261,6 +261,7 @@ void AC_BasicPlayer::BeginPlay()
 
 		m_EquippedComponent->SetupInventoryComponent(m_InvenComponent);
 
+		// 이거 LocallyControlled Player 자기자신만 바인딩 처리를 해야되지 않음? 상관 없나
 		UIManager->GetInventoryWidget()->GetPlayerStatUpgradeWidget()->BindStatEvents(m_StatComponent);
 		
 		// Main Stat HUD HP 업데이트 바인딩 관련
@@ -270,16 +271,17 @@ void AC_BasicPlayer::BeginPlay()
 
 		TryRestoreFromPlayerState();
 
-		PRINT_LOCAL(GetWorld(), "PlayerBeginPlay::UpdateHPBar", CUR_TICK_COLOR, 10.f);
-		
-		// Stat 업데이트 이후, 매뉴얼하게 UI 업데이트 
-		if (IsLocallyControlled())
+		// Stat 불러오기 시도 이후, 서버 쪽인 경우에 한해 Stat 관련 UI 업데이트 진행
+		// 클라이언트의 경우, StatCom의 OnRep_ReplicatedStatsArray에서 UI 업데이트 처리를 진행한다
+		if (HasAuthority())
 		{
-			StatWidget->UpdateHPBarRatio(m_StatComponent->GetCurHPRatio());
-			MainHUD->UpdateBoostBar(m_StatComponent->GetStat(StatName::CurBoost), m_StatComponent->GetStat(StatName::MaxBoost));
+			if (IsLocallyControlled())
+			{
+				StatWidget->UpdateHPBarRatio(m_StatComponent->GetCurHPRatio());
+				MainHUD->UpdateBoostBar(m_StatComponent->GetStat(StatName::CurBoost), m_StatComponent->GetStat(StatName::MaxBoost));
+			}
+			else MainHUD->GetOtherPlayerStatWidget()->UpdateHPBar(this, m_StatComponent->GetCurHPRatio());
 		}
-		else MainHUD->GetOtherPlayerStatWidget()->UpdateHPBar(this, m_StatComponent->GetCurHPRatio());
-		 
 		
 		// 클라가 남의 아이템에 대한 정보를 불러와야 하기 때문에 호출해봄.
 		//if (m_EquippedComponent)
@@ -554,7 +556,7 @@ void AC_BasicPlayer::OnRep_PlayerState()
 		RefreshSkin();
 	}
 
-	// CreateWeakLambda: this가 파괴되면 엔진이 람다 실행을 아예 차단함
+	/*// CreateWeakLambda: this가 파괴되면 엔진이 람다 실행을 아예 차단함
 	FTimerDelegate InitDelegate = FTimerDelegate::CreateWeakLambda(this, [this]()
 	{
 		UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld());
@@ -565,17 +567,12 @@ void AC_BasicPlayer::OnRep_PlayerState()
         
 		TryRestoreFromPlayerState();
 
-		// 모두 준비되었을 때 비로소 초기화 수행
-		PRINT_LOCAL(GetWorld(), "OnRep_PlayerState::UpdateHPBar", CUR_TICK_COLOR, 10.f);
-		PlayerStatWidget->UpdateBoostBar(m_StatComponent->GetStat(StatName::CurBoost),  m_StatComponent->GetStat(StatName::MaxBoost));
-		PlayerStatWidget->UpdateHPBarRatio(m_StatComponent->GetCurHPRatio());
-		
 		// 초기화 성공 및 탈출 처리
 		GetWorldTimerManager().ClearTimer(m_PlayerStateRepTimerHandle);
 	});
 
 	// 0.1초 단위로 반복 검사 처리 실행
-	GetWorldTimerManager().SetTimer(m_PlayerStateRepTimerHandle, InitDelegate, 0.1f, true);
+	GetWorldTimerManager().SetTimer(m_PlayerStateRepTimerHandle, InitDelegate, 0.1f, true);*/
 }
 
 void AC_BasicPlayer::TryRestoreFromPlayerState()
@@ -587,6 +584,9 @@ void AC_BasicPlayer::TryRestoreFromPlayerState()
 		PRINT_LOCAL(GetWorld(), "[AC_BasicPlayer::TryRestoreFromPlayerState] : PS nullptr", CUR_TICK_COLOR, 10.f);
 		return;
 	}
+
+	// 클라의 경우, 아래의 복원은 의미가 없음 (애초에 서버에서만 유효했던 Restore 처리)
+	if (!HasAuthority()) return;
 	
 	// 1. 인벤토리 컴포넌트 복구 (저장된 데이터가 유효할 때만)
 	if (PS->GetSavedInventory().Num() > 0)
