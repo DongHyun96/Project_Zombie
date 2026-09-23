@@ -1560,7 +1560,7 @@ void AC_BasicPlayer::ApplySkinMaterial(UMaterialInterface* TopMaterial, UMateria
 		return;
 
 	USkeletalMeshComponent* PlayerMesh = GetMesh();
-	if (!PlayerMesh)
+	if (!PlayerMesh)	
 		return;
 
 	const int32 TopIndex = PlayerMesh->GetMaterialIndex(TEXT("Body_Top"));
