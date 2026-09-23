@@ -71,6 +71,7 @@
 #include "UI/MainHUD/InformWidget/C_InformWidget.h"
 #include "UI/MainHUD/PlayerStatHUD/C_OtherPlayerStatWidget.h"
 #include "UI/MainHUD/PlayerStatHUD/C_PlayerStatWidget.h"
+#include "Utility/C_UtilActor.h"
 
 #define RECHARGED_BOOST 20.f
 
@@ -268,6 +269,8 @@ void AC_BasicPlayer::BeginPlay()
 		//UIManager->GetMainHUDWidget()->GetPlayerStatWidget()->UpdateHPBar(m_StatComponent->GetCurHPRatio());
 
 		TryRestoreFromPlayerState();
+
+		PRINT_LOCAL(GetWorld(), "PlayerBeginPlay::UpdateHPBar", CUR_TICK_COLOR, 10.f);
 		
 		// Stat 업데이트 이후, 매뉴얼하게 UI 업데이트 
 		if (IsLocallyControlled())
@@ -559,13 +562,14 @@ void AC_BasicPlayer::OnRep_PlayerState()
 
 		UC_PlayerStatWidget* PlayerStatWidget = MainHUD->GetPlayerStatWidget();
 		if (!PlayerStatWidget) return;
-		
-		// 모두 준비되었을 때 비로소 초기화 수행
-		PlayerStatWidget->UpdateBoostBar(m_StatComponent->GetStat(StatName::CurBoost),  m_StatComponent->GetStat(StatName::MaxBoost));
-		PlayerStatWidget->RepPlayerStateInit(m_StatComponent->GetCurHPRatio());
         
 		TryRestoreFromPlayerState();
 
+		// 모두 준비되었을 때 비로소 초기화 수행
+		PRINT_LOCAL(GetWorld(), "OnRep_PlayerState::UpdateHPBar", CUR_TICK_COLOR, 10.f);
+		PlayerStatWidget->UpdateBoostBar(m_StatComponent->GetStat(StatName::CurBoost),  m_StatComponent->GetStat(StatName::MaxBoost));
+		PlayerStatWidget->UpdateHPBarRatio(m_StatComponent->GetCurHPRatio());
+		
 		// 초기화 성공 및 탈출 처리
 		GetWorldTimerManager().ClearTimer(m_PlayerStateRepTimerHandle);
 	});

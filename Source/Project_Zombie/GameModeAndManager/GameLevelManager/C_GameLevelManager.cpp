@@ -9,6 +9,7 @@
 #include "GameModeAndManager/C_UIManager.h"
 #include "GameModeAndManager/C_ZombieManager.h"
 #include "Utility/C_Util.h"
+#include "Utility/C_UtilActor.h"
 
 UC_GameLevelManager::UC_GameLevelManager()
 {
@@ -29,6 +30,11 @@ bool UC_GameLevelManager::ShouldCreateSubsystem(UObject* Outer) const
 void UC_GameLevelManager::OnWorldBeginPlay(UWorld& InWorld)
 {
 	Super::OnWorldBeginPlay(InWorld);
+
+#if WITH_EDITOR
+	m_UtilActor = InWorld.SpawnActor<AC_UtilActor>();
+#endif
+	
 }
 
 void UC_GameLevelManager::Deinitialize()

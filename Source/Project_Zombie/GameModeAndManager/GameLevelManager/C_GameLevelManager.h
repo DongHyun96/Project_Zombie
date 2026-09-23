@@ -41,10 +41,14 @@ public:
 	AC_BasicPlayer* GetLocalPlayer() const { return m_LocalPlayer; }
 
 	/// <summary>
-	/// 모든 플레이어의 상태가 그로기 상태인지ㄴ 
+	/// 모든 플레이어의 상태가 그로기 상태인지
 	/// </summary>
 	bool HasAllPlayerDead() const;
 
+public:
+
+	class AC_UtilActor* GetUtilActor() const { return m_UtilActor; }
+	
 private:
 
 	// 이 레벨을 플레이 중인 모든 플레이어 객체
@@ -54,7 +58,19 @@ private:
 	UPROPERTY()
 	AC_BasicPlayer* m_LocalPlayer{};
 	
+private:
+	
+	UPROPERTY()
+	AC_UtilActor* m_UtilActor{};
+	
 };
 
 // 주의 : GetWorld() 가 valid하거나, Valid한 시점에만 사용 & In GameLevel인 경우에만 사용할 것
 #define LEVEL_MANAGER GetWorld()->GetSubsystem<UC_GameLevelManager>()
+
+// 현재 Tick에 대응되는 RandomColor를 구할 수 없는 경우 FColor::Red를 반환
+#define CUR_TICK_COLOR \
+    ((GetWorld() && GetWorld()->GetSubsystem<UC_GameLevelManager>() && \
+      GetWorld()->GetSubsystem<UC_GameLevelManager>()->GetUtilActor()) \
+        ? GetWorld()->GetSubsystem<UC_GameLevelManager>()->GetUtilActor()->GetCurTickColor() \
+        : FColor::Red)

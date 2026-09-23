@@ -30,8 +30,6 @@ public:
 
 	void ToggleBoostBarColor(bool BoostExhausted);
 	
-	void RepPlayerStateInit(float _Ratio);
-	
 	void BindCurHPUpdate(AC_BasicPlayer* _Player);
 
 public:

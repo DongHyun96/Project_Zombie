@@ -16,6 +16,7 @@
 #include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 #include "GameModeAndManager/PointTowerManager/C_PointTowerManager.h"
 #include "Kismet/GameplayStatics.h"
+#include "Utility/C_UtilActor.h"
 
 
 UC_StatComponentBase::UC_StatComponentBase()
@@ -108,6 +109,7 @@ void UC_StatComponentBase::Multicast_InitializeAllStats_Implementation(const TAr
 		float HPRatio = *pCurHP / *pMaxHP;
 		if (OnCurHPUpdatedDelegate.IsBound())
 		{
+			PRINT_LOCAL(GetWorld(), "CurHP Updated by Multicast_InitializeAllStats", CUR_TICK_COLOR, 10.f);
 			OnCurHPUpdatedDelegate.Broadcast(HPRatio);
 			UE_LOG(LogTemp, Log, TEXT("[StatComp] HPBar 초기 비율 동기화 완료: %f"), HPRatio);
 		}
