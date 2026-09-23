@@ -7,16 +7,19 @@
 #include "Actor/Components/StatComponent/C_StatComponentBase.h"
 #include "GameFramework/PlayerState.h"
 #include "GameModeAndManager/C_UIManager.h"
+#include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 #include "GameModeAndManager/PlayerState/C_PlayerState.h"
 #include "Net/UnrealNetwork.h"
 #include "UI/InvenUI/C_InventoryWidget.h"
 #include "UI/InvenUI/Upgrade/C_ItemUpgradeWidget.h"
 #include "UI/InvenUI/Upgrade/C_PlayerStatUpgradeWidget.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
+#include "Utility/C_UtilActor.h"
 
 
 void AC_BasicPlayerController::OnUnPossess()
 {
+	PRINT_LOCAL(GetWorld(), "AC_BasicPlayerController::OnUnPossess", CUR_TICK_COLOR, 10.f);
 	
 	// 심리스 트래블 시 컨트롤러가 기존 폰과 분리되기 직전에 호출됩니다.
 	if (APawn* prevPawn = GetPawn())
@@ -26,6 +29,7 @@ void AC_BasicPlayerController::OnUnPossess()
 			// 1. 인벤토리 백업
 			if (UC_InvenComponent* InvenComp = prevPawn->FindComponentByClass<UC_InvenComponent>())
 			{
+				PRINT_LOCAL(GetWorld(), "AC_BasicPlayerController::OnUnPossess - BackUp Save Inventory", CUR_TICK_COLOR, 10.f);
 				PS->SaveInventoryToState(InvenComp->GetInventoryItems());
 				UE_LOG(LogTemp, Warning, TEXT("[Travel Save] 옛날 캐릭터 %s의 인벤토리 백업 완료 (아이템: %d개)"), 
 					*prevPawn->GetName(), InvenComp->GetInventoryItems().Num());
@@ -34,6 +38,7 @@ void AC_BasicPlayerController::OnUnPossess()
 			// 2. 스탯 백업
 			if (UC_StatComponentBase* StatComp = prevPawn->FindComponentByClass<UC_StatComponentBase>())
 			{
+				PRINT_LOCAL(GetWorld(), "AC_BasicPlayerController::OnUnPossess - BackUp Save stats", CUR_TICK_COLOR, 10.f);
 				PS->SaveStatsToState(StatComp->GetStatsMap(), StatComp->GetStatGradesMap());
 				UE_LOG(LogTemp, Warning, TEXT("[Travel Save] 옛날 캐릭터 %s의 스탯 데이터 백업 완료"), *prevPawn->GetName());
 			}

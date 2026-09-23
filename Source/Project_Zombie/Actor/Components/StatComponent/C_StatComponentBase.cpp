@@ -22,6 +22,8 @@
 UC_StatComponentBase::UC_StatComponentBase()
 {
 	PrimaryComponentTick.bCanEverTick = false;
+	
+	SetIsReplicatedByDefault(true);
 }
 
 void UC_StatComponentBase::LoadStatsFromBackup(const TMap<FName, float>& InStats, const TMap<FName, uint8>& InGrades)
@@ -29,6 +31,7 @@ void UC_StatComponentBase::LoadStatsFromBackup(const TMap<FName, float>& InStats
 	if (!GetOwner()->HasAuthority()) return;
 
 	// TODO : 여기서 StatComponent를 통해서 즉석에서 업그레이드하기?
+	// 애초에 서버든 클라이언트든 여기가 안들어오는 중
 	
 	// 1. 서버 메모리 즉시 복구
 	m_Stats = InStats;
@@ -37,14 +40,12 @@ void UC_StatComponentBase::LoadStatsFromBackup(const TMap<FName, float>& InStats
 	FString msg = FString("Max HP : ");
 	
 	msg += FString::SanitizeFloat(m_Stats[StatName::MaxHP]);
-	
-	UC_Util::Print(msg);
+
+	PRINT_LOCAL(GetWorld(), "LoadStatsFromBackup - " + msg, CUR_TICK_COLOR, 10.f);
 	
 	msg = FString("Current HP : ");
-	
 	msg += FString::SanitizeFloat(m_Stats[StatName::CurHP]);
-	
-	UC_Util::Print(msg);
+	PRINT_LOCAL(GetWorld(), "LoadStatsFromBackup - " + msg, CUR_TICK_COLOR, 10.f);
 
 	// 2. RPC 전송을 위한 팩킹 (TMap -> TArray)
 	TArray<FStatSyncPair> SyncArray;
@@ -70,11 +71,14 @@ void UC_StatComponentBase::LoadStatsFromBackup(const TMap<FName, float>& InStats
 	}
 
 	// 3. 네트워크 전송이 가능한 TArray로 멀티캐스트 호출
+	// 이거 자체가 클라 쪽 전송 받질 못하는 중
 	Multicast_InitializeAllStats(SyncArray);
 }
 
 void UC_StatComponentBase::Multicast_InitializeAllStats_Implementation(const TArray<FStatSyncPair>& InSyncArray)
 {
+	// TODO : 이 Multicast 자체가 호출이 안되는 중
+	
 	// 1. [클라이언트/프록시] 로컬 맵 데이터 동기화 복구 (서버는 이미 LoadStatsFromBackup에서 데이터가 들어감)
 	if (!GetOwner()->HasAuthority())
 	{
@@ -91,6 +95,8 @@ void UC_StatComponentBase::Multicast_InitializeAllStats_Implementation(const TAr
 		}
 	}
 
+	PRINT_LOCAL(GetWorld(), "Multicast_InitializeAllStats", CUR_TICK_COLOR, 10.f);
+	
 	// 2. [서버 & 클라이언트 공통] 등급(Grade) UI 및 노티파이 트리거 갱신
 	for (const auto& Pair : m_StatGrades)
 	{

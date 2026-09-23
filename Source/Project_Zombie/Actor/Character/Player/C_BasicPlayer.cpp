@@ -582,7 +582,11 @@ void AC_BasicPlayer::TryRestoreFromPlayerState()
 {
 	AC_PlayerState* PS = GetPlayerState<AC_PlayerState>();
 
-	if (!PS) return;
+	if (!PS)
+	{
+		PRINT_LOCAL(GetWorld(), "[AC_BasicPlayer::TryRestoreFromPlayerState] : PS nullptr", CUR_TICK_COLOR, 10.f);
+		return;
+	}
 	
 	// 1. 인벤토리 컴포넌트 복구 (저장된 데이터가 유효할 때만)
 	if (PS->GetSavedInventory().Num() > 0)
@@ -603,7 +607,7 @@ void AC_BasicPlayer::TryRestoreFromPlayerState()
 			for (int32 i = 0 ; i < static_cast<int32>(EWeaponSlot::None) ; ++i)
 				m_EquippedComponent->LoadEquippedWeaponFromInven(i,m_InvenComponent->GetItemAt(i));
 		}
-	}
+	} else PRINT_LOCAL(GetWorld(), "[AC_BasicPlayer::TryRestoreFromPlayerState] : No Saved Inven", CUR_TICK_COLOR, 10.f);
 	
 	// 2. 스탯 컴포넌트 복구
 	if (PS->GetSavedStats().Num() > 0)
@@ -614,7 +618,7 @@ void AC_BasicPlayer::TryRestoreFromPlayerState()
 			//PS->ClearSavedStats();
 			//PS->ClearSavedStatGrades();
 		}
-	}
+	} else PRINT_LOCAL(GetWorld(), "[AC_BasicPlayer::TryRestoreFromPlayerState] : No Saved Stats", CUR_TICK_COLOR, 10.f);
 }
 
 void AC_BasicPlayer::SetHandState(EHandState _HandState)
