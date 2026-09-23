@@ -5,7 +5,9 @@
 #include "AnimMontagePriority/C_MontagePriorityMetaData.h"
 #include "DevloperSetting/C_MontagePrioritySettings.h"
 #include "GameModeAndManager/C_UIManager.h"
+#include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 #include "Utility/C_Util.h"
+#include "Utility/C_UtilActor.h"
 
 float UC_BasicCharacterAnimInstance::Montage_PlayInternal
 (
@@ -64,6 +66,10 @@ float UC_BasicCharacterAnimInstance::Montage_PlayInternal
 		if (Duration > 0.f) m_CurPriorityAnimMontage[TargetGroup] = MontageToPlay;
 		return Duration;
 	}
+	
+	// 현재 재생중인 Montage와 동일한 Montage가 들어온 경우, 그냥 재생처리를 해주면 됨
+	if (*TargetGroupCurMontage == MontageToPlay)
+		return Super::Montage_PlayInternal(MontageToPlay, BlendInSettings, InPlayRate, ReturnValueType, InTimeToStartMontageAt, bStopAllMontages);
 	
 	/* 
 	 * 현재 같은 Group 내에서 재생중인 PriorityAnimMontage가 있을 때
@@ -126,6 +132,8 @@ float UC_BasicCharacterAnimInstance::Montage_PlayInternal
 	/* 구한 Priority 값 비교 */
 	if (IncomingPriority >= CurPlayingPriority)
 	{
+		UC_Util::Print("Incoming : " + MontageToPlay->GetName() + " | WasPlayed : " + m_CurPriorityAnimMontage[TargetGroup]->GetName(), CUR_TICK_COLOR, 10.f);
+		
 		const float Duration =
 		(
 			Super::Montage_PlayInternal

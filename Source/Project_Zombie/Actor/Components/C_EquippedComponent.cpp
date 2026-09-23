@@ -153,9 +153,10 @@ void UC_EquippedComponent::Server_RequestSpawnEquippedActor_Implementation(int32
 	if (ThrowableWeapon)
 	{
 		// ThrowableWeaponBase::OnThrowThrowable에서 투척류 숫자 차감하고 업데이트하고 있음.
-		// ThrowableWeapon은 투척한거면 여기서 삭제하면 안됨.
+		// ThrowableWeapon은 투척한거면 여기서 삭제하면 안됨 -> ThrowableWeapon 투척 자체내에서 삭제처리 과정이 들어가있음
 		if (static_cast<int32>(EThrowableState::RemovePin) < static_cast<int32>(ThrowableWeapon->GetThrowableState()))
 		{
+			PRINT_LOCAL(GetWorld(), "Server_RequestSpawnEquippedActor -> Throwable exception", FColor::MakeRandomColor(), 10.f);
 			return;
 		}
 	}

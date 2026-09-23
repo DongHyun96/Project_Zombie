@@ -24,11 +24,13 @@
 #include "Particles/ParticleSystem.h"
 
 #include "GameModeAndManager/C_UIManager.h"
+#include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 
 #include "Interface/I_ExplodeStrategy.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
 #include "UI/MainHUD/PlayerStatHUD/C_PlayerStatWidget.h"
 #include "Utility/C_Util.h"
+#include "Utility/C_UtilActor.h"
 
 const FName AC_ThrowableWeaponBase::s_HolsterSocketName = TEXT("ThrowableHolsterSocket");
 
@@ -547,8 +549,9 @@ void AC_ThrowableWeaponBase::Server_Explode_Implementation(bool _bStopThrowMonta
 	Multicast_PlayExplosionFX(_bStopThrowMontage, _ExplosionLocation, _ExplosionRotation);
 
 	// 폭발 처리 완료 후, Actor 제거
+	// 바로 제거하는 것이 아닌, 몇초정도 뒤에 제거를 함 -> 던진 이후 바로 터졌을 때 아직 OnThrowProcessEnd 처리까지 들어오지 않은 경우 문제가 생기기 때문에 일정시간 기다린 뒤 Destroy 처리
 	SetActorHiddenInGame(true);
-	Destroy();
+	SetLifeSpan(5.f);
 }
 
 void AC_ThrowableWeaponBase::Multicast_PlayExplosionFX_Implementation(bool _bStopThrowMontage, FVector_NetQuantize _ExplosionLocation, FRotator _ExplosionRotation)
@@ -847,9 +850,7 @@ void AC_ThrowableWeaponBase::OnThrowThrowable()
 
 void AC_ThrowableWeaponBase::OnThrowProcessEnd()
 {
-	PRINT_LOCAL(GetWorld(), "", FColor::Red, 10.f);
-	PRINT_LOCAL(GetWorld(), "OnThrowProcessEnd", FColor::MakeRandomColor(), 10.f);
-	PRINT_LOCAL(GetWorld(), "", FColor::Red, 10.f);
+	PRINT_LOCAL(GetWorld(), "OnThrowProcessEnd", CUR_TICK_COLOR, 10.f);
 	
 	// TODO 
 	// 수류탄 던짐
@@ -977,8 +978,9 @@ void AC_ThrowableWeaponBase::Explode()
 		Multicast_PlayExplosionFX(bStopThrowMontage, ExplosionLocation, ExplosionRotation);
 		
 		// 폭발 처리 완료 후, Actor 제거
+		// 바로 제거하는 것이 아닌, 몇초정도 뒤에 제거를 함 -> 던진 이후 바로 터졌을 때 아직 OnThrowProcessEnd 처리까지 들어오지 않은 경우 문제가 생기기 때문에 일정시간 기다린 뒤 Destroy 처리
 		SetActorHiddenInGame(true);
-		Destroy();
+		SetLifeSpan(5.f);
 
 		return;
 	}
