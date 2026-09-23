@@ -81,7 +81,7 @@ void UC_PlayerStatComponent::BindUpdateOtherPlayerHPBar()
 	this->OnCurHPUpdatedDelegate.AddUObject(this, &UC_PlayerStatComponent::UpdateOtherPlayerHPBar);
 }
 
-void UC_PlayerStatComponent::LoadStatsFromBackup(const TMap<FName, float>& InStats, const TMap<FName, uint8>& InGrades)
+/*void UC_PlayerStatComponent::LoadStatsFromBackup(const TMap<FName, float>& InStats, const TMap<FName, uint8>& InGrades)
 {
 	if (!m_OwnerPlayer) return;
 
@@ -101,7 +101,7 @@ void UC_PlayerStatComponent::LoadStatsFromBackup(const TMap<FName, float>& InSta
 		PRINT_LOCAL(GetWorld(), "After Self character LoadStatsFromBackup CurHP : " + FString::SanitizeFloat(m_Stats[StatName::CurHP]), CUR_TICK_COLOR, 10.f);
 		OnCurHPUpdatedDelegate.Broadcast(GetCurHPRatio());
 	}
-}
+}*/
 
 UScriptStruct* UC_PlayerStatComponent::GetStatDataStruct() const
 {

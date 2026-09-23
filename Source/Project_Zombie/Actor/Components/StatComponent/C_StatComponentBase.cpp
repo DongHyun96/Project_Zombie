@@ -49,24 +49,21 @@ void UC_StatComponentBase::LoadStatsFromBackup(const TMap<FName, float>& InStats
 	// 2. m_ReplicatedStatsArray Replicate 처리
     
 	// m_Stats나 m_StatGrades 중 하나를 기준으로 순회합니다. (키 값이 같다고 가정)
+	bool Flag{};
 	for (const auto& Pair : m_Stats)
 	{
-		FStatSyncPair SyncData;
+		Flag = true;
+		
+		FStatSyncPair SyncData{};
 		SyncData.StatName = Pair.Key;
 		SyncData.StatValue = Pair.Value;
         
 		// 등급 맵에서도 해당 키의 값을 찾아 매칭
-		if (m_StatGrades.Contains(Pair.Key))
-		{
-			SyncData.StatGrade = m_StatGrades[Pair.Key];
-		}
-		else
-		{
-			SyncData.StatGrade = 0; // 예외 처리용 기본값
-		}
+		SyncData.StatGrade = m_StatGrades.Contains(Pair.Key) ? m_StatGrades[Pair.Key] : 0; // 예외 처리용 기본값
 
 		m_ReplicatedStatsArray.Add(SyncData);
 	}
+	if (Flag) PRINT_LOCAL(GetWorld(), "[UC_StatComponentBase::LoadStatsFromBackup] : m_ReplicatedStatsArray added", CUR_TICK_COLOR, 10.f);
 
 	// 3. 네트워크 전송이 가능한 TArray로 멀티캐스트 호출
 	// 이거 자체가 클라 쪽 전송 받질 못하는 중
@@ -176,12 +173,22 @@ void UC_StatComponentBase::OnRep_ReplicatedStatsArray()
 	// 여기서부터 안정성을 고려한 Timer 처리
 	FTimerDelegate TimerDelegate = FTimerDelegate::CreateWeakLambda(this, [this]()
 	{
+		if (!HasBegunPlay()) return;
+		
+		if (!m_OwnerCharacter) return;
+		
 		UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld());
-		if (!OnStatGradeUpdatedDelegate.IsBound() || !OnCurHPUpdatedDelegate.IsBound() || !MainHUD) return;
+		// OnCurHPUpdated의 경우, OtherPlayer든 나든 무조건 하나는 걸려있는 상태가 valid한 상태
+		if (!OnCurHPUpdatedDelegate.IsBound() || !MainHUD) return;
+		
+		// OnStatGradeUpdatedDelegate의 경우, 내 플레이어일 경우에만 걸려있음
+		if (m_OwnerCharacter->IsLocallyControlled())
+			if (!OnStatGradeUpdatedDelegate.IsBound()) return;
 		
 		// 2. [서버 & 클라이언트 공통] 등급(Grade) UI 및 노티파이 트리거 갱신
 		for (const auto& Pair : m_StatGrades)
-			OnStatGradeUpdatedDelegate.Broadcast(Pair.Key, Pair.Value);
+			if (OnStatGradeUpdatedDelegate.IsBound())
+				OnStatGradeUpdatedDelegate.Broadcast(Pair.Key, Pair.Value);
 	    
 		const float* pCurHP = m_Stats.Find(StatName::CurHP);
 		const float* pMaxHP = m_Stats.Find(StatName::MaxHP);

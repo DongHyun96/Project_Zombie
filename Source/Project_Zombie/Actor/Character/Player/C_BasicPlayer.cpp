@@ -261,8 +261,8 @@ void AC_BasicPlayer::BeginPlay()
 
 		m_EquippedComponent->SetupInventoryComponent(m_InvenComponent);
 
-		// 이거 LocallyControlled Player 자기자신만 바인딩 처리를 해야되지 않음? 상관 없나
-		UIManager->GetInventoryWidget()->GetPlayerStatUpgradeWidget()->BindStatEvents(m_StatComponent);
+		if (IsLocallyControlled())
+			UIManager->GetInventoryWidget()->GetPlayerStatUpgradeWidget()->BindStatEvents(m_StatComponent);
 		
 		// Main Stat HUD HP 업데이트 바인딩 관련
 		if (IsLocallyControlled()) StatWidget->BindCurHPUpdate(this);

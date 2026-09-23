@@ -53,7 +53,7 @@ public:
 	
 	UC_StatComponentBase();
 
-	virtual void LoadStatsFromBackup(const TMap<FName, float>& InStats, const TMap<FName, uint8>& InGrades);
+	void LoadStatsFromBackup(const TMap<FName, float>& InStats, const TMap<FName, uint8>& InGrades);
 	
 	AC_BasicCharacter* GetOwnerCharacter() {return m_OwnerCharacter;}
 	
