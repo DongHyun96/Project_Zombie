@@ -154,6 +154,10 @@ bool UC_GrenadeExplode::UseStrategy_Implementation(AC_ThrowableWeaponBase* _Thro
 			TraceParams										// Trace 옵션
 		);
 
+		if (bBlocked) 
+		{ 
+			continue; 
+		}
 
 		//// ----------- TraceColor 는 디버그용 -------------
 		//// Trace 가 막혔으면 데미지 적용하지 않음 (자기자신 제외)

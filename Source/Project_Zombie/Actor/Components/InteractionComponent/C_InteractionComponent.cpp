@@ -624,9 +624,9 @@ AActor* UC_InteractionComponent::FindBestInteractionTarget() const
 
 		const float Dot = FVector::DotProduct(ViewForward, DirectionToTarget);
 
-		// 화면 중앙 근처만
-		if (Dot < 0.85f)
-			continue;
+		//// 화면 중앙 근처만
+		//if (Dot < 0.85f)
+		//	continue;
 
 		// 현재까지 찾은 대상 중에서 가장 정면에 있는 대상 선택
 		if (Dot > BestDot)
