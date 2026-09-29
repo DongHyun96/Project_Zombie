@@ -26,32 +26,49 @@ void UC_PointTowerManager::OnWorldBeginPlay()
 	m_CurrentSequenceIndex = 0;
 }
 
-bool UC_PointTowerManager::WorldTick(float _DeltaTime)
+void UC_PointTowerManager::WorldTick(float _DeltaTime)
 {
 	// 자체 제작 Tick (GameMode의 Tick에서 호출 걸어둠)
 
+	const FTimerManager& TimerManager = GetWorld()->GetTimerManager();
+	
 	// 게임 시작까지 기다리기 (다른 플레이어 접속 등을 기다리는 이유도 있다)
 	// 실질적으로 PointTower가 하나라도 존재하는 맵이여야 실제로 타이밍 발동처리되게끔 함
-	if (!GetWorld()->GetTimerManager().IsTimerActive(m_FirstPointOpenWaitTimerHandle)) return false;
-	
-	float LeftTime = GetWorld()->GetTimerManager().GetTimerRemaining(m_FirstPointOpenWaitTimerHandle);
-
-	// UI 표시용 올림값 구하기
-	const int32 CurrentSecLeftInt = FMath::CeilToInt(LeftTime);
-	if (CurrentSecLeftInt != m_GameStartTimeLeftInt)
+	if (TimerManager.IsTimerActive(m_FirstPointOpenWaitTimerHandle))
 	{
-		if (GAME_LV_GAME_MODE(this) && GAME_LV_GAME_MODE(this)->GetGameOverChecker())
-			GAME_LV_GAME_MODE(this)->GetGameOverChecker()->Multicast_UpdateGameStartLeftTime(CurrentSecLeftInt);
-		
-		m_GameStartTimeLeftInt = CurrentSecLeftInt;
-		
-		/*if (m_GameStartTimeLeftInt <= 0) // 게임 시작 처리 (는 알아서 Timer에 의해서 시작됨)
+		const float LeftTime = TimerManager.GetTimerRemaining(m_FirstPointOpenWaitTimerHandle);
+
+		// UI 표시용 올림값 구하기
+		const int32 CurrentSecLeftInt = FMath::CeilToInt(LeftTime);
+		if (CurrentSecLeftInt != m_GameStartTimeLeftInt)
 		{
+			if (GAME_LV_GAME_MODE(this) && GAME_LV_GAME_MODE(this)->GetGameOverChecker())
+				GAME_LV_GAME_MODE(this)->GetGameOverChecker()->Multicast_UpdateGameStartLeftTime(CurrentSecLeftInt);
 			
-		}*/
+			m_GameStartTimeLeftInt = CurrentSecLeftInt;
+			
+			/*if (m_GameStartTimeLeftInt <= 0) // 게임 시작 처리 (는 알아서 Timer에 의해서 시작됨)
+			{
+				
+			}*/
+		}
 	}
 	
-	return true;
+	// CurSequence LeftTime 처리 관련
+	if (TimerManager.IsTimerActive(m_CurSeqLeftTimerHandle))
+	{
+		const float RemainTime = TimerManager.GetTimerRemaining(m_CurSeqLeftTimerHandle);
+		
+		// UI 표시용 올림값 구하기
+		const int32 CurrentSecRemainTimeInt = FMath::CeilToInt(RemainTime);
+		if (CurrentSecRemainTimeInt != m_CurSeqRemainTimeInt)
+		{
+			if (GAME_LV_GAME_MODE(this) && GAME_LV_GAME_MODE(this)->GetGameOverChecker())
+				GAME_LV_GAME_MODE(this)->GetGameOverChecker()->Multicast_UpdateRemainTime(CurrentSecRemainTimeInt);
+			
+			m_CurSeqRemainTimeInt = CurrentSecRemainTimeInt;
+		}
+	}
 }
 
 void UC_PointTowerManager::StartActivateCurrentPointsSequence()
@@ -65,8 +82,20 @@ void UC_PointTowerManager::StartActivateCurrentPointsSequence()
 	for (AC_PointTower* PointTower : m_PointTowers[m_CurrentSequenceIndex])
 		PointTower->SetPointTowerState(EPointTowerState::Active);
 
-	/* 다음 거점 먹으라는 표기 Multicast로 쏴주기 */
-	GAME_LV_GAME_MODE(this)->GetGameOverChecker()->Multicast_ShowMainInformConqueringPointTower();
+	const float CurSeqRemainTime = m_ConquerLimitTimes[m_CurrentSequenceIndex];
+	
+	/* 거점을 먹으라는 표기 Multicast로 쏴주기 */
+	GAME_LV_GAME_MODE(this)->GetGameOverChecker()->
+	Multicast_ShowMainInformConqueringPointTower(m_PointTowers[m_CurrentSequenceIndex].Num(), CurSeqRemainTime);
+	
+	/* 현재 Sequence에 대한 RemainTime 처리 Timer 새로 등록 */
+	GetWorld()->GetTimerManager().SetTimer
+	(
+		m_CurSeqLeftTimerHandle,
+		this, &UC_PointTowerManager::OnCurSequenceRemainTimeExpired,
+		CurSeqRemainTime,
+		false
+	);
 	
 	/* ZombieSpawn 관련 Initing 처리 */
 	
@@ -147,7 +176,13 @@ bool UC_PointTowerManager::RegisterPointTower(AC_PointTower* _PointTower)
 	{
 		m_PointTowers.SetNum(_PointTower->m_ActivateSequenceIdx + 1);
 		m_PointTowers[_PointTower->m_ActivateSequenceIdx].Add(_PointTower);
+		
+		_PointTower->m_RegisteredIdx = 0; // 이번 Sequence 내에서 신규로 등록받은 PointTower -> Idx를 0번으로 둔다 
 
+		// ConquerLimitTime 넣어줌
+		m_ConquerLimitTimes.SetNum(_PointTower->m_ActivateSequenceIdx + 1);
+		m_ConquerLimitTimes[_PointTower->m_ActivateSequenceIdx] = _PointTower->m_ConquerLimitTime;
+		
 		// 포인트 타워가 현재 레벨에 하나라도 존재하는 상황 -> 만약 게임 시작까지 남은 시간 Timer등록을 하지 않은 상황이라면, 해당 Timer UI 띄우기 처리
 		// 거점 활성화까지 여유시간을 줌 (플레이어 기다리기 처리 등)
 		if (!m_GameStartTimerSet)
@@ -168,14 +203,21 @@ bool UC_PointTowerManager::RegisterPointTower(AC_PointTower* _PointTower)
 	TSet<AC_PointTower*>& TargetSeqSet = m_PointTowers[_PointTower->m_ActivateSequenceIdx]; 
 	if (TargetSeqSet.Contains(_PointTower)) return false; 
 
+	// 두 가지 경우일 수 있음 -> 1. 동일 Sequence에 여러 거점이 동시에 활성화될 수 있는 경우 (이미 해당 Set에 PointTower 하나라도 존재하는 상황
+	// 2. SetNum으로 사이즈만 늘린 상황에서 해당 TargetSeqSet이 아직 아무 Tower도 없는 상황 (PointTower의 BeginPlay 순서에 따라 달라짐) 
+	
+	TargetSeqSet.Add(_PointTower);
+	_PointTower->m_RegisteredIdx = TargetSeqSet.Num() - 1; // 이번 Sequence 내에서의 순서 기록 (UI 처리용)
+	m_ConquerLimitTimes[_PointTower->m_ActivateSequenceIdx] = _PointTower->m_ConquerLimitTime; // ConquerLimitTime 등록(이미 등록되어있다 하더라도, 동일한 값으로 등록되도록 처리되어 있음)
+
 	/* 동일 sequence에 여러 거점이 동시에 활성화될 수 있는 상황임 */
 	// 이러한 경우, m_bCanDamagedAfterConquer값을 true로 두어,
 	// 점령을 이미 한 거점인 경우에도 공격을 받아 Conquer 게이지가 떨어질 수 있게끔 처리한다
-   
-	TargetSeqSet.Add(_PointTower);
-
-	for (AC_PointTower* PointTower : TargetSeqSet)
-		PointTower->m_bCanDamagedAfterConquer = true;
+	if (TargetSeqSet.Num() > 1)
+	{
+		for (AC_PointTower* PointTower : TargetSeqSet)
+			PointTower->m_bCanDamagedAfterConquer = true;
+	}
    
 	return true;
 }
@@ -239,6 +281,16 @@ void UC_PointTowerManager::OnPointTowerConquered()
 	StartActivateCurrentPointsSequence();
 }
 
+void UC_PointTowerManager::OnCurSequenceRemainTimeExpired()
+{
+	// 여기서도 마찬가지로 피격을 당해도 쓰러지지 않게끔 처리
+	for (AC_BasicPlayer* Player : LEVEL_MANAGER->GetPlayers())
+		Player->GetStatComponent()->SetImmortal();
+
+	// Game Lose로 처리
+	GAME_LV_GAME_MODE(this)->GetGameOverChecker()->Multicast_GameOver(false);
+}
+
 bool UC_PointTowerManager::RegisterSpawnArea(AC_SpawnArea* _SpawnArea)
 {
 	if (!IsValid(_SpawnArea))
@@ -261,6 +313,11 @@ bool UC_PointTowerManager::RegisterSpawnArea(AC_SpawnArea* _SpawnArea)
 	TargetArea.Add(_SpawnArea);
 
 	return true;
+}
+
+void UC_PointTowerManager::ClearCurSeqLeftTimerHandle()
+{
+	GetWorld()->GetTimerManager().ClearTimer(m_CurSeqLeftTimerHandle);
 }
 
 // Deprecated

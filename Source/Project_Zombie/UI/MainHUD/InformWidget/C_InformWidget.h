@@ -50,6 +50,45 @@ public:
 	void ToggleGameStartPanel(bool _Visible);
 	void UpdateGameStartLeftTime(int32 _Time);
 	void ShowMainInstruction(const FString& _Construction);
+
+public:
+	
+	/// <summary>
+	/// 좌상단 CurSequence 정보 모두 가리기 처리 
+	/// </summary>
+	void HideAllCurSequenceInfo();
+	
+	/// <summary>
+	/// Time Remain Info(좌상단) Visibility toggle 
+	/// </summary>
+	void ToggleTimeRemainInfo(bool _Visible, int32 _RemainTime = 0);
+
+	/// <summary>
+	/// 남은 시간 Text 내용 수정
+	/// </summary>
+	/// <param name="_RemainTime"> : 남은 시간(초) int32 </param>
+	void SetTimeRemainInfo(int32 _RemainTime);
+
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="_CurSeqTowerTotalCount"> : 현재 Sequence의 활성화될 PointTower 개수 </param>
+	/// <returns> : Invalid한 개수가 들어오면 return false(현재 위젯 설정 상 4개까지 가능) </returns>
+	bool ShowTowerConqueredInfo(uint8 _CurSeqTowerTotalCount);
+	
+	/// <summary>
+	/// 해당 idx의 PointTower 점령 퍼센트 정보 수정 
+	/// </summary>
+	/// <returns> : Valid한 Idx가 아닌 경우, return false </returns>
+	bool SetTowerConqueredInfo(int _Idx, uint8 _Percent);
+
+private:
+	
+	/// <summary>
+	/// 해당 idx의 PointTower 정보 Visibility toggle
+	/// </summary>
+	/// <returns> : Valid한 Idx(Sequence당 최대 PointTower는 4개로 가정을 함)가 아닌 경우, return false </returns>
+	bool ToggleTowerConqueredInfo(uint8 _Idx, bool _Visible);
 	
 private:
 	
@@ -119,5 +158,67 @@ protected:
 private:
 	
 	FTimerHandle m_TimerInvenGameLogRegister{};
+	
+protected: /* Time remaining 정보 관련(현재 Sequence의 점령 남은 시간 정보 UI) */
+
+	UPROPERTY(meta = (BindWidget))
+	class UHorizontalBox* RemainTimeHZBox{};
+	
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* TimeRemainMin{};
+
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* TimeRemainColon{};
+	
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* TimeRemainSec{};
+
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
+	UWidgetAnimation* ShowRemainTime{};
+
+	FSlateColor m_RemainTimeOriginColor{};
+	
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly)
+	FSlateColor m_TimeUrgentColor{};
+	
+protected: /* Tower conquered 퍼센트 정보 UI 관련 */
+
+	UPROPERTY(meta = (BindWidget))
+	UCanvasPanel* TowerConqueredHZBox0{};
+	UPROPERTY(meta = (BindWidget))
+	UCanvasPanel* TowerConqueredHZBox1{};
+	UPROPERTY(meta = (BindWidget))
+	UCanvasPanel* TowerConqueredHZBox2{};
+	UPROPERTY(meta = (BindWidget))
+	UCanvasPanel* TowerConqueredHZBox3{};
+	
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* TowerConqueredPercent0{};
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* TowerConqueredPercent1{}; 
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* TowerConqueredPercent2{}; 
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* TowerConqueredPercent3{}; 
+
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
+	UWidgetAnimation* ShowTowerConquered0{};
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
+	UWidgetAnimation* ShowTowerConquered1{};
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
+	UWidgetAnimation* ShowTowerConquered2{};
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
+	UWidgetAnimation* ShowTowerConquered3{};
+
+private:
+	
+	UPROPERTY()
+	TArray<UCanvasPanel*> m_TowerConqueredHZBoxes{};
+	
+	UPROPERTY()
+	TArray<UTextBlock*> m_TowerConqueredPercentTexts{};
+	
+	UPROPERTY()
+	TArray<UWidgetAnimation*> m_ShowTowerConqueredInfoAnims{};
 	
 };

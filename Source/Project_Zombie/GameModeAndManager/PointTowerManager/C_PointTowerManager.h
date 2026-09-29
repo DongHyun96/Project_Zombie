@@ -27,8 +27,7 @@ public:
 	/// </summary>
 	void OnWorldBeginPlay();
 
-	/// <returns> Tick이 더이상 필요 없다면 return false </returns>
-	bool WorldTick(float _DeltaTime);
+	void WorldTick(float _DeltaTime);
 	
 private:
 	
@@ -64,6 +63,13 @@ public:
 	/// </summary>
 	void OnPointTowerConquered();
 
+private:
+	
+	/// <summary>
+	/// 이번 Sequence의 남은 LimitTime 모두 소진 시, 호출됨 
+	/// </summary>
+	void OnCurSequenceRemainTimeExpired();
+	
 public:
 
 	/// <summary>
@@ -71,6 +77,8 @@ public:
 	/// </summary>
 	bool RegisterSpawnArea(class AC_SpawnArea* _SpawnArea);
 
+	void ClearCurSeqLeftTimerHandle();
+	
 private:
 
 	void ShowGameStartPanel();
@@ -88,6 +96,9 @@ private:
 
 	// Sequence 별 SpawnArea
 	TArray<TSet<class AC_SpawnArea*>> m_SpawnArea;
+	
+	// Sequence 별 점령 제한 시간
+	TArray<float> m_ConquerLimitTimes{};
 
 	UPROPERTY()
 	TSet<AC_PointTower*> m_Dummy{};
@@ -115,10 +126,16 @@ private:
 
 	FTimerHandle TempTimerHandle{};
 	
+private:
+	
+	// 현재 활성화된 거점의 점령 제한 시간
+	// UI Display 처리 또한 이 값으로 진행
+	int32 m_CurSeqRemainTimeInt{};
+	
+	FTimerHandle m_CurSeqLeftTimerHandle{};
+	
 public:
 	
 	bool GetGameStartTimerSet() const { return m_GameStartTimerSet; }
-
-	
 	
 };
