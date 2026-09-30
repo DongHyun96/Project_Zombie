@@ -542,8 +542,6 @@ float AC_PointTower::TakeDamage
 	AActor*				DamageCauser
 )
 {
-	UC_Util::Print("TackDamage", FColor::Red, 10.f);
-
 	// 현재 데미지를 입을 수 없는 상황인데 공격을 당한 경우
 	if (!CanCurrentlyAttackedByZombie()) return 0.f;
 	
@@ -632,6 +630,8 @@ void AC_PointTower::Multicast_Activate_Implementation()
 	// 거점 활성화 Outline 활성화
 	m_StaticMeshComTower->SetCustomDepthStencilValue(2);
 	m_StaticMeshComGenerator->SetCustomDepthStencilValue(2);
+
+	UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld());
 	
 	// 핑 활성화
 	if (m_WorldPingActor)
@@ -640,7 +640,7 @@ void AC_PointTower::Multicast_Activate_Implementation()
 		
 		m_WorldPingActor->SpawnPingActorToWorld(GeneratorLocation, EGamePingType::AntennaMarker, EPingShapeType::FullPing);
 
-		if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+		if (MainHUD)
 		{
 			m_ActivatedCompassMarkerWidget = MainHUD->GetCompassBarWidget()->SpawnGlobalPingMarker
 			(
@@ -649,6 +649,10 @@ void AC_PointTower::Multicast_Activate_Implementation()
 			);		
 		}
 	}
+	
+	// InformWidget Indicator 활성화
+	if (MainHUD) MainHUD->GetInformWidget()->RegisterPointTowerIndicator(this);
+	
 	
 	// 근접 접근 시, EffectToggling 처리용 감지 Collider 활성화
 	m_ApproachEffectTogglerCollider->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
@@ -684,14 +688,18 @@ void AC_PointTower::Multicast_Conquered_Implementation()
 	// 거점 아웃라인 비활성화
 	m_StaticMeshComTower->SetCustomDepthStencilValue(0);
 	m_StaticMeshComGenerator->SetCustomDepthStencilValue(0);
+
+	UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld());
 	
 	// 핑 비활성화
 	if (m_WorldPingActor)
 	{
 		m_WorldPingActor->HidePing();
-		if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
-			MainHUD->GetCompassBarWidget()->HideGlobalPingMarker(m_ActivatedCompassMarkerWidget);
+		if (MainHUD) MainHUD->GetCompassBarWidget()->HideGlobalPingMarker(m_ActivatedCompassMarkerWidget);
 	}
+	
+	// Inform Widget Indicator 비활성화
+	if (MainHUD) MainHUD->GetInformWidget()->DeRegisterPointTowerIndicator(this);
 	
 	// 근접 접근 시, EffectToggling 처리용 감지 Collider 비활성화
 	m_ApproachEffectTogglerCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);

@@ -3,8 +3,11 @@
 
 #include "C_InformWidget.h"
 
+#include "C_PointIndicatorManagerWidget.h"
+#include "C_PointIndicatorWidget.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/Components/C_InvenComponent.h"
+#include "Blueprint/WidgetLayoutLibrary.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
 #include "Components/HorizontalBox.h"
@@ -217,6 +220,16 @@ bool UC_InformWidget::SetTowerConqueredInfo(int _Idx, uint8 _Percent)
 	if (!m_TowerConqueredPercentTexts.IsValidIndex(_Idx)) return false;
 	m_TowerConqueredPercentTexts[_Idx]->SetText(FText::AsNumber(_Percent));
 	return true;
+}
+
+bool UC_InformWidget::RegisterPointTowerIndicator(AC_PointTower* _PointTower)
+{
+	return PointIndicatorManagerWidget->RegisterPointTowerIndicator(_PointTower);
+}
+
+bool UC_InformWidget::DeRegisterPointTowerIndicator(AC_PointTower* _PointTower)
+{
+	return PointIndicatorManagerWidget->DeRegisterPointTowerIndicator(_PointTower);
 }
 
 void UC_InformWidget::HandleLogFadeOut(const float& DeltaTime)

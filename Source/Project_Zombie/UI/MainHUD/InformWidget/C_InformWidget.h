@@ -82,6 +82,20 @@ public:
 	/// <returns> : Valid한 Idx가 아닌 경우, return false </returns>
 	bool SetTowerConqueredInfo(int _Idx, uint8 _Percent);
 
+public: /* PointTower 방면 Indicator 관련 함수 */
+
+	/// <summary>
+	/// 해당 PointTower의 위치 정보 방면을 표기할 Indicator 등록 
+	/// </summary>
+	/// <returns> : 이미 동일한 PointTower를 가리키는 Active한 Indicator가 존재한다면 return false, 또는 등록 가능한 Indicator 개수가 부족하다면 return false </returns>
+	bool RegisterPointTowerIndicator(class AC_PointTower* _PointTower);
+
+	/// <summary>
+	/// 해당 PointTower의 Indicator 등록 해제 
+	/// </summary>
+	/// <returns> : 등록된 PointTower가 없다면 return false </returns>
+	bool DeRegisterPointTowerIndicator(AC_PointTower* _PointTower);
+	
 private:
 	
 	/// <summary>
@@ -220,5 +234,10 @@ private:
 	
 	UPROPERTY()
 	TArray<UWidgetAnimation*> m_ShowTowerConqueredInfoAnims{};
+
+protected:
+
+	UPROPERTY(meta = (BindWidget))
+	class UC_PointIndicatorManagerWidget* PointIndicatorManagerWidget{};
 	
 };
