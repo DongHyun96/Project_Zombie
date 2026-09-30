@@ -39,7 +39,7 @@ public:
 private:
 	
 	/// <summary>
-	/// ClampMin, ClampMax 업데이트 -> 처음 초기화한 이후로, 실질적으로 Viewport 크기가 변했을 때 Update 처리를 또 해준다 
+	/// 처음 초기화한 이후로, 실질적으로 Viewport 크기가 변했을 때 Update 처리를 또 해준다 
 	/// </summary>
 	void UpdateViewportInfo();
 
@@ -63,13 +63,13 @@ private:
 private:
 	
 	UPROPERTY()
-	TArray<class UC_PointIndicatorWidget*> m_PointIndicatorWidgetPool{};
+	TArray<UC_PointIndicatorWidget*> m_PointIndicatorWidgetPool{};
 	
 	UPROPERTY()
 	TMap<AC_PointTower*, UC_PointIndicatorWidget*> m_ActivePointIndicators{};
-	
+
 	UPROPERTY()
-	UC_PointIndicatorWidget* m_IndicatorSample{}; // Size 측정용 (주의 : 이거 직접 조작하지 말 것)
+	UC_PointIndicatorWidget* m_IndicatorSample{}; // 크기 측정용 -> 주의 : 직접 조작하지 말것
 
 protected:
 	

@@ -223,6 +223,11 @@ public:
 	
 	const FZombieWaveSetting& GetZombieWaveSetting() const { return m_ZombieWaveSetting; }
 
+	/// <summary>
+	/// 현재 전체 포인팅용 Outline이 활성화 중인지 여부
+	/// </summary>
+	bool IsWholeOutlineActive() const;
+	
 private:
 	
 	/// <summary>

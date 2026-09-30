@@ -606,6 +606,11 @@ void AC_PointTower::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 	DOREPLIFETIME(AC_PointTower, m_PointTowerInteractEffect);
 }
 
+bool AC_PointTower::IsWholeOutlineActive() const
+{
+	return m_StaticMeshComTower->CustomDepthStencilValue != 0;
+}
+
 void AC_PointTower::Multicast_OnTakeDamage_Implementation()
 {
 	m_PointTowerWidget->OnDamaged();
