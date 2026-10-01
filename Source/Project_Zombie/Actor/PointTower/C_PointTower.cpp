@@ -7,6 +7,7 @@
 
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/Components/StatComponent/C_StatComponentBase.h"
+#include "Actor/GameOverChecker/C_GameOverChecker.h"
 #include "Actor/Ping/C_WorldPingActor.h"
 #include "Components/SphereComponent.h"
 #include "Components/AudioComponent.h"
@@ -18,6 +19,7 @@
 #include "UI/MainHUD/C_GameMainHUD.h"
 #include "UI/MainHUD/CompassBarWidget/C_CompassBarWidget.h"
 #include "Sound/SoundBase.h"
+#include "UI/MainHUD/InformWidget/C_InformWidget.h"
 
 #include "UI/Misc/C_PointTowerWidget.h"
 #include "Utility/C_Util.h"
@@ -262,7 +264,7 @@ void AC_PointTower::CopyAllPointTowerSettings(AC_PointTower* _SrcPointTower)
 	m_ZombieDamageRatio                            = _SrcPointTower->m_ZombieDamageRatio;
 	m_ZombieAttackRange                            = _SrcPointTower->m_ZombieAttackRange;
 	m_ZombieWaveSetting                            = _SrcPointTower->m_ZombieWaveSetting;
-	
+	m_ConquerLimitTime                             = _SrcPointTower->m_ConquerLimitTime;	
 	// TODO : 세팅값 수정되지 않은채로 있다면 Modify 처리 넣어줄 것
 }
 
@@ -283,6 +285,9 @@ void AC_PointTower::Tick(float DeltaTime)
 
 	/* 현재 거점이 열린 상태 */
 
+	// 거점이 열렸긴 했는데, 이미 GameOver처리된 상황 (이번 Sequence remainTime이 모두 소진되는 등) - 현재 서버 쪽에서 Tick이 실행되게끔 위에서 예외처리함
+	if (GAME_LV_GAME_MODE(this)->GetGameOverChecker()->HasGameOver()) return;
+	
 	if (m_ConqueringPlayer) // Conquering interaction 하는 Player가 존재
 	{
 		/* 지속적으로 거점 게이지를 활성화한다 */
@@ -394,24 +399,15 @@ bool AC_PointTower::CanBeInsertedToSensedTarget()
 	return true;
 }
 
-void AC_PointTower::TestFunction()
-{
-	// SetPointTowerState(EPointTowerState::Active);
-}
-
-void AC_PointTower::TestFunction2()
-{
-	SetPointTowerState(EPointTowerState::Conquered);
-}
-
 void AC_PointTower::Multicast_UpdateConquerAmountInt_Implementation(uint8 _CurrentConquerAmount)
 {
 	m_CurConquerAmountInt = _CurrentConquerAmount;
 
 	// 점령 퍼센트 UI 업데이트
 	if (m_PointTowerWidget) m_PointTowerWidget->SetPercentText(m_CurConquerAmountInt);
+	if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+		MainHUD->GetInformWidget()->SetTowerConqueredInfo(m_RegisteredIdx, m_CurConquerAmountInt);
 }
-
 
 void AC_PointTower::OnApproachEffectTogglerColliderBeginOverlap
 (
@@ -546,8 +542,6 @@ float AC_PointTower::TakeDamage
 	AActor*				DamageCauser
 )
 {
-	UC_Util::Print("TackDamage", FColor::Red, 10.f);
-
 	// 현재 데미지를 입을 수 없는 상황인데 공격을 당한 경우
 	if (!CanCurrentlyAttackedByZombie()) return 0.f;
 	
@@ -612,6 +606,11 @@ void AC_PointTower::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 	DOREPLIFETIME(AC_PointTower, m_PointTowerInteractEffect);
 }
 
+bool AC_PointTower::IsWholeOutlineActive() const
+{
+	return m_StaticMeshComTower->CustomDepthStencilValue != 0;
+}
+
 void AC_PointTower::Multicast_OnTakeDamage_Implementation()
 {
 	m_PointTowerWidget->OnDamaged();
@@ -636,6 +635,8 @@ void AC_PointTower::Multicast_Activate_Implementation()
 	// 거점 활성화 Outline 활성화
 	m_StaticMeshComTower->SetCustomDepthStencilValue(2);
 	m_StaticMeshComGenerator->SetCustomDepthStencilValue(2);
+
+	UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld());
 	
 	// 핑 활성화
 	if (m_WorldPingActor)
@@ -644,7 +645,7 @@ void AC_PointTower::Multicast_Activate_Implementation()
 		
 		m_WorldPingActor->SpawnPingActorToWorld(GeneratorLocation, EGamePingType::AntennaMarker, EPingShapeType::FullPing);
 
-		if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+		if (MainHUD)
 		{
 			m_ActivatedCompassMarkerWidget = MainHUD->GetCompassBarWidget()->SpawnGlobalPingMarker
 			(
@@ -653,6 +654,10 @@ void AC_PointTower::Multicast_Activate_Implementation()
 			);		
 		}
 	}
+	
+	// InformWidget Indicator 활성화
+	if (MainHUD) MainHUD->GetInformWidget()->RegisterPointTowerIndicator(this);
+	
 	
 	// 근접 접근 시, EffectToggling 처리용 감지 Collider 활성화
 	m_ApproachEffectTogglerCollider->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
@@ -688,14 +693,18 @@ void AC_PointTower::Multicast_Conquered_Implementation()
 	// 거점 아웃라인 비활성화
 	m_StaticMeshComTower->SetCustomDepthStencilValue(0);
 	m_StaticMeshComGenerator->SetCustomDepthStencilValue(0);
+
+	UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld());
 	
 	// 핑 비활성화
 	if (m_WorldPingActor)
 	{
 		m_WorldPingActor->HidePing();
-		if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
-			MainHUD->GetCompassBarWidget()->HideGlobalPingMarker(m_ActivatedCompassMarkerWidget);
+		if (MainHUD) MainHUD->GetCompassBarWidget()->HideGlobalPingMarker(m_ActivatedCompassMarkerWidget);
 	}
+	
+	// Inform Widget Indicator 비활성화
+	if (MainHUD) MainHUD->GetInformWidget()->DeRegisterPointTowerIndicator(this);
 	
 	// 근접 접근 시, EffectToggling 처리용 감지 Collider 비활성화
 	m_ApproachEffectTogglerCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);

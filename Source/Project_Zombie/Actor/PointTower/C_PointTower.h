@@ -26,6 +26,7 @@ enum class EPointTowerState : uint8
 
 /// <summary>
 /// 주의 : 인게임 레벨에 배치 시, EditInstanceOnly 되어있는 멤버변수 초기화 시켜줄 것 (어떤 값인지 주석 확인할 것)
+/// 한 Sequence 당, Maximum 4개의 PointTower 배치 가능하도록 함 -> 갯수를 늘리려면 InformWidget의 PointTower Conquered percent UI 개수 늘려줄 것
 /// </summary>
 UCLASS()
 class PROJECT_ZOMBIE_API AC_PointTower : public APawn, public IGenericTeamAgentInterface
@@ -112,9 +113,6 @@ public:
 	/// </summary>
 	bool CanBeInsertedToSensedTarget();
 	
-	void TestFunction();
-	void TestFunction2();
-
 	void PlayHitSound();
 	
 private:
@@ -225,6 +223,11 @@ public:
 	
 	const FZombieWaveSetting& GetZombieWaveSetting() const { return m_ZombieWaveSetting; }
 
+	/// <summary>
+	/// 현재 전체 포인팅용 Outline이 활성화 중인지 여부
+	/// </summary>
+	bool IsWholeOutlineActive() const;
+	
 private:
 	
 	/// <summary>
@@ -233,6 +236,12 @@ private:
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_OnTakeDamage();
 
+private:
+
+	// 서버 쪽에서만 유효 -> 실질적인 인덱스는 아니고 해당 Sequence에서 등록된 순서라고 보면 됨
+	// UI 처리 때문에 순서가 기록되어야 함 RegisterPointTower 시 부여받음
+	uint8 m_RegisteredIdx{};
+	
 protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
@@ -270,6 +279,13 @@ protected:
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
 	float m_ZombieDamageRatio = 0.25f;
 
+	// 이번 SequenceIdx에서의 거점 점령 완료까지의 시간
+	// 이전
+	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
+	float m_ConquerLimitTime = 120.f;
+	
+protected:
+	
 	// 좀비가 판단하기에 Attack 반경이다라고 판단할 반경
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	float m_ZombieAttackRange = 200.f;
