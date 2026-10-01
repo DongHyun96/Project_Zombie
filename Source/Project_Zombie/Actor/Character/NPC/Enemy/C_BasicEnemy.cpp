@@ -197,28 +197,34 @@ float AC_BasicEnemy::TakeDamage
 	}
 
 	/* PerceptionComponent에 Damage를 받았다고 보고 처리 */
-	
-	if (ACharacter* DamageInstigator = _EventInstigator->GetCharacter())
+
+	// TODO : EventInstigator가 nullptr로 잡힐 수 있음 -> 이거 분기처리 해주어야 함
+
+	if (_EventInstigator)
 	{
-		const FVector DamageInstigatorPos = (DamageInstigator != nullptr) ? DamageInstigator->GetActorLocation() : this->GetActorLocation();
-		
-		UAISense_Damage::ReportDamageEvent
-		(
-			GetWorld(),				 // 히트 이벤트가 발생한 월드 
-			this,					 // 맞은 놈 
-			DamageInstigator,		 // 때린 놈 
-			DamageAmount,			 // 최종 데미지
-			DamageInstigatorPos,	 // 때린놈 위치 
-			this->GetActorLocation() // 맞은놈 위치
-		);
+		if (ACharacter* DamageInstigator = _EventInstigator->GetCharacter())
+		{
+			const FVector DamageInstigatorPos = (DamageInstigator != nullptr) ? DamageInstigator->GetActorLocation() : this->GetActorLocation();
+			
+			UAISense_Damage::ReportDamageEvent
+			(
+				GetWorld(),				 // 히트 이벤트가 발생한 월드 
+				this,					 // 맞은 놈 
+				DamageInstigator,		 // 때린 놈 
+				DamageAmount,			 // 최종 데미지
+				DamageInstigatorPos,	 // 때린놈 위치 
+				this->GetActorLocation() // 맞은놈 위치
+			);
+		}
 	}
 
 	// 사망 했을 경우
 	if (m_StatComponent->IsCurHPZero())
 	{
 		// 마지막으로 죽인 Player에게 Kill 수 업데이트 처리를 하라고 보내줄 것
-		if (AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(_EventInstigator->GetPawn()))
-			Player->Multicast_IncreaseKillCount();
+		if (_EventInstigator) 
+			if (AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(_EventInstigator->GetPawn()))
+				Player->Multicast_IncreaseKillCount();
 	}
 	
 	/* 힐 요청 처리 관련 */

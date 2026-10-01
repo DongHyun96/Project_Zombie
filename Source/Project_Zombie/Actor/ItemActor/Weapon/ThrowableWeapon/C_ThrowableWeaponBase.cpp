@@ -666,7 +666,7 @@ bool AC_ThrowableWeaponBase::OnFireEnd(AC_BasicPlayer* _WeaponUser)
 
 // ----------------- 애님 노티파이 관련 처리 -----------------
 
-void AC_ThrowableWeaponBase::Server_ApplyExplosionDamage_Implementation(const TArray<AActor*>& _HitActors, FVector_NetQuantize _ExplosionLocation)
+void AC_ThrowableWeaponBase::Server_ApplyExplosionDamage_Implementation(const TArray<AActor*>& _HitActors, FVector_NetQuantize _ExplosionLocation, AC_BasicCharacter* _InstigatorCharacter)
 {
 	UE_LOG
 	(
@@ -684,12 +684,6 @@ void AC_ThrowableWeaponBase::Server_ApplyExplosionDamage_Implementation(const TA
 	const float MaxDamage = GetMaxDamage();
 	const float MinDamage = GetMinDamage();
 
-	AController* InstigatorController = nullptr;
-	if (m_OwnerPlayer)
-	{
-		InstigatorController = m_OwnerPlayer->GetController();
-	}
-
 	for (AActor* Target : _HitActors)
 	{
 		if (!IsValid(Target))
@@ -699,16 +693,16 @@ void AC_ThrowableWeaponBase::Server_ApplyExplosionDamage_Implementation(const TA
 		const float Damage = FMath::Lerp(GetMaxDamage(), GetMinDamage(), Distance / ExplosionRadius);
 
 		UGameplayStatics::ApplyDamage(
-			Target,						// 데미지 받는 대상
-			Damage,						// 거리 비례 데미지 계산 // 
-			InstigatorController,		// 데미지를 입힌 주체
-			this,						// 데미지를 입힌 무기
-			UDamageType::StaticClass()	// 데미지 타입
+			Target,									// 데미지 받는 대상
+			Damage,									// 거리 비례 데미지 계산 // 
+			_InstigatorCharacter->GetController(),	// 데미지를 입힌 주체
+			this,									// 데미지를 입힌 무기
+			UDamageType::StaticClass()				// 데미지 타입
 		);
 	}
 }
 
-void AC_ThrowableWeaponBase::Server_SpawnFireDamageArea_Implementation(FVector_NetQuantize _SpawnLocation)
+void AC_ThrowableWeaponBase::Server_SpawnFireDamageArea_Implementation(FVector_NetQuantize _SpawnLocation, AC_BasicCharacter* _InstigatorCharacter)
 {
 	if (!m_FireDamageAreaClass)
 		return;
@@ -723,11 +717,11 @@ void AC_ThrowableWeaponBase::Server_SpawnFireDamageArea_Implementation(FVector_N
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	
 	// 소유자 및 인스티게이터 설정
-	SpawnParams.Owner = m_OwnerPlayer; 
-	SpawnParams.Instigator = m_OwnerPlayer;
+	SpawnParams.Owner      = _InstigatorCharacter;
+	SpawnParams.Instigator = _InstigatorCharacter;
 
-	// BeginPlay가 호출되기 전에 ThrowableUser 를 전달하기위해 SpawnActorDeferred 사용
-	AC_FireDamageArea* FireDamageArea = World->SpawnActor<AC_FireDamageArea>(
+	AC_FireDamageArea* FireDamageArea = World->SpawnActor<AC_FireDamageArea>
+	(
 		m_FireDamageAreaClass,
 		_SpawnLocation,	// 바닥 충돌 지점에 장판 생성
 		FRotator::ZeroRotator,	// 회전 없음

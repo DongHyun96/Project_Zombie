@@ -7,8 +7,11 @@
 
 #include "Components/AudioComponent.h"
 #include "Engine/OverlapResult.h"
+#include "GameModeAndManager/C_UIManager.h"
+#include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 
 #include "Utility/C_Util.h"
+#include "Utility/C_UtilActor.h"
 
 AC_FireDamageArea::AC_FireDamageArea()
 {
@@ -439,7 +442,8 @@ void AC_FireDamageArea::ApplyPointDamage()
 
 		const float Damage = m_DamagePerSecond * m_DamageInterval;
 
-		UGameplayStatics::ApplyDamage(
+		UGameplayStatics::ApplyDamage
+		(
 			Target,
 			Damage,
 			InstigatorController,
