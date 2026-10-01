@@ -21,10 +21,12 @@
 #include "Engine/AssetManager.h"
 
 #include "GameModeAndManager/C_UIManager.h"
+#include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
 #include "Utility/C_Util.h"
+#include "Utility/C_UtilActor.h"
 
 // 일단은 총기 오른손 부착 위치 Socket과 동일한 Socket으로 둠
 const FName AC_GunBase::s_HandSocketName = TEXT("HandGrip_R");
@@ -645,6 +647,7 @@ FVector AC_GunBase::LineTraceDamage
 	// 만약 MuzzleAwareness 거리에 잡힌 Actor가 있는 경우, 해당 Actor로 바로 처리하고 Early return 처리
 	if (m_MuzzleAwareActor)
 	{
+		// UC_Util::Print("LineTraceDamage : MuzzleAwareness Actor valid", CUR_TICK_COLOR, 10.f);
 		OutHitActor = m_MuzzleAwareActor;
 		return m_MuzzleAwareImpactPoint;
 	}
