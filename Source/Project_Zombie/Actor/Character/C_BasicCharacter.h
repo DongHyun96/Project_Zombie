@@ -60,4 +60,8 @@ protected:
 	// Player 및 Enemy 생성자에서 자기자신에게 맞는 StatComponent 생성 처리 중
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (DisplayName = "StatComponent"))
 	UC_StatComponentBase* m_StatComponent{};
+	
+	// Collision Cylinder
+	//UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (DisplayName = "CollisionComponent"))
+	//UCapsuleComponent*			m_CapsulCollision{};
 };

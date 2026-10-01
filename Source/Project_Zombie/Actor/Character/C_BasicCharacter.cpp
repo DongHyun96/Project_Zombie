@@ -4,6 +4,7 @@
 #include "Actor/Character/C_BasicCharacter.h"
 
 #include "Actor/Components/StatComponent/C_StatComponentBase.h"
+#include "Components/CapsuleComponent.h"
 #include "Engine/DamageEvents.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameModeAndManager/C_UIManager.h"
@@ -12,6 +13,9 @@ AC_BasicCharacter::AC_BasicCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	
+
+	//m_CapsulCollision = CreateDefaultSubobject<UCapsuleComponent>("CapsulCollision");
+	//SetRootComponent(m_CapsulCollision);
 	
 }
 

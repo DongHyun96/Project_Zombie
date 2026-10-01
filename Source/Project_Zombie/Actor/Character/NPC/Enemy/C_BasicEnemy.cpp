@@ -87,6 +87,9 @@ void AC_BasicEnemy::ResetEnemyForPoolSpawn()
 		MoveCom->StopMovementImmediately();
 	}
 
+	// CapsulCollision 활성화
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	
 	// 힐 요청 상태 초기화
 	m_HealRequestRegisterCount = 0;
 
@@ -351,6 +354,8 @@ void AC_BasicEnemy::OnDead(AC_BasicCharacter* _DeadCharacter)
 	// 서버 화면에는 직접 죽음 시각 처리 적용
 	ApplyDeadState(m_DeadRepData.DeadMontageIndex);
 	
+	
+	
 	// TODO : 죽은동안 충돌 끄기. 혹시 오브젝트 풀링으로 사용중이거나 해서 나중에 켜야 된다면 켜주어야 함.
 	// 풀에서 꺼낼 때 복구하기
 	//SetActorEnableCollision(false);
@@ -411,6 +416,8 @@ void AC_BasicEnemy::StopAllActionsForDead()
 
 void AC_BasicEnemy::ApplyDeadState(int32 _DeadMontageIndex)
 {
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	
 	// 클라에 남아있던 공격 또는 스킬 몽타주 정지
 	StopAnimMontage();
 
