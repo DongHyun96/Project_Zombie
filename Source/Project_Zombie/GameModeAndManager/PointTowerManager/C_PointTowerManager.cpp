@@ -189,7 +189,7 @@ bool UC_PointTowerManager::RegisterPointTower(AC_PointTower* _PointTower)
 		{
 			GetWorld()->GetTimerManager().SetTimer
 			(
-				m_FirstPointOpenWaitTimerHandle, this, &UC_PointTowerManager::StartActivateCurrentPointsSequence, 5.f, false // TODO : 5초 다시 20초로 세팅할 것
+				m_FirstPointOpenWaitTimerHandle, this, &UC_PointTowerManager::StartActivateCurrentPointsSequence, 20.f, false
 			);
 			
 			ShowGameStartPanel(); // 서버 쪽은 바로 GameStartPanel 보이기 -> Client들은 GameOverChecker(Actor)의 RPC Call을 통해 해당 Widget 활성화 처리됨
