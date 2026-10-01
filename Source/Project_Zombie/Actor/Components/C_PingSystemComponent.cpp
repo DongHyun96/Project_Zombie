@@ -44,12 +44,21 @@ void UC_PingSystemComponent::BeginPlay()
 	// PingActor BeginPlay에 자기자신 비활성화 처리 들어가 있음
 }
 
+void UC_PingSystemComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	Super::EndPlay(EndPlayReason);
+	if (IsValid(m_WorldPingActor)) m_WorldPingActor->Destroy(); // CompassPingMarker는 Player의 EndPlay를 사용할 것
+}
+
 bool UC_PingSystemComponent::TrySpawnPing(UObject* _Instigator)
 {
 	// 0. LOCAL 환경
 	// 1. 카메라가 바라보는 방면으로 RayTrace
 	// 2. Hit한 지점에 Ping 스폰 처리 vs Hit 하지 않았다면 스폰시키지 않음
 	if (!m_OwnerPlayer->IsLocallyControlled()) return false;
+
+	// 이미 해제 처리된 Player의 PingActor인 경우
+	if (!IsValid(m_WorldPingActor)) return false;
 	
 	APlayerCameraManager* PCameraManager = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0);
 	const FVector CamLocation            = PCameraManager->GetCameraLocation();
@@ -87,6 +96,8 @@ bool UC_PingSystemComponent::TrySpawnPing(UObject* _Instigator)
 
 void UC_PingSystemComponent::SpawnFullPing(const FVector& _SpawnLocation, EGamePingType _PingType, UObject* _Instigator)
 {
+	if (!IsValid(m_WorldPingActor)) return;
+	
 	m_WorldPingActor->SpawnPingActorToWorld(_SpawnLocation, _PingType, EPingShapeType::FullPing);
 	m_WorldPingActor->SetPingColor(m_OwnerPlayer->GetPlayerProfileComponent()->GetPlayerSelectedColor());
 	Server_SpawnPing(_SpawnLocation, _PingType, EPingShapeType::FullPing);
@@ -96,6 +107,7 @@ void UC_PingSystemComponent::SpawnFullPing(const FVector& _SpawnLocation, EGameP
 void UC_PingSystemComponent::HidePing()
 {
 	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled()) return;
+	if (!IsValid(m_WorldPingActor)) return;
 	
 	m_WorldPingActor->HidePing();
 	m_LastInstigator = nullptr;
@@ -103,6 +115,8 @@ void UC_PingSystemComponent::HidePing()
 
 void UC_PingSystemComponent::Multicast_MustHidePingAll_Implementation()
 {
+	if (!IsValid(m_WorldPingActor)) return;
+	
 	m_WorldPingActor->HidePing();
 	m_LastInstigator = nullptr;
 }

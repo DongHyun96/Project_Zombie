@@ -239,6 +239,9 @@ bool AC_Zombie::ActivateFromPool(const FTransform& _SpawnTransform)
 
 	// 좀비 공통 상태 초기화
 	ResetEnemyForPoolSpawn();
+	
+	// NormalAttack 반경에 들어온 Actor들 모두 Clear 처리
+	m_SetNormalAttackColliderEntered.Empty();
 
 	// 풀 활성 상태로 변경
 	m_bPoolActive = true;

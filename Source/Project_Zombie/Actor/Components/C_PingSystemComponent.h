@@ -22,6 +22,8 @@ public:
 protected:
 	
 	virtual void BeginPlay() override;
+	
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 public:
 	
@@ -99,9 +101,6 @@ private:
 
 	UPROPERTY()
 	class AC_PlayerWorldPingActor*	m_WorldPingActor{};
-	
-	UPROPERTY()
-	class UC_CompassBarWidget*	m_CompassBarWidget{}; // CompassBar에 핑 정보 Spawn 시킬 때 필요
 	
 protected:
 	

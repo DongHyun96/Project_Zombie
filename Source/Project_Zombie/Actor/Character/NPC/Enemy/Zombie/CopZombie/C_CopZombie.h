@@ -36,7 +36,11 @@ public:
 public:
 	
 	ECopZombieState GetCopZombieState() const { return m_CopZombieState; }
-	void SetCopZombieState(ECopZombieState _State) { m_CopZombieState = _State; }
+	
+	/// <summary>
+	/// Blackboard의 키에 대응되는 Value도 일괄적으로 적용 처리 
+	/// </summary>
+	void SetCopZombieState(ECopZombieState _State);
 
 	const TSet<class AC_BasicPlayer*>& GetGrabRangeEnteredPlayers() const { return m_GrabRangeEnteredPlayers; }
 
@@ -85,6 +89,8 @@ public:
 	/// </summary>
 	void DropWeapon();
 
+	virtual bool ActivateFromPool(const FTransform& _SpawnTransform) override;
+	
 private:
 	
 	virtual void OnDead(AC_BasicCharacter* _DeadCharacter) override;

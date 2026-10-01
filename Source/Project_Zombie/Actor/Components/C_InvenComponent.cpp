@@ -2,9 +2,11 @@
 
 #include "C_EquippedComponent.h"
 #include "GameModeAndManager/C_ItemManager.h"
+#include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 #include "Net/UnrealNetwork.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
 #include "UI/MainHUD/InformWidget/C_InformWidget.h"
+#include "Utility/C_UtilActor.h"
 
 UC_InvenComponent::UC_InvenComponent()
 {
@@ -28,6 +30,8 @@ void UC_InvenComponent::LoadInventoryFromBackup(const TArray<FInventoryEntry>& I
 	// 서버 권한 검사
 	//if (!GetOwner()->HasAuthority()) return;
 
+	PRINT_LOCAL(GetWorld(), "LoadInventoryFromBackup", CUR_TICK_COLOR, 10.f);
+	
 	InventoryContainer.Items.Empty();
 	
 	int32 count = InSavedItems.Num();

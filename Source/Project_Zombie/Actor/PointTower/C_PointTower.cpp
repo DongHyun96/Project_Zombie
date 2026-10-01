@@ -7,6 +7,7 @@
 
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/Components/StatComponent/C_StatComponentBase.h"
+#include "Actor/GameOverChecker/C_GameOverChecker.h"
 #include "Actor/Ping/C_WorldPingActor.h"
 #include "Components/SphereComponent.h"
 #include "Components/AudioComponent.h"
@@ -18,6 +19,7 @@
 #include "UI/MainHUD/C_GameMainHUD.h"
 #include "UI/MainHUD/CompassBarWidget/C_CompassBarWidget.h"
 #include "Sound/SoundBase.h"
+#include "UI/MainHUD/InformWidget/C_InformWidget.h"
 
 #include "UI/Misc/C_PointTowerWidget.h"
 #include "Utility/C_Util.h"
@@ -99,18 +101,20 @@ void AC_PointTower::BeginPlay()
 	
 	m_InteractionTestingCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	
-	if (HasAuthority()) // 오로지 서버 쪽에서만 이벤트 처리 (간단하게 그냥 함)
+	if (HasAuthority()) 
 	{
+		// 오로지 서버 쪽에서만 이벤트 처리 (간단하게 그냥 함)
 		m_InteractionTestingCollider->OnComponentBeginOverlap.AddDynamic(this, &AC_PointTower::OnInteractionColliderBeginOverlap);
 		m_InteractionTestingCollider->OnComponentEndOverlap.AddDynamic(this, &AC_PointTower::OnInteractionColliderEndOverlap);
-	}
-
-	if (HasAuthority() && m_PointTowerElectroEffectClass)
-	{
-		FActorSpawnParameters Param{};
-		Param.Owner = this;
-		m_PointTowerInteractEffect = GetWorld()->SpawnActor<AC_PointTowerElectroEffect>(m_PointTowerElectroEffectClass, Param);
-		if (m_PointTowerInteractEffect) m_PointTowerInteractEffect->SetActorLocation(m_StaticMeshComGenerator->GetComponentLocation());
+		
+		// ElectroEffect 스폰처리
+		if (m_PointTowerElectroEffectClass)
+		{
+			FActorSpawnParameters Param{};
+			Param.Owner = this;
+			m_PointTowerInteractEffect = GetWorld()->SpawnActor<AC_PointTowerElectroEffect>(m_PointTowerElectroEffectClass, Param);
+			if (m_PointTowerInteractEffect) m_PointTowerInteractEffect->SetActorLocation(m_StaticMeshComGenerator->GetComponentLocation());
+		}
 	}
 	
 	// For Testing
@@ -129,6 +133,143 @@ void AC_PointTower::BeginPlay()
 	// Activate(0.f);
 }
 
+#if WITH_EDITOR
+void AC_PointTower::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+
+	// 현재 플레이 중인 Level World
+	if (GetWorld() && GetWorld()->IsPlayInEditor()) return; // 따로 처리해줄 사항 x
+	
+	const FName PropertyName = PropertyChangedEvent.Property ? PropertyChangedEvent.Property->GetFName() : NAME_None;
+
+	// 동기화가 필요한 Property가 수정된 경우
+	if (PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ActivateSequenceIdx)) // 이미 세팅된 Idx의 PointTower를 찾아서 자기자신의 세팅값을 수정처리
+	{
+		TrySyncSelf();
+		return;
+	}
+
+	// Idx를 수정하는 것이 아닌, 기타 다른 설정을 수정할 때 -> 동일한 Idx PointTower들 모두 해당 멤버변수값을 수정한 값으로 일괄 처리
+	if (PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_DefaultDecreasingAmountOfConquerAmountPerSec) ||
+		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_IncreaseAmountPerSec) ||
+		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_DPSWhileConquering) ||
+		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ZombieDamageRatio) ||
+		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ZombieAttackRange)) // m_ZombieWaveSetting은 PostEditChangeChain 쪽에서 동기화 처리 중
+	{
+		TrySyncOther();
+	}
+}
+
+void AC_PointTower::PostEditChangeChainProperty(FPropertyChangedChainEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeChainProperty(PropertyChangedEvent);
+
+	if (GetWorld() && GetWorld()->IsPlayInEditor()) return;
+
+	const FEditPropertyChain::TDoubleLinkedListNode* ActiveMemberNode = PropertyChangedEvent.PropertyChain.GetActiveMemberNode();
+	if (!ActiveMemberNode) return;
+
+	const FProperty* ActiveMemberProperty = ActiveMemberNode->GetValue();
+	if (!ActiveMemberProperty) return;
+
+	if (ActiveMemberProperty->GetFName() == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ZombieWaveSetting))
+		TrySyncOther();
+}
+
+bool AC_PointTower::CanEditChange(const FProperty* InProperty) const
+{
+	if (!Super::CanEditChange(InProperty)) return false;
+
+	// 현재 Editing 모드의 world (Level 실행 중 x)
+	if (GetWorld() && !GetWorld()->IsPlayInEditor()) return true; // 수정 가능
+
+	const FName PropertyName = InProperty->GetFName();
+
+	// 오로지 에디팅 상태에서의 Level에서만 수정가능한 멤버변수들인 경우, 수정 불가능하게끔 처리
+	if (PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ActivateSequenceIdx) ||
+		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_DefaultDecreasingAmountOfConquerAmountPerSec) ||
+		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_IncreaseAmountPerSec) ||
+		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_DPSWhileConquering) ||
+		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ZombieDamageRatio) ||
+		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ZombieAttackRange) ||
+		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ZombieWaveSetting))
+		return false;
+	
+	return true;
+}
+
+/*void AC_PointTower::PostEditImport()
+{
+	Super::PostEditImport();
+	UE_LOG(LogTemp, Warning, TEXT("AC_PointTower::PostEditImport %s"), *GetName());
+	// TODO : 자기자신 Sync 맞추기
+}
+
+void AC_PointTower::PostDuplicate(bool bDuplicateForPIE)
+{
+	Super::PostDuplicate(bDuplicateForPIE);
+
+	if (bDuplicateForPIE) return;
+	
+	UE_LOG(LogTemp, Warning, TEXT("AC_PointTower::PostDuplicate %s"), *GetName());
+	// TODO : 자기자신 Sync 맞추기
+}*/
+
+void AC_PointTower::TrySyncSelf()
+{
+	if (!GetWorld()) return;
+
+	UE_LOG(LogTemp, Warning, TEXT("AC_PointTower::TrySyncSelf"));
+
+	
+	for (TActorIterator<AC_PointTower> It(GetWorld()); It; ++It)
+	{
+		AC_PointTower* PointTower = *It;
+		
+		if (!IsValid(PointTower) || PointTower == this) continue;
+		if (PointTower->m_ActivateSequenceIdx != m_ActivateSequenceIdx) continue;
+		
+		// 동일한 ActivateIdx를 찾음
+		CopyAllPointTowerSettings(PointTower);
+		return;
+	}
+}
+
+void AC_PointTower::TrySyncOther()
+{
+	if (!GetWorld()) return;
+
+	UE_LOG(LogTemp, Warning, TEXT("AC_PointTower::TrySyncOther"));
+	
+	for (TActorIterator<AC_PointTower> It(GetWorld()); It; ++It)
+	{
+		AC_PointTower* PointTower = *It;
+		
+		if (!IsValid(PointTower) || PointTower == this) continue;
+		if (PointTower->m_ActivateSequenceIdx != m_ActivateSequenceIdx) continue;
+		
+		// 동일한 ActivateIdx를 찾음
+		PointTower->CopyAllPointTowerSettings(this);
+	}
+}
+
+void AC_PointTower::CopyAllPointTowerSettings(AC_PointTower* _SrcPointTower)
+{
+	if (!_SrcPointTower) return;
+	
+	m_DefaultDecreasingAmountOfConquerAmountPerSec = _SrcPointTower->m_DefaultDecreasingAmountOfConquerAmountPerSec;
+	m_IncreaseAmountPerSec                         = _SrcPointTower->m_IncreaseAmountPerSec;
+	m_DPSWhileConquering                           = _SrcPointTower->m_DPSWhileConquering;
+	m_ZombieDamageRatio                            = _SrcPointTower->m_ZombieDamageRatio;
+	m_ZombieAttackRange                            = _SrcPointTower->m_ZombieAttackRange;
+	m_ZombieWaveSetting                            = _SrcPointTower->m_ZombieWaveSetting;
+	m_ConquerLimitTime                             = _SrcPointTower->m_ConquerLimitTime;	
+	// TODO : 세팅값 수정되지 않은채로 있다면 Modify 처리 넣어줄 것
+}
+
+#endif
+
 void AC_PointTower::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -144,6 +285,9 @@ void AC_PointTower::Tick(float DeltaTime)
 
 	/* 현재 거점이 열린 상태 */
 
+	// 거점이 열렸긴 했는데, 이미 GameOver처리된 상황 (이번 Sequence remainTime이 모두 소진되는 등) - 현재 서버 쪽에서 Tick이 실행되게끔 위에서 예외처리함
+	if (GAME_LV_GAME_MODE(this)->GetGameOverChecker()->HasGameOver()) return;
+	
 	if (m_ConqueringPlayer) // Conquering interaction 하는 Player가 존재
 	{
 		/* 지속적으로 거점 게이지를 활성화한다 */
@@ -255,24 +399,15 @@ bool AC_PointTower::CanBeInsertedToSensedTarget()
 	return true;
 }
 
-void AC_PointTower::TestFunction()
-{
-	// SetPointTowerState(EPointTowerState::Active);
-}
-
-void AC_PointTower::TestFunction2()
-{
-	SetPointTowerState(EPointTowerState::Conquered);
-}
-
 void AC_PointTower::Multicast_UpdateConquerAmountInt_Implementation(uint8 _CurrentConquerAmount)
 {
 	m_CurConquerAmountInt = _CurrentConquerAmount;
 
 	// 점령 퍼센트 UI 업데이트
 	if (m_PointTowerWidget) m_PointTowerWidget->SetPercentText(m_CurConquerAmountInt);
+	if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+		MainHUD->GetInformWidget()->SetTowerConqueredInfo(m_RegisteredIdx, m_CurConquerAmountInt);
 }
-
 
 void AC_PointTower::OnApproachEffectTogglerColliderBeginOverlap
 (
@@ -407,8 +542,6 @@ float AC_PointTower::TakeDamage
 	AActor*				DamageCauser
 )
 {
-	UC_Util::Print("TackDamage", FColor::Red, 10.f);
-
 	// 현재 데미지를 입을 수 없는 상황인데 공격을 당한 경우
 	if (!CanCurrentlyAttackedByZombie()) return 0.f;
 	
@@ -473,6 +606,11 @@ void AC_PointTower::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 	DOREPLIFETIME(AC_PointTower, m_PointTowerInteractEffect);
 }
 
+bool AC_PointTower::IsWholeOutlineActive() const
+{
+	return m_StaticMeshComTower->CustomDepthStencilValue != 0;
+}
+
 void AC_PointTower::Multicast_OnTakeDamage_Implementation()
 {
 	m_PointTowerWidget->OnDamaged();
@@ -497,6 +635,8 @@ void AC_PointTower::Multicast_Activate_Implementation()
 	// 거점 활성화 Outline 활성화
 	m_StaticMeshComTower->SetCustomDepthStencilValue(2);
 	m_StaticMeshComGenerator->SetCustomDepthStencilValue(2);
+
+	UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld());
 	
 	// 핑 활성화
 	if (m_WorldPingActor)
@@ -505,7 +645,7 @@ void AC_PointTower::Multicast_Activate_Implementation()
 		
 		m_WorldPingActor->SpawnPingActorToWorld(GeneratorLocation, EGamePingType::AntennaMarker, EPingShapeType::FullPing);
 
-		if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+		if (MainHUD)
 		{
 			m_ActivatedCompassMarkerWidget = MainHUD->GetCompassBarWidget()->SpawnGlobalPingMarker
 			(
@@ -514,6 +654,10 @@ void AC_PointTower::Multicast_Activate_Implementation()
 			);		
 		}
 	}
+	
+	// InformWidget Indicator 활성화
+	if (MainHUD) MainHUD->GetInformWidget()->RegisterPointTowerIndicator(this);
+	
 	
 	// 근접 접근 시, EffectToggling 처리용 감지 Collider 활성화
 	m_ApproachEffectTogglerCollider->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
@@ -549,14 +693,18 @@ void AC_PointTower::Multicast_Conquered_Implementation()
 	// 거점 아웃라인 비활성화
 	m_StaticMeshComTower->SetCustomDepthStencilValue(0);
 	m_StaticMeshComGenerator->SetCustomDepthStencilValue(0);
+
+	UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld());
 	
 	// 핑 비활성화
 	if (m_WorldPingActor)
 	{
 		m_WorldPingActor->HidePing();
-		if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
-			MainHUD->GetCompassBarWidget()->HideGlobalPingMarker(m_ActivatedCompassMarkerWidget);
+		if (MainHUD) MainHUD->GetCompassBarWidget()->HideGlobalPingMarker(m_ActivatedCompassMarkerWidget);
 	}
+	
+	// Inform Widget Indicator 비활성화
+	if (MainHUD) MainHUD->GetInformWidget()->DeRegisterPointTowerIndicator(this);
 	
 	// 근접 접근 시, EffectToggling 처리용 감지 Collider 비활성화
 	m_ApproachEffectTogglerCollider->SetCollisionEnabled(ECollisionEnabled::NoCollision);

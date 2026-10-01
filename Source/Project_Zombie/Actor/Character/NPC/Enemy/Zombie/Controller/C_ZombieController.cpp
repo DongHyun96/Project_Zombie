@@ -267,6 +267,12 @@ AActor* AC_ZombieController::GetCurrentBBTarget() const
 	return Blackboard ? Cast<AActor>(Blackboard->GetValueAsObject(TEXT("Target"))) : nullptr;
 }
 
+void AC_ZombieController::SetBBValueAsEnum(const FName& _KeyName, uint8 _EnumValue)
+{
+	if (!Blackboard) return;
+	Blackboard->SetValueAsEnum(_KeyName, _EnumValue);
+}
+
 bool AC_ZombieController::IsCurrentlyOnSight(AActor* _TargetActor) const
 {
 	if (!_TargetActor) return false;

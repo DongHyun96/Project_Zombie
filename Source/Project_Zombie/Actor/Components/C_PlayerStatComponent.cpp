@@ -7,8 +7,10 @@
 #include "Actor/Character/C_BasicCharacter.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Controller/C_BasicPlayerController.h"
+#include "GameModeAndManager/C_GameMode_GameLv.h"
 #include "GameModeAndManager/C_ItemManager.h"
 #include "GameModeAndManager/C_UIManager.h"
+#include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 #include "Item/Interact/ItemUpgrade/C_ItemUpgradeStation.h"
 #include "Item/Interact/StatUpgrade/C_StatUpgradeStation.h"
 #include "Tests/OnlineBeaconUnitTestUtils.h"
@@ -18,6 +20,7 @@
 #include "UI/MainHUD/PlayerStatHUD/C_OtherPlayerStatWidget.h"
 #include "UI/MainHUD/PlayerStatHUD/C_PlayerStatWidget.h"
 #include "Utility/C_Util.h"
+#include "Utility/C_UtilActor.h"
 
 
 UC_PlayerStatComponent::UC_PlayerStatComponent()
@@ -30,6 +33,10 @@ void UC_PlayerStatComponent::BeginPlay()
 	Super::BeginPlay();
 
 	m_OwnerPlayer = Cast<AC_BasicPlayer>(GetOwner());
+
+	// Player immortal check (테스트용 무적 처리 확인)
+	if (AC_GameMode_GameLv* GameLevelGameMode = GetWorld()->GetAuthGameMode<AC_GameMode_GameLv>())
+		m_bIsImmortal = GameLevelGameMode->GetPlayerImmortal();
 	
 	/*if (m_OwnerCharacter->IsLocallyControlled())
 	{
@@ -74,9 +81,11 @@ void UC_PlayerStatComponent::BindUpdateOtherPlayerHPBar()
 	this->OnCurHPUpdatedDelegate.AddUObject(this, &UC_PlayerStatComponent::UpdateOtherPlayerHPBar);
 }
 
-void UC_PlayerStatComponent::LoadStatsFromBackup(const TMap<FName, float>& InStats, const TMap<FName, uint8>& InGrades)
+/*void UC_PlayerStatComponent::LoadStatsFromBackup(const TMap<FName, float>& InStats, const TMap<FName, uint8>& InGrades)
 {
 	if (!m_OwnerPlayer) return;
+
+	PRINT_LOCAL(GetWorld(), "LoadStatsFromBackup", CUR_TICK_COLOR, 10.f);
 	
 	//UC_PlayerStatComponent* PlayerStatComp = Cast<UC_PlayerStatComponent>(m_OwnerPlayer->GetStatComponent());
 	//if (!PlayerStatComp) return;
@@ -88,8 +97,11 @@ void UC_PlayerStatComponent::LoadStatsFromBackup(const TMap<FName, float>& InSta
 	m_Stats = InStats;
 
 	if (m_OwnerPlayer->IsLocallyControlled())
+	{
+		PRINT_LOCAL(GetWorld(), "After Self character LoadStatsFromBackup CurHP : " + FString::SanitizeFloat(m_Stats[StatName::CurHP]), CUR_TICK_COLOR, 10.f);
 		OnCurHPUpdatedDelegate.Broadcast(GetCurHPRatio());
-}
+	}
+}*/
 
 UScriptStruct* UC_PlayerStatComponent::GetStatDataStruct() const
 {

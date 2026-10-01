@@ -26,6 +26,7 @@ enum class EPointTowerState : uint8
 
 /// <summary>
 /// 주의 : 인게임 레벨에 배치 시, EditInstanceOnly 되어있는 멤버변수 초기화 시켜줄 것 (어떤 값인지 주석 확인할 것)
+/// 한 Sequence 당, Maximum 4개의 PointTower 배치 가능하도록 함 -> 갯수를 늘리려면 InformWidget의 PointTower Conquered percent UI 개수 늘려줄 것
 /// </summary>
 UCLASS()
 class PROJECT_ZOMBIE_API AC_PointTower : public APawn, public IGenericTeamAgentInterface
@@ -37,9 +38,56 @@ class PROJECT_ZOMBIE_API AC_PointTower : public APawn, public IGenericTeamAgentI
 public:
 	AC_PointTower();
 
-protected:
 	virtual void BeginPlay() override;
 
+#if WITH_EDITOR
+	
+	/// <summary>
+	/// 에디팅 상태에서 바로, m_ActivateSequenceIdx가 같은 PointTower들의 값 sync를 맞추기 위함
+	/// </summary>
+	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+	
+	virtual void PostEditChangeChainProperty(FPropertyChangedChainEvent& PropertyChangedEvent) override;
+
+	/// <summary>
+	/// EditInstanceOnly로 수정 가능한 값들, PIE 실행모드에서 수정 불가능하게끔 처리하기 위함 
+	/// </summary>
+	virtual bool CanEditChange(const FProperty* InProperty) const override;
+
+	/*/// <summary>
+	/// 레벨에 새로 배치 시(복붙되어 생성되었을 때), Idx 0번의 PointTower들과 동일한 세팅값으로 처리
+	/// </summary>
+	virtual void PostEditImport() override;
+
+	/// <summary>
+	/// 레벨에 새로 배치 시(복붙되어 생성되었을 때), Idx 0번의 PointTower들과 동일한 세팅값으로 처리 
+	/// </summary>
+	virtual void PostDuplicate(bool bDuplicateForPIE) override;*/
+
+public:
+	
+	/// <summary>
+	/// <para> 자신과 동일한 ActivateSeq를 가진 PointTower를 참고하여, 자신의 세팅값을 동기화 </para>
+	/// <para> ActivateSeq 수정 시, 또는 새로운 PointTower Level에 배치 시 호출할 것 </para>
+	/// </summary>
+	void TrySyncSelf();
+
+private:
+	
+	/// <summary>
+	/// <para> 자신의 세팅값으로 다른 동일한 ActivateSeq를 가진 PointTower들 세팅값 동기화 </para>
+	/// <para> 이 PointTower의 ActivateSeq를 제외한 세팅값을 세팅 시 호출할 것 </para>
+	/// </summary>
+	void TrySyncOther();
+
+	/// <summary>
+	/// Param으로 들어온 PointTower의 Setting값 자신에게 맞추기 (단, ActivateSeqIdx는 뺌)
+	/// </summary>
+	/// <param name="_SrcPointTower"> : 값을 복사할 PointTower </param>
+	void CopyAllPointTowerSettings(AC_PointTower* _SrcPointTower);
+	
+#endif
+	
 public:
 	
 	virtual void Tick(float DeltaTime) override;
@@ -65,9 +113,6 @@ public:
 	/// </summary>
 	bool CanBeInsertedToSensedTarget();
 	
-	void TestFunction();
-	void TestFunction2();
-
 	void PlayHitSound();
 	
 private:
@@ -178,6 +223,11 @@ public:
 	
 	const FZombieWaveSetting& GetZombieWaveSetting() const { return m_ZombieWaveSetting; }
 
+	/// <summary>
+	/// 현재 전체 포인팅용 Outline이 활성화 중인지 여부
+	/// </summary>
+	bool IsWholeOutlineActive() const;
+	
 private:
 	
 	/// <summary>
@@ -186,6 +236,12 @@ private:
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_OnTakeDamage();
 
+private:
+
+	// 서버 쪽에서만 유효 -> 실질적인 인덱스는 아니고 해당 Sequence에서 등록된 순서라고 보면 됨
+	// UI 처리 때문에 순서가 기록되어야 함 RegisterPointTower 시 부여받음
+	uint8 m_RegisteredIdx{};
+	
 protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
@@ -223,6 +279,13 @@ protected:
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
 	float m_ZombieDamageRatio = 0.25f;
 
+	// 이번 SequenceIdx에서의 거점 점령 완료까지의 시간
+	// 이전
+	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
+	float m_ConquerLimitTime = 120.f;
+	
+protected:
+	
 	// 좀비가 판단하기에 Attack 반경이다라고 판단할 반경
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	float m_ZombieAttackRange = 200.f;
@@ -297,11 +360,6 @@ private:
 
 	UPROPERTY(Replicated)
 	AC_PointTowerElectroEffect* m_PointTowerInteractEffect{};
-	
-private:
-	
-	FTimerHandle m_TestTimerHandle{};
-	FTimerHandle m_TestTimerHandle2{};
 	
 	float m_DamageTimer{}; // 1초 간격으로 Damage 입힐 것
 	

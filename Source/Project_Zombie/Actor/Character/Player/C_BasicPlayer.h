@@ -601,6 +601,10 @@ private:
 	void ApplyMovementSpeed();
 
 public:
+	// 클라이언트가 선택한 스킨을 서버에 요청
+	UFUNCTION(Server, Reliable)
+	void Server_RequestApplySkin(EPlayerSkin InSkin);
+
 	// Skin 로드해서 적용
 	void ApplySkin(EPlayerSkin InSkin);
 

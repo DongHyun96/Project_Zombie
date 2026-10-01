@@ -24,10 +24,13 @@
 #include "Particles/ParticleSystem.h"
 
 #include "GameModeAndManager/C_UIManager.h"
+#include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 
 #include "Interface/I_ExplodeStrategy.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
+#include "UI/MainHUD/PlayerStatHUD/C_PlayerStatWidget.h"
 #include "Utility/C_Util.h"
+#include "Utility/C_UtilActor.h"
 
 const FName AC_ThrowableWeaponBase::s_HolsterSocketName = TEXT("ThrowableHolsterSocket");
 
@@ -185,6 +188,8 @@ void AC_ThrowableWeaponBase::InitializeItemData(const FWeaponData* InRawData)
 {
 	const FThrowableData* ThrowableData = static_cast<const FThrowableData*>(InRawData);
 
+	// PRINT_LOCAL(GetWorld(), "AC_ThrowableWeaponBase::InitializeItemData", FColor::Cyan, 10.f);
+	
 	if (!ThrowableData)
 	{
 		UC_Util::Print("Failed Cast to const FThrowableData*", FColor::Red, 10.f);
@@ -350,7 +355,7 @@ bool AC_ThrowableWeaponBase::AttachToHand(USceneComponent* _ParentMesh)
 	if (bIsAttached)
 	{
 		Player->SetHandState(EHandState::WeaponThrowable);
-		UpdateAmmoInfoHUDForDrawEnd();
+		// UpdateAmmoInfoHUDForDrawEnd();
 	}
 	
 	return bIsAttached;
@@ -544,8 +549,9 @@ void AC_ThrowableWeaponBase::Server_Explode_Implementation(bool _bStopThrowMonta
 	Multicast_PlayExplosionFX(_bStopThrowMontage, _ExplosionLocation, _ExplosionRotation);
 
 	// 폭발 처리 완료 후, Actor 제거
+	// 바로 제거하는 것이 아닌, 몇초정도 뒤에 제거를 함 -> 던진 이후 바로 터졌을 때 아직 OnThrowProcessEnd 처리까지 들어오지 않은 경우 문제가 생기기 때문에 일정시간 기다린 뒤 Destroy 처리
 	SetActorHiddenInGame(true);
-	Destroy();
+	SetLifeSpan(5.f);
 }
 
 void AC_ThrowableWeaponBase::Multicast_PlayExplosionFX_Implementation(bool _bStopThrowMontage, FVector_NetQuantize _ExplosionLocation, FRotator _ExplosionRotation)
@@ -613,7 +619,6 @@ void AC_ThrowableWeaponBase::Server_DecreaseCurCount_Implementation()
 	{
 		if (FInventoryEntry* SlotEntry = ItemLinkComp->GetItemEntryPtr())
 		{
-			UC_Util::Print("Throwable Decrease");
 			--SlotEntry->CurCount;
 			//m_LeftCount = SlotEntry->CurCount;
 			int32 Idx = ItemLinkComp->GetSlotIndex();
@@ -814,12 +819,18 @@ void AC_ThrowableWeaponBase::OnThrowThrowable()
 
 	const FVector LaunchLocation = GetLaunchLocation(ThrowDirection);
 
+	UC_Util::Print("Throwed : " + GetName(), FColor::MakeRandomColor(), 10.f);
+	
 	// 투척류 예측 경로 제거
 	ClearPredictedPath();
 
 	// 로컬 플레이어 신뢰 처리 // 여기서 먼저 처리
 	ExecuteThrowMovement(LaunchLocation, ThrowDirection);
 
+	// UI LeftAmmo 업데이트
+	if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+		MainHUD->UpdateMagazineAmmoCount(0);
+	
 	// 로컬에서 FuseTimer 시작
 	if (!m_bExplodeOnImpact && HasFuseTimer())
 	{
@@ -839,6 +850,8 @@ void AC_ThrowableWeaponBase::OnThrowThrowable()
 
 void AC_ThrowableWeaponBase::OnThrowProcessEnd()
 {
+	PRINT_LOCAL(GetWorld(), "OnThrowProcessEnd", CUR_TICK_COLOR, 10.f);
+	
 	// TODO 
 	// 수류탄 던짐
 	// EquippedComponent의 CurrentWeapon은 nullptr 또는 다음 수류탄으로 변경
@@ -965,8 +978,9 @@ void AC_ThrowableWeaponBase::Explode()
 		Multicast_PlayExplosionFX(bStopThrowMontage, ExplosionLocation, ExplosionRotation);
 		
 		// 폭발 처리 완료 후, Actor 제거
+		// 바로 제거하는 것이 아닌, 몇초정도 뒤에 제거를 함 -> 던진 이후 바로 터졌을 때 아직 OnThrowProcessEnd 처리까지 들어오지 않은 경우 문제가 생기기 때문에 일정시간 기다린 뒤 Destroy 처리
 		SetActorHiddenInGame(true);
-		Destroy();
+		SetLifeSpan(5.f);
 
 		return;
 	}
@@ -990,6 +1004,19 @@ void AC_ThrowableWeaponBase::Explode()
 			, FVector(m_ExplosionEffectScale)
 			, true
 		);	// 재생 종료 후 자동 제거
+	}
+
+	// 폭발 사운드 재생
+	if (m_ExplosionSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(GetWorld()
+			, m_ExplosionSound
+			, ExplosionLocation
+			, 1.0f				// Volume
+			, 1.0f				// Pitch
+			, 0.0f
+			, m_ExplosionSoundAttenuation
+		);
 	}
 
 	SetActorHiddenInGame(true);
@@ -1295,7 +1322,7 @@ bool AC_ThrowableWeaponBase::StartFuseTimer()
 	// 쿠킹이 한번이라도 시작되었을 시, 무조건 불발탄 없이 터져야 하는 수류탄이다
 	m_PrevOwnerPlayer = m_OwnerPlayer;
 	
-	PRINT_LOCAL(GetWorld(), "ThrowableWeaponBase - Start Fuse Timer", FColor::Red, 10.f);
+	// PRINT_LOCAL(GetWorld(), "ThrowableWeaponBase - Start Fuse Timer", FColor::Red, 10.f);
 
 	return true;
 }
@@ -1306,7 +1333,7 @@ void AC_ThrowableWeaponBase::ClearFuseTimer()
 	UWorld* World = GetWorld();
 	World->GetTimerManager().ClearTimer(m_FuseTimerHandle);
 	
-	PRINT_LOCAL(GetWorld(), "ThrowableWeaponBase - Clear Fuse Timer", FColor::Red, 10.f);
+	// PRINT_LOCAL(GetWorld(), "ThrowableWeaponBase - Clear Fuse Timer", FColor::Red, 10.f);
 	
 	m_bWantsCook = false; // 쿠킹 취소했으므로 WantsCook 초기화
 }
@@ -1543,27 +1570,57 @@ void AC_ThrowableWeaponBase::ClearPredictedPath()
 void AC_ThrowableWeaponBase::UpdateAmmoInfoHUDForDrawEnd()
 {
 	if (!m_OwnerPlayer || !m_OwnerPlayer->IsLocallyControlled()) return;
-	
-	int32 Count = 1;
-	
-	if (FInventoryEntry* Entry = ItemLinkComp->GetItemEntryPtr())
-		Count = Entry->CurCount;
 
-	if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
-		MainHUD->ToggleAmmoInfoVisibility(true, EFireMode::Single, 1, Count);
-}
+	// 이 시점에 MainHUD 없다는건 뭔가 문제가 있음
+	UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld());
+	if (!MainHUD)
+	{
+		PRINT_LOCAL(GetWorld(), "[AC_ThrowableWeaponBase::UpdateAmmoInfoHUDForDrawEnd] : MainHUD nullptr", FColor::Red, 10.f);
+		return;
+	}
 
-void AC_ThrowableWeaponBase::SetAmmoUIInfo(FAmmoUIInfo& _AmmoUIInfo)
-{
-	_AmmoUIInfo.Visible            = true;
-	_AmmoUIInfo.FireMode           = EFireMode::Single;
-	_AmmoUIInfo.MagazineAmmo       = 1;
+	UC_PlayerStatWidget* PlayerStatWidget = MainHUD->GetPlayerStatWidget();
 	
-	int32 Count = 1;
-	
+	// ItemEntry가 Valid한 경우에는 바로 처리 - 타이머 처리를 할 필요 x
 	if (FInventoryEntry* Entry = ItemLinkComp->GetItemEntryPtr())
-		Count = Entry->CurCount;
+	{
+		// 이미 보이는 중이라면, Animation 처리를 위해 세부 Update Animation 재생처리로 둠
+		if (PlayerStatWidget->IsAmmoInfoShowing())
+		{
+			PlayerStatWidget->UpdateMagazineAmmoCount(1);
+			PlayerStatWidget->UpdateLeftAmmoTotalCount(Entry->CurCount);
+		}
+		else PlayerStatWidget->ToggleAmmoInfoVisibility(true, EFireMode::Single, 1, Entry->CurCount);
+		return;
+	}
+
+	// 아직 ItemEntry가 valid하지 않음 -> Valid할 때까지 기다린 후, UI 업데이트 처리
 	
-	_AmmoUIInfo.LeftAmmoTotalCount = Count;
-	
+	const FTimerDelegate TimerDelegate = FTimerDelegate::CreateWeakLambda(this, [this, PlayerStatWidget]()
+	{
+		// 시간이 흘러 OwnerPlayer가 nullptr 처리가 되어있을 수 있음(ex - 이 투척류를 던졌을 때)
+		// 이 때에는 Draw에 해당하는 UI 업데이트 처리를 하지 않음 (이미 지난 정보)
+		if (!m_OwnerPlayer)
+		{
+			GetWorldTimerManager().ClearTimer(m_UpdateAmmoInfoTimer);
+			return;
+		}
+		
+		FInventoryEntry* Entry = ItemLinkComp->GetItemEntryPtr();
+		if (!Entry) return; // 다음 0.1초 기다려서 다음 tick에 시도
+
+		// 실질적인 Entry ptr가 valid한 상황 -> 이 시점에서야 실질적인 Count로 UI 업데이트 처리 진행
+
+		// 이미 보이는 중이라면, Animation 처리를 위해 세부 Update Animation 재생처리로 둠
+		if (PlayerStatWidget->IsAmmoInfoShowing())
+		{
+			PlayerStatWidget->UpdateMagazineAmmoCount(1);
+			PlayerStatWidget->UpdateLeftAmmoTotalCount(Entry->CurCount);
+		}
+		else PlayerStatWidget->ToggleAmmoInfoVisibility(true, EFireMode::Single, 1, Entry->CurCount);
+		
+		GetWorldTimerManager().ClearTimer(m_UpdateAmmoInfoTimer);
+	});
+
+	GetWorldTimerManager().SetTimer(m_UpdateAmmoInfoTimer, TimerDelegate, 0.1f, true);
 }

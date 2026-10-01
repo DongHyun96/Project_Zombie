@@ -69,7 +69,9 @@
 
 #include "UI/InvenUI/Upgrade/C_PlayerStatUpgradeWidget.h"
 #include "UI/MainHUD/InformWidget/C_InformWidget.h"
+#include "UI/MainHUD/PlayerStatHUD/C_OtherPlayerStatWidget.h"
 #include "UI/MainHUD/PlayerStatHUD/C_PlayerStatWidget.h"
+#include "Utility/C_UtilActor.h"
 
 #define RECHARGED_BOOST 20.f
 
@@ -223,63 +225,63 @@ void AC_BasicPlayer::BeginPlay()
 	if (UC_GameLevelManager* LevelManager = GetWorld()->GetSubsystem<UC_GameLevelManager>())
 		LevelManager->AddPlayer(this);
 
-	// 웅크리기 완료 시 호출할 OnPoseTransitionFinished 바인딩
-	if (m_PoseColliderHandlerComponent)
-	{
-		m_PoseColliderHandlerComponent
-			->OnPoseTransitionFinished.AddUObject(this, &AC_BasicPlayer::OnPoseTransitionFinished);
-	}
-
 	//UpdateBoostBarHUD();
-
+	// 이 안에서 Early return 처리되면 알아서 다음 Timer Tick에 다시금 확인하고 nullptr가 아닌 겨우에만 초기화 작업이 안전하게 이루어짐
+	// Timer 무한 루프 안정성 측면에서 Timer 자체는 초기화 처리가 모두 이루어졌다면 해제,
+	// 또는 얘기치 못하게 이 Player 자체가 메모리 해제되어도 알아서 Timer 해제처리가 됨
 	FTimerDelegate TimerDelegate = FTimerDelegate::CreateWeakLambda(this, [this]()
 	{
 		// InventoryWidget에 Player의 InvenComponent 초기화 및 델리게이트 진행
 		APlayerController* PC = Cast<APlayerController>(GetController());
-		
 		if (!PC) return;
 		
+		AC_PlayerState* PS = GetPlayerState<AC_PlayerState>();
+		if (!PS) return;
+		
 		AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD());
-		
 		if (!UIManager) return;
-		
-		if (m_InvenComponent)
-		{
-			m_InvenComponent->SetHasEquipmentSlots(true);
-			
-			UIManager->GetInventoryWidget()->InitializeInventoryWidget();
-			
-			UIManager->GetInventoryWidget()->GetPlayerGridWidget()->SetInvenComponent(m_InvenComponent);
-		
-			UIManager->GetInventoryWidget()->GetEquipmentWidget()->InitEquipmentWidget(m_InvenComponent);
-			
-			UIManager->GetInventoryWidget()->GetItemUpgradeWidget()->BindingUpdateWidget(m_InvenComponent);
-		}
-		
-		if (m_InvenComponent && m_EquippedComponent)
-		{
-			m_EquippedComponent->SetupInventoryComponent(m_InvenComponent);
-			
-		}
 
-		if (m_StatComponent)
-		{
-			
-			UIManager->GetInventoryWidget()->GetPlayerStatUpgradeWidget()->BindStatEvents(m_StatComponent);
-			if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
-				MainHUD->GetPlayerStatWidget()->BindCurHPUpdate(m_StatComponent);
-			
-			m_StatComponent->OnCurHPUpdatedDelegate.Broadcast(m_StatComponent->GetCurHPRatio());
-			
-			//UIManager->GetMainHUDWidget()->GetPlayerStatWidget()->UpdateHPBar(m_StatComponent->GetCurHPRatio());
-		}
+		UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld());
 		
+		if (!m_InvenComponent || !m_EquippedComponent || !m_StatComponent || !MainHUD) return;
+		
+		UC_PlayerStatWidget* StatWidget = MainHUD->GetPlayerStatWidget();
+		if (!StatWidget) return;
+
+		// 웅크리기 완료 시 호출할 OnPoseTransitionFinished 바인딩
+		if (!m_PoseColliderHandlerComponent) return;
+		m_PoseColliderHandlerComponent->OnPoseTransitionFinished.AddUObject(this, &AC_BasicPlayer::OnPoseTransitionFinished);
+		
+		m_InvenComponent->SetHasEquipmentSlots(true);
+		
+		UIManager->GetInventoryWidget()->InitializeInventoryWidget();
+		UIManager->GetInventoryWidget()->GetPlayerGridWidget()->SetInvenComponent(m_InvenComponent);
+		UIManager->GetInventoryWidget()->GetEquipmentWidget()->InitEquipmentWidget(m_InvenComponent);
+		UIManager->GetInventoryWidget()->GetItemUpgradeWidget()->BindingUpdateWidget(m_InvenComponent);
+
+		m_EquippedComponent->SetupInventoryComponent(m_InvenComponent);
+
 		if (IsLocallyControlled())
-		{
-			UpdateBoostBarHUD();
-		}
+			UIManager->GetInventoryWidget()->GetPlayerStatUpgradeWidget()->BindStatEvents(m_StatComponent);
 		
+		// Main Stat HUD HP 업데이트 바인딩 관련
+		if (IsLocallyControlled()) StatWidget->BindCurHPUpdate(this);
+		
+		//UIManager->GetMainHUDWidget()->GetPlayerStatWidget()->UpdateHPBar(m_StatComponent->GetCurHPRatio());
+
 		TryRestoreFromPlayerState();
+
+		// Stat 불러오기 시도 이후, 서버 쪽인 경우에 한해 Stat 관련 UI 업데이트 진행
+		// 클라이언트의 경우, StatCom의 OnRep_ReplicatedStatsArray에서 UI 업데이트 처리를 진행한다
+		if (HasAuthority())
+		{
+			if (IsLocallyControlled())
+			{
+				StatWidget->UpdateHPBarRatio(m_StatComponent->GetCurHPRatio());
+				MainHUD->UpdateBoostBar(m_StatComponent->GetStat(StatName::CurBoost), m_StatComponent->GetStat(StatName::MaxBoost));
+			}
+			else MainHUD->GetOtherPlayerStatWidget()->UpdateHPBar(this, m_StatComponent->GetCurHPRatio());
+		}
 		
 		// 클라가 남의 아이템에 대한 정보를 불러와야 하기 때문에 호출해봄.
 		//if (m_EquippedComponent)
@@ -304,6 +306,21 @@ void AC_BasicPlayer::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	
 	// 팅기거나 접속을 종료하면 드래그하고 있던 아이템 잠금 해제.
 	Server_CancelDragItemSlot(curDraggedItem.SourceSlotIndex, curDraggedItem.SourceInvenComp);
+
+	/* 등록된 Player 정보 제거 관련 */
+	
+	// GameLevelManager에 등록된 Player 제거 & UI 업데이트 제거
+	if (UC_GameLevelManager* GameLevelManager = LEVEL_MANAGER)
+		GameLevelManager->RemovePlayer(this);
+	
+	// WorldPingActor 및 CompassBar Ping 정보 Hiding 처리 -> EndPlay에서 WorldPingActor를 삭제처리하는 식으로 함
+	// m_PingSystemComponent->HidePing();
+		
+	if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+	{
+		MainHUD->GetCompassBarWidget()->DeregisterPlayerCompassPingMarker(this);
+		MainHUD->GetOtherPlayerStatWidget()->DeregisterOtherPlayer(this);
+	}
 }
 
 void AC_BasicPlayer::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -539,7 +556,7 @@ void AC_BasicPlayer::OnRep_PlayerState()
 		RefreshSkin();
 	}
 
-	// CreateWeakLambda: this가 파괴되면 엔진이 람다 실행을 아예 차단함
+	/*// CreateWeakLambda: this가 파괴되면 엔진이 람다 실행을 아예 차단함
 	FTimerDelegate InitDelegate = FTimerDelegate::CreateWeakLambda(this, [this]()
 	{
 		UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld());
@@ -547,10 +564,6 @@ void AC_BasicPlayer::OnRep_PlayerState()
 
 		UC_PlayerStatWidget* PlayerStatWidget = MainHUD->GetPlayerStatWidget();
 		if (!PlayerStatWidget) return;
-		
-		// 모두 준비되었을 때 비로소 초기화 수행
-		PlayerStatWidget->UpdateBoostBar(m_StatComponent->GetStat(StatName::CurBoost),  m_StatComponent->GetStat(StatName::MaxBoost));
-		PlayerStatWidget->RepPlayerStateInit(m_StatComponent->GetCurHPRatio());
         
 		TryRestoreFromPlayerState();
 
@@ -559,14 +572,21 @@ void AC_BasicPlayer::OnRep_PlayerState()
 	});
 
 	// 0.1초 단위로 반복 검사 처리 실행
-	GetWorldTimerManager().SetTimer(m_PlayerStateRepTimerHandle, InitDelegate, 0.1f, true);
+	GetWorldTimerManager().SetTimer(m_PlayerStateRepTimerHandle, InitDelegate, 0.1f, true);*/
 }
 
 void AC_BasicPlayer::TryRestoreFromPlayerState()
 {
 	AC_PlayerState* PS = GetPlayerState<AC_PlayerState>();
 
-	if (!PS) return;
+	if (!PS)
+	{
+		PRINT_LOCAL(GetWorld(), "[AC_BasicPlayer::TryRestoreFromPlayerState] : PS nullptr", CUR_TICK_COLOR, 10.f);
+		return;
+	}
+
+	// 클라의 경우, 아래의 복원은 의미가 없음 (애초에 서버에서만 유효했던 Restore 처리)
+	if (!HasAuthority()) return;
 	
 	// 1. 인벤토리 컴포넌트 복구 (저장된 데이터가 유효할 때만)
 	if (PS->GetSavedInventory().Num() > 0)
@@ -587,7 +607,7 @@ void AC_BasicPlayer::TryRestoreFromPlayerState()
 			for (int32 i = 0 ; i < static_cast<int32>(EWeaponSlot::None) ; ++i)
 				m_EquippedComponent->LoadEquippedWeaponFromInven(i,m_InvenComponent->GetItemAt(i));
 		}
-	}
+	} else PRINT_LOCAL(GetWorld(), "[AC_BasicPlayer::TryRestoreFromPlayerState] : No Saved Inven", CUR_TICK_COLOR, 10.f);
 	
 	// 2. 스탯 컴포넌트 복구
 	if (PS->GetSavedStats().Num() > 0)
@@ -598,7 +618,7 @@ void AC_BasicPlayer::TryRestoreFromPlayerState()
 			//PS->ClearSavedStats();
 			//PS->ClearSavedStatGrades();
 		}
-	}
+	} else PRINT_LOCAL(GetWorld(), "[AC_BasicPlayer::TryRestoreFromPlayerState] : No Saved Stats", CUR_TICK_COLOR, 10.f);
 }
 
 void AC_BasicPlayer::SetHandState(EHandState _HandState)
@@ -819,6 +839,8 @@ void AC_BasicPlayer::RecoverBoost(float _RecoverAmount)
 
 void AC_BasicPlayer::StartSprint()
 {
+	// PRINT_LOCAL(GetWorld(), "StartPrint called", FColor::Cyan, 10.f);
+	
 	if (!IsAlive())
 		return;
 
@@ -906,9 +928,14 @@ void AC_BasicPlayer::StopSprint()
 {
 	m_IsSprintInput = false;
 
+	// PRINT_LOCAL(GetWorld(), "Stop Sprint called", FColor::Red, 10.f);
+	
 	// Sprint 상태가 아니었다면 자세를 변경하지 않음 
 	if (m_PlayerPoseState != EPlayerPoseState::Sprint)
+	{
+		// PRINT_LOCAL(GetWorld(), "Stop Sprint::Not sprinting", FColor::Red, 10.f);
 		return;
+	}
 
 	if (HasAuthority())
 	{
@@ -1310,7 +1337,8 @@ void AC_BasicPlayer::SetPoseStateOnServer(EPlayerPoseState _NewPoseState)
 	if (m_PlayerPoseState == _NewPoseState)
 		return;
 
-	if (GetCharacterMovement()->IsFalling())
+	// 떨어지는 와중에도 Sprint 취소는 Sprint키 뗄수도 있어서 여기서 Early return 처리는 빼버림
+	if (GetCharacterMovement()->IsFalling() && _NewPoseState != EPlayerPoseState::Walk)
 		return;
 
 	const bool bWasCrouching = m_PlayerPoseState == EPlayerPoseState::Crouch;
@@ -1516,6 +1544,14 @@ float AC_BasicPlayer::GetMoveSpeedByState(EPlayerPoseState _MoveSpeedState) cons
 	return 0.0f;
 }
 
+void AC_BasicPlayer::Server_RequestApplySkin_Implementation(EPlayerSkin InSkin)
+{
+	AC_PlayerState* PS = GetPlayerState<AC_PlayerState>();
+	if (!PS) return;
+
+	PS->SetSelectedSkin(InSkin);
+}
+
 void AC_BasicPlayer::ApplySkin(EPlayerSkin InSkin)
 {
 	UGameInstance* GameInstance = GetGameInstance();
@@ -1552,7 +1588,7 @@ void AC_BasicPlayer::ApplySkinMaterial(UMaterialInterface* TopMaterial, UMateria
 		return;
 
 	USkeletalMeshComponent* PlayerMesh = GetMesh();
-	if (!PlayerMesh)
+	if (!PlayerMesh)	
 		return;
 
 	const int32 TopIndex = PlayerMesh->GetMaterialIndex(TEXT("Body_Top"));

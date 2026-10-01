@@ -193,7 +193,9 @@ void UC_PlayerStatUpgradeWidget::BindStatEvents(UC_StatComponentBase* InStatComp
 
 void UC_PlayerStatUpgradeWidget::OnStatGradeChanged(const FName& StatName, uint8 NewGrade)
 {
-	if (!m_UsePlayer && !m_UsePlayer->GetStatComponent()) return;
+	// TODO : 여기서, 업그레이드된 내역으로 제대로 업데이트위젯 처리가 안되고 Early return 처리가 될수도
+	// 근데 애초에 이용하기 시작할 때에나 m_UsePlayer가 제대로 들어오고, UI 업데이트도 그 시점에서 처리가 되는 중인 것 같음
+	if (!m_UsePlayer || !m_UsePlayer->GetStatComponent()) return;
 	
 	PlayerStatsWidget->UpdateWidget(m_UsePlayer->GetStatComponent());
 }

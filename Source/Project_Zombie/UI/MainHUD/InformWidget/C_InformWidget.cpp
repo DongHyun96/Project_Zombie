@@ -3,10 +3,14 @@
 
 #include "C_InformWidget.h"
 
+#include "C_PointIndicatorManagerWidget.h"
+#include "C_PointIndicatorWidget.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/Components/C_InvenComponent.h"
+#include "Blueprint/WidgetLayoutLibrary.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
+#include "Components/HorizontalBox.h"
 #include "Components/TextBlock.h"
 #include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 #include "Utility/C_Util.h"
@@ -36,6 +40,29 @@ void UC_InformWidget::NativeOnInitialized()
 		PlayerWarningLogSequence.Add(i);
 	}
 
+	m_TowerConqueredHZBoxes.Empty();
+	m_TowerConqueredHZBoxes.Add(TowerConqueredHZBox0);
+	m_TowerConqueredHZBoxes.Add(TowerConqueredHZBox1);
+	m_TowerConqueredHZBoxes.Add(TowerConqueredHZBox2);
+	m_TowerConqueredHZBoxes.Add(TowerConqueredHZBox3);
+	if (!TowerConqueredHZBox0) UC_Util::Print("TowerConqueredHZBox is nullptr!", FColor::Red, 10.f);
+
+	m_TowerConqueredPercentTexts.Empty();
+	m_TowerConqueredPercentTexts.Add(TowerConqueredPercent0);
+	m_TowerConqueredPercentTexts.Add(TowerConqueredPercent1);
+	m_TowerConqueredPercentTexts.Add(TowerConqueredPercent2);
+	m_TowerConqueredPercentTexts.Add(TowerConqueredPercent3);
+	if (!TowerConqueredPercent0) UC_Util::Print("TowerConqueredPercent is nullptr!", FColor::Red, 10.f);
+	
+	m_ShowTowerConqueredInfoAnims.Empty();
+	m_ShowTowerConqueredInfoAnims.Add(ShowTowerConquered0);
+	m_ShowTowerConqueredInfoAnims.Add(ShowTowerConquered1);
+	m_ShowTowerConqueredInfoAnims.Add(ShowTowerConquered2);
+	m_ShowTowerConqueredInfoAnims.Add(ShowTowerConquered3);
+	if (!ShowTowerConquered0) UC_Util::Print("ShowTowerConquered is nullptr!", FColor::Red, 10.f);
+
+	m_RemainTimeOriginColor = TimeRemainMin->GetColorAndOpacity();
+	
 	/*FTimerDelegate TempDelegate = FTimerDelegate::CreateWeakLambda(this, [this]()
 	{
 		if (!LEVEL_MANAGER) return;
@@ -102,15 +129,6 @@ bool UC_InformWidget::AddPlayerWarningLog(const FName& _ItemRowName, int32 _Item
 	return true;
 }
 
-bool UC_InformWidget::AddEquippedWeaponLog(const FName& _WeaponItemRowName)
-{
-	const FString* pWeaponItemName = m_ItemNameMap.Find(_WeaponItemRowName);
-	if (!pWeaponItemName) return false;
-
-	AddPlayerWarningLog("EQUIPPED : " + *pWeaponItemName, FColor::White);
-	return true;
-}
-
 void UC_InformWidget::ToggleGameStartPanel(bool _Visible)
 {
 	GameStartsTimerPanel->SetVisibility(_Visible ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
@@ -125,6 +143,93 @@ void UC_InformWidget::ShowMainInstruction(const FString& _Construction)
 {
 	MainInstructionText->SetText(FText::FromString(_Construction));
 	PlayAnimation(ShowMainInstructionAnim);
+}
+
+void UC_InformWidget::HideAllCurSequenceInfo()
+{
+	ShowTowerConqueredInfo(0);
+	ToggleTimeRemainInfo(false);
+}
+
+void UC_InformWidget::ToggleTimeRemainInfo(bool _Visible, int32 _RemainTime)
+{
+	if (_Visible)
+	{
+		RemainTimeHZBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		SetTimeRemainInfo(_RemainTime);
+		PlayAnimation(ShowRemainTime);
+	}
+	else RemainTimeHZBox->SetVisibility(ESlateVisibility::Hidden);
+}
+
+void UC_InformWidget::SetTimeRemainInfo(int32 _RemainTime)
+{
+	const int32 Minute = _RemainTime / 60;
+	const int32 Sec    = _RemainTime % 60;
+    
+	// %02d: 정수를 최소 2자리로 출력하며 빈 자리는 0으로 채움
+	TimeRemainMin->SetText(FText::FromString(FString::Printf(TEXT("%02d"), Minute)));
+	TimeRemainSec->SetText(FText::FromString(FString::Printf(TEXT("%02d"), Sec)));
+	
+	if (_RemainTime < 10)
+	{
+		TimeRemainMin->SetColorAndOpacity(m_TimeUrgentColor);
+		TimeRemainSec->SetColorAndOpacity(m_TimeUrgentColor);
+		TimeRemainColon->SetColorAndOpacity(m_TimeUrgentColor);
+	}
+	else
+	{
+		TimeRemainMin->SetColorAndOpacity(m_RemainTimeOriginColor);
+		TimeRemainSec->SetColorAndOpacity(m_RemainTimeOriginColor);
+		TimeRemainColon->SetColorAndOpacity(m_RemainTimeOriginColor);
+	}
+}
+
+bool UC_InformWidget::ShowTowerConqueredInfo(uint8 _CurSeqTowerTotalCount)
+{
+	if (m_TowerConqueredHZBoxes.Num() < _CurSeqTowerTotalCount) return false;
+
+	for (uint8 i = 0; i < _CurSeqTowerTotalCount; ++i)
+	{
+		ToggleTowerConqueredInfo(i, true);
+		SetTowerConqueredInfo(i, 0);
+	}
+	
+	for (uint8 i = _CurSeqTowerTotalCount; i < m_TowerConqueredHZBoxes.Num(); ++i)
+		ToggleTowerConqueredInfo(i, false);
+		
+	return true;
+}
+
+bool UC_InformWidget::ToggleTowerConqueredInfo(uint8 _Idx, bool _Visible)
+{
+	if (!m_TowerConqueredHZBoxes.IsValidIndex(_Idx)) return false;
+
+	if (_Visible)
+	{
+		m_TowerConqueredHZBoxes[_Idx]->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		PlayAnimation(m_ShowTowerConqueredInfoAnims[_Idx]);
+	}
+	else m_TowerConqueredHZBoxes[_Idx]->SetVisibility(ESlateVisibility::Hidden); 
+	
+	return true;
+}
+
+bool UC_InformWidget::SetTowerConqueredInfo(int _Idx, uint8 _Percent)
+{
+	if (!m_TowerConqueredPercentTexts.IsValidIndex(_Idx)) return false;
+	m_TowerConqueredPercentTexts[_Idx]->SetText(FText::AsNumber(_Percent));
+	return true;
+}
+
+bool UC_InformWidget::RegisterPointTowerIndicator(AC_PointTower* _PointTower)
+{
+	return PointIndicatorManagerWidget->RegisterPointTowerIndicator(_PointTower);
+}
+
+bool UC_InformWidget::DeRegisterPointTowerIndicator(AC_PointTower* _PointTower)
+{
+	return PointIndicatorManagerWidget->DeRegisterPointTowerIndicator(_PointTower);
 }
 
 void UC_InformWidget::HandleLogFadeOut(const float& DeltaTime)

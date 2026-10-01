@@ -6,6 +6,7 @@
 #include "Actor/Components/StatComponent/C_StatComponentBase.h"
 #include "Engine/DamageEvents.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameModeAndManager/C_UIManager.h"
 
 AC_BasicCharacter::AC_BasicCharacter()
 {
@@ -41,12 +42,18 @@ float AC_BasicCharacter::TakeDamage
 		Server_TakeDamage(_DamageAmount, _DamageEvent, _EventInstigator, _DamageCauser);
 		return 0.f;
 	}
+
+	PRINT_LOCAL(GetWorld(), "TAKE DAMAGE : " + FString::SanitizeFloat(_DamageAmount), FColor::MakeRandomColor(), 10.f);
 	
 	// Damage 총량 계산
 	const float DamageAmount = Super::TakeDamage(_DamageAmount, _DamageEvent, _EventInstigator, _DamageCauser);
 	
 	// Invalid DamageAmount early return
-	if (DamageAmount <= 0.f) return 0.f;
+	if (DamageAmount <= 0.f)
+	{
+		PRINT_LOCAL(GetWorld(), "Invalid Damage received", FColor::Red, 10.f);
+		return 0.f;
+	}
 	
 	// 이미 사망한 캐릭터의 경우, 피격 처리를 하지 않는다
 	if (m_StatComponent->IsCurHPZero()) return 0.f;

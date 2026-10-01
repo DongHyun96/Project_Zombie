@@ -87,7 +87,7 @@ public:
 	/// <param name="_SpawnArea"> 이번 웨이브에서 사용할 SpawnArea 목록 </param>
 	/// <param name="_Settings"> 스폰간격, 최대 활성 수 등,, 웨이브 설정 </param>
 	/// <returns></returns>
-	bool StartSpawnLoop(const TArray<AC_SpawnArea*>& _SpawnArea, const FZombieWaveSetting& _Settings);
+	bool StartSpawnLoop(const TSet<AC_SpawnArea*>& _SpawnArea, const FZombieWaveSetting& _Settings);
 
 	/// <summary>
 	/// 현재 진행중인 웨이브 좀비스폰 루프 중지

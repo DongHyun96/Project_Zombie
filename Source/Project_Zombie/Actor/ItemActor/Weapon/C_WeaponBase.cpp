@@ -168,6 +168,15 @@ void AC_WeaponBase::CancelAsyncLoad()
 }
 
 
+void AC_WeaponBase::Test()
+{
+	if (ItemLinkComp && ItemLinkComp->GetItemEntryPtr())
+	{
+		const FString Temp = FString::FromInt(ItemLinkComp->GetItemEntryPtr()->CurCount);
+		PRINT_LOCAL(GetWorld(), "Weapon CurCount : " + Temp, FColor::Cyan, 10.f);
+	}
+	else PRINT_LOCAL(GetWorld(), "Weapon CurCount : 0", FColor::Cyan, 10.f);
+}
 
 void AC_WeaponBase::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
 {

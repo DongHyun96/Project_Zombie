@@ -16,7 +16,7 @@ AC_FireDamageArea::AC_FireDamageArea()
 	PrimaryActorTick.bCanEverTick = false;
 
 	SetReplicates(true);
-	SetReplicateMovement(false);
+	SetReplicatingMovement(false);
 	bAlwaysRelevant = false;
 
 	m_FirePatchEffectScale = 1.f;

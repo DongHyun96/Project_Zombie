@@ -24,7 +24,7 @@ AC_MeleeWeaponBase::AC_MeleeWeaponBase()
 	RootComponent = m_WeaponMesh;
 
 	bReplicates = true;
-	SetReplicateMovement(true);
+	SetReplicatingMovement(true);
 }
 
 void AC_MeleeWeaponBase::BeginPlay()
@@ -51,6 +51,8 @@ bool AC_MeleeWeaponBase::InitializeItemActor(const FWeaponData* InRawData)
 
 void AC_MeleeWeaponBase::InitializeItemData(const FWeaponData* InRawData)
 {
+	PRINT_LOCAL(GetWorld(), "AC_MeleeWeaponBase::InitializeItemData", FColor::Cyan, 10.f);
+	
 	const FMeleeData* MeleeData = static_cast<const FMeleeData*>(InRawData);
 
 	float BaseDamage = MeleeData->BaseDamage;
@@ -210,7 +212,7 @@ bool AC_MeleeWeaponBase::AttachToHand(USceneComponent* _ParentMesh)
 	if (bIsAttached)
 	{
     	Player->SetHandState(EHandState::WeaponMelee);
-		UpdateAmmoInfoHUDForDrawEnd();
+		// UpdateAmmoInfoHUDForDrawEnd();
 	}
 	
 	return bIsAttached;
@@ -448,9 +450,3 @@ void AC_MeleeWeaponBase::UpdateAmmoInfoHUDForDrawEnd()
 	if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
 		MainHUD->ToggleAmmoInfoVisibility(false);
 }
-
-void AC_MeleeWeaponBase::SetAmmoUIInfo(FAmmoUIInfo& _AmmoUIInfo)
-{
-	_AmmoUIInfo.Visible = false;
-}
-

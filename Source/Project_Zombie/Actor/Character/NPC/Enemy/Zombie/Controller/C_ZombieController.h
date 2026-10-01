@@ -97,11 +97,18 @@ public:
 	/// </summary>
 	void ClearAllSensedTarget();
 
+public:
+	
 	/// <summary>
 	/// 현재 BB에 세팅된 Target Get
 	/// </summary>
 	UFUNCTION(BlueprintCallable)
 	AActor* GetCurrentBBTarget() const;
+
+	/// <summary>
+	/// 해당 BB의 Enum 값 조정
+	/// </summary>
+	void SetBBValueAsEnum(const FName& _KeyName, uint8 _EnumValue);
 	
 public:
 	/// <summary>

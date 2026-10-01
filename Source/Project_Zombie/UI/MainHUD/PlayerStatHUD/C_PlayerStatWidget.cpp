@@ -68,38 +68,17 @@ void UC_PlayerStatWidget::ToggleBoostBarColor(bool BoostExhausted)
 	}
 }
 
-void UC_PlayerStatWidget::RepPlayerStateInit(float _Ratio)
+void UC_PlayerStatWidget::BindCurHPUpdate(AC_BasicPlayer* _Player)
 {
-	UpdateHPBarRatio(_Ratio);
-}
-
-void UC_PlayerStatWidget::BindCurHPUpdate(UC_StatComponentBase* InPlayerStatComponent)
-{
-	
-	UC_PlayerStatComponent* PlayerStatComp= Cast<UC_PlayerStatComponent>(InPlayerStatComponent);
-	
-	if (!PlayerStatComp) return;
-	
-	AC_BasicPlayer* OwnerPlayer = Cast<AC_BasicPlayer>(InPlayerStatComponent->GetOwnerCharacter());
-	
-	if (!OwnerPlayer) return;
-	
-	if (OwnerPlayer->IsLocallyControlled())
+	UC_PlayerStatComponent* StatCom = Cast<UC_PlayerStatComponent>(_Player->GetStatComponent());
+	if (!StatCom)
 	{
-		
-			//AC_UIManager* UIManager = UI_MANAGER(GetWorld());
-			//if (!UIManager) return;
-			//
-			//UC_GameMainHUD* MainHUD = UIManager->GetMainHUDWidget();
-			//if (!MainHUD) return;
-			//
-			//UC_PlayerStatWidget* StatWidget = MainHUD->GetPlayerStatWidget();
-			//if (StatWidget)
-		PlayerStatComp->OnCurHPUpdatedDelegate.AddUObject(this, &UC_PlayerStatWidget::UpdateHPBarRatio);
-		
-		UpdateHPBarRatio(PlayerStatComp->GetCurHPRatio());
+		PRINT_LOCAL(GetWorld(), "[UC_PlayerStatWidget::BindCurHPUpdate] : PlayerStatCom nullptr, Should not be happened!", FColor::Red, 10.f);
+		return;
 	}
-	// else PlayerStatComp->BindUpdateOtherPlayerHPBar();
+	
+	StatCom->OnCurHPUpdatedDelegate.AddUObject(this, &UC_PlayerStatWidget::UpdateHPBarRatio);
+	UpdateHPBarRatio(StatCom->GetCurHPRatio());
 }
 
 bool UC_PlayerStatWidget::UpdateHPBar(float _HP, float _MaxHP)
@@ -207,7 +186,10 @@ bool UC_PlayerStatWidget::ToggleAmmoInfoVisibility
 		if (m_CurrentShowingFireMode != _FireMode)
 			UpdateFireMode(_FireMode);
 
-		// 2. 진행 중이던 Text 스왑 애니메이션이 있다면 즉시 중지 (위치/알파 꼬임 방지)
+		UpdateMagazineAmmoCount(_MagazineAmmo);
+		UpdateLeftAmmoTotalCount(_LeftAmmoTotalCount);
+		
+		/*// 2. 진행 중이던 Text 스왑 애니메이션이 있다면 즉시 중지 (위치/알파 꼬임 방지)
 		for (UWidgetAnimation* Anim : m_UpdateMagazineTextAnimations)
 			if (Anim && IsAnimationPlaying(Anim)) StopAnimation(Anim);
 		
@@ -220,7 +202,7 @@ bool UC_PlayerStatWidget::ToggleAmmoInfoVisibility
 
 		// 안 보이는 Hidden Text도 현재 값으로 동일하게 맞춰둠
 		PasteCurrentShowingMagTextToHidden();
-		PasteCurrentShowingLeftAmmoTextToHidden();
+		PasteCurrentShowingLeftAmmoTextToHidden();*/
 
 		return true;
 	}
@@ -244,6 +226,10 @@ void UC_PlayerStatWidget::UpdateMagazineAmmoCount(int32 _AmmoCount)
 {
 	// 현재 Ammo Info를 보여주고 있지 않은 상황
 	if (m_bAmmoInfoPlayedReverseFlag) return;
+	
+	// 이미 해당 AmmoCount로 보여주는 중이면 중복 재생하지 않음
+	UTextBlock* CurrentTextBlock = m_MagazineTexts[static_cast<int32>(m_bCurrentShowingMagTextIdx)];
+	if (CurrentTextBlock->GetText().EqualTo(FText::AsNumber(_AmmoCount))) return;
 
 	// UI가 등장하는 애니메이션이 아직 재생 중인지 체크
 	if (IsAnimationPlaying(m_ShowAmmoInfosAnims[m_CurrentShowingFireMode]))
@@ -267,6 +253,19 @@ void UC_PlayerStatWidget::UpdateLeftAmmoTotalCount(int32 _LeftAmmoTotalCount)
 {
 	// 현재 Ammo Info를 보여주고 있지 않은 상황
 	if (m_bAmmoInfoPlayedReverseFlag) return;
+
+	// 이미 해당 LeftAmmoTotalCount로 보여주는 중이면 중복 재생하지 않음
+	UTextBlock* CurrentTextBlock = m_LeftAmmoTexts[static_cast<int32>(m_bCurrentShowingLeftAmmoTextIdx)];
+	if (CurrentTextBlock->GetText().ToString() == FString::Printf(TEXT("/ %d"), _LeftAmmoTotalCount))
+		return;
+	
+	// UI가 등장하는 애니메이션이 아직 재생 중인지 체크
+	if (IsAnimationPlaying(m_ShowAmmoInfosAnims[m_CurrentShowingFireMode]))
+	{
+		// 애니메이션 없이 값만 즉시 덮어씌움
+		SetCurrentShowingLeftAmmoText(_LeftAmmoTotalCount);
+		return;
+	}
 	
 	// 다음으로 보여줄 Text로 지속적으로 Swapping
 	m_bCurrentShowingLeftAmmoTextIdx = !m_bCurrentShowingLeftAmmoTextIdx;

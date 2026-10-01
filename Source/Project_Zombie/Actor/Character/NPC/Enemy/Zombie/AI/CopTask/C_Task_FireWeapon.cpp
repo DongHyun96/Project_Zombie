@@ -43,5 +43,6 @@ void UC_Task_FireWeapon::OnTaskFinished
 	Cop->SetCopZombieState(ECopZombieState::Idle);
 	
 	// 제대로 장착 처리되었다면 MainState 키값 수정 (다른 Zombie는 Service에서 바꾸지만, 이 해당 키는 바로 바꿔주어야 해당 Task를 바로 실행)
-	OwnerComp.GetBlackboardComponent()->SetValueAsEnum(m_CopZombieState.SelectedKeyName, static_cast<uint8>(ECopZombieState::Idle));
+	// 이거를 일괄 SetCopZombieState에서 처리를 하도록 수정함
+	// OwnerComp.GetBlackboardComponent()->SetValueAsEnum(m_CopZombieState.SelectedKeyName, static_cast<uint8>(ECopZombieState::Idle));
 }

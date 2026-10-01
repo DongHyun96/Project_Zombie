@@ -148,8 +148,6 @@ public:
 	virtual void LoadAsyncAssets(const FWeaponData* InRawData) override;
 protected:
 
-	virtual void SetAmmoUIInfo(FAmmoUIInfo& _AmmoUIInfo) override;
-	
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	
 public:
