@@ -206,7 +206,7 @@ bool UC_GrenadeExplode::UseStrategy_Implementation(AC_ThrowableWeaponBase* _Thro
 		// RPC 로 전달하기 위해 배열로 변환
 		const TArray<AActor*> HitActorArray = HitActors.Array();
 
-		_ThrowableWeapon->Server_ApplyExplosionDamage(HitActorArray, ExplosionLocation);
+		_ThrowableWeapon->Server_ApplyExplosionDamage(HitActorArray, ExplosionLocation, OwnerPlayer);
 
 	}
 	

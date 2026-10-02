@@ -5,6 +5,7 @@
 
 #include "../C_ThrowableWeaponBase.h"
 #include "../Area/C_FireDamageArea.h"
+#include "Actor/Character/Player/C_BasicPlayer.h"
 
 #include "Utility/C_Util.h"
 
@@ -78,7 +79,7 @@ bool UC_MolotovExplode::UseStrategy_Implementation(AC_ThrowableWeaponBase* _Thro
 	}
 
 	// 클라이언트가 판정한 바닥 위치를 서버에 전달하여 화염 장판 생성
-	_ThrowableWeapon->Server_SpawnFireDamageArea(GroundHit.ImpactPoint);
+	_ThrowableWeapon->Server_SpawnFireDamageArea(GroundHit.ImpactPoint, _ThrowableWeapon->GetOwnerPlayer());
 
 	return true;
 }

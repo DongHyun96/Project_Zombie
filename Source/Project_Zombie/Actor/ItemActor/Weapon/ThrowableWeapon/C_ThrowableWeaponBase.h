@@ -98,15 +98,25 @@ public:
 	/// <summary>
 	/// 클라이언트에서 맞은 폭발 대상 목록 서버로 전달
 	/// </summary>
+	/// <param name="_HitActors"></param>
+	/// <param name="_ExplosionLocation"></param>
+	/// <param name="_InstigatorCharacter"> : 이 투척류의 OwnerCharacter(Damage Instigator) </param>
 	UFUNCTION(Server, Reliable)
-	void Server_ApplyExplosionDamage(const TArray<AActor*>& _HitActors, FVector_NetQuantize _ExplosionLocation);
+	void Server_ApplyExplosionDamage
+	(
+		const TArray<AActor*>& _HitActors,
+		FVector_NetQuantize _ExplosionLocation,
+		class AC_BasicCharacter* _InstigatorCharacter
+	);
 
 	/// <summary>
 	///	클라이언트가 판정한 위치에 화염 장판 생성
 	/// </summary>
 	/// 지금은 화염 장판을 기준으로
+	/// <param name="_SpawnLocation"></param>
+	/// <param name="_InstigatorCharacter"> : SpawnFireDamage를 유발한 Character </param>
 	UFUNCTION(Server, Reliable)
-	void Server_SpawnFireDamageArea(FVector_NetQuantize _SpawnLocation);
+	void Server_SpawnFireDamageArea(FVector_NetQuantize _SpawnLocation, class AC_BasicCharacter* _InstigatorCharacter);
 
 
 public: // 애님 노티파이 관련
