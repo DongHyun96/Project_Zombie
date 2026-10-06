@@ -510,8 +510,10 @@ void AC_BasicPlayer::ToggleMenuWidget()
 	}
 }
 
-void AC_BasicPlayer::Client_NotifyConqueringPointTower_Implementation(bool _IsCurrentlyConquering)
+void AC_BasicPlayer::Client_NotifyConqueringPointTower_Implementation(AC_PointTower* _TargetPointTower, bool _IsCurrentlyConquering)
 {
+	_TargetPointTower->ToggleGeneratorOutline(!_IsCurrentlyConquering);
+	
 	if (_IsCurrentlyConquering)
 	{
 		m_PlayerInputComponent->SetPlayerIMCMode(EPlayerIMCMode::OnlyMovementMapping);

@@ -307,7 +307,7 @@ public:
 	/// 또는 거점에서 손을 뗀 상황 알림
 	/// </summary>
 	UFUNCTION(Client, Reliable)
-	void Client_NotifyConqueringPointTower(bool _IsCurrentlyConquering);
+	void Client_NotifyConqueringPointTower(class AC_PointTower* _TargetPointTower, bool _IsCurrentlyConquering);
 	
 	EPlayerMainState GetPlayerMainState() const { return m_PlayerState; }
 	//void SetPlayerState(EPlayerState _NewState) { m_PlayerState = _NewState; }

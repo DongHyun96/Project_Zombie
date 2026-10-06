@@ -426,7 +426,7 @@ void AC_PointTower::OnApproachEffectTogglerColliderBeginOverlap
 	if (!EnteredPlayer || !EnteredPlayer->IsLocallyControlled()) return; // 들어온 Actor가 Player가 아니거나, 내가 조종하는 Player가 아님
 	
 	// MainMesh의 Outline 비활성화
-	m_StaticMeshComTower->SetCustomDepthStencilValue(0);
+	SetMeshComStencilValue(m_StaticMeshComTower, 0);
 }
 
 void AC_PointTower::OnApproachEffectTogglerColliderEndOverlap
@@ -444,7 +444,7 @@ void AC_PointTower::OnApproachEffectTogglerColliderEndOverlap
 	if (!EnteredPlayer || !EnteredPlayer->IsLocallyControlled()) return; // 들어온 Actor가 Player가 아니거나, 내가 조종하는 Player가 아님
 	
 	// MainMesh의 Outline 재활성화
-	m_StaticMeshComTower->SetCustomDepthStencilValue(2);
+	SetMeshComStencilValue(m_StaticMeshComTower, 2);
 }
 
 void AC_PointTower::OnInteractionColliderBeginOverlap
@@ -589,14 +589,14 @@ void AC_PointTower::SetConqueringPlayer(AC_BasicPlayer* InConqueringPlayer)
 	if (!InConqueringPlayer)
 	{
 		m_ConqueringPlayer->GetStatComponent()->OnCurHPReachedZeroDelegate.RemoveAll(this);
-		m_ConqueringPlayer->Client_NotifyConqueringPointTower(false);
+		m_ConqueringPlayer->Client_NotifyConqueringPointTower(this, false);
 		m_ConqueringPlayer = nullptr;
 		return;
 	}
 	
 	m_ConqueringPlayer = InConqueringPlayer;
 	m_ConqueringPlayer->GetStatComponent()->OnCurHPReachedZeroDelegate.AddUObject(this, &AC_PointTower::OnConqueringPlayerDead);
-	m_ConqueringPlayer->Client_NotifyConqueringPointTower(true);
+	m_ConqueringPlayer->Client_NotifyConqueringPointTower(this, true);
 }
 
 void AC_PointTower::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -606,9 +606,22 @@ void AC_PointTower::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 	DOREPLIFETIME(AC_PointTower, m_PointTowerInteractEffect);
 }
 
-bool AC_PointTower::IsWholeOutlineActive() const
+bool AC_PointTower::IsGeneratorOutlineActive() const
 {
-	return m_StaticMeshComTower->CustomDepthStencilValue != 0;
+	return m_StaticMeshComGenerator->CustomDepthStencilValue != 0; 
+}
+
+void AC_PointTower::ToggleGeneratorOutline(bool _OutlineVisible)
+{
+	if (m_State != EPointTowerState::Active) return; // Active한 상태가 아니라면, 외부에서의 GeneratorOutline Visible 세팅 처리 무시
+	SetMeshComStencilValue(m_StaticMeshComGenerator, _OutlineVisible ? 2 : 0);
+}
+
+void AC_PointTower::SetMeshComStencilValue(UStaticMeshComponent* _TargetStaticMeshCom, int32 _CustomDepthStencilValue)
+{
+	if (!_TargetStaticMeshCom) return;
+	_TargetStaticMeshCom->SetCustomDepthStencilValue(_CustomDepthStencilValue);
+	_TargetStaticMeshCom->SetRenderCustomDepth(_CustomDepthStencilValue != 0); // 0이 아닐 때에만 해당 옵션 활성화 처리(실질적으로 Outline을 위해 무조건적으로 앞에 그려야 할 경우)
 }
 
 void AC_PointTower::Multicast_OnTakeDamage_Implementation()
@@ -633,8 +646,8 @@ void AC_PointTower::Multicast_Activate_Implementation()
 	}
 	
 	// 거점 활성화 Outline 활성화
-	m_StaticMeshComTower->SetCustomDepthStencilValue(2);
-	m_StaticMeshComGenerator->SetCustomDepthStencilValue(2);
+	SetMeshComStencilValue(m_StaticMeshComTower, 2);
+	SetMeshComStencilValue(m_StaticMeshComGenerator, 2);
 
 	UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld());
 	
@@ -691,8 +704,8 @@ void AC_PointTower::Multicast_Conquered_Implementation()
 	}
 
 	// 거점 아웃라인 비활성화
-	m_StaticMeshComTower->SetCustomDepthStencilValue(0);
-	m_StaticMeshComGenerator->SetCustomDepthStencilValue(0);
+	SetMeshComStencilValue(m_StaticMeshComTower, 0);
+	SetMeshComStencilValue(m_StaticMeshComGenerator, 0);
 
 	UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld());
 	

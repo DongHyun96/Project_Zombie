@@ -224,9 +224,9 @@ public:
 	const FZombieWaveSetting& GetZombieWaveSetting() const { return m_ZombieWaveSetting; }
 
 	/// <summary>
-	/// 현재 전체 포인팅용 Outline이 활성화 중인지 여부
+	/// 발전기 포인티용 Outline이 활성화 중인지 여부 
 	/// </summary>
-	bool IsWholeOutlineActive() const;
+	bool IsGeneratorOutlineActive() const;
 	
 private:
 	
@@ -236,6 +236,18 @@ private:
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_OnTakeDamage();
 
+public:
+	
+	void ToggleGeneratorOutline(bool _OutlineVisible);
+	
+private:
+	
+	/// <summary>
+	/// <para> Param으로 넘긴 StaticMeshCom Outline 그리기 옵션 전용 StencilValue 지정 </para>
+	/// <para> StencilValue가 0인 경우, 일반 그리기로 간주 -> CustomDepth Pass 옵션 또한 꺼버림 </para>
+	/// </summary>
+	void SetMeshComStencilValue(UStaticMeshComponent* _TargetStaticMeshCom, int32 _CustomDepthStencilValue);
+	
 private:
 
 	// 서버 쪽에서만 유효 -> 실질적인 인덱스는 아니고 해당 Sequence에서 등록된 순서라고 보면 됨
@@ -294,7 +306,7 @@ protected:
 	
 	// 현재 Active 상태에서 Conquering 중인 Player -> 얘의 Damage 처리를 주는 처리를 어떤식으로 해야할지...
 	// 이 Player가 Setting되면, 실질적인 거점 활성화 처리
-	UPROPERTY()
+	// 서버 쪽에서만 유효하게 잡힘(어차피 서버 쪽에서만 판단하면 되어서 그럼)
 	AC_BasicPlayer* m_ConqueringPlayer{};
 
 	// 얘는 Main이 아님
