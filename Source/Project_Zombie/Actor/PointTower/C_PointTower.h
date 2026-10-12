@@ -24,6 +24,14 @@ enum class EPointTowerState : uint8
 	Conquered	// 활성화된 거점을 Player 팀의 interaction 처리로 점령한 상황
 };
 
+// EditInstanceOnly 프로퍼티 체킹 && 추가 조건 사항에 따른 Type -> 인게임에서 쓰일 값은 아니고 오로지 Editing 용
+enum class EPointTowerEditInstanceOnlyPropCheckType : uint8
+{
+	Default,			// 조건 없이 EditInstanceOnly인지만 확인해야할 경우
+	CheckOnlySeqIdx,	// SequenceIdx 멤버변수인지 체크 포함
+	CheckExceptSeqIdx	// SequenceIdx 멤버변수가 아닌지도 체크 포함
+};
+
 /// <summary>
 /// 주의 : 인게임 레벨에 배치 시, EditInstanceOnly 되어있는 멤버변수 초기화 시켜줄 것 (어떤 값인지 주석 확인할 것)
 /// 한 Sequence 당, Maximum 4개의 PointTower 배치 가능하도록 함 -> 갯수를 늘리려면 InformWidget의 PointTower Conquered percent UI 개수 늘려줄 것
@@ -85,6 +93,13 @@ private:
 	/// </summary>
 	/// <param name="_SrcPointTower"> : 값을 복사할 PointTower </param>
 	void CopyAllPointTowerSettings(AC_PointTower* _SrcPointTower);
+
+	/// <summary>
+	/// 특정 멤버변수 Name이 EditInstanceOnly Property인지 체크 
+	/// </summary>
+	/// <param name="_PropertyName"></param>
+	/// <param name="_PropCheckType"> : 체크 추가조건 </param>
+	bool CheckEditInstanceOnlyProperty(const FName& _PropertyName, EPointTowerEditInstanceOnlyPropCheckType _PropCheckType) const;
 	
 #endif
 	
@@ -295,6 +310,10 @@ protected:
 	// 이전
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
 	float m_ConquerLimitTime = 120.f;
+
+	// 거점 Sequence에서 사용할 좀비 웨이브 설정
+	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "ZombieWave")
+	FZombieWaveSetting m_ZombieWaveSetting;
 	
 protected:
 	
@@ -382,13 +401,6 @@ private: /* Enemy AI 인지 관련 TeamAgent 등 */
 public:
 	
 	FOnCurPointTowerSequenceOver m_OnCurPointTowerSequenceOver{};
-
-public:
-
-	// 거점 Sequence에서 사용할 좀비 웨이브 설정
-	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "ZombieWave")
-	FZombieWaveSetting m_ZombieWaveSetting;
-	
 
 private: // 사운드
 

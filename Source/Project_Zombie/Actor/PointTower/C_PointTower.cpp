@@ -143,22 +143,18 @@ void AC_PointTower::PostEditChangeProperty(FPropertyChangedEvent& PropertyChange
 	
 	const FName PropertyName = PropertyChangedEvent.Property ? PropertyChangedEvent.Property->GetFName() : NAME_None;
 
-	// 동기화가 필요한 Property가 수정된 경우
-	if (PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ActivateSequenceIdx)) // 이미 세팅된 Idx의 PointTower를 찾아서 자기자신의 세팅값을 수정처리
+	/* 동기화가 필요한 Property가 수정된 경우 */
+	 
+	// 이미 세팅된 Idx의 PointTower를 찾아서 자기자신의 세팅값을 수정처리
+	if (CheckEditInstanceOnlyProperty(PropertyName, EPointTowerEditInstanceOnlyPropCheckType::CheckOnlySeqIdx))
 	{
 		TrySyncSelf();
 		return;
 	}
 
 	// Idx를 수정하는 것이 아닌, 기타 다른 설정을 수정할 때 -> 동일한 Idx PointTower들 모두 해당 멤버변수값을 수정한 값으로 일괄 처리
-	if (PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_DefaultDecreasingAmountOfConquerAmountPerSec) ||
-		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_IncreaseAmountPerSec) ||
-		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_DPSWhileConquering) ||
-		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ZombieDamageRatio) ||
-		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ZombieAttackRange)) // m_ZombieWaveSetting은 PostEditChangeChain 쪽에서 동기화 처리 중
-	{
+	if (CheckEditInstanceOnlyProperty(PropertyName, EPointTowerEditInstanceOnlyPropCheckType::CheckExceptSeqIdx))
 		TrySyncOther();
-	}
 }
 
 void AC_PointTower::PostEditChangeChainProperty(FPropertyChangedChainEvent& PropertyChangedEvent)
@@ -179,21 +175,17 @@ void AC_PointTower::PostEditChangeChainProperty(FPropertyChangedChainEvent& Prop
 
 bool AC_PointTower::CanEditChange(const FProperty* InProperty) const
 {
+	/* Override 이유 - EditInstanceOnly로 수정 가능한 값들, PIE 실행모드에서 수정 불가능하게끔 처리하기 위함  */
+	
 	if (!Super::CanEditChange(InProperty)) return false;
 
 	// 현재 Editing 모드의 world (Level 실행 중 x)
-	if (GetWorld() && !GetWorld()->IsPlayInEditor()) return true; // 수정 가능
+	if (GetWorld() && !GetWorld()->IsPlayInEditor()) return true; // 모두 수정 가능
 
 	const FName PropertyName = InProperty->GetFName();
 
 	// 오로지 에디팅 상태에서의 Level에서만 수정가능한 멤버변수들인 경우, 수정 불가능하게끔 처리
-	if (PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ActivateSequenceIdx) ||
-		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_DefaultDecreasingAmountOfConquerAmountPerSec) ||
-		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_IncreaseAmountPerSec) ||
-		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_DPSWhileConquering) ||
-		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ZombieDamageRatio) ||
-		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ZombieAttackRange) ||
-		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ZombieWaveSetting))
+	if (CheckEditInstanceOnlyProperty(PropertyName, EPointTowerEditInstanceOnlyPropCheckType::Default))
 		return false;
 	
 	return true;
@@ -257,7 +249,8 @@ void AC_PointTower::TrySyncOther()
 void AC_PointTower::CopyAllPointTowerSettings(AC_PointTower* _SrcPointTower)
 {
 	if (!_SrcPointTower) return;
-	
+
+	// TODO : EditInstanceOnly로 수정 처리해야하는 멤버변수가 추가된다면 여기또한 수정할 것
 	m_DefaultDecreasingAmountOfConquerAmountPerSec = _SrcPointTower->m_DefaultDecreasingAmountOfConquerAmountPerSec;
 	m_IncreaseAmountPerSec                         = _SrcPointTower->m_IncreaseAmountPerSec;
 	m_DPSWhileConquering                           = _SrcPointTower->m_DPSWhileConquering;
@@ -266,6 +259,38 @@ void AC_PointTower::CopyAllPointTowerSettings(AC_PointTower* _SrcPointTower)
 	m_ZombieWaveSetting                            = _SrcPointTower->m_ZombieWaveSetting;
 	m_ConquerLimitTime                             = _SrcPointTower->m_ConquerLimitTime;	
 	// TODO : 세팅값 수정되지 않은채로 있다면 Modify 처리 넣어줄 것
+}
+
+bool AC_PointTower::CheckEditInstanceOnlyProperty(const FName& _PropertyName, EPointTowerEditInstanceOnlyPropCheckType _PropCheckType) const
+{
+	// TODO : EditInstanceOnly로 수정 처리해야하는 멤버변수가 추가된다면 여기또한 수정할 것
+	
+	// SequenceIdx인지만 확인할 경우
+	if (_PropCheckType == EPointTowerEditInstanceOnlyPropCheckType::CheckOnlySeqIdx)
+		return _PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ActivateSequenceIdx);
+	
+	// SequenceIdx가 아닌 다른 EditInstanceOnly Property 체크가 필요한 경우
+	if (_PropCheckType == EPointTowerEditInstanceOnlyPropCheckType::CheckExceptSeqIdx)
+	{
+		return _PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_DefaultDecreasingAmountOfConquerAmountPerSec) ||
+		       _PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_IncreaseAmountPerSec) ||
+		       _PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_DPSWhileConquering) ||
+		       _PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ZombieDamageRatio) ||
+		       _PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ZombieAttackRange) ||
+		       _PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ConquerLimitTime) ||
+		       _PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ZombieWaveSetting); // m_ZombieWaveSetting은 PostEditChangeChain 쪽에서 동기화 처리 중 
+	}
+
+	// Default case
+	return _PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ActivateSequenceIdx) ||
+		   _PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_DefaultDecreasingAmountOfConquerAmountPerSec) ||
+		   _PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_IncreaseAmountPerSec) ||
+		   _PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_DPSWhileConquering) ||
+		   _PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ZombieDamageRatio) ||
+		   _PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ZombieAttackRange) ||
+		   _PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ConquerLimitTime) ||
+		   _PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ZombieWaveSetting);
+	
 }
 
 #endif
