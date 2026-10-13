@@ -44,7 +44,7 @@ class PROJECT_ZOMBIE_API UC_LevelTransferStrategy : public UC_InteractionStrateg
 	/// </summary>
 	virtual void CompleteInteraction(AC_BasicPlayer* _Interactor, AActor* _TargetActor);
 	
-	void SetLevelName(FString _LevelName) { TargetLevelName = _LevelName; }
+	// void SetLevelName(FString _LevelName) { TargetLevelName = _LevelName; }
 	
 protected:
 	// 디테일 패널에서 이동할 인게임 레벨 이름을 지정합니다. (예: "LV_GameStage_01")

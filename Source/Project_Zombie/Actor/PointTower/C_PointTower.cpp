@@ -215,15 +215,17 @@ void AC_PointTower::TrySyncSelf()
 	UE_LOG(LogTemp, Warning, TEXT("AC_PointTower::TrySyncSelf"));
 
 	
+	// 동일 Stage 내의 ActivateSeq가 같은 PointTower를 찾아서 해당 값으로 
 	for (TActorIterator<AC_PointTower> It(GetWorld()); It; ++It)
 	{
 		AC_PointTower* PointTower = *It;
 		
 		if (!IsValid(PointTower) || PointTower == this) continue;
+		
 		if (PointTower->m_ActivateSequenceIdx != m_ActivateSequenceIdx) continue;
 		
 		// 동일한 ActivateIdx를 찾음
-		CopyAllPointTowerSettings(PointTower);
+		m_PointTowerSettings = PointTower->m_PointTowerSettings;
 		return;
 	}
 }
@@ -242,23 +244,8 @@ void AC_PointTower::TrySyncOther()
 		if (PointTower->m_ActivateSequenceIdx != m_ActivateSequenceIdx) continue;
 		
 		// 동일한 ActivateIdx를 찾음
-		PointTower->CopyAllPointTowerSettings(this);
+		PointTower->m_PointTowerSettings = this->m_PointTowerSettings;
 	}
-}
-
-void AC_PointTower::CopyAllPointTowerSettings(AC_PointTower* _SrcPointTower)
-{
-	if (!_SrcPointTower) return;
-
-	// TODO : EditInstanceOnly로 수정 처리해야하는 멤버변수가 추가된다면 여기또한 수정할 것
-	m_DefaultDecreasingAmountOfConquerAmountPerSec = _SrcPointTower->m_DefaultDecreasingAmountOfConquerAmountPerSec;
-	m_IncreaseAmountPerSec                         = _SrcPointTower->m_IncreaseAmountPerSec;
-	m_DPSWhileConquering                           = _SrcPointTower->m_DPSWhileConquering;
-	m_ZombieDamageRatio                            = _SrcPointTower->m_ZombieDamageRatio;
-	m_ZombieAttackRange                            = _SrcPointTower->m_ZombieAttackRange;
-	m_ZombieWaveSetting                            = _SrcPointTower->m_ZombieWaveSetting;
-	m_ConquerLimitTime                             = _SrcPointTower->m_ConquerLimitTime;	
-	// TODO : 세팅값 수정되지 않은채로 있다면 Modify 처리 넣어줄 것
 }
 
 bool AC_PointTower::CheckEditInstanceOnlyProperty(const FName& _PropertyName, EPointTowerEditInstanceOnlyPropCheckType _PropCheckType) const
@@ -571,7 +558,7 @@ float AC_PointTower::TakeDamage
 	if (!CanCurrentlyAttackedByZombie()) return 0.f;
 	
 	float ReceivedDamageAmount = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
-	const float Damage = ReceivedDamageAmount * m_ZombieDamageRatio; // Damage 만큼 현재 Conquered 펀센트에서 제거
+	const float Damage = ReceivedDamageAmount * m_ZombieDamageRatio; // Damage 만큼 현재 Conquered 퍼센트에서 제거
 	
 	m_CurConquerAmount -= Damage;
 

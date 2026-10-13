@@ -33,6 +33,44 @@ enum class EPointTowerEditInstanceOnlyPropCheckType : uint8
 };
 
 /// <summary>
+/// PointTower 정보 -> 한 PointTower 낮,밤에 따른 값이 다르기 때문에 따로 struct로 묶어버림 
+/// </summary>
+USTRUCT(BlueprintType)
+struct FPointTowerSettings
+{
+	GENERATED_BODY()
+	
+	// 몇 번째 Sequence로 거점 점령 활성화 처리가 되는지 (거점 점령 Activate 처리가 되는지)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	uint8 ActivateSequenceIdx{};
+
+	// 거점 Activate 상태 시, 기본 초당 거점 게이지 하락량(초당) -> 기본값 0.5로 세팅해둠
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float DefaultDecreasingAmountOfConquerAmountPerSec = 0.5f;
+
+	// 거점 Activate 상태 시, Player 한 명(오로지 한 명이어야 한다)이 활성화 처리를 할 때, 초당 거점 게이지 오르는 양
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float IncreaseAmountPerSec = 5.f;
+	
+	// 거점 Activate 상태 시, Player 한 명(오로지 한 명이어야 한다)이 활성화 처리를 할 때, 초당 해당 Player에게 주는 Damage량
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float DPSWhileConquering = 5.f;
+
+	// 좀비에게 공격당했을 시, 좀비 공격력 x Ratio(해당 변수) 만큼 거점 게이지 즉각 하락 처리
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float ZombieDamageRatio = 0.25f;
+
+	// 이번 SequenceIdx에서의 거점 점령 완료까지의 시간
+	// 이전
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float ConquerLimitTime = 120.f;
+
+	// 거점 Sequence에서 사용할 좀비 웨이브 설정
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FZombieWaveSetting ZombieWaveSetting;
+};
+
+/// <summary>
 /// 주의 : 인게임 레벨에 배치 시, EditInstanceOnly 되어있는 멤버변수 초기화 시켜줄 것 (어떤 값인지 주석 확인할 것)
 /// 한 Sequence 당, Maximum 4개의 PointTower 배치 가능하도록 함 -> 갯수를 늘리려면 InformWidget의 PointTower Conquered percent UI 개수 늘려줄 것
 /// </summary>
@@ -87,12 +125,6 @@ private:
 	/// <para> 이 PointTower의 ActivateSeq를 제외한 세팅값을 세팅 시 호출할 것 </para>
 	/// </summary>
 	void TrySyncOther();
-
-	/// <summary>
-	/// Param으로 들어온 PointTower의 Setting값 자신에게 맞추기 (단, ActivateSeqIdx는 뺌)
-	/// </summary>
-	/// <param name="_SrcPointTower"> : 값을 복사할 PointTower </param>
-	void CopyAllPointTowerSettings(AC_PointTower* _SrcPointTower);
 
 	/// <summary>
 	/// 특정 멤버변수 Name이 EditInstanceOnly Property인지 체크 
@@ -286,34 +318,12 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	uint8 m_CurConquerAmountInt{};
 
-	// 몇 번째 Sequence로 거점 점령 활성화 처리가 되는지 (거점 점령 Activate 처리가 되는지)
-	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
-	uint8 m_ActivateSequenceIdx{};
+protected:
 
-	// 거점 Activate 상태 시, 기본 초당 거점 게이지 하락량(초당) -> 기본값 0.5로 세팅해둠
+	// 이 PointTower의 설정값들
+	// 임의로 Idx 0을 Day, 1을 Night로 둠
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
-	float m_DefaultDecreasingAmountOfConquerAmountPerSec = 0.5f;
-
-	// 거점 Activate 상태 시, Player 한 명(오로지 한 명이어야 한다)이 활성화 처리를 할 때, 초당 거점 게이지 오르는 양
-	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
-	float m_IncreaseAmountPerSec = 5.f;
-	
-	// 거점 Activate 상태 시, Player 한 명(오로지 한 명이어야 한다)이 활성화 처리를 할 때, 초당 해당 Player에게 주는 Damage량
-	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
-	float m_DPSWhileConquering = 5.f;
-
-	// 좀비에게 공격당했을 시, 좀비 공격력 x Ratio(해당 변수) 만큼 거점 게이지 즉각 하락 처리
-	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
-	float m_ZombieDamageRatio = 0.25f;
-
-	// 이번 SequenceIdx에서의 거점 점령 완료까지의 시간
-	// 이전
-	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
-	float m_ConquerLimitTime = 120.f;
-
-	// 거점 Sequence에서 사용할 좀비 웨이브 설정
-	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "ZombieWave")
-	FZombieWaveSetting m_ZombieWaveSetting;
+	TArray<FPointTowerSettings> m_PointTowerSettings{};
 	
 protected:
 	
@@ -326,6 +336,7 @@ protected:
 	// 현재 Active 상태에서 Conquering 중인 Player -> 얘의 Damage 처리를 주는 처리를 어떤식으로 해야할지...
 	// 이 Player가 Setting되면, 실질적인 거점 활성화 처리
 	// 서버 쪽에서만 유효하게 잡힘(어차피 서버 쪽에서만 판단하면 되어서 그럼)
+	UPROPERTY()
 	AC_BasicPlayer* m_ConqueringPlayer{};
 
 	// 얘는 Main이 아님
