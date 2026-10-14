@@ -68,6 +68,17 @@ struct FPointTowerSettings
 	// 거점 Sequence에서 사용할 좀비 웨이브 설정
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FZombieWaveSetting ZombieWaveSetting;
+	
+	bool operator==(const FPointTowerSettings& _Other) const
+	{
+		return	ActivateSequenceIdx							 == _Other.ActivateSequenceIdx							&&
+				DefaultDecreasingAmountOfConquerAmountPerSec == _Other.DefaultDecreasingAmountOfConquerAmountPerSec &&
+				IncreaseAmountPerSec						 == _Other.IncreaseAmountPerSec 						&&
+				DPSWhileConquering							 == _Other.DPSWhileConquering							&&
+				ZombieDamageRatio							 == _Other.ZombieDamageRatio							&&
+				ConquerLimitTime							 == _Other.ConquerLimitTime								&&
+				ZombieWaveSetting							 == _Other.ZombieWaveSetting;
+	}
 };
 
 /// <summary>
@@ -80,6 +91,7 @@ class PROJECT_ZOMBIE_API AC_PointTower : public APawn, public IGenericTeamAgentI
 	GENERATED_BODY()
 
 	friend class UC_PointTowerManager;
+	friend class UC_PointTowerEditorSubsystem;
 
 public:
 	AC_PointTower();
@@ -87,12 +99,17 @@ public:
 	virtual void BeginPlay() override;
 
 #if WITH_EDITOR
+
+	virtual void PreEditChange(FProperty* PropertyAboutToChange) override;
 	
 	/// <summary>
-	/// 에디팅 상태에서 바로, m_ActivateSequenceIdx가 같은 PointTower들의 값 sync를 맞추기 위함
+	/// 에디팅 상태에서 사용자가 m_PointTowerSettings 키값 추가/삭제 및 Clear 처리를 막기 위함
 	/// </summary>
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
-	
+
+	/// <summary>
+	/// FZombieWaveSettings 때문에 처음에는 이 함수 구현 -> 이제는 모든 struct에 대해 이 함수를 처리해야 함 
+	/// </summary>
 	virtual void PostEditChangeChainProperty(FPropertyChangedChainEvent& PropertyChangedEvent) override;
 
 	/// <summary>
@@ -100,6 +117,11 @@ public:
 	/// </summary>
 	virtual bool CanEditChange(const FProperty* InProperty) const override;
 
+	/// <summary>
+	/// TimeOfDay에 대응되는 Setting값이 없을 때, Default값으로 채워넣기 -> 정상적인 형태라면 넘어감
+	/// </summary>
+	void AddDefaultTowerSettingsIfNecessary();
+	
 	/*/// <summary>
 	/// 레벨에 새로 배치 시(복붙되어 생성되었을 때), Idx 0번의 PointTower들과 동일한 세팅값으로 처리
 	/// </summary>
@@ -113,18 +135,25 @@ public:
 public:
 	
 	/// <summary>
-	/// <para> 자신과 동일한 ActivateSeq를 가진 PointTower를 참고하여, 자신의 세팅값을 동기화 </para>
-	/// <para> ActivateSeq 수정 시, 또는 새로운 PointTower Level에 배치 시 호출할 것 </para>
+	/// PointTower 레벨에 새로이 추가 시, 다른 기존의 TimeOfDay에 대응되는 setting의 ActivateIdx가 같은 타워의 데이터값 사용 (여기서는 사실 ActIdx 0밖에 없음 초기값이라)
 	/// </summary>
-	void TrySyncSelf();
+	void TrySyncSelfAll();
 
 private:
+
+	/// <summary>
+	/// <para> 자신과 동일한 ActivateSeq를 가진 PointTower를 참고하여, 자신의 세팅값을 동기화 </para>
+	/// <para> ActivateSeq 수정 시 호출할 것 </para>
+	/// <param name="_TimeOfDay"> : Sync를 맞출 TimeOfDay </param>
+	/// </summary>
+	void TrySyncSelf(EStageTimeOfDay _TimeOfDay);
 	
 	/// <summary>
 	/// <para> 자신의 세팅값으로 다른 동일한 ActivateSeq를 가진 PointTower들 세팅값 동기화 </para>
 	/// <para> 이 PointTower의 ActivateSeq를 제외한 세팅값을 세팅 시 호출할 것 </para>
+	/// <param name="_TimeOfDay"> : Sync를 맞출 TimeOfDay </param>
 	/// </summary>
-	void TrySyncOther();
+	void TrySyncOther(EStageTimeOfDay _TimeOfDay);
 
 	/// <summary>
 	/// 특정 멤버변수 Name이 EditInstanceOnly Property인지 체크 
@@ -132,6 +161,12 @@ private:
 	/// <param name="_PropertyName"></param>
 	/// <param name="_PropCheckType"> : 체크 추가조건 </param>
 	bool CheckEditInstanceOnlyProperty(const FName& _PropertyName, EPointTowerEditInstanceOnlyPropCheckType _PropCheckType) const;
+
+	/// <summary>
+	/// 실수로 에디터 상에서 사용자가 PointTowerSettings의 키값 추가/삭제 또는 Empty(Clear) 시, 복구 처리 
+	/// </summary>
+	/// <returns> 실제로 복구가 일어났다면 return true </returns>
+	bool RestorePointTowerSettingsIfNecessary();
 	
 #endif
 	
@@ -268,7 +303,7 @@ public:
 	
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	
-	const FZombieWaveSetting& GetZombieWaveSetting() const { return m_ZombieWaveSetting; }
+	const FZombieWaveSetting& GetZombieWaveSetting() const;
 
 	/// <summary>
 	/// 발전기 포인티용 Outline이 활성화 중인지 여부 
@@ -320,10 +355,26 @@ protected:
 
 protected:
 
-	// 이 PointTower의 설정값들
-	// 임의로 Idx 0을 Day, 1을 Night로 둠
+	// 이 PointTower의 설정값들 / 각 시간별 Stage가 존재할 수 있고,
+	// Night 및 추가적인 시간대 모두 쓰든 쓰지 않든 무조건 EStageTimeOfDay enum값에 대응되는 세팅값을 들고 있도록 함 (안정성을 위함)
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
-	TArray<FPointTowerSettings> m_PointTowerSettings{};
+	TMap<EStageTimeOfDay, FPointTowerSettings> m_PointTowerSettings{};
+
+#if WITH_EDITOR
+private:
+
+	/*
+	* Editing 상황에서 사용자가 PointTowerSettings 키값을 지우거나 Clear를 해버리는 만행(?)을 방지하기 위함
+	* 에디터에서의 TMap의 키값을 지우거나 Clear 해버리는 UI 자체를 막기 어렵기 때문에 이런식으로 두었음
+	* PreEditChange에서 Cached처리를 한 뒤, PostEditChange에서 복원이 필요하다면 이 데이터 값으로 복원 처리 
+	*/
+	TMap<EStageTimeOfDay, FPointTowerSettings> m_CachedPointTowerSettings{};
+	
+#endif
+
+private: /* 게임 레벨 시작 시, 현 TimeOfDay 불러와서 저장해둘 예정 */
+	
+	EStageTimeOfDay m_CurStageTimeOfDay{};
 	
 protected:
 	

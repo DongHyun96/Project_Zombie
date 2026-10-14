@@ -717,6 +717,14 @@ public:
     // 0이면 타입별 제한 x
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0"))
     int32 MaxActiveCount = 1;
+    
+    bool operator==(const FZombieTypeSpawnSetting& _Other) const
+    {
+        return  ZombieType      == _Other.ZombieType &&
+                SpawnWeight     == _Other.SpawnWeight &&
+                SpawnCoolDown   == _Other.SpawnCoolDown &&
+                MaxActiveCount  == _Other.MaxActiveCount;
+    }
 };
 
 // 좀비 웨이브마다 설정해줄 값
@@ -737,6 +745,11 @@ public:
     // 웨이브에서 등장 가능한 타입별 설정
     UPROPERTY(EditAnywhere, BlueprintReadOnly)
     TArray<FZombieTypeSpawnSetting> ZombieTypeSetting{};
+    
+    bool operator==(const FZombieWaveSetting& _Other) const
+    {
+        return SpawnInterval == _Other.SpawnInterval && SpawnCountPerTick == _Other.SpawnCountPerTick && ZombieTypeSetting == _Other.ZombieTypeSetting;
+    }
 };
 
 USTRUCT(BlueprintType)

@@ -6,22 +6,8 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "C_StageManager.generated.h"
 
-UENUM(BlueprintType)
-enum class EStageDifficulty : uint8
-{
-	Easy,
-	Normal,
-	Hard,
-	End UMETA(Hidden)
-};
-
-UENUM(BlueprintType)
-enum class EStageTimeOfDay : uint8
-{
-	Day,
-	Night,
-	End UMETA(Hidden)
-};
+enum class EStageDifficulty : uint8;
+enum class EStageTimeOfDay : uint8;
 
 USTRUCT(BlueprintType)
 struct FGameStageInfo : public FTableRowBase
