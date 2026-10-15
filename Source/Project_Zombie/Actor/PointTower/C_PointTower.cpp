@@ -146,7 +146,7 @@ void AC_PointTower::PreEditChange(FProperty* PropertyAboutToChange)
 
 	if (!PropertyAboutToChange) return;
 	
-	// UE_LOG(LogTemp, Log, TEXT("[AC_PointTower::PreEditChange] : Modified Property : %s"), *PropertyAboutToChange->GetFName().ToString());
+	UE_LOG(LogTemp, Log, TEXT("[AC_PointTower::PreEditChange] : Modified Property : %s"), *PropertyAboutToChange->GetFName().ToString());
 	
 	// PointTowerSettings 자체를 수정했을 경우(추가는 어차피 안됨 -> 이미 꽉 채워둔 상황 | 에디터 상에서 삭제 또는 Clear 시 Cache된 데이터로 복구처리)
 	// 이 시점에서 어느 변경점 이벤트가 발생했는지는 알수 없음 -> 백업 처리를 무조건 해주어야 함 (애초에 TMap 자체를 건드릴 일이 없어야 함)
@@ -168,6 +168,8 @@ void AC_PointTower::PostEditChangeProperty(FPropertyChangedEvent& PropertyChange
 	
 	const FName PropertyName = PropertyChangedEvent.Property ? PropertyChangedEvent.Property->GetFName() : NAME_None;
 
+	UE_LOG(LogTemp, Log, TEXT("[AC_PointTower::PostEditChangeProperty] : Modified Property : %s"), *PropertyName.ToString());
+	
 	if (PropertyName != GET_MEMBER_NAME_CHECKED(AC_PointTower, m_PointTowerSettings)) return;
 
 	// 복구가 필요한 상황이라면 복구 처리
@@ -192,11 +194,17 @@ void AC_PointTower::PostEditChangeChainProperty(FPropertyChangedChainEvent& Prop
 	}
 
 	// PointTower 세팅 이외의 Property를 수정한 경우, 따로 처리할 내용 x
-	if (m_CachedPointTowerSettings.IsEmpty()) return;
+	if (m_CachedPointTowerSettings.IsEmpty())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[AC_PointTower::PostEditChangeChainProperty] : Cached Data was empty!"));
+		return;
+	}
 
 	// m_PointTowerSettings 컨테이너 내의 개별 요소 (e.g.  ActivateSequenceIdx)
 	const FEditPropertyChain::TDoubleLinkedListNode* ActiveNode = PropertyChangedEvent.PropertyChain.GetActiveNode();
 	const FName ActiveNodeName = ActiveNode->GetValue()->GetFName();
+	
+	UE_LOG(LogTemp, Log, TEXT("[AC_PointTower::PostEditChangeChainProperty] : Modified Property : %s"), *ActiveNodeName.ToString());
 	
 	// 어떤 키값(TimeOfDay)에 대응되는지 키값 조사
 	EStageTimeOfDay TargetTimeOfDay = EStageTimeOfDay::End; 
@@ -217,6 +225,13 @@ void AC_PointTower::PostEditChangeChainProperty(FPropertyChangedChainEvent& Prop
 		return;
 	}
 
+	switch (TargetTimeOfDay)
+	{
+	case EStageTimeOfDay::Day: UE_LOG(LogTemp, Warning, TEXT("[AC_PointTower::PostEditChangeChainProperty] : Day")); break;
+	case EStageTimeOfDay::Night: UE_LOG(LogTemp, Warning, TEXT("[AC_PointTower::PostEditChangeChainProperty] : Night")); break;
+	case EStageTimeOfDay::End: break;
+	}
+
 	// SeqIdx가 수정된 경우, 이미 세팅된 Idx의 PointTower를 찾아서 자기자신의 세팅값을 수정처리
 	if (CheckEditInstanceOnlyProperty(ActiveNodeName, EPointTowerEditInstanceOnlyPropCheckType::CheckOnlySeqIdx))
 	{
@@ -226,7 +241,12 @@ void AC_PointTower::PostEditChangeChainProperty(FPropertyChangedChainEvent& Prop
 	
 	// Idx를 수정하는 것이 아닌, 기타 다른 설정을 수정할 때 -> 동일한 Idx PointTower들 모두 해당 멤버변수값을 수정한 값으로 일괄 처리
 	if (CheckEditInstanceOnlyProperty(ActiveNodeName, EPointTowerEditInstanceOnlyPropCheckType::CheckExceptSeqIdx))
-		TrySyncOther(TargetTimeOfDay);	
+		TrySyncOther(TargetTimeOfDay);
+	
+	// Restore 처리 외의 m_PointTowerSettings TMap Value 총 복사 및 붙여넣기 처리를 해버린 경우, 여기로 잡힘
+	// 이 때에는 사용자가 직접 조작을 하여, 데이터를 맞추었다고 판단 -> 다른 PointTower 또한 자기자신의 값으로 세팅 처리를 한다
+	if (ActiveNodeName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_PointTowerSettings))
+		TrySyncOther(TargetTimeOfDay);
 
 	
 	/*// Cached Data와 현재 수정된 m_PointTowerSettings와 비교하여, 어떤 키 값이 수정되었는지 조사
@@ -384,32 +404,35 @@ bool AC_PointTower::CheckEditInstanceOnlyProperty(const FName& _PropertyName, EP
 {
 	// TODO : EditInstanceOnly로 수정 처리해야하는 멤버변수가 추가된다면 여기또한 수정할 것
 	
-	// SequenceIdx 인지만 확인할 경우
-	if (_PropCheckType == EPointTowerEditInstanceOnlyPropCheckType::CheckOnlySeqIdx)
+	switch (_PropCheckType)
+	{
+	case EPointTowerEditInstanceOnlyPropCheckType::CheckOnlySeqIdx: // SequenceIdx 인지만 확인할 경우
+	{
 		return _PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, ActivateSequenceIdx);
-	
-	// SequenceIdx가 아닌 다른 EditInstanceOnly Property 체크가 필요한 경우
-	if (_PropCheckType == EPointTowerEditInstanceOnlyPropCheckType::CheckExceptSeqIdx)
+	}
+	case EPointTowerEditInstanceOnlyPropCheckType::CheckExceptSeqIdx: // SequenceIdx가 아닌 다른 EditInstanceOnly Property 체크가 필요한 경우
 	{
 		return  _PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, DefaultDecreasingAmountOfConquerAmountPerSec) ||
-		        _PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, IncreaseAmountPerSec) ||
-		        _PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, DPSWhileConquering) ||
-		        _PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, ZombieDamageRatio) ||
-		        _PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, ConquerLimitTime) ||
-		        _PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, ZombieWaveSetting) ||
-		       	FZombieWaveSetting::CheckPropertyNameEqualToAnyVar(_PropertyName);
+				_PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, IncreaseAmountPerSec) ||
+				_PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, DPSWhileConquering) ||
+				_PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, ZombieDamageRatio) ||
+				_PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, ConquerLimitTime) ||
+				_PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, ZombieWaveSetting) ||
+				   FZombieWaveSetting::CheckPropertyNameEqualToAnyVar(_PropertyName);
 	}
-
-	// Default case
-	return  _PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, ActivateSequenceIdx) ||
-		    _PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, DefaultDecreasingAmountOfConquerAmountPerSec) ||
-		    _PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, IncreaseAmountPerSec) ||
-		    _PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, DPSWhileConquering) ||
-		    _PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, ZombieDamageRatio) ||
-		    _PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, ConquerLimitTime) ||
-		    _PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, ZombieWaveSetting) ||
-		   	FZombieWaveSetting::CheckPropertyNameEqualToAnyVar(_PropertyName);
-	
+	case EPointTowerEditInstanceOnlyPropCheckType::Default: // Default case
+	{
+		return  _PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, ActivateSequenceIdx) ||
+			    _PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, DefaultDecreasingAmountOfConquerAmountPerSec) ||
+			    _PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, IncreaseAmountPerSec) ||
+			    _PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, DPSWhileConquering) ||
+			    _PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, ZombieDamageRatio) ||
+			    _PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, ConquerLimitTime) ||
+			    _PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, ZombieWaveSetting) ||
+		   		FZombieWaveSetting::CheckPropertyNameEqualToAnyVar(_PropertyName);
+	}
+	default: return false;
+	}
 }
 
 bool AC_PointTower::RestorePointTowerSettingsIfNecessary()
