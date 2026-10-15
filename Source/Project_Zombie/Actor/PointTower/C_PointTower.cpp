@@ -11,8 +11,10 @@
 #include "Actor/Ping/C_WorldPingActor.h"
 #include "Components/SphereComponent.h"
 #include "Components/AudioComponent.h"
+#include "DevloperSetting/C_MontagePrioritySettings.h"
 #include "GameModeAndManager/C_GameMode_GameLv.h"
 #include "GameModeAndManager/C_UIManager.h"
+#include "GameModeAndManager/ChapterManager/C_StageManager.h"
 #include "GameModeAndManager/PointTowerManager/C_PointTowerManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
@@ -116,6 +118,9 @@ void AC_PointTower::BeginPlay()
 			if (m_PointTowerInteractEffect) m_PointTowerInteractEffect->SetActorLocation(m_StaticMeshComGenerator->GetComponentLocation());
 		}
 	}
+
+	// 현 Stage의 TimeOfDay 미리 저장해둠
+	m_CurStageTimeOfDay = GetGameInstance()->GetSubsystem<UC_StageManager>()->GetCurStageInfo()->TimeOfDay;
 	
 	// For Testing
 	/*if (HasAuthority())
@@ -134,30 +139,43 @@ void AC_PointTower::BeginPlay()
 }
 
 #if WITH_EDITOR
+
+void AC_PointTower::PreEditChange(FProperty* PropertyAboutToChange)
+{
+	Super::PreEditChange(PropertyAboutToChange);
+
+	if (!PropertyAboutToChange) return;
+	
+	UE_LOG(LogTemp, Log, TEXT("[AC_PointTower::PreEditChange] : Modified Property : %s"), *PropertyAboutToChange->GetFName().ToString());
+	
+	// PointTowerSettings 자체를 수정했을 경우(추가는 어차피 안됨 -> 이미 꽉 채워둔 상황 | 에디터 상에서 삭제 또는 Clear 시 Cache된 데이터로 복구처리)
+	// 이 시점에서 어느 변경점 이벤트가 발생했는지는 알수 없음 -> 백업 처리를 무조건 해주어야 함 (애초에 TMap 자체를 건드릴 일이 없어야 함)
+	// 또한 어느 TimeOfDay 키값에 대응되는 Value를 건드렸는지 확인할 때에도 이 백업 세팅과의 비교를 통해 확인한다
+	if (PropertyAboutToChange->GetFName() == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_PointTowerSettings) ||
+		CheckEditInstanceOnlyProperty(PropertyAboutToChange->GetFName(), EPointTowerEditInstanceOnlyPropCheckType::Default))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[AC_PointTower::PreEditChange] : Data cached!"));
+		m_CachedPointTowerSettings = m_PointTowerSettings; // 백업 처리
+	}
+}
+
 void AC_PointTower::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 
-	// 현재 플레이 중인 Level World
-	if (GetWorld() && GetWorld()->IsPlayInEditor()) return; // 따로 처리해줄 사항 x
+	if (!GetWorld()) return;
+	if (GetWorld()->IsPlayInEditor()) return; // 현재 플레이 중인 Level World, 따로 처리해줄 사항 x
 	
 	const FName PropertyName = PropertyChangedEvent.Property ? PropertyChangedEvent.Property->GetFName() : NAME_None;
 
-	// 동기화가 필요한 Property가 수정된 경우
-	if (PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ActivateSequenceIdx)) // 이미 세팅된 Idx의 PointTower를 찾아서 자기자신의 세팅값을 수정처리
-	{
-		TrySyncSelf();
-		return;
-	}
+	UE_LOG(LogTemp, Log, TEXT("[AC_PointTower::PostEditChangeProperty] : Modified Property : %s"), *PropertyName.ToString());
+	
+	if (PropertyName != GET_MEMBER_NAME_CHECKED(AC_PointTower, m_PointTowerSettings)) return;
 
-	// Idx를 수정하는 것이 아닌, 기타 다른 설정을 수정할 때 -> 동일한 Idx PointTower들 모두 해당 멤버변수값을 수정한 값으로 일괄 처리
-	if (PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_DefaultDecreasingAmountOfConquerAmountPerSec) ||
-		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_IncreaseAmountPerSec) ||
-		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_DPSWhileConquering) ||
-		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ZombieDamageRatio) ||
-		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ZombieAttackRange)) // m_ZombieWaveSetting은 PostEditChangeChain 쪽에서 동기화 처리 중
+	// 복구가 필요한 상황이라면 복구 처리
+	if (RestorePointTowerSettingsIfNecessary())
 	{
-		TrySyncOther();
+		UE_LOG(LogTemp, Warning, TEXT("[AC_PointTower::PostEditChangeProperty] : Restore completed!"));
 	}
 }
 
@@ -165,38 +183,129 @@ void AC_PointTower::PostEditChangeChainProperty(FPropertyChangedChainEvent& Prop
 {
 	Super::PostEditChangeChainProperty(PropertyChangedEvent);
 
+	// PIE 상황이라면, 따로 처리할 내용 x
 	if (GetWorld() && GetWorld()->IsPlayInEditor()) return;
 
-	const FEditPropertyChain::TDoubleLinkedListNode* ActiveMemberNode = PropertyChangedEvent.PropertyChain.GetActiveMemberNode();
-	if (!ActiveMemberNode) return;
+	// 복구가 필요한 경우였다면 복구하고 종료 -> Restore가 필요한 경우, PostEditChangeProperty에서 잡힘(안정성을 위해서 여기서도 걸어둠) 
+	if (RestorePointTowerSettingsIfNecessary())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[AC_PointTower::PostEditChangeChainProperty] : Restore completed!"));
+		return;
+	}
 
-	const FProperty* ActiveMemberProperty = ActiveMemberNode->GetValue();
-	if (!ActiveMemberProperty) return;
+	// PointTower 세팅 이외의 Property를 수정한 경우, 따로 처리할 내용 x
+	if (m_CachedPointTowerSettings.IsEmpty())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[AC_PointTower::PostEditChangeChainProperty] : Cached Data was empty!"));
+		return;
+	}
 
-	if (ActiveMemberProperty->GetFName() == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ZombieWaveSetting))
-		TrySyncOther();
+	// m_PointTowerSettings 컨테이너 내의 개별 요소 (e.g.  ActivateSequenceIdx)
+	const FEditPropertyChain::TDoubleLinkedListNode* ActiveNode = PropertyChangedEvent.PropertyChain.GetActiveNode();
+	const FName ActiveNodeName = ActiveNode->GetValue()->GetFName();
+	
+	UE_LOG(LogTemp, Log, TEXT("[AC_PointTower::PostEditChangeChainProperty] : Modified Property : %s"), *ActiveNodeName.ToString());
+	
+	// 어떤 키값(TimeOfDay)에 대응되는지 키값 조사
+	EStageTimeOfDay TargetTimeOfDay = EStageTimeOfDay::End; 
+	for (uint8 i = 0; i < static_cast<uint8>(EStageTimeOfDay::End); ++i)
+	{
+		const EStageTimeOfDay CurTimeOfDay = static_cast<EStageTimeOfDay>(i);
+		if (m_PointTowerSettings[CurTimeOfDay] != m_CachedPointTowerSettings[CurTimeOfDay])
+		{
+			TargetTimeOfDay = CurTimeOfDay;
+			break;
+		}
+	}
+	
+	if (TargetTimeOfDay == EStageTimeOfDay::End)
+	{
+		// PointTower에 따로 바뀐 내용이 없음 (여기도 들어오면 안됨)
+		UE_LOG(LogTemp, Warning, TEXT("[AC_PointTower::PostEditChangeChainProperty] : Nothing changed...strange"));
+		return;
+	}
+
+	switch (TargetTimeOfDay)
+	{
+	case EStageTimeOfDay::Day: UE_LOG(LogTemp, Warning, TEXT("[AC_PointTower::PostEditChangeChainProperty] : Day")); break;
+	case EStageTimeOfDay::Night: UE_LOG(LogTemp, Warning, TEXT("[AC_PointTower::PostEditChangeChainProperty] : Night")); break;
+	case EStageTimeOfDay::End: break;
+	}
+
+	// SeqIdx가 수정된 경우, 이미 세팅된 Idx의 PointTower를 찾아서 자기자신의 세팅값을 수정처리
+	if (CheckEditInstanceOnlyProperty(ActiveNodeName, EPointTowerEditInstanceOnlyPropCheckType::CheckOnlySeqIdx))
+	{
+		TrySyncSelf(TargetTimeOfDay);
+		return;
+	}
+	
+	// Idx를 수정하는 것이 아닌, 기타 다른 설정을 수정할 때 -> 동일한 Idx PointTower들 모두 해당 멤버변수값을 수정한 값으로 일괄 처리
+	if (CheckEditInstanceOnlyProperty(ActiveNodeName, EPointTowerEditInstanceOnlyPropCheckType::CheckExceptSeqIdx))
+		TrySyncOther(TargetTimeOfDay);
+	
+	// Restore 처리 외의 m_PointTowerSettings TMap Value 총 복사 및 붙여넣기 처리를 해버린 경우, 여기로 잡힘
+	// 이 때에는 사용자가 직접 조작을 하여, 데이터를 맞추었다고 판단 -> 다른 PointTower 또한 자기자신의 값으로 세팅 처리를 한다
+	if (ActiveNodeName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_PointTowerSettings))
+		TrySyncOther(TargetTimeOfDay);
+
+	
+	/*// Cached Data와 현재 수정된 m_PointTowerSettings와 비교하여, 어떤 키 값이 수정되었는지 조사
+	for (const TPair<EStageTimeOfDay, FPointTowerSettings>& SettingPair : m_PointTowerSettings)
+	{
+		if (SettingPair.Value == m_CachedPointTowerSettings[SettingPair.Key]) continue;
+		
+		// 이미 세팅된 Idx의 PointTower를 찾아서 자기자신의 세팅값을 수정처리
+		if (CheckEditInstanceOnlyProperty(PropertyName, EPointTowerEditInstanceOnlyPropCheckType::CheckOnlySeqIdx))
+		{
+			TrySyncSelf(SettingPair.Key);
+			return;
+		}
+
+		// Idx를 수정하는 것이 아닌, 기타 다른 설정을 수정할 때 -> 동일한 Idx PointTower들 모두 해당 멤버변수값을 수정한 값으로 일괄 처리
+		if (CheckEditInstanceOnlyProperty(PropertyName, EPointTowerEditInstanceOnlyPropCheckType::CheckExceptSeqIdx))
+			TrySyncOther(SettingPair.Key);
+	}*/
 }
 
 bool AC_PointTower::CanEditChange(const FProperty* InProperty) const
 {
+	/* Override 이유 - EditInstanceOnly로 수정 가능한 값들, PIE 실행모드에서 수정 불가능하게끔 처리하기 위함  */
+	
 	if (!Super::CanEditChange(InProperty)) return false;
 
 	// 현재 Editing 모드의 world (Level 실행 중 x)
-	if (GetWorld() && !GetWorld()->IsPlayInEditor()) return true; // 수정 가능
+	if (GetWorld() && !GetWorld()->IsPlayInEditor()) return true; // 모두 수정 가능
 
 	const FName PropertyName = InProperty->GetFName();
 
 	// 오로지 에디팅 상태에서의 Level에서만 수정가능한 멤버변수들인 경우, 수정 불가능하게끔 처리
-	if (PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ActivateSequenceIdx) ||
-		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_DefaultDecreasingAmountOfConquerAmountPerSec) ||
-		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_IncreaseAmountPerSec) ||
-		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_DPSWhileConquering) ||
-		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ZombieDamageRatio) ||
-		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ZombieAttackRange) ||
-		PropertyName == GET_MEMBER_NAME_CHECKED(AC_PointTower, m_ZombieWaveSetting))
+	if (CheckEditInstanceOnlyProperty(PropertyName, EPointTowerEditInstanceOnlyPropCheckType::Default))
 		return false;
 	
 	return true;
+}
+
+void AC_PointTower::AddDefaultTowerSettingsIfNecessary()
+{
+	// 이미 Setting된 값이 정상적으로 모두 존재
+	if (m_PointTowerSettings.Num() == static_cast<uint8>(EStageTimeOfDay::End)) return;
+	
+	for (uint8 i = 0; i < static_cast<uint8>(EStageTimeOfDay::End); ++i)
+	{
+		const EStageTimeOfDay TimeOfDay = static_cast<EStageTimeOfDay>(i);
+		if (m_PointTowerSettings.Contains(TimeOfDay)) continue;
+
+		// 해당 키값이 없는 상황이라면 Default Settings값으로 집어넣어둠
+		m_PointTowerSettings.Add(TimeOfDay, {});
+	}
+}
+
+void AC_PointTower::TrySyncSelfAll()
+{
+	AddDefaultTowerSettingsIfNecessary();
+	
+	for (uint8 i = 0; i < static_cast<uint8>(EStageTimeOfDay::End); ++i)
+		TrySyncSelf(static_cast<EStageTimeOfDay>(i));
 }
 
 /*void AC_PointTower::PostEditImport()
@@ -216,56 +325,132 @@ void AC_PointTower::PostDuplicate(bool bDuplicateForPIE)
 	// TODO : 자기자신 Sync 맞추기
 }*/
 
-void AC_PointTower::TrySyncSelf()
+void AC_PointTower::TrySyncSelf(EStageTimeOfDay _TimeOfDay)
 {
+	if (_TimeOfDay == EStageTimeOfDay::End)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[AC_PointTower::TrySyncSelf] : Invalid TimeOfDay received!"));
+		return;
+	}
+	
 	if (!GetWorld()) return;
 
 	UE_LOG(LogTemp, Warning, TEXT("AC_PointTower::TrySyncSelf"));
 
+	// 만일에 대비해, 빈 TimeOfDay 세팅 넣어주기
+	AddDefaultTowerSettingsIfNecessary();
 	
 	for (TActorIterator<AC_PointTower> It(GetWorld()); It; ++It)
 	{
-		AC_PointTower* PointTower = *It;
+		AC_PointTower* OtherTower = *It;
+
+		// Valid하지 않은 PointTower이거나, 나 자신인 경우
+		if (!IsValid(OtherTower) || OtherTower == this) continue;
+		 
+		if (OtherTower->m_PointTowerSettings.Num() != static_cast<int32>(EStageTimeOfDay::End))
+			OtherTower->AddDefaultTowerSettingsIfNecessary(); // 만약 다른 PointTower의 기본 세팅처리가 되어있지 않다면 시도
 		
-		if (!IsValid(PointTower) || PointTower == this) continue;
-		if (PointTower->m_ActivateSequenceIdx != m_ActivateSequenceIdx) continue;
+		// 같은 stage 내의 ActivateSeq가 같은 PointTower를 찾아서 해당 값으로
+		const uint8 OtherActivateSeq = OtherTower->m_PointTowerSettings[_TimeOfDay].ActivateSequenceIdx;
+		const uint8 thisActivateSeq  = m_PointTowerSettings[_TimeOfDay].ActivateSequenceIdx;
 		
-		// 동일한 ActivateIdx를 찾음
-		CopyAllPointTowerSettings(PointTower);
+		if (thisActivateSeq != OtherActivateSeq) continue;
+		
+		// 동일한 ActivateSeqIdx를 찾음
+		// OtherTower의 해당 Setting 값으로 해당 Stage의 Sync 맞춤 처리
+		m_PointTowerSettings[_TimeOfDay] = OtherTower->m_PointTowerSettings[_TimeOfDay];
 		return;
-	}
+	}	
 }
 
-void AC_PointTower::TrySyncOther()
+void AC_PointTower::TrySyncOther(EStageTimeOfDay _TimeOfDay)
 {
+	if (_TimeOfDay == EStageTimeOfDay::End)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[AC_PointTower::TrySyncOther] : Invalid TimeOfDay received!"));
+		return;	
+	}
+	
 	if (!GetWorld()) return;
 
+	// 내 데이터로 다른 PointTower의 값을 수정해야 하는데, 나 자신이 해당값이 없는 경우(논리상 여기로 들어오면 안됨)
+	if (!m_PointTowerSettings.Contains(_TimeOfDay))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[AC_PointTower::TrySyncOther] : Invalid PointTowerSettings!"));
+		return;
+	}
+	
 	UE_LOG(LogTemp, Warning, TEXT("AC_PointTower::TrySyncOther"));
 	
 	for (TActorIterator<AC_PointTower> It(GetWorld()); It; ++It)
 	{
-		AC_PointTower* PointTower = *It;
+		AC_PointTower* OtherTower = *It;
 		
-		if (!IsValid(PointTower) || PointTower == this) continue;
-		if (PointTower->m_ActivateSequenceIdx != m_ActivateSequenceIdx) continue;
+		if (!IsValid(OtherTower) || OtherTower == this) continue;
 		
-		// 동일한 ActivateIdx를 찾음
-		PointTower->CopyAllPointTowerSettings(this);
+		// 만약을 대비해, OtherTower 세팅 확실히 (내껀 위에서 방어처리함)
+		OtherTower->AddDefaultTowerSettingsIfNecessary();
+
+		const uint8 thisActivateSeq  = m_PointTowerSettings[_TimeOfDay].ActivateSequenceIdx;
+		const uint8 OtherActivateSeq = OtherTower->m_PointTowerSettings[_TimeOfDay].ActivateSequenceIdx;
+		if (thisActivateSeq != OtherActivateSeq) continue;
+		
+		// 동일한 ActivateSeq를 찾음
+		OtherTower->m_PointTowerSettings[_TimeOfDay] = this->m_PointTowerSettings[_TimeOfDay];
 	}
 }
 
-void AC_PointTower::CopyAllPointTowerSettings(AC_PointTower* _SrcPointTower)
+bool AC_PointTower::CheckEditInstanceOnlyProperty(const FName& _PropertyName, EPointTowerEditInstanceOnlyPropCheckType _PropCheckType) const
 {
-	if (!_SrcPointTower) return;
+	// TODO : EditInstanceOnly로 수정 처리해야하는 멤버변수가 추가된다면 여기또한 수정할 것
 	
-	m_DefaultDecreasingAmountOfConquerAmountPerSec = _SrcPointTower->m_DefaultDecreasingAmountOfConquerAmountPerSec;
-	m_IncreaseAmountPerSec                         = _SrcPointTower->m_IncreaseAmountPerSec;
-	m_DPSWhileConquering                           = _SrcPointTower->m_DPSWhileConquering;
-	m_ZombieDamageRatio                            = _SrcPointTower->m_ZombieDamageRatio;
-	m_ZombieAttackRange                            = _SrcPointTower->m_ZombieAttackRange;
-	m_ZombieWaveSetting                            = _SrcPointTower->m_ZombieWaveSetting;
-	m_ConquerLimitTime                             = _SrcPointTower->m_ConquerLimitTime;	
-	// TODO : 세팅값 수정되지 않은채로 있다면 Modify 처리 넣어줄 것
+	switch (_PropCheckType)
+	{
+	case EPointTowerEditInstanceOnlyPropCheckType::CheckOnlySeqIdx: // SequenceIdx 인지만 확인할 경우
+	{
+		return _PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, ActivateSequenceIdx);
+	}
+	case EPointTowerEditInstanceOnlyPropCheckType::CheckExceptSeqIdx: // SequenceIdx가 아닌 다른 EditInstanceOnly Property 체크가 필요한 경우
+	{
+		return  _PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, DefaultDecreasingAmountOfConquerAmountPerSec) ||
+				_PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, IncreaseAmountPerSec) ||
+				_PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, DPSWhileConquering) ||
+				_PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, ZombieDamageRatio) ||
+				_PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, ConquerLimitTime) ||
+				_PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, ZombieWaveSetting) ||
+				   FZombieWaveSetting::CheckPropertyNameEqualToAnyVar(_PropertyName);
+	}
+	case EPointTowerEditInstanceOnlyPropCheckType::Default: // Default case
+	{
+		return  _PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, ActivateSequenceIdx) ||
+			    _PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, DefaultDecreasingAmountOfConquerAmountPerSec) ||
+			    _PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, IncreaseAmountPerSec) ||
+			    _PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, DPSWhileConquering) ||
+			    _PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, ZombieDamageRatio) ||
+			    _PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, ConquerLimitTime) ||
+			    _PropertyName == GET_MEMBER_NAME_CHECKED(FPointTowerSettings, ZombieWaveSetting) ||
+		   		FZombieWaveSetting::CheckPropertyNameEqualToAnyVar(_PropertyName);
+	}
+	default: return false;
+	}
+}
+
+bool AC_PointTower::RestorePointTowerSettingsIfNecessary()
+{
+	// m_PointTowerSettings 외에 다른 Property를 수정한 경우
+	if (m_CachedPointTowerSettings.IsEmpty()) return false;
+	
+	// TMap의 요소 삭제/추가 Clear 처리를 막기 위한 Restore처리이기에, 여기서 걸리지 않으면 TMap의 Value를 수정한 것
+	// 복구할 필요 x
+	if (m_PointTowerSettings.Num() == m_CachedPointTowerSettings.Num()) return false;
+	
+	// 복구 처리
+	m_PointTowerSettings = m_CachedPointTowerSettings;
+	m_CachedPointTowerSettings.Empty();
+	
+	UE_LOG(LogTemp, Log, TEXT("[AC_PointTower::RestorePointTowerSettings] : DO NOT CLICK REMOVE KEY OR EMPTYING POINT_TOWER_SETTINGS!"));
+	UE_LOG(LogTemp, Log, TEXT("[AC_PointTower::RestorePointTowerSettings] : BackUp Complete"));
+	return true;
 }
 
 #endif
@@ -292,7 +477,7 @@ void AC_PointTower::Tick(float DeltaTime)
 	{
 		/* 지속적으로 거점 게이지를 활성화한다 */
 
-		m_CurConquerAmount += DeltaTime * m_IncreaseAmountPerSec;
+		m_CurConquerAmount += DeltaTime * m_PointTowerSettings[m_CurStageTimeOfDay].IncreaseAmountPerSec;
 		
 		m_DamageTimer += DeltaTime;
 		if (m_DamageTimer > 1.f) // 1초 간격으로 데미지 입히기
@@ -301,7 +486,7 @@ void AC_PointTower::Tick(float DeltaTime)
 			UGameplayStatics::ApplyDamage
 			(
 				m_ConqueringPlayer,
-				m_DPSWhileConquering,
+				m_PointTowerSettings[m_CurStageTimeOfDay].DPSWhileConquering,
 				GetController(),
 				this,
 				nullptr
@@ -311,7 +496,7 @@ void AC_PointTower::Tick(float DeltaTime)
 	else // Conquering interaction 하는 Player가 한 명도 없음
 	{
 		/* 거점을 점령하는 Player가 없는 경우, 지속적으로 거점 게이지를 떨군다 */
-		m_CurConquerAmount -= DeltaTime * m_DefaultDecreasingAmountOfConquerAmountPerSec;
+		m_CurConquerAmount -= DeltaTime * m_PointTowerSettings[m_CurStageTimeOfDay].DefaultDecreasingAmountOfConquerAmountPerSec;
 	}
 	
 	m_CurConquerAmount = FMath::Clamp(m_CurConquerAmount, 0.f, m_MaxConquerAmount);
@@ -378,7 +563,7 @@ bool AC_PointTower::CanCurrentlyAttackedByZombie()
 	if (m_State == EPointTowerState::Waiting) return false;
 
 	// 현재 활성화된 시퀀스의 PointTower가 아닌 경우
-	if (POINT_TOWER_MANAGER(this)->GetCurrentSequenceIdx() != m_ActivateSequenceIdx) return false;
+	if (POINT_TOWER_MANAGER(this)->GetCurrentSequenceIdx() != m_PointTowerSettings[m_CurStageTimeOfDay].ActivateSequenceIdx) return false;
 
 	// 현재 활성화된 시퀀스가 맞긴 하지만, 점령도가 0% 인 경우 공격 불가
 	if (m_CurConquerAmount <= 0.f) return false;
@@ -393,7 +578,7 @@ bool AC_PointTower::CanBeInsertedToSensedTarget()
 	if (!PointTowerManager) return false; // 아직 게임 시작도 전에 물어본 상황 (또는 Client 환경에서 물어본 상황)	
 
 	// 이미 이전 라운드에 해당되는 PointTower인 경우
-	if (m_ActivateSequenceIdx < PointTowerManager->GetCurrentSequenceIdx()) return false;
+	if (m_PointTowerSettings[m_CurStageTimeOfDay].ActivateSequenceIdx < PointTowerManager->GetCurrentSequenceIdx()) return false;
 
 	// 이번 라운드 또는, 다음 라운드에 활성화될 거점인 경우 -> SensedInfo로 들어갈 수 있는 상황
 	return true;
@@ -426,7 +611,7 @@ void AC_PointTower::OnApproachEffectTogglerColliderBeginOverlap
 	if (!EnteredPlayer || !EnteredPlayer->IsLocallyControlled()) return; // 들어온 Actor가 Player가 아니거나, 내가 조종하는 Player가 아님
 	
 	// MainMesh의 Outline 비활성화
-	m_StaticMeshComTower->SetCustomDepthStencilValue(0);
+	SetMeshComStencilValue(m_StaticMeshComTower, 0);
 }
 
 void AC_PointTower::OnApproachEffectTogglerColliderEndOverlap
@@ -444,7 +629,7 @@ void AC_PointTower::OnApproachEffectTogglerColliderEndOverlap
 	if (!EnteredPlayer || !EnteredPlayer->IsLocallyControlled()) return; // 들어온 Actor가 Player가 아니거나, 내가 조종하는 Player가 아님
 	
 	// MainMesh의 Outline 재활성화
-	m_StaticMeshComTower->SetCustomDepthStencilValue(2);
+	SetMeshComStencilValue(m_StaticMeshComTower, 2);
 }
 
 void AC_PointTower::OnInteractionColliderBeginOverlap
@@ -546,7 +731,7 @@ float AC_PointTower::TakeDamage
 	if (!CanCurrentlyAttackedByZombie()) return 0.f;
 	
 	float ReceivedDamageAmount = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
-	const float Damage = ReceivedDamageAmount * m_ZombieDamageRatio; // Damage 만큼 현재 Conquered 펀센트에서 제거
+	const float Damage = ReceivedDamageAmount * m_PointTowerSettings[m_CurStageTimeOfDay].ZombieDamageRatio; // Damage 만큼 현재 Conquered 퍼센트에서 제거
 	
 	m_CurConquerAmount -= Damage;
 
@@ -589,14 +774,14 @@ void AC_PointTower::SetConqueringPlayer(AC_BasicPlayer* InConqueringPlayer)
 	if (!InConqueringPlayer)
 	{
 		m_ConqueringPlayer->GetStatComponent()->OnCurHPReachedZeroDelegate.RemoveAll(this);
-		m_ConqueringPlayer->Client_NotifyConqueringPointTower(false);
+		m_ConqueringPlayer->Client_NotifyConqueringPointTower(this, false);
 		m_ConqueringPlayer = nullptr;
 		return;
 	}
 	
 	m_ConqueringPlayer = InConqueringPlayer;
 	m_ConqueringPlayer->GetStatComponent()->OnCurHPReachedZeroDelegate.AddUObject(this, &AC_PointTower::OnConqueringPlayerDead);
-	m_ConqueringPlayer->Client_NotifyConqueringPointTower(true);
+	m_ConqueringPlayer->Client_NotifyConqueringPointTower(this, true);
 }
 
 void AC_PointTower::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -606,9 +791,27 @@ void AC_PointTower::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 	DOREPLIFETIME(AC_PointTower, m_PointTowerInteractEffect);
 }
 
-bool AC_PointTower::IsWholeOutlineActive() const
+const FZombieWaveSetting& AC_PointTower::GetZombieWaveSetting() const
 {
-	return m_StaticMeshComTower->CustomDepthStencilValue != 0;
+	return m_PointTowerSettings[m_CurStageTimeOfDay].ZombieWaveSetting;
+}
+
+bool AC_PointTower::IsGeneratorOutlineActive() const
+{
+	return m_StaticMeshComGenerator->CustomDepthStencilValue != 0; 
+}
+
+void AC_PointTower::ToggleGeneratorOutline(bool _OutlineVisible)
+{
+	if (m_State != EPointTowerState::Active) return; // Active한 상태가 아니라면, 외부에서의 GeneratorOutline Visible 세팅 처리 무시
+	SetMeshComStencilValue(m_StaticMeshComGenerator, _OutlineVisible ? 2 : 0);
+}
+
+void AC_PointTower::SetMeshComStencilValue(UStaticMeshComponent* _TargetStaticMeshCom, int32 _CustomDepthStencilValue)
+{
+	if (!_TargetStaticMeshCom) return;
+	_TargetStaticMeshCom->SetCustomDepthStencilValue(_CustomDepthStencilValue);
+	_TargetStaticMeshCom->SetRenderCustomDepth(_CustomDepthStencilValue != 0); // 0이 아닐 때에만 해당 옵션 활성화 처리(실질적으로 Outline을 위해 무조건적으로 앞에 그려야 할 경우)
 }
 
 void AC_PointTower::Multicast_OnTakeDamage_Implementation()
@@ -633,8 +836,8 @@ void AC_PointTower::Multicast_Activate_Implementation()
 	}
 	
 	// 거점 활성화 Outline 활성화
-	m_StaticMeshComTower->SetCustomDepthStencilValue(2);
-	m_StaticMeshComGenerator->SetCustomDepthStencilValue(2);
+	SetMeshComStencilValue(m_StaticMeshComTower, 2);
+	SetMeshComStencilValue(m_StaticMeshComGenerator, 2);
 
 	UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld());
 	
@@ -691,8 +894,8 @@ void AC_PointTower::Multicast_Conquered_Implementation()
 	}
 
 	// 거점 아웃라인 비활성화
-	m_StaticMeshComTower->SetCustomDepthStencilValue(0);
-	m_StaticMeshComGenerator->SetCustomDepthStencilValue(0);
+	SetMeshComStencilValue(m_StaticMeshComTower, 0);
+	SetMeshComStencilValue(m_StaticMeshComGenerator, 0);
 
 	UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld());
 	

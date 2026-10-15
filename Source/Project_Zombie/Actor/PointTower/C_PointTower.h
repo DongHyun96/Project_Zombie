@@ -24,6 +24,63 @@ enum class EPointTowerState : uint8
 	Conquered	// 활성화된 거점을 Player 팀의 interaction 처리로 점령한 상황
 };
 
+// EditInstanceOnly 프로퍼티 체킹 && 추가 조건 사항에 따른 Type -> 인게임에서 쓰일 값은 아니고 오로지 Editing 용
+enum class EPointTowerEditInstanceOnlyPropCheckType : uint8
+{
+	Default,			// 조건 없이 EditInstanceOnly인지만 확인해야할 경우
+	CheckOnlySeqIdx,	// SequenceIdx 멤버변수인지 체크 포함
+	CheckExceptSeqIdx	// SequenceIdx 멤버변수가 아닌지도 체크 포함
+};
+
+/// <summary>
+/// PointTower 정보 -> 한 PointTower 낮,밤에 따른 값이 다르기 때문에 따로 struct로 묶어버림 
+/// </summary>
+USTRUCT(BlueprintType)
+struct FPointTowerSettings
+{
+	GENERATED_BODY()
+	
+	// 몇 번째 Sequence로 거점 점령 활성화 처리가 되는지 (거점 점령 Activate 처리가 되는지)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	uint8 ActivateSequenceIdx{};
+
+	// 거점 Activate 상태 시, 기본 초당 거점 게이지 하락량(초당) -> 기본값 0.5로 세팅해둠
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float DefaultDecreasingAmountOfConquerAmountPerSec = 0.5f;
+
+	// 거점 Activate 상태 시, Player 한 명(오로지 한 명이어야 한다)이 활성화 처리를 할 때, 초당 거점 게이지 오르는 양
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float IncreaseAmountPerSec = 5.f;
+	
+	// 거점 Activate 상태 시, Player 한 명(오로지 한 명이어야 한다)이 활성화 처리를 할 때, 초당 해당 Player에게 주는 Damage량
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float DPSWhileConquering = 5.f;
+
+	// 좀비에게 공격당했을 시, 좀비 공격력 x Ratio(해당 변수) 만큼 거점 게이지 즉각 하락 처리
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float ZombieDamageRatio = 0.25f;
+
+	// 이번 SequenceIdx에서의 거점 점령 완료까지의 시간
+	// 이전
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float ConquerLimitTime = 120.f;
+
+	// 거점 Sequence에서 사용할 좀비 웨이브 설정
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FZombieWaveSetting ZombieWaveSetting;
+	
+	bool operator==(const FPointTowerSettings& _Other) const
+	{
+		return	ActivateSequenceIdx							 == _Other.ActivateSequenceIdx							&&
+				DefaultDecreasingAmountOfConquerAmountPerSec == _Other.DefaultDecreasingAmountOfConquerAmountPerSec &&
+				IncreaseAmountPerSec						 == _Other.IncreaseAmountPerSec 						&&
+				DPSWhileConquering							 == _Other.DPSWhileConquering							&&
+				ZombieDamageRatio							 == _Other.ZombieDamageRatio							&&
+				ConquerLimitTime							 == _Other.ConquerLimitTime								&&
+				ZombieWaveSetting							 == _Other.ZombieWaveSetting;
+	}
+};
+
 /// <summary>
 /// 주의 : 인게임 레벨에 배치 시, EditInstanceOnly 되어있는 멤버변수 초기화 시켜줄 것 (어떤 값인지 주석 확인할 것)
 /// 한 Sequence 당, Maximum 4개의 PointTower 배치 가능하도록 함 -> 갯수를 늘리려면 InformWidget의 PointTower Conquered percent UI 개수 늘려줄 것
@@ -34,6 +91,7 @@ class PROJECT_ZOMBIE_API AC_PointTower : public APawn, public IGenericTeamAgentI
 	GENERATED_BODY()
 
 	friend class UC_PointTowerManager;
+	friend class UC_PointTowerEditorSubsystem;
 
 public:
 	AC_PointTower();
@@ -41,12 +99,17 @@ public:
 	virtual void BeginPlay() override;
 
 #if WITH_EDITOR
+
+	virtual void PreEditChange(FProperty* PropertyAboutToChange) override;
 	
 	/// <summary>
-	/// 에디팅 상태에서 바로, m_ActivateSequenceIdx가 같은 PointTower들의 값 sync를 맞추기 위함
+	/// 에디팅 상태에서 사용자가 m_PointTowerSettings 키값 추가/삭제 및 Clear 처리를 막기 위함
 	/// </summary>
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
-	
+
+	/// <summary>
+	/// FZombieWaveSettings 때문에 처음에는 이 함수 구현 -> 이제는 모든 struct에 대해 이 함수를 처리해야 함 
+	/// </summary>
 	virtual void PostEditChangeChainProperty(FPropertyChangedChainEvent& PropertyChangedEvent) override;
 
 	/// <summary>
@@ -54,6 +117,11 @@ public:
 	/// </summary>
 	virtual bool CanEditChange(const FProperty* InProperty) const override;
 
+	/// <summary>
+	/// TimeOfDay에 대응되는 Setting값이 없을 때, Default값으로 채워넣기 -> 정상적인 형태라면 넘어감
+	/// </summary>
+	void AddDefaultTowerSettingsIfNecessary();
+	
 	/*/// <summary>
 	/// 레벨에 새로 배치 시(복붙되어 생성되었을 때), Idx 0번의 PointTower들과 동일한 세팅값으로 처리
 	/// </summary>
@@ -67,24 +135,38 @@ public:
 public:
 	
 	/// <summary>
-	/// <para> 자신과 동일한 ActivateSeq를 가진 PointTower를 참고하여, 자신의 세팅값을 동기화 </para>
-	/// <para> ActivateSeq 수정 시, 또는 새로운 PointTower Level에 배치 시 호출할 것 </para>
+	/// PointTower 레벨에 새로이 추가 시, 다른 기존의 TimeOfDay에 대응되는 setting의 ActivateIdx가 같은 타워의 데이터값 사용 (여기서는 사실 ActIdx 0밖에 없음 초기값이라)
 	/// </summary>
-	void TrySyncSelf();
+	void TrySyncSelfAll();
 
 private:
+
+	/// <summary>
+	/// <para> 자신과 동일한 ActivateSeq를 가진 PointTower를 참고하여, 자신의 세팅값을 동기화 </para>
+	/// <para> ActivateSeq 수정 시 호출할 것 </para>
+	/// <param name="_TimeOfDay"> : Sync를 맞출 TimeOfDay </param>
+	/// </summary>
+	void TrySyncSelf(EStageTimeOfDay _TimeOfDay);
 	
 	/// <summary>
 	/// <para> 자신의 세팅값으로 다른 동일한 ActivateSeq를 가진 PointTower들 세팅값 동기화 </para>
 	/// <para> 이 PointTower의 ActivateSeq를 제외한 세팅값을 세팅 시 호출할 것 </para>
+	/// <param name="_TimeOfDay"> : Sync를 맞출 TimeOfDay </param>
 	/// </summary>
-	void TrySyncOther();
+	void TrySyncOther(EStageTimeOfDay _TimeOfDay);
 
 	/// <summary>
-	/// Param으로 들어온 PointTower의 Setting값 자신에게 맞추기 (단, ActivateSeqIdx는 뺌)
+	/// 특정 멤버변수 Name이 EditInstanceOnly Property인지 체크 -> m_PointTowerSettings 내부의 구조체 검사 시 사용 
 	/// </summary>
-	/// <param name="_SrcPointTower"> : 값을 복사할 PointTower </param>
-	void CopyAllPointTowerSettings(AC_PointTower* _SrcPointTower);
+	/// <param name="_PropertyName"></param>
+	/// <param name="_PropCheckType"> : 체크 추가조건 </param>
+	bool CheckEditInstanceOnlyProperty(const FName& _PropertyName, EPointTowerEditInstanceOnlyPropCheckType _PropCheckType) const;
+
+	/// <summary>
+	/// 실수로 에디터 상에서 사용자가 PointTowerSettings의 키값 추가/삭제 또는 Empty(Clear) 시, 복구 처리 
+	/// </summary>
+	/// <returns> 실제로 복구가 일어났다면 return true </returns>
+	bool RestorePointTowerSettingsIfNecessary();
 	
 #endif
 	
@@ -221,12 +303,12 @@ public:
 	
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	
-	const FZombieWaveSetting& GetZombieWaveSetting() const { return m_ZombieWaveSetting; }
+	const FZombieWaveSetting& GetZombieWaveSetting() const;
 
 	/// <summary>
-	/// 현재 전체 포인팅용 Outline이 활성화 중인지 여부
+	/// 발전기 포인티용 Outline이 활성화 중인지 여부 
 	/// </summary>
-	bool IsWholeOutlineActive() const;
+	bool IsGeneratorOutlineActive() const;
 	
 private:
 	
@@ -236,6 +318,18 @@ private:
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_OnTakeDamage();
 
+public:
+	
+	void ToggleGeneratorOutline(bool _OutlineVisible);
+	
+private:
+	
+	/// <summary>
+	/// <para> Param으로 넘긴 StaticMeshCom Outline 그리기 옵션 전용 StencilValue 지정 </para>
+	/// <para> StencilValue가 0인 경우, 일반 그리기로 간주 -> CustomDepth Pass 옵션 또한 꺼버림 </para>
+	/// </summary>
+	void SetMeshComStencilValue(UStaticMeshComponent* _TargetStaticMeshCom, int32 _CustomDepthStencilValue);
+	
 private:
 
 	// 서버 쪽에서만 유효 -> 실질적인 인덱스는 아니고 해당 Sequence에서 등록된 순서라고 보면 됨
@@ -259,30 +353,28 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	uint8 m_CurConquerAmountInt{};
 
-	// 몇 번째 Sequence로 거점 점령 활성화 처리가 되는지 (거점 점령 Activate 처리가 되는지)
-	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
-	uint8 m_ActivateSequenceIdx{};
+protected:
 
-	// 거점 Activate 상태 시, 기본 초당 거점 게이지 하락량(초당) -> 기본값 0.5로 세팅해둠
+	// 이 PointTower의 설정값들 / 각 시간별 Stage가 존재할 수 있고,
+	// Night 및 추가적인 시간대 모두 쓰든 쓰지 않든 무조건 EStageTimeOfDay enum값에 대응되는 세팅값을 들고 있도록 함 (안정성을 위함)
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
-	float m_DefaultDecreasingAmountOfConquerAmountPerSec = 0.5f;
+	TMap<EStageTimeOfDay, FPointTowerSettings> m_PointTowerSettings{};
 
-	// 거점 Activate 상태 시, Player 한 명(오로지 한 명이어야 한다)이 활성화 처리를 할 때, 초당 거점 게이지 오르는 양
-	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
-	float m_IncreaseAmountPerSec = 5.f;
+#if WITH_EDITOR
+private:
+
+	/*
+	* Editing 상황에서 사용자가 PointTowerSettings 키값을 지우거나 Clear를 해버리는 만행(?)을 방지하기 위함
+	* 에디터에서의 TMap의 키값을 지우거나 Clear 해버리는 UI 자체를 막기 어렵기 때문에 이런식으로 두었음
+	* PreEditChange에서 Cached처리를 한 뒤, PostEditChange에서 복원이 필요하다면 이 데이터 값으로 복원 처리 
+	*/
+	TMap<EStageTimeOfDay, FPointTowerSettings> m_CachedPointTowerSettings{};
 	
-	// 거점 Activate 상태 시, Player 한 명(오로지 한 명이어야 한다)이 활성화 처리를 할 때, 초당 해당 Player에게 주는 Damage량
-	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
-	float m_DPSWhileConquering = 5.f;
+#endif
 
-	// 좀비에게 공격당했을 시, 좀비 공격력 x Ratio(해당 변수) 만큼 거점 게이지 즉각 하락 처리
-	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
-	float m_ZombieDamageRatio = 0.25f;
-
-	// 이번 SequenceIdx에서의 거점 점령 완료까지의 시간
-	// 이전
-	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
-	float m_ConquerLimitTime = 120.f;
+private: /* 게임 레벨 시작 시, 현 TimeOfDay 불러와서 저장해둘 예정 */
+	
+	EStageTimeOfDay m_CurStageTimeOfDay{};
 	
 protected:
 	
@@ -294,6 +386,7 @@ protected:
 	
 	// 현재 Active 상태에서 Conquering 중인 Player -> 얘의 Damage 처리를 주는 처리를 어떤식으로 해야할지...
 	// 이 Player가 Setting되면, 실질적인 거점 활성화 처리
+	// 서버 쪽에서만 유효하게 잡힘(어차피 서버 쪽에서만 판단하면 되어서 그럼)
 	UPROPERTY()
 	AC_BasicPlayer* m_ConqueringPlayer{};
 
@@ -370,13 +463,6 @@ private: /* Enemy AI 인지 관련 TeamAgent 등 */
 public:
 	
 	FOnCurPointTowerSequenceOver m_OnCurPointTowerSequenceOver{};
-
-public:
-
-	// 거점 Sequence에서 사용할 좀비 웨이브 설정
-	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "ZombieWave")
-	FZombieWaveSetting m_ZombieWaveSetting;
-	
 
 private: // 사운드
 

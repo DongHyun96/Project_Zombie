@@ -81,10 +81,10 @@ void UC_PointIndicatorManagerWidget::NativeTick(const FGeometry& MyGeometry, flo
 		AC_PointTower* PointTower                = ActivePointIndicator.Key;
 		UC_PointIndicatorWidget* IndicatorWidget = ActivePointIndicator.Value;
 
-		const FVector ObjectLocation = PointTower->GetActorLocation();
+		const FVector ObjectLocation = PointTower->GetGenerator()->GetComponentLocation();
 
 		// 현재 표기용 WholeOutline이 모두 켜져 있지 않은 상황(플레이어가 해당 PointTower에 충분히 가까운 상황에서는 Indicator 표기 처리하지 않는다)
-		if (!PointTower->IsWholeOutlineActive())
+		if (!PointTower->IsGeneratorOutlineActive())
 		{
 			if (IndicatorWidget->IsCurrentlyVisible())
 				IndicatorWidget->SetVisibility(ESlateVisibility::Collapsed);
@@ -105,8 +105,8 @@ void UC_PointIndicatorManagerWidget::NativeTick(const FGeometry& MyGeometry, flo
 		}
 
 		// 화면에 PointTower가 잡히지 않는 중 -> 이 때에는 Indicator 표기 처리를 해준다
-		if (!IndicatorWidget->IsCurrentlyVisible()) IndicatorWidget->SetVisibility(
-			ESlateVisibility::SelfHitTestInvisible);
+		if (!IndicatorWidget->IsCurrentlyVisible())
+			IndicatorWidget->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 
 		// Indicator 위젯 위치와 삼각형 방향 회전 잡기처리
 		CalculateOffScreenLocation(ObjectLocation, IndicatorWidget);
@@ -146,9 +146,10 @@ void UC_PointIndicatorManagerWidget::UpdateViewportInfo()
 
 	if (m_bInitializedViewport && ViewportSize == m_SavedViewportSize) return;
 
-	m_bInitializedViewport    = true;
-	m_SavedViewportSize       = ViewportSize;
-	const float ViewportScale = UWidgetLayoutLibrary::GetViewportScale(this);
+	m_bInitializedViewport = true;
+	m_SavedViewportSize    = ViewportSize;
+	
+	// const float ViewportScale = UWidgetLayoutLibrary::GetViewportScale(this);
 
 	/*-> SlotAsCanvasSlot
 	-> GetSize
@@ -156,11 +157,11 @@ void UC_PointIndicatorManagerWidget::UpdateViewportInfo()
 	-> Clamp Min
    즉 Indicator 크기의 절반을 최소 Clamp 여백으로 사용*/
 
-	FVector2D IndicatorSize = FVector2D::ZeroVector;
+	/*FVector2D IndicatorSize = FVector2D::ZeroVector;
 
 	// 모두 동일한 크기의 Indicator위젯
 	if (UCanvasPanelSlot* CanvasSlot = UWidgetLayoutLibrary::SlotAsCanvasSlot(m_IndicatorSample))
-	   IndicatorSize = CanvasSlot->GetSize();
+	   IndicatorSize = CanvasSlot->GetSize();*/
 
 	/*m_ClampMin       = (IndicatorSize * 0.5f) / ViewportScale;
 	m_ClampMax       = (ViewportSize / ViewportScale) - m_ClampMin;

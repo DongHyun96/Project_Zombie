@@ -10,6 +10,7 @@
 #include "Actor/PointTower/C_PointTower.h"
 #include "GameModeAndManager/C_GameMode_GameLv.h"
 #include "GameModeAndManager/C_UIManager.h"
+#include "GameModeAndManager/ChapterManager/C_StageManager.h"
 #include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "UI/MainHUD/C_GameMainHUD.h"
@@ -171,17 +172,23 @@ const FZombieWaveSetting* UC_PointTowerManager::GetCurrentWaveSetting() const
 
 bool UC_PointTowerManager::RegisterPointTower(AC_PointTower* _PointTower)
 {
+	if (!GetWorld() || !GetWorld()->GetGameInstance()) return false;
+	
+	const FGameStageInfo* CurStageInfo = GetWorld()->GetGameInstance()->GetSubsystem<UC_StageManager>()->GetCurStageInfo();
+	
 	// 새로운 Sequence 신규 PointTower, size를 늘림과 동시에 넣어줌
-	if (!m_PointTowers.IsValidIndex(_PointTower->m_ActivateSequenceIdx))
+	const FPointTowerSettings& CurStagePTSettings = _PointTower->m_PointTowerSettings[CurStageInfo->TimeOfDay]; 
+	
+	if (!m_PointTowers.IsValidIndex(CurStagePTSettings.ActivateSequenceIdx))
 	{
-		m_PointTowers.SetNum(_PointTower->m_ActivateSequenceIdx + 1);
-		m_PointTowers[_PointTower->m_ActivateSequenceIdx].Add(_PointTower);
+		m_PointTowers.SetNum(CurStagePTSettings.ActivateSequenceIdx + 1);
+		m_PointTowers[CurStagePTSettings.ActivateSequenceIdx].Add(_PointTower);
 		
 		_PointTower->m_RegisteredIdx = 0; // 이번 Sequence 내에서 신규로 등록받은 PointTower -> Idx를 0번으로 둔다 
 
 		// ConquerLimitTime 넣어줌
-		m_ConquerLimitTimes.SetNum(_PointTower->m_ActivateSequenceIdx + 1);
-		m_ConquerLimitTimes[_PointTower->m_ActivateSequenceIdx] = _PointTower->m_ConquerLimitTime;
+		m_ConquerLimitTimes.SetNum(CurStagePTSettings.ActivateSequenceIdx + 1);
+		m_ConquerLimitTimes[CurStagePTSettings.ActivateSequenceIdx] = CurStagePTSettings.ConquerLimitTime;
 		
 		// 포인트 타워가 현재 레벨에 하나라도 존재하는 상황 -> 만약 게임 시작까지 남은 시간 Timer등록을 하지 않은 상황이라면, 해당 Timer UI 띄우기 처리
 		// 거점 활성화까지 여유시간을 줌 (플레이어 기다리기 처리 등)
@@ -200,7 +207,7 @@ bool UC_PointTowerManager::RegisterPointTower(AC_PointTower* _PointTower)
 	}
 
 	// 이미 해당 Sequence가 등록된 상황에서 중복으로 들어가는지 체크
-	TSet<AC_PointTower*>& TargetSeqSet = m_PointTowers[_PointTower->m_ActivateSequenceIdx]; 
+	TSet<AC_PointTower*>& TargetSeqSet = m_PointTowers[CurStagePTSettings.ActivateSequenceIdx]; 
 	if (TargetSeqSet.Contains(_PointTower)) return false; 
 
 	// 두 가지 경우일 수 있음 -> 1. 동일 Sequence에 여러 거점이 동시에 활성화될 수 있는 경우 (이미 해당 Set에 PointTower 하나라도 존재하는 상황
@@ -208,7 +215,7 @@ bool UC_PointTowerManager::RegisterPointTower(AC_PointTower* _PointTower)
 	
 	TargetSeqSet.Add(_PointTower);
 	_PointTower->m_RegisteredIdx = TargetSeqSet.Num() - 1; // 이번 Sequence 내에서의 순서 기록 (UI 처리용)
-	m_ConquerLimitTimes[_PointTower->m_ActivateSequenceIdx] = _PointTower->m_ConquerLimitTime; // ConquerLimitTime 등록(이미 등록되어있다 하더라도, 동일한 값으로 등록되도록 처리되어 있음)
+	m_ConquerLimitTimes[CurStagePTSettings.ActivateSequenceIdx] = CurStagePTSettings.ConquerLimitTime; // ConquerLimitTime 등록(이미 등록되어있다 하더라도, 동일한 값으로 등록되도록 처리되어 있음)
 
 	/* 동일 sequence에 여러 거점이 동시에 활성화될 수 있는 상황임 */
 	// 이러한 경우, m_bCanDamagedAfterConquer값을 true로 두어,

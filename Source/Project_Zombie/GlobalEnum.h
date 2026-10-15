@@ -106,3 +106,20 @@ enum class EPlayerSkin : uint8
     Green   UMETA(DisplayName = "Green"),
     Blue    UMETA(DisplayName = "Blue")
 };
+
+UENUM(BlueprintType)
+enum class EStageDifficulty : uint8
+{
+	Easy,
+	Normal,
+	Hard,
+	End UMETA(Hidden)
+};
+
+UENUM(BlueprintType)
+enum class EStageTimeOfDay : uint8
+{
+	Day,
+	Night,
+	End UMETA(Hidden)
+};
