@@ -156,7 +156,7 @@ private:
 	void TrySyncOther(EStageTimeOfDay _TimeOfDay);
 
 	/// <summary>
-	/// 특정 멤버변수 Name이 EditInstanceOnly Property인지 체크 
+	/// 특정 멤버변수 Name이 EditInstanceOnly Property인지 체크 -> m_PointTowerSettings 내부의 구조체 검사 시 사용 
 	/// </summary>
 	/// <param name="_PropertyName"></param>
 	/// <param name="_PropCheckType"> : 체크 추가조건 </param>

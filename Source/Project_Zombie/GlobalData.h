@@ -725,6 +725,17 @@ public:
                 SpawnCoolDown   == _Other.SpawnCoolDown &&
                 MaxActiveCount  == _Other.MaxActiveCount;
     }
+    
+    /// <summary>
+    /// 프로퍼티 명칭이 멤버변수 중 하나라도 대응되어 일치하는 것이 있는지 조사 
+    /// </summary>
+    static bool CheckPropertyNameEqualToAnyVar(const FName& _PropertyName)
+    {
+        return  _PropertyName == GET_MEMBER_NAME_CHECKED(FZombieTypeSpawnSetting, ZombieType) ||
+                _PropertyName == GET_MEMBER_NAME_CHECKED(FZombieTypeSpawnSetting, SpawnWeight) ||
+                _PropertyName == GET_MEMBER_NAME_CHECKED(FZombieTypeSpawnSetting, SpawnCoolDown) ||
+                _PropertyName == GET_MEMBER_NAME_CHECKED(FZombieTypeSpawnSetting, MaxActiveCount);
+    }
 };
 
 // 좀비 웨이브마다 설정해줄 값
@@ -749,6 +760,17 @@ public:
     bool operator==(const FZombieWaveSetting& _Other) const
     {
         return SpawnInterval == _Other.SpawnInterval && SpawnCountPerTick == _Other.SpawnCountPerTick && ZombieTypeSetting == _Other.ZombieTypeSetting;
+    }
+
+    /// <summary>
+    /// 프로퍼티 명칭이 멤버변수 중 하나라도 대응되어 일치하는 것이 있는지 조사 
+    /// </summary>
+    static bool CheckPropertyNameEqualToAnyVar(const FName& _PropertyName)
+    {
+        return  _PropertyName == GET_MEMBER_NAME_CHECKED(FZombieWaveSetting, SpawnInterval) ||
+                _PropertyName == GET_MEMBER_NAME_CHECKED(FZombieWaveSetting, SpawnCountPerTick) ||
+                _PropertyName == GET_MEMBER_NAME_CHECKED(FZombieWaveSetting, ZombieTypeSetting) ||
+                FZombieTypeSpawnSetting::CheckPropertyNameEqualToAnyVar(_PropertyName);
     }
 };
 
