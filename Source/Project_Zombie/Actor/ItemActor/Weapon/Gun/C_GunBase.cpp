@@ -49,6 +49,9 @@ AC_GunBase::AC_GunBase()
 	m_WeaponMesh->SetLinearDamping(1.f);
 	m_WeaponMesh->SetAngularDamping(1.f);
 	
+	// 무기때문에 그림자 생기는거 방지
+	m_WeaponMesh->SetCastShadow(false);
+
 	//m_DataCom = CreateDefaultSubobject<UC_GunDataTableComponent>(TEXT("DataComponent"));
 	
 	m_AIGunUsageComponent = CreateDefaultSubobject<UC_AIGunUsageComponent>(TEXT("AIGunUsageComponent"));
