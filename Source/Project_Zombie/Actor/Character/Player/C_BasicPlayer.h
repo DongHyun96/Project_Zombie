@@ -57,6 +57,7 @@ class UInputMappingContext;
 class UInputAction;
 class USphereComponent;
 class UMaterialInterface;
+class USpotLightComponent;
 struct FInputActionValue;
 
 UCLASS()
@@ -115,6 +116,8 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Components", meta = (DisplayName = "FeetComponent"))
 	class UC_FeetComponent* m_FeetComponent{};
 
+	UPROPERTY(VisibleAnywhere, Category = "Components", meta = (DisplayName = "LightComponent"))
+	class UC_PlayerLightComponent* m_PlayerLightComponent{};
 
 protected:
 	
@@ -135,6 +138,9 @@ protected:
 
 	UPROPERTY(Replicated)
 	float ReplicatedAimYaw = 0.0f;
+
+	UPROPERTY(Replicated)
+	float ReplicatedLightYaw = 0.0f;
 
 protected:
 	// StatComponent의 CurBoost가 변경될 때 서버에서 클라이언트로 복제할 변수
@@ -202,6 +208,9 @@ protected:
 	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	//float m_MinBoostToSprint = 10.f;
 
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Light")
+	USpotLightComponent* m_SpotLightComponent;
 
 	// [Revive]
 protected:
@@ -319,6 +328,8 @@ public:
 	void SetHandState(EHandState _HandState);
 
 	float GetReplicatedAimYaw() const { return ReplicatedAimYaw; }
+
+	float GetReplicatedLightYaw() const { return ReplicatedLightYaw; }
 
 	UC_EquippedComponent* GetEquippedComponent() const { return m_EquippedComponent; }
 	
@@ -505,6 +516,9 @@ protected:
 
 	UFUNCTION(Server, Unreliable)
 	void Server_SetAimYaw(float InAimYaw);
+
+	UFUNCTION(Server, Unreliable)
+	void Server_SetLightYaw(float InLightYaw);
 
 	UFUNCTION(NetMulticast, Unreliable)
 	void Multicast_PlayHitReact();

@@ -25,6 +25,8 @@
 #include "Actor/Components/C_PoseColliderHandlerComponent.h"
 #include "Actor/Components/InteractionComponent/C_InteractionComponent.h"
 #include "Actor/Components/C_FeetComponent.h"
+#include "Actor/Components/C_PlayerLightComponent.h"
+#include "Components/SpotLightComponent.h"
 
 #include "GameFramework/PlayerState.h"
 #include "Actor/Components/C_PlayerStatComponent.h"
@@ -112,6 +114,8 @@ AC_BasicPlayer::AC_BasicPlayer()
 	m_InteractionSphere->SetupAttachment(RootComponent);
 	m_InteractionSphere->SetSphereRadius(150.0f);
 
+	m_SpotLightComponent = CreateDefaultSubobject<USpotLightComponent>(TEXT("SpotLightComponent"));
+	m_SpotLightComponent->SetupAttachment(GetMesh(), TEXT("ChestLightSocket"));
 
 	// 캐릭터 상태 초기화
 	m_PlayerState = EPlayerMainState::Idle;
@@ -183,7 +187,10 @@ AC_BasicPlayer::AC_BasicPlayer()
 	m_InteractionComponent = CreateDefaultSubobject<UC_InteractionComponent>(TEXT("InteractionComponent"));
 
 	m_FeetComponent = CreateDefaultSubobject<UC_FeetComponent>(TEXT("FeetComponent"));
-	
+
+	m_PlayerLightComponent = CreateDefaultSubobject<UC_PlayerLightComponent>(TEXT("PlayerLightComponent"));
+	m_PlayerLightComponent->InitLight(m_SpotLightComponent);
+
 	bAlwaysRelevant = true;
 }
 
@@ -335,6 +342,7 @@ void AC_BasicPlayer::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	
 	DOREPLIFETIME(AC_BasicPlayer, m_HandState);
 	DOREPLIFETIME(AC_BasicPlayer, ReplicatedAimYaw);
+	DOREPLIFETIME(AC_BasicPlayer, ReplicatedLightYaw);
 	DOREPLIFETIME(AC_BasicPlayer, m_CurBoost);
 	DOREPLIFETIME(AC_BasicPlayer, m_bIsBoostExhausted);
 }
@@ -408,10 +416,14 @@ void AC_BasicPlayer::Tick(float DeltaTime)
 		if (HasAuthority())
 		{
 			RemoteViewPitch = ControlRot.Pitch * 255.f / 360.f;
+
+			ReplicatedLightYaw = ControlRot.Yaw;
 		}
 		else
 		{
 			Server_SetAimYaw(ReplicatedAimYaw);
+
+			Server_SetLightYaw(ControlRot.Yaw);
 		}
 	}
 	
@@ -718,6 +730,11 @@ void AC_BasicPlayer::SetCurBoost(float NewBoost)
 void AC_BasicPlayer::Server_SetAimYaw_Implementation(float InAimYaw)
 {
 	ReplicatedAimYaw = FMath::Clamp(InAimYaw, -90.f, 90.f);
+}
+
+void AC_BasicPlayer::Server_SetLightYaw_Implementation(float InLightYaw)
+{
+	ReplicatedLightYaw = FRotator::NormalizeAxis(InLightYaw);
 }
 
 void AC_BasicPlayer::Server_SetHandState_Implementation(EHandState _HandState)
