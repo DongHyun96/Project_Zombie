@@ -372,8 +372,8 @@ private:
 	
 #endif
 
-private: /* 게임 레벨 시작 시, 현 TimeOfDay 불러와서 저장해둘 예정 */
-	
+private: /* 게임 레벨 시작 시, 현 TimeOfDay 불러와서 저장해둘 예정(서버 환경에서) */
+
 	EStageTimeOfDay m_CurStageTimeOfDay{};
 	
 protected:

@@ -51,7 +51,15 @@ public:
 	/// </summary>
 	const FGameStageInfo* GetCurStageInfo() const;
 
+	uint8 GetCurStageIdx() const { return m_CurStageIdx; }
+	void SetCurStageIdx(uint8 _CurStageIdx) { m_CurStageIdx = _CurStageIdx; }
 	
+	bool HasAllStageCleared() const { return m_CurStageIdx >= m_ClearedGameStages.Num(); }
+
+	/// <summary>
+	/// 다음 Stage로 전환 시 호출처리할 것 (주의 : 서버 환경에서 호출할 것)
+	/// </summary>
+	void SetCurStageToNextStage();
 	
 private:
 

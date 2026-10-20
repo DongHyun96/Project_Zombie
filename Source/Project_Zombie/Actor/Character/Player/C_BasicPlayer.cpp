@@ -230,7 +230,10 @@ void AC_BasicPlayer::BeginPlay()
 
 	// GameLevelManager에 해당 Player 등록
 	if (UC_GameLevelManager* LevelManager = GetWorld()->GetSubsystem<UC_GameLevelManager>())
+	{
 		LevelManager->AddPlayer(this);
+		if (HasAuthority()) LevelManager->SpawnLightHandler(this); // 오로지 방장만 LightHandler 스폰 -> 클라의 경우 자동적으로 Replicate 처리되게끔
+	}
 
 	//UpdateBoostBarHUD();
 	// 이 안에서 Early return 처리되면 알아서 다음 Timer Tick에 다시금 확인하고 nullptr가 아닌 겨우에만 초기화 작업이 안전하게 이루어짐

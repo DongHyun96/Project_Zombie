@@ -4,6 +4,7 @@
 #include "Actor/Components/InteractionComponent/Strategy/C_LevelTransferStrategy.h"
 
 #include "Actor/Character/Player/C_BasicPlayer.h"
+#include "GameModeAndManager/ChapterManager/C_StageManager.h"
 
 bool UC_LevelTransferStrategy::CanStartInteraction(AC_BasicPlayer* _Interactor, AActor* _TargetActor) const
 {
@@ -33,6 +34,13 @@ void UC_LevelTransferStrategy::CompleteInteraction(AC_BasicPlayer* _Interactor, 
 	if (_Interactor->HasAuthority())
 	{
 		UWorld* World = GetWorld();
+		if (!World) return;
+
+		UC_StageManager* StageManager = World->GetGameInstance()->GetSubsystem<UC_StageManager>();
+		if (StageManager->HasAllStageCleared()) return; // 이미 모든 Stage가 Clear된 경우 (TODO : UI로 표시같은거 해주기)
+		
+		const FString TargetLevelName = World->GetGameInstance()->GetSubsystem<UC_StageManager>()->GetCurStageInfo()->StageLevelName;
+		
 		if (World && !TargetLevelName.IsEmpty())
 		{
 			// 리슨 서버 환경에서 모든 유저(호스트+클라이언트)를 함께 데려가려면 ServerTravel을 사용합니다.

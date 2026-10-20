@@ -33,6 +33,7 @@ AC_PointTower::AC_PointTower()
 	PrimaryActorTick.bCanEverTick = true;
 	
 	SetReplicates(true);
+	bAlwaysRelevant = true;
 
 	m_StaticMeshComGenerator = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMeshComGenerator"));
 	m_StaticMeshComTower	 = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMeshComTower"));
@@ -66,6 +67,9 @@ AC_PointTower::AC_PointTower()
 void AC_PointTower::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// CurStageTimeOfDay 값 현재 StageInfo의 TimeOfDay로 맞추기
+	m_CurStageTimeOfDay = GetGameInstance()->GetSubsystem<UC_StageManager>()->GetCurStageInfo()->TimeOfDay;
 	
 	// Electronic effect 부모 SceneComponent 초기화
 	m_ElectroSplinesParent = FindSceneComponentByName(TEXT("ElectroSplines"));

@@ -45,6 +45,8 @@ public:
 	/// </summary>
 	bool HasAllPlayerDead() const;
 
+	void SpawnLightHandler(AActor* _Outer);
+	
 public:
 
 	class AC_UtilActor* GetUtilActor() const { return m_UtilActor; }
@@ -62,6 +64,11 @@ private:
 	
 	UPROPERTY()
 	AC_UtilActor* m_UtilActor{};
+	
+private:
+	
+	UPROPERTY()
+	class AC_StageLightHandler* m_StageLightHandler{};
 	
 };
 

@@ -12,8 +12,12 @@
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/ItemActor/Weapon/C_WeaponBase.h"
 #include "Actor/Components/InteractionComponent/C_InteractionComponent.h"
+#include "Actor/GameOverChecker/C_GameOverChecker.h"
+#include "GameModeAndManager/C_GameMode_GameLv.h"
 #include "GameModeAndManager/C_UIManager.h"
+#include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 #include "GameModeAndManager/PlayerState/C_PlayerState.h"
+#include "Kismet/GameplayStatics.h"
 #include "StatComponent/C_StatComponentBase.h"
 #include "UI/InvenUI/C_InventoryWidget.h"
 #include "UI/InvenUI/DivideWIdget/C_DivideItemWidget.h"
@@ -263,8 +267,17 @@ void UC_BasicPlayerInputComponent::CrouchAction()
 {
 	if (!Player)
 		return;
-
+	
 	Player->ToggleCrouch();
+	
+	// For testing
+	if (Player->HasAuthority())
+	{
+		for (AC_BasicPlayer* P : LEVEL_MANAGER->GetPlayers())
+			P->GetStatComponent()->SetImmortal(); 
+		
+		GAME_LV_GAME_MODE(this)->GetGameOverChecker()->Multicast_GameOver(true);
+	}
 }
 
 void UC_BasicPlayerInputComponent::InteractionAction()

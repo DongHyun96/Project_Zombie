@@ -14,15 +14,15 @@
 #include "GameFramework/PlayerState.h"
 #include "GameModeAndManager/C_GameMode_GameLv.h"
 #include "GameModeAndManager/C_UIManager.h"
+#include "GameModeAndManager/ChapterManager/C_StageManager.h"
 #include "Interfaces/OnlineSessionInterface.h"
 
 void UC_GameOverWidget::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
-
+	
 	// ExitToLobbyButton 바인딩
 	if (ExitToLobbyButton) ExitToLobbyButton->OnClicked.AddDynamic(this, &UC_GameOverWidget::OnExitToLobbyButtonClicked);
-	                                          
 }
 
 void UC_GameOverWidget::NativeConstruct()
@@ -40,7 +40,7 @@ void UC_GameOverWidget::ActivateWinningSequence()
 {
 	InitLocalPlayerRanking();
 
-	this->SetVisibility(ESlateVisibility::HitTestInvisible);
+	this->SetVisibility(ESlateVisibility::Visible);
 
 	AC_BasicPlayer* MyPlayer = LEVEL_MANAGER->GetLocalPlayer();
 	if (!MyPlayer)
@@ -67,10 +67,19 @@ void UC_GameOverWidget::ActivateWinningSequence()
 	KillCountText->SetText(FText::FromString(FString::FromInt(MyPlayer->GetKillCount())));
 
 	// 서버는 ExitToLobby 버튼 있는 Animation, 클라의 경우 없는 Animation으로 처리
+	// 또한 서버의 경우, Stage를 다음 Stage로 여기서 맞춤 처리함
 	if (MyPlayer->HasAuthority())
 	{
 		PlayAnimation(WinningChickenAnimation);
 		ExitToLobbyButton->SetVisibility(ESlateVisibility::Visible);
+		
+		// Stage를 다음 Stage로 여기서 맞춤
+		GetGameInstance()->GetSubsystem<UC_StageManager>()->SetCurStageToNextStage();
+
+		APlayerController* PC = MyPlayer->GetController<APlayerController>();
+		PC->SetShowMouseCursor(true);
+		FInputModeGameAndUI InputMode{};
+		PC->SetInputMode(InputMode);
 	}
 	else
 	{
@@ -206,6 +215,8 @@ void UC_GameOverWidget::HandleExitToLobbyTimer(float DeltaTime)
 
 void UC_GameOverWidget::OnExitToLobbyButtonClicked()
 {
+	PRINT_LOCAL(GetWorld(), "[UC_GameOverWidget::OnExitToLobbyButtonClicked]", FColor::Cyan, 10.f);
+	
 	if (bIsExiting) return;
 	bIsExiting = true; // 중복 실행 방지
 

@@ -6,6 +6,7 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "C_SkinManager.generated.h"
 
+enum class EPlayerSkin : uint8;
 class UC_SkinData;
 class UMaterialInterface;
 

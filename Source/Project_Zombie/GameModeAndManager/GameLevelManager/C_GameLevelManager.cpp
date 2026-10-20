@@ -8,6 +8,7 @@
 #include "Actor/GameOverChecker/C_GameOverChecker.h"
 #include "GameModeAndManager/C_UIManager.h"
 #include "GameModeAndManager/C_ZombieManager.h"
+#include "GameModeAndManager/ChapterManager/C_StageLightHandler.h"
 #include "Utility/C_Util.h"
 #include "Utility/C_UtilActor.h"
 
@@ -66,4 +67,15 @@ bool UC_GameLevelManager::HasAllPlayerDead() const
 	for (AC_BasicPlayer* Player : m_Players)
 		if (Player->GetPlayerMainState() != EPlayerMainState::Dead) return false;
 	return true;
+}
+
+void UC_GameLevelManager::SpawnLightHandler(AActor* _Outer)
+{
+	if (!_Outer) return;
+	if (!GetWorld()) return;
+
+	FActorSpawnParameters SpawnParams{};
+	SpawnParams.Owner = _Outer;
+	
+	GetWorld()->SpawnActor<AC_StageLightHandler>(SpawnParams);
 }
