@@ -50,6 +50,8 @@ public:
 	/// 현재 StageInfo return | 만약 CurStageIdx가 Valid하지 않다면 return nullptr
 	/// </summary>
 	const FGameStageInfo* GetCurStageInfo() const;
+
+	
 	
 private:
 

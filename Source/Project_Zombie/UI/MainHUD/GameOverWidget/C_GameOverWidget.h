@@ -28,6 +28,9 @@ public:
 	void ActivateWinningSequence();
 	void ActivateLoseSequence();
 
+	
+	void UpdateExitToLobbyCountDownRemainSec(int32 _RemainSec);
+	
 private:
 	
 	void InitLocalPlayerRanking();
@@ -41,12 +44,24 @@ private:
 
 protected:
 
+	// 방장용 -> Exit Button 존재
 	UPROPERTY(meta = (BindWidgetAnim), Transient)
 	UWidgetAnimation* WinningChickenAnimation{};
 
+	// 방장용 -> Exit Button 존재
 	UPROPERTY(meta = (BindWidgetAnim), Transient)
 	UWidgetAnimation* LoseAnimation{};	
 
+protected: // 클라 전용 Exit Button 나오지 않는 Animations
+	
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
+	UWidgetAnimation* Client_WinningChickenAnimation{};
+	
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
+	UWidgetAnimation* Client_LoseAnimation{};
+
+protected:
+	
 	UPROPERTY(meta = (BindWidget))
 	class UTextBlock* PlayerCharacterName{};
 
@@ -65,17 +80,18 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* ExitToLobbyCountDownText{};
 
-	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly)
-	TSoftObjectPtr<UWorld> LobbyLevel{};
-
 	//  ExitToLobbyButton 바인딩
 	UPROPERTY(meta = (BindWidget))
 	class UButton* ExitToLobbyButton{};
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	FString m_LobbyLevelName = TEXT("GameLevel_LV_Loby_Safe_House");
 
 private:
 
 	// 최대 60초 기다린 이후 로비로 나가기
 	float ExitToLobbyTimer = 60.f;
+	int32 PrevExitToLobbyTimerForUI = 60;
 	
 	// 중복 로비 이동 실행 방지
 	bool bIsExiting = false;

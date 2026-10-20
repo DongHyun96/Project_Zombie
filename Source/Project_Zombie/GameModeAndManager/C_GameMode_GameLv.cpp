@@ -37,6 +37,8 @@ void AC_GameMode_GameLv::BeginPlay()
 	}
 	else UC_Util::Print("[AC_GameMode_GameLv::BeginPlay] : Failed to get PC", FColor::Red, 10.f);
 
+	PRINT_LOCAL(GetWorld(), "[AC_GameMode_GameLv::BeginPlay] : Start BeginPlay", FColor::Red, 10.f);
+	
     if (m_ZombieManagerClass)
        m_ZombieManager = NewObject<UC_ZombieManager>(this, m_ZombieManagerClass);
     else

@@ -81,3 +81,20 @@ void AC_GameOverChecker::Multicast_GameOver_Implementation(bool _PlayerWin)
 	
 	MainHUD->GetInformWidget()->HideAllCurSequenceInfo();
 }
+
+void AC_GameOverChecker::Multicast_UpdateExitToLobbyRemainTime_Implementation(int32 _RemainTime)
+{
+	UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld());
+	if (!MainHUD)
+	{
+		PRINT_LOCAL(GetWorld(), "[AC_GameOverChecker::Multicast_UpdateExitToLobbyRemainTime] : MainHUD nullptr", FColor::Red, 10.f);
+		return;
+	}
+	
+	MainHUD->GetGameOverWidget()->UpdateExitToLobbyCountDownRemainSec(_RemainTime);
+}
+
+void AC_GameOverChecker::Multicast_ExitToLobby_Implementation()
+{
+	// TODO : 로비 레벨로 이동 처리	
+}

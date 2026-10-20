@@ -54,6 +54,20 @@ public:
 public:
 	
 	/// <summary>
+	/// 로비 나가기까지 시간 보여주기 UI 동기화용 Multicast
+	/// </summary>
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_UpdateExitToLobbyRemainTime(int32 _RemainTime);
+	
+	/// <summary>
+	/// 방장 쪽에서 ExitToLobby 처리 시, 다 같이 Lobby로 나갈 때 사용 (방장 포함)
+	/// </summary>
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_ExitToLobby();
+	
+public:
+	
+	/// <summary>
 	/// 서버 쪽에서는 바로 정확한 GameOver 여부 확인 가능 / Client의 경우 Multicast RPC call을 받기 이전에 처리가 안되어 있을 수 있음(주의) 
 	/// 애초에 서버 쪽에서만 GameOverChecker 객체를 현재 구할 수 있는 상황임
 	/// </summary>
@@ -62,6 +76,6 @@ public:
 private:
 	
 	bool m_bGameOver{};
-	
+
 	
 };

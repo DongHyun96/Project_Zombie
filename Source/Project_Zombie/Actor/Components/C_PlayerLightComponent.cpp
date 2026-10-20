@@ -2,6 +2,7 @@
 #include "Components/SpotLightComponent.h"
 
 #include "Actor/Character/Player/C_BasicPlayer.h"
+#include "GameModeAndManager/C_UIManager.h"
 
 UC_PlayerLightComponent::UC_PlayerLightComponent()
 {
@@ -15,7 +16,10 @@ void UC_PlayerLightComponent::BeginPlay()
 
     m_OwnerPlayer = Cast<AC_BasicPlayer>(GetOwner());
     if (!m_OwnerPlayer || !m_SpotLight)
+    {
+        PRINT_LOCAL(GetWorld(), "[UC_PlayerLightComponent::BeginPlay] : OwnerPlayer or SpotLight nullptr", FColor::Red, 10.f);
         return;
+    }
 
     m_SpotLight->SetIntensity(5000.f);
     m_SpotLight->SetAttenuationRadius(1500.f);
