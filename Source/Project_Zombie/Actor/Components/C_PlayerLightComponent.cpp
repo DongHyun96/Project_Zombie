@@ -39,7 +39,6 @@ void UC_PlayerLightComponent::BeginPlay()
         if (!CurStageInfo)  ToggleLight(false);
         else                ToggleLight(CurStageInfo->TimeOfDay == EStageTimeOfDay::Night); // Night인 경우에만 Light 활성화
     }
-        
 }
 
 

@@ -270,7 +270,7 @@ void UC_BasicPlayerInputComponent::CrouchAction()
 	
 	Player->ToggleCrouch();
 	
-	// For testing
+	// For testing TODO : 이 밑 지우기
 	if (Player->HasAuthority())
 	{
 		for (AC_BasicPlayer* P : LEVEL_MANAGER->GetPlayers())

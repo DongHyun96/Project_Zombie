@@ -5,6 +5,7 @@
 
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "Actor/Components/C_InvenComponent.h"
+#include "Actor/Components/FaceToLocalPlayerComponent/C_FaceToLocalPlayerComponent.h"
 #include "Components/SphereComponent.h"
 #include "GameModeAndManager/C_ItemManager.h"
 #include "GameModeAndManager/C_UIManager.h"
@@ -29,6 +30,8 @@ AC_Storage::AC_Storage()
 	SphereComp->SetupAttachment(MeshComp);
 	
 	InvenComp = CreateDefaultSubobject<UC_InvenComponent>(TEXT("InvenComponent"));
+	
+	M_FaceToLocalPlayerComponent = CreateDefaultSubobject<UC_FaceToLocalPlayerComponent>(TEXT("FaceToLocalPlayerComponent"));
 }
 
 // Called when the game starts or when spawned

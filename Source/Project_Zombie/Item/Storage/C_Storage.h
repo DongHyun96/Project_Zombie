@@ -43,4 +43,10 @@ protected:
 	// TODO : Sphere가 아니라 큐브로?
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	class USphereComponent* SphereComp{};	
+	
+	UPROPERTY(EditDefaultsOnly)
+	UMaterialInterface* m_OutlineMaterial{};
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	class UC_FaceToLocalPlayerComponent* M_FaceToLocalPlayerComponent{};
 };

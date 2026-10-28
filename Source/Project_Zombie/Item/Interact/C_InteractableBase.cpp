@@ -2,6 +2,8 @@
 
 
 #include "Item/Interact/C_InteractableBase.h"
+
+#include "Actor/Components/FaceToLocalPlayerComponent/C_FaceToLocalPlayerComponent.h"
 #include "Actor/Components/InteractionComponent/C_InteractionComponent.h"
 #include "Components/SphereComponent.h"
 #include "Actor/Components/UpgradeComponent/C_ItemUpgradeComponent.h"
@@ -37,6 +39,8 @@ AC_InteractableBase::AC_InteractableBase()
 	InteractionComp->SetAllowMultipleInteractor(true);
 
 	m_SphereComp->SetCollisionProfileName(FName("InteractionOnly"));
+	
+	m_FaceToLocalPlayerComp = CreateDefaultSubobject<UC_FaceToLocalPlayerComponent>(TEXT("FaceToLocalPlayerComponent"));
 }
 
 // Called when the game starts or when spawned
