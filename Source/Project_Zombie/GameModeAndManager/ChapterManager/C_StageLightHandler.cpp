@@ -46,27 +46,30 @@ void AC_StageLightHandler::BeginPlay()
 		}
 	}
 
-	if (m_DirectionalLights.IsEmpty() || m_PostProcessVolumes.IsEmpty())
-		PRINT_LOCAL(GetWorld(), "[AC_StageLightHandler::BeginPlay] : Lighting Actor not found!]", FColor::Red, 10.f);
-	else
+	const uint8 TimeOfDayCnt = static_cast<uint8>(EStageTimeOfDay::End);
+	
+	if (m_DirectionalLights.Num() != TimeOfDayCnt || m_PostProcessVolumes.Num() != TimeOfDayCnt)
 	{
-		PRINT_LOCAL(GetWorld(), "[AC_StageLightHandler::BeginPlay] : Lighting Actor found!]", FColor::Yellow, 10.f);
-		const EStageTimeOfDay CurTimeOfDay = GetGameInstance()->GetSubsystem<UC_StageManager>()->GetCurStageInfo()->TimeOfDay;
+		PRINT_LOCAL(GetWorld(), "[AC_StageLightHandler::BeginPlay] : Lighting Actor not all found!]", FColor::Red, 10.f);
+		return;
+	}
+	
+	PRINT_LOCAL(GetWorld(), "[AC_StageLightHandler::BeginPlay] : Lighting Actor found!]", FColor::Yellow, 10.f);
+	const EStageTimeOfDay CurTimeOfDay = GetGameInstance()->GetSubsystem<UC_StageManager>()->GetCurStageInfo()->TimeOfDay;
 
-		for (uint8 i = 0; i < static_cast<uint8>(EStageTimeOfDay::End); ++i)
+	for (uint8 i = 0; i < TimeOfDayCnt; ++i)
+	{
+		EStageTimeOfDay TimeOfDay = static_cast<EStageTimeOfDay>(i);
+		if (TimeOfDay == CurTimeOfDay)
 		{
-			EStageTimeOfDay TimeOfDay = static_cast<EStageTimeOfDay>(i);
-			if (TimeOfDay == CurTimeOfDay)
-			{
-				// m_DirectionalLights[TimeOfDay].
-				m_DirectionalLights[TimeOfDay]->GetLightComponent()->SetVisibility(true);
-				m_PostProcessVolumes[TimeOfDay]->bEnabled = true;
-			}
-			else
-			{
-				m_DirectionalLights[TimeOfDay]->GetLightComponent()->SetVisibility(false);
-				m_PostProcessVolumes[TimeOfDay]->bEnabled = false;
-			}
+			// m_DirectionalLights[TimeOfDay].
+			m_DirectionalLights[TimeOfDay]->GetLightComponent()->SetVisibility(true);
+			m_PostProcessVolumes[TimeOfDay]->bEnabled = true;
+		}
+		else
+		{
+			m_DirectionalLights[TimeOfDay]->GetLightComponent()->SetVisibility(false);
+			m_PostProcessVolumes[TimeOfDay]->bEnabled = false;
 		}
 	}
 }

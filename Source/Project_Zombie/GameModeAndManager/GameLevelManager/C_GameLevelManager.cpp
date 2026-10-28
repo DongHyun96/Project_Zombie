@@ -77,5 +77,7 @@ void UC_GameLevelManager::SpawnLightHandler(AActor* _Outer)
 	FActorSpawnParameters SpawnParams{};
 	SpawnParams.Owner = _Outer;
 	
-	GetWorld()->SpawnActor<AC_StageLightHandler>(SpawnParams);
+	m_StageLightHandler = GetWorld()->SpawnActor<AC_StageLightHandler>(SpawnParams);
+	if (!m_StageLightHandler)
+		PRINT_LOCAL(GetWorld(), "[AC_GameLevelManager::SpawnLightHandler] : StageLightHandler Spawn Failed", FColor::Red, 10.f);
 }

@@ -59,6 +59,7 @@
 #include "GameModeAndManager/PlayerState/C_PlayerState.h"
 
 #include "Actor/PointTower/C_PointTower.h"
+#include "GameModeAndManager/ChapterManager/C_StageManager.h"
 
 #include "Net/UnrealNetwork.h"
 #include "Kismet/KismetMathLibrary.h"

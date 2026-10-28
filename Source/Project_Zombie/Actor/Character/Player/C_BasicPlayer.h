@@ -116,7 +116,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Components", meta = (DisplayName = "FeetComponent"))
 	class UC_FeetComponent* m_FeetComponent{};
 
-	UPROPERTY(VisibleAnywhere, Category = "Components", meta = (DisplayName = "LightComponent"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (DisplayName = "LightComponent"))
 	class UC_PlayerLightComponent* m_PlayerLightComponent{};
 
 protected:

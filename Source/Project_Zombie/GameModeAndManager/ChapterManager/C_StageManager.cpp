@@ -3,6 +3,7 @@
 
 #include "C_StageManager.h"
 
+#include "GlobalEnum.h"
 #include "GameModeAndManager/C_UIManager.h"
 
 void UC_StageManager::Initialize(FSubsystemCollectionBase& Collection)

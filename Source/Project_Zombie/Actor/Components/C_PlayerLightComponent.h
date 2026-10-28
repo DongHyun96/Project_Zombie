@@ -26,10 +26,20 @@ public:
 public:
 	void InitLight(USpotLightComponent* _SpotLight);
 
+	void ToggleLight(bool _Enabled);
+	
 private:
+	
+	bool m_bEnabled{};
+	
+private:
+	
 	UPROPERTY()
 	TObjectPtr<AC_BasicPlayer> m_OwnerPlayer;
 
 	UPROPERTY()
 	TObjectPtr<USpotLightComponent> m_SpotLight;
+	
+	float m_ClampedRelativeYaw{};
+	
 };
