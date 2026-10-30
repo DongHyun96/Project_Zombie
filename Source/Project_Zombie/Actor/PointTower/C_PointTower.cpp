@@ -15,6 +15,7 @@
 #include "GameModeAndManager/C_GameMode_GameLv.h"
 #include "GameModeAndManager/C_UIManager.h"
 #include "GameModeAndManager/ChapterManager/C_StageManager.h"
+#include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 #include "GameModeAndManager/PointTowerManager/C_PointTowerManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
@@ -564,6 +565,12 @@ void AC_PointTower::SetPointTowerState(EPointTowerState _PointTowerState)
 
 bool AC_PointTower::CanCurrentlyAttackedByZombie()
 {
+	if (!HasAuthority())
+	{
+		PRINT_LOCAL(GetWorld(), "[AC_PointTower::CanCurrentlyAttackedByZombie] : Should be called on server env!", FColor::Red, 10.f);
+		return false;
+	}
+	
 	if (m_State == EPointTowerState::Waiting) return false;
 
 	// 현재 활성화된 시퀀스의 PointTower가 아닌 경우
@@ -572,6 +579,11 @@ bool AC_PointTower::CanCurrentlyAttackedByZombie()
 	// 현재 활성화된 시퀀스가 맞긴 하지만, 점령도가 0% 인 경우 공격 불가
 	if (m_CurConquerAmount <= 0.f) return false;
 
+	// 다중 PointTower의 Sequence인 경우에 점령된 거점의 경우, 플레이어가 한 명인 경우 난이도 조절을 위해 확보된 거점은 도로 점령게이지 내려가지 않도록
+	// 공격 불가능 처리
+	if (m_State == EPointTowerState::Conquered && LEVEL_MANAGER->GetPlayers().Num() == 1)
+		return false;
+		
 	// 공격 가능한 PointTower 상태
 	return true;
 }

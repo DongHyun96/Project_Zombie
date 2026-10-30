@@ -13,6 +13,7 @@
 #include "GameModeAndManager/GameLevelManager/C_GameLevelManager.h"
 #include "Item/Interact/ItemUpgrade/C_ItemUpgradeStation.h"
 #include "Item/Interact/StatUpgrade/C_StatUpgradeStation.h"
+#include "Kismet/GameplayStatics.h"
 #include "Tests/OnlineBeaconUnitTestUtils.h"
 #include "UI/InvenUI/C_InventoryWidget.h"
 #include "UI/InvenUI/Upgrade/C_PlayerStatUpgradeWidget.h"
@@ -37,6 +38,14 @@ void UC_PlayerStatComponent::BeginPlay()
 	// Player immortal check (테스트용 무적 처리 확인)
 	if (AC_GameMode_GameLv* GameLevelGameMode = GetWorld()->GetAuthGameMode<AC_GameMode_GameLv>())
 		m_bIsImmortal = GameLevelGameMode->GetPlayerImmortal();
+	
+	// 로비 Level의 경우 또한, Immortal로 처리를 한다 (서버 쪽만 Immortal 설정으로 처리를 하면 됨)
+	if (m_OwnerPlayer && m_OwnerPlayer->HasAuthority())
+	{
+		const FString CurrentLevelName = UGameplayStatics::GetCurrentLevelName(this, true);
+		if (CurrentLevelName.Contains(TEXT("Lobby")) || CurrentLevelName.Contains(TEXT("Loby"))) // Typo로 'Loby'로 되어있음
+			m_bIsImmortal = true;
+	}
 	
 	/*if (m_OwnerCharacter->IsLocallyControlled())
 	{

@@ -72,8 +72,8 @@ void AC_GameMode_GameLv::Tick(float DeltaSeconds)
 
 void AC_GameMode_GameLv::PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)
 {
-	// 현재 접속한 플레이어 수(방장 포함)가 5명 이상이면 입장 거부 TODO : 테스트로 Max 2까지로 둠, 5로 다시 수정할 것
-	if (GetNumPlayers() >= 2)
+	// 현재 접속한 플레이어 수(방장 포함)가 5명 이상이면 입장 거부
+	if (GetNumPlayers() >= m_MaxPlayerSessionCount)
 	{
 		ErrorMessage = TEXT("Server is full (Max 5 Players)");
 		return;

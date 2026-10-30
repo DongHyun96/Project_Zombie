@@ -186,7 +186,9 @@ public:
 	float GetZombieAttackRange() const { return m_ZombieAttackRange; }
 
 	/// <summary>
-	/// 현재 라운드 및, 다중  
+	/// <para> 현재 Sequence 내에서의 Attack 가능한 PointTower인지 조사 </para>
+	/// <para> Single로 플레이 중인 경우, 한 Seq에서의 다중 PointTower(점령을 완료한) -> 공격 불가능하게끔 처리함 (깨기 불가능해짐) </para>
+	/// <para> 서버환경에서만 제대로 검사 가능 -> 어차피 PointTower 공격하는 개체는 Enemy, 따라서 정상적으로 동작함 (플레이어가 공격 가능한 기획이 들어가는 경우 문제가 될수 있음) </para>
 	/// </summary>
 	bool CanCurrentlyAttackedByZombie();
 

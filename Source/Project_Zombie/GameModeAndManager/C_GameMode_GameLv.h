@@ -52,6 +52,14 @@ public:
 	
 	bool GetPlayerImmortal() const { return m_bPlayerImmortal; }
 
+	UFUNCTION(BlueprintCallable)
+	int32 GetMaxPlayerSessionCount() const { return m_MaxPlayerSessionCount; }
+	
+protected:
+
+	// 최대 session 허용 인원 수 (방장 포함)
+	const int32 m_MaxPlayerSessionCount = 5;
+	
 protected: /* ZombieManager 관련 */
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
