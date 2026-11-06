@@ -76,7 +76,7 @@ void UC_FeetComponent::PlayFootstep(bool _IsLeftFoot)
 		Params
 	);
 
-	UE_LOG(
+	/*UE_LOG(
 		LogTemp,
 		Warning,
 		TEXT("[Footstep] Actor=%s / Component=%s / PhysMaterial=%s / FaceIndex=%d"),
@@ -84,7 +84,7 @@ void UC_FeetComponent::PlayFootstep(bool _IsLeftFoot)
 		*GetNameSafe(HitResult.GetComponent()),
 		*GetNameSafe(HitResult.PhysMaterial.Get()),
 		HitResult.FaceIndex
-	);
+	);*/
 
 	if (!bHit)
 		return;

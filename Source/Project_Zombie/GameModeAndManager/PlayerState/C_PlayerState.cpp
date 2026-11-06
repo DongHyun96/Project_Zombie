@@ -3,6 +3,7 @@
 
 #include "C_PlayerState.h"
 
+#include "GameModeAndManager/C_UIManager.h"
 #include "Net/UnrealNetwork.h"
 
 AC_PlayerState::AC_PlayerState()
@@ -22,6 +23,8 @@ void AC_PlayerState::CopyProperties(APlayerState* NewPlayerState)
 {
 	Super::CopyProperties(NewPlayerState);
 
+	PRINT_LOCAL(GetWorld(), "[AC_PlayerState::CopyProperties]", FColor::MakeRandomColor(), 10.f);
+	
 	if (NewPlayerState)
 	{
 		AC_PlayerState* NewPS = Cast<AC_PlayerState>(NewPlayerState);
@@ -32,7 +35,7 @@ void AC_PlayerState::CopyProperties(APlayerState* NewPlayerState)
 
 			// 2. 인벤토리 항목 리스트(TArray) 이사
 			NewPS->SavedInventoryContainers = this->SavedInventoryContainers;
-			NewPS->SavedWeapons = this->SavedWeapons;
+			NewPS->SavedWeapons = this->SavedWeapons; // Not in used
 			
 			// 3. 스탯 및 단계 TMap 이사
 			NewPS->SavedStats = this->SavedStats;

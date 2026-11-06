@@ -84,6 +84,40 @@ void UC_GameMainHUD::DeactivateInteractionTimer()
 	InteractionWidget->DeactivateInteractionTimer();
 }
 
+void UC_GameMainHUD::ToggleFriendListWidget(bool _Visible)
+{
+	APlayerController* PC = GetOwningPlayer();
+	if (!PC) return;
+
+	const ESlateVisibility PrevVisibility = FriendListWidget->GetVisibility();
+	
+	if (_Visible)
+	{
+		// InputMode 수정도 들어가 있어서 중복 처리로 인한 꼬임 방지를 위해 기존의 상태와 동일한 Input을 받았다면, early return 처리함
+		if (PrevVisibility == ESlateVisibility::Visible) return;
+		
+		FriendListWidget->SetVisibility(ESlateVisibility::Visible);
+		
+		FInputModeGameAndUI InputMode{};
+		InputMode.SetWidgetToFocus(nullptr);
+
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		PC->SetInputMode(InputMode);
+		PC->SetShowMouseCursor(true);
+		
+		return;
+	}
+
+	// InputMode 수정도 들어가 있어서 중복 처리로 인한 꼬임 방지를 위해 기존의 상태와 동일한 Input을 받았다면, early return 처리함
+	if (PrevVisibility == ESlateVisibility::Collapsed || PrevVisibility == ESlateVisibility::Hidden) return;
+	
+	FriendListWidget->SetVisibility(ESlateVisibility::Collapsed);
+		
+	FInputModeGameOnly InputMode{};
+	PC->SetInputMode(InputMode);
+	PC->SetShowMouseCursor(false);
+}
+
 bool UC_GameMainHUD::AddPlayerWarningLog(const FString& WarningLog, const FColor& _LogColor)
 {
 	return InformWidget->AddPlayerWarningLog(WarningLog, _LogColor);

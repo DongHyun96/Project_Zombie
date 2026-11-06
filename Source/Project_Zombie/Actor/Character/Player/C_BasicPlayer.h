@@ -242,6 +242,14 @@ private:
 
 	// 현재 Valid한 무기를 손에 들고 있고 사격중인지
 	bool m_bIsFiring{};
+
+private: /* Interact 가능한(Collider에 접근한) Storage(Weapon Cabinet) 관련 */
+	
+	UPROPERTY()
+	class AC_Storage* m_EnteredStorage{};
+	
+	UPROPERTY()
+	class AC_InviteInteractable* m_EnteredInviteInteractable{};
 	
 	// [Weapon] - EquippedComponent에서 관리할 예정
 protected:
@@ -407,6 +415,9 @@ public:
 	void SetIsFiring(bool _IsFiring) { m_bIsFiring = _IsFiring; }
 
 	void SetPlayerMovingDirection(const FRotator& _MovingDirection) { m_CharacterMovingDirection = _MovingDirection; }
+
+	void SetEnteredStorage(AC_Storage* _Storage) { m_EnteredStorage = _Storage; }
+	void SetEnteredInviteInteractable(AC_InviteInteractable* _InviteInteractable) { m_EnteredInviteInteractable = _InviteInteractable; }
 	
 public:
 	/// <summary>

@@ -31,6 +31,10 @@ protected:
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+	
+public:
+	
+	void ToggleOutlineEffect(bool _Enable);
 
 protected:
 	// 창고 스태틱 메시

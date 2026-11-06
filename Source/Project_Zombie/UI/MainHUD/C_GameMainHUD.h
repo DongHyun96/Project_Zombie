@@ -100,7 +100,8 @@ public: // Interaction UI 관련
 	/// </summary>
 	void DeactivateInteractionTimer();
 
-
+	void ToggleFriendListWidget(bool _Visible);	
+	
 public:
 	
 	class UC_CompassBarWidget* GetCompassBarWidget() const { return CompassBarWidget; }
@@ -116,6 +117,8 @@ public:
 	class UC_GameOverWidget* GetGameOverWidget() const { return GameOverWidget; }
 	
 	class UC_InformWidget* GetInformWidget() const { return InformWidget; }
+	
+	UUserWidget* GetFriendListWidget() const { return FriendListWidget; }
 	
 public: // Ingame Log 관련
 	
@@ -150,4 +153,7 @@ protected:
 	
 	UPROPERTY(meta = (BindWidget))
 	UC_GameOverWidget* GameOverWidget{};
+	
+	UPROPERTY(meta = (BindWidget))
+	UUserWidget* FriendListWidget{};
 };

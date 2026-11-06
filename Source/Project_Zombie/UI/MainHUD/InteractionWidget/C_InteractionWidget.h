@@ -38,6 +38,15 @@ public:
 	/// </summary>
 	void DeactivateInteraction();
 
+/* 
+ * Tab키 전용 Interaction instruction panel 활성화/비활성화
+ * 위의 메서드들과 별개로 따로 뺀 이유는 Panel 자체를 새로 생성했기 때문 (비율 등의 문제로 Text 내용만 바꿔칠 수 없었음) 
+ */
+	
+public:
+	
+	void ToggleTabInteractionInstruction(bool _Visible);	
+	
 public:
 	/// <summary>
 	/// 상호작용 시 Timer 활성화
@@ -71,6 +80,11 @@ protected:
 
 	UPROPERTY(Transient)
 	UMaterialInstanceDynamic* m_TimerMaterialInstance{};
+	
+protected:
+	
+	UPROPERTY(meta = (BindWidget))
+	class UHorizontalBox* TabInteractPanel{};
 
 private:
 

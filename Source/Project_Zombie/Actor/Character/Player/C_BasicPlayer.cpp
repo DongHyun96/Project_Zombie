@@ -66,12 +66,15 @@
 #include "UI/InvenUI/DivideWIdget/C_DivideItemWidget.h"
 #include "UI/InvenUI/Upgrade/C_ItemUpgradeWidget.h"
 #include "Item/Interact/C_InteractableBase.h"
+#include "Item/Interact/InviteInteractable/C_InviteInteractable.h"
 #include "Item/Interact/ItemUpgrade/C_ItemUpgradeStation.h"
+#include "Item/Storage/C_Storage.h"
 
 #include "Kismet/GameplayStatics.h"
 
 #include "UI/InvenUI/Upgrade/C_PlayerStatUpgradeWidget.h"
 #include "UI/MainHUD/InformWidget/C_InformWidget.h"
+#include "UI/MainHUD/InteractionWidget/C_InteractionWidget.h"
 #include "UI/MainHUD/PlayerStatHUD/C_OtherPlayerStatWidget.h"
 #include "UI/MainHUD/PlayerStatHUD/C_PlayerStatWidget.h"
 #include "Utility/C_UtilActor.h"
@@ -472,6 +475,15 @@ void AC_BasicPlayer::ToggleInventoryWidget()
 		FInputModeGameOnly InputMode;
 		PC->SetInputMode(InputMode);
 		PC->SetShowMouseCursor(false);
+		
+		// 만약 Entered 한 Storage Actor가 있는 경우, OutlineMat과 Tab instruction 다시 켜주기
+		if (m_EnteredStorage)
+		{
+			m_EnteredStorage->ToggleOutlineEffect(true);
+			
+			if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+				MainHUD->GetInteractionWidget()->ToggleTabInteractionInstruction(true);
+		}
 	}
 	else
 	{
@@ -485,6 +497,15 @@ void AC_BasicPlayer::ToggleInventoryWidget()
 		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 		PC->SetInputMode(InputMode);
 		PC->SetShowMouseCursor(true);
+		
+		// 만약 Entered 한 Storage Actor가 있는 경우, OutlineMat과 Tab instruction 비활성화
+		if (m_EnteredStorage)
+		{
+			m_EnteredStorage->ToggleOutlineEffect(false);
+			
+			if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+				MainHUD->GetInteractionWidget()->ToggleTabInteractionInstruction(false);
+		}
 	}
 }
 
@@ -508,6 +529,13 @@ void AC_BasicPlayer::ToggleMenuWidget()
 		FInputModeGameOnly InputMode;
 		PC->SetInputMode(InputMode);
 		PC->SetShowMouseCursor(false);
+		
+		// Invite Interactable과 교신 중인 방장이라면, Friend List 창만 띄워주기
+		if (m_EnteredInviteInteractable)
+		{
+			if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+				MainHUD->ToggleFriendListWidget(true);
+		}
 	}
 	else
 	{
@@ -523,6 +551,13 @@ void AC_BasicPlayer::ToggleMenuWidget()
 
 		PC->SetInputMode(InputMode);
 		PC->SetShowMouseCursor(true);
+		
+		// Invite Interactable과 교신 중인 방장이라면, Friend List 창 끄기
+		if (m_EnteredInviteInteractable)
+		{
+			if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+				MainHUD->ToggleFriendListWidget(false);			
+		}
 	}
 }
 

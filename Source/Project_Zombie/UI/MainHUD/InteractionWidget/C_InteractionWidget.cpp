@@ -4,6 +4,7 @@
 #include "UI/MainHUD/InteractionWidget/C_InteractionWidget.h"
 
 #include "Components/CanvasPanel.h"
+#include "Components/HorizontalBox.h"
 #include "Components/TextBlock.h"
 #include "Components/Image.h"
 
@@ -66,6 +67,11 @@ void UC_InteractionWidget::DeactivateInteraction()
 
 	// 상호작용 UI 비활성화
 	InteractionPanel->SetVisibility(ESlateVisibility::Collapsed);
+}
+
+void UC_InteractionWidget::ToggleTabInteractionInstruction(bool _Visible)
+{
+	TabInteractPanel->SetVisibility(_Visible ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 }
 
 void UC_InteractionWidget::ActivateInteractionTimer(float _Duration)

@@ -11,6 +11,8 @@
 #include "GameModeAndManager/C_UIManager.h"
 #include "UI/InvenUI/C_InventoryGridWidget.h"
 #include "UI/InvenUI/C_InventoryWidget.h"
+#include "UI/MainHUD/C_GameMainHUD.h"
+#include "UI/MainHUD/InteractionWidget/C_InteractionWidget.h"
 #include "Utility/C_Util.h"
 
 // Sets default values
@@ -107,7 +109,7 @@ void AC_Storage::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* Oth
 	
 	if (!PC)
 	{
-		UC_Util::Print("Can't find player controller!");
+		UC_Util::Print("Can't find player controller!", FColor::Red, 10.f);
 		return;
 	}
 	
@@ -118,12 +120,24 @@ void AC_Storage::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* Oth
 		UC_Util::Print("Can't find UIManager!");
 		return;
 	}
+	
+	Player->SetEnteredStorage(this);
+	
 	UC_InventoryWidget* InventoryWidget = UIManager->GetInventoryWidget();
 	
 	InventoryWidget->GetStorageGridWidget()->SetInvenComponent(InvenComp);
 	
 	if (InventoryWidget->GetVisibility() == ESlateVisibility::Visible)
 		InventoryWidget->GetStorageGridWidget()->SetVisibility(ESlateVisibility::Visible);
+	else
+	{
+		// Inven 창을 보고 있지 않은 중 -> Tab Instruction 띄우기 & Outline Material 활성화
+		if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+			MainHUD->GetInteractionWidget()->ToggleTabInteractionInstruction(true);
+		else PRINT_LOCAL(GetWorld(), "[AC_Storage::OnOverlapBegin] : MainHUD nullptr", FColor::Red, 10.f);
+		
+		ToggleOutlineEffect(true);
+	}
 	
 	//UIManager->GetInventoryWidget()->GetStorageGridWidget()->RefreshAllSlots(InvenComp->GetInventoryItems());
 	UC_Util::Print("Storage Overlap!");
@@ -153,8 +167,20 @@ void AC_Storage::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* Other
 	
 	if (!UIManager) return;
 	
+	// 이거 LocallyControlled 딱히 체크를 하지 않아도 괜찮?
+	
 	UIManager->GetInventoryWidget()->GetStorageGridWidget()->SetInvenComponent(nullptr);
 	UIManager->GetInventoryWidget()->GetStorageGridWidget()->SetVisibility(ESlateVisibility::Collapsed);
+
+	if (Player->IsLocallyControlled())
+		Player->SetEnteredStorage(nullptr);
+	
+	// Tab instruction Widget Visible off && Outline Mat Off
+	if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+		MainHUD->GetInteractionWidget()->ToggleTabInteractionInstruction(false);
+	else PRINT_LOCAL(GetWorld(), "[AC_Storage::OnOverlapEnd] : MainHUD nullptr", FColor::Red, 10.f);
+	
+	ToggleOutlineEffect(false);
 }
 
 // Called every frame
@@ -162,5 +188,10 @@ void AC_Storage::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+}
+
+void AC_Storage::ToggleOutlineEffect(bool _Enable)
+{
+	if (MeshComp) MeshComp->SetOverlayMaterial(_Enable ? m_OutlineMaterial : nullptr);
 }
 

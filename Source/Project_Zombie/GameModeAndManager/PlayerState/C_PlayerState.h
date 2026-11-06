@@ -49,19 +49,19 @@ public:
 	const TMap<FName, float>& GetSavedStats() const { return SavedStats; }
 	const TMap<FName, uint8>& GetSavedStatGrades() const { return SavedStatGrades; }
 	
-	TArray<AC_WeaponBase*> GetSavedWeapons() const { return SavedWeapons; }
+	// TArray<AC_WeaponBase*> GetSavedWeapons() const { return SavedWeapons; }
 
 	// 인벤토리 데이터 입출력
 	void SaveInventoryToState(const TArray<FInventoryEntry>& InContainer) { SavedInventoryContainers = InContainer; }
 	const TArray<FInventoryEntry>& GetSavedInventory() const { return SavedInventoryContainers; }
 	
-	void ClearSavedInventory() { SavedInventoryContainers.Empty(); }
+	/*void ClearSavedInventory() { SavedInventoryContainers.Empty(); }
 	
 	void ClearSavedWeapons() { SavedWeapons.Empty(); }
 	
 	void ClearSavedStats() { SavedStats.Empty(); }
 	
-	void ClearSavedStatGrades() { SavedStatGrades.Empty(); }
+	void ClearSavedStatGrades() { SavedStatGrades.Empty(); }*/
 
 public:
 	// BasicPlayer 를 PlayerState 에서 참조안하려고 델리게이트로 처리
@@ -78,7 +78,7 @@ protected:
 	TArray<FInventoryEntry> SavedInventoryContainers{};
 	
 	UPROPERTY()
-	TArray<AC_WeaponBase*> SavedWeapons{};	
+	TArray<AC_WeaponBase*> SavedWeapons{}; // Not in used	
 	
 	UPROPERTY()
 	TMap<FName, float> SavedStats{};
