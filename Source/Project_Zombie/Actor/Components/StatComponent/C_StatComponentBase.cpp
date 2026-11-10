@@ -32,19 +32,23 @@ void UC_StatComponentBase::LoadStatsFromBackup(const TMap<FName, float>& InStats
 	if (!GetOwner()->HasAuthority()) return;
 
 	// 1. 서버 메모리 즉시 복구
-	m_Stats = InStats;
+	m_Stats      = InStats;
 	m_StatGrades = InGrades;
 	
-	FString msg = FString("Max HP : ");
+	// CurHP는 Max HP로 꽉 채워넣기
+	if (m_Stats.Contains(StatName::CurHP) && m_Stats.Contains(StatName::MaxHP))
+		m_Stats[StatName::CurHP] = m_Stats[StatName::MaxHP];
+	else
+		UC_Util::Print("[UC_StatComponentBase::LoadStatsFromBackup] : CurHP or MaxHP missing!", FColor::Red, 10.f);
 	
+	/*FString msg = FString("Max HP : ");
 	msg += FString::SanitizeFloat(m_Stats[StatName::MaxHP]);
-
 	PRINT_LOCAL(GetWorld(), "LoadStatsFromBackup - " + msg, CUR_TICK_COLOR, 10.f);
 
 	// Valid한 CurHP가 여기서 잡힘 (서버 기준)
 	msg = FString("Current HP : ");
 	msg += FString::SanitizeFloat(m_Stats[StatName::CurHP]);
-	PRINT_LOCAL(GetWorld(), "LoadStatsFromBackup - " + msg, CUR_TICK_COLOR, 10.f);
+	PRINT_LOCAL(GetWorld(), "LoadStatsFromBackup - " + msg, CUR_TICK_COLOR, 10.f);*/
 
 	// 2. m_ReplicatedStatsArray Replicate 처리
     

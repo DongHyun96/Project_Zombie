@@ -41,6 +41,8 @@ void UC_CompassMarkerWidget::NativeTick(const FGeometry& MyGeometry, float InDel
 	// MeterText 값 수정 및 위치(yaw값에 따른)조정 처리
 	if (!m_bIsActive) return;
 
+	if (!m_LocalPlayer) return;
+	
 	/* Update Mtrl Yaw */
 	const float RawControllerYaw = m_LocalPlayerController->GetControlRotation().Yaw;
 	const float RawLookAtYaw     = UKismetMathLibrary::FindLookAtRotation(m_LocalPlayer->GetActorLocation(), m_WorldMarkerSpawnedLocation).Yaw;
