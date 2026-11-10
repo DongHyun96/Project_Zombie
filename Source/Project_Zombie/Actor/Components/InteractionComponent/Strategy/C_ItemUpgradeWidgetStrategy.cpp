@@ -43,8 +43,8 @@ bool UC_ItemUpgradeWidgetStrategy::StartInteraction(AC_BasicPlayer* _Interactor,
 	if (!ItemUpgradeWidget) return false;
 	
 	ItemUpgradeWidget->SetUsePlayer(_Interactor);
-	
-	_Interactor->ToggleInventoryWidget();
+
+	UIManager->ToggleMouseInputNeededWidgetVisibility(EMouseCursorNeededWidgetType::InvenWidget);
 		
 	// 장비위젯 | 업그레이드위젯 | Player Inven Widget 을 보여줌(Visible) 
 	InvenWidget->ShowItemUpgradeWidget();

@@ -25,9 +25,14 @@ protected:
 
 public:
 
+	void ActivateGameOverSequence();
+	
+private:
+	
 	void ActivateWinningSequence();
 	void ActivateLoseSequence();
 
+public:
 	
 	void UpdateExitToLobbyCountDownRemainSec(int32 _RemainSec);
 	
@@ -42,6 +47,15 @@ private:
 	UFUNCTION()
 	void OnExitToLobbyButtonClicked();
 
+public:
+	
+	void SetHasWin(bool _Win) { m_bHasWin = _Win; }
+	
+	
+private:
+	
+	bool m_bHasWin{};
+	
 protected:
 
 	// 방장용 -> Exit Button 존재

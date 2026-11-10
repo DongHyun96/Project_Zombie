@@ -120,8 +120,8 @@ void AC_Storage::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* Oth
 		UC_Util::Print("Can't find UIManager!");
 		return;
 	}
-	
-	Player->SetEnteredStorage(this);
+
+	UIManager->SetEnteredStorage(this);
 	
 	UC_InventoryWidget* InventoryWidget = UIManager->GetInventoryWidget();
 	
@@ -173,7 +173,7 @@ void AC_Storage::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* Other
 	UIManager->GetInventoryWidget()->GetStorageGridWidget()->SetVisibility(ESlateVisibility::Collapsed);
 
 	if (Player->IsLocallyControlled())
-		Player->SetEnteredStorage(nullptr);
+		UIManager->SetEnteredStorage(nullptr);
 	
 	// Tab instruction Widget Visible off && Outline Mat Off
 	if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))

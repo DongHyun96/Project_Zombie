@@ -352,12 +352,26 @@ void UC_BasicPlayerInputComponent::KeepAimActionEnd()
 
 void UC_BasicPlayerInputComponent::ToggleInventoryWidget()
 {
-	Player->ToggleInventoryWidget();
+	AC_UIManager* UIManager = UI_MANAGER(GetWorld());
+	if (!UIManager)
+	{
+		UC_Util::Print("[UC_BasicPlayerInputComponent::ToggleInventoryWidget] : UIManager nullptr", FColor::Red, 10.f);		
+		return;
+	}
+	
+	UIManager->ToggleMouseInputNeededWidgetVisibility(EMouseCursorNeededWidgetType::InvenWidget);
 }
 
 void UC_BasicPlayerInputComponent::ToggleMenuWidget()
 {
-	Player->ToggleMenuWidget();
+	AC_UIManager* UIManager = UI_MANAGER(GetWorld());
+	if (!UIManager)
+	{
+		UC_Util::Print("[UC_BasicPlayerInputComponent::ToggleInventoryWidget] : UIManager nullptr", FColor::Red, 10.f);		
+		return;
+	}
+	
+	UIManager->ToggleMouseInputNeededWidgetVisibility(EMouseCursorNeededWidgetType::MenuWidget);
 }
 
 void UC_BasicPlayerInputComponent::EquipMainWeapon()

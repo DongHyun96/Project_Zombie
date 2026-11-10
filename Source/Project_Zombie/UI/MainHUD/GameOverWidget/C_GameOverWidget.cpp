@@ -76,10 +76,11 @@ void UC_GameOverWidget::ActivateWinningSequence()
 		// Stage를 다음 Stage로 여기서 맞춤
 		GetGameInstance()->GetSubsystem<UC_StageManager>()->SetCurStageToNextStage();
 
-		APlayerController* PC = MyPlayer->GetController<APlayerController>();
+		// UIManager에서 총괄 관장
+		/*APlayerController* PC = MyPlayer->GetController<APlayerController>();
 		PC->SetShowMouseCursor(true);
 		FInputModeGameAndUI InputMode{};
-		PC->SetInputMode(InputMode);
+		PC->SetInputMode(InputMode);*/
 	}
 	else
 	{
@@ -107,7 +108,8 @@ void UC_GameOverWidget::ActivateLoseSequence()
 
 	this->SetVisibility(ESlateVisibility::Visible);
 
-	AC_BasicPlayerController* PlayerController = MyPlayer->GetController<AC_BasicPlayerController>();
+	// UIManager에서 총괄 관장
+	/*AC_BasicPlayerController* PlayerController = MyPlayer->GetController<AC_BasicPlayerController>();
 
 	PlayerController->SetInputMode
 	(
@@ -118,7 +120,7 @@ void UC_GameOverWidget::ActivateLoseSequence()
 	);
 
 	PlayerController->SetShowMouseCursor(true);
-	PlayerController->SetIgnoreLookInput(true);
+	PlayerController->SetIgnoreLookInput(true);*/
 
 	PlayerCharacterName->SetText(FText::FromString(MyPlayer->GetPlayerState()->GetPlayerName()));
 	RankingTextTopRight->SetText(FText::FromString(FString::FromInt(m_Ranking)));
@@ -141,6 +143,12 @@ void UC_GameOverWidget::ActivateLoseSequence()
 		PlayAnimation(Client_LoseAnimation);
 		ExitToLobbyButton->SetVisibility(ESlateVisibility::Collapsed);
 	}
+}
+
+void UC_GameOverWidget::ActivateGameOverSequence()
+{
+	if (m_bHasWin)	ActivateWinningSequence();
+	else			ActivateLoseSequence();
 }
 
 void UC_GameOverWidget::UpdateExitToLobbyCountDownRemainSec(int32 _RemainSec)

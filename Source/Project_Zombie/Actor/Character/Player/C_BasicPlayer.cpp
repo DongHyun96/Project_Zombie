@@ -265,6 +265,14 @@ void AC_BasicPlayer::BeginPlay()
 		// 웅크리기 완료 시 호출할 OnPoseTransitionFinished 바인딩
 		if (!m_PoseColliderHandlerComponent) return;
 		m_PoseColliderHandlerComponent->OnPoseTransitionFinished.AddUObject(this, &AC_BasicPlayer::OnPoseTransitionFinished);
+
+		// 이전 InputMode UI 사용 넘어올 때가 간혹 있었음 -> GameModeOnly로 초기화
+		if (IsLocallyControlled())
+		{
+			FInputModeGameOnly InputMode{};
+			PC->SetInputMode(InputMode);
+			PC->SetShowMouseCursor(false);
+		}
 		
 		m_InvenComponent->SetHasEquipmentSlots(true);
 		
@@ -444,120 +452,6 @@ void AC_BasicPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	if (m_PlayerInputComponent)
 	{
 		m_PlayerInputComponent->InitializePlayerInput(PlayerInputComponent, this);
-	}
-}
-
-void AC_BasicPlayer::ToggleInventoryWidget()
-{
-	// 1. 이 컴포넌트가 로컬 플레이어의 캐릭터에 붙어있는지 확인 (멀티플레이어 방어벽)
-	//if (!Player || !Player->IsLocallyControlled()) return;
-
-	// 2. 플레이어 컨트롤러 얻어오기
-	APlayerController* PC = Cast<APlayerController>(GetController());
-	if (!PC) return;
-
-	// 3. 컨트롤러를 통해 C_UIManager(HUD) 가져오기
-	AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD());
-	if (!UIManager) return;
-
-	// 4. UIManager에서 인벤토리 위젯 가져오기
-	UC_InventoryWidget* InventoryWidget = UIManager->GetInventoryWidget();
-	if (!InventoryWidget) return;
-
-	// 5. 현재 위젯의 가시성 상태에 따라 토글 처리
-	if (InventoryWidget->GetVisibility() == ESlateVisibility::Visible)
-	{
-		if (InventoryWidget->GetDivideItemWidget()->GetVisibility() == ESlateVisibility::Visible) return;
-		
-		// 열려있으면 닫기
-		InventoryWidget->SetVisibility(ESlateVisibility::Collapsed);
-
-		FInputModeGameOnly InputMode;
-		PC->SetInputMode(InputMode);
-		PC->SetShowMouseCursor(false);
-		
-		// 만약 Entered 한 Storage Actor가 있는 경우, OutlineMat과 Tab instruction 다시 켜주기
-		if (m_EnteredStorage)
-		{
-			m_EnteredStorage->ToggleOutlineEffect(true);
-			
-			if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
-				MainHUD->GetInteractionWidget()->ToggleTabInteractionInstruction(true);
-		}
-	}
-	else
-	{
-		// 닫혀있으면 열기
-		InventoryWidget->SetVisibility(ESlateVisibility::Visible);
-
-		FInputModeGameAndUI InputMode;
-		//InputMode.SetWidgetToFocus(InventoryWidget->TakeWidget());
-		InputMode.SetWidgetToFocus(nullptr);
-
-		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-		PC->SetInputMode(InputMode);
-		PC->SetShowMouseCursor(true);
-		
-		// 만약 Entered 한 Storage Actor가 있는 경우, OutlineMat과 Tab instruction 비활성화
-		if (m_EnteredStorage)
-		{
-			m_EnteredStorage->ToggleOutlineEffect(false);
-			
-			if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
-				MainHUD->GetInteractionWidget()->ToggleTabInteractionInstruction(false);
-		}
-	}
-}
-
-void AC_BasicPlayer::ToggleMenuWidget()
-{
-	APlayerController* PC = Cast<APlayerController>(GetController());
-	if (!PC) return;
-
-	AC_UIManager* UIManager = Cast<AC_UIManager>(PC->GetHUD());
-	if (!UIManager) return;
-
-	UUserWidget* MenuWidget = UIManager->GetMenuWidget();
-	if (!MenuWidget) return;
-
-	if (MenuWidget->GetVisibility() == ESlateVisibility::Visible)
-	{
-		// 닫기
-		MenuWidget->SetVisibility(ESlateVisibility::Collapsed);
-
-		// 게임 전용 입력 모드로 복귀
-		FInputModeGameOnly InputMode;
-		PC->SetInputMode(InputMode);
-		PC->SetShowMouseCursor(false);
-		
-		// Invite Interactable과 교신 중인 방장이라면, Friend List 창만 띄워주기
-		if (m_EnteredInviteInteractable)
-		{
-			if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
-				MainHUD->ToggleFriendListWidget(true);
-		}
-	}
-	else
-	{
-		// 열기
-		MenuWidget->SetVisibility(ESlateVisibility::Visible);
-
-		// [수정] UI 전용 입력 모드로 전환 (다른 게임 상호작용 완전 차단)
-		FInputModeUIOnly InputMode;
-
-		// MenuWidget에 포커스를 주어 다른 UI로 포커스가 넘어가지 않도록 설정
-		InputMode.SetWidgetToFocus(MenuWidget->TakeWidget());
-		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-
-		PC->SetInputMode(InputMode);
-		PC->SetShowMouseCursor(true);
-		
-		// Invite Interactable과 교신 중인 방장이라면, Friend List 창 끄기
-		if (m_EnteredInviteInteractable)
-		{
-			if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
-				MainHUD->ToggleFriendListWidget(false);			
-		}
 	}
 }
 

@@ -16,6 +16,17 @@ struct FLocalDebugMessage
 	float ExpireTime{}; // 화면에서 사라질 시간
 };
 
+UENUM(BlueprintType)
+enum class EMouseCursorNeededWidgetType : uint8
+{
+	InvenWidget,
+	MenuWidget,
+	InviteFriendWidget,
+	GameOverWidget,
+	SkinWidget,
+	End UMETA(Hidden)	
+};
+
 /**
  * 
  */
@@ -42,13 +53,36 @@ public:
 	
 	class UC_InventoryWidget* GetInventoryWidget() const { return m_InventoryWidget; }
 	
-	class UC_MenuWidget* GetMenuWidget() const { return m_MenuWidget; };
+	class UC_MenuWidget* GetMenuWidget() const { return m_MenuWidget; }
 
-	class UC_SkinWidget* GetSkinWidget() const { return m_SkinWidget; };
+	class UC_SkinWidget* GetSkinWidget() const { return m_SkinWidget; }
 
 public:
 	
 	void PrintLocalDebugMessage(const FString& _Message, const FColor& _Color, float _Duration);
+
+public:
+
+	bool GetMouseInputNeededWidgetVisibility(EMouseCursorNeededWidgetType _WidgetType) const;
+
+	/// <summary>
+	/// <para> 마우스 Input이 필요한 Widget 종류에 대한 Visibility Toggle 통합 </para>
+	/// <para> 통합한 이유 : InputMode 꼬임 방지 </para>
+	/// </summary>
+	/// <param name="_WidgetToToggle"> : Toggle시킬 Widget 종류 </param>
+	/// <param name="_Visible"> : true일 경우 보이게끔 처리 (반대는 안 보이게끔) </param>
+	void ToggleMouseInputNeededWidgetVisibility(EMouseCursorNeededWidgetType _WidgetToToggle, bool _Visible);
+
+	/// <summary>
+	/// <para> 마우스 Input이 필요한 Widget 종류에 대한 Visibility Toggle 통합 </para>
+	/// <para> 현재 Visible 상태에서 반대로 Toggle 처리 시킨다 </para>
+	/// <para> 통합한 이유 : InputMode 꼬임 방지 </para>
+	/// </summary>
+	/// <param name="_WidgetToToggle"> : Visible 반대로 Toggle시킬 Widget 종류 </param>
+	void ToggleMouseInputNeededWidgetVisibility(EMouseCursorNeededWidgetType _WidgetToToggle);
+	
+	void SetEnteredStorage(class AC_Storage* _Storage) { m_EnteredStorage = _Storage; }
+	void SetEnteredInviteInteractable(class AC_InviteInteractable* _InviteInteractable) { m_EnteredInviteInteractable = _InviteInteractable; } 
 	
 protected:
 
@@ -81,6 +115,20 @@ protected:
 	
 	UPROPERTY(BlueprintReadOnly)
 	UC_SkinWidget* m_SkinWidget{};
+
+private:
+	
+	/* 현재 마우스 커서 Input이 필요한 Widget이 켜져 있는지 체크용 */
+	UPROPERTY()
+	TMap<EMouseCursorNeededWidgetType, UUserWidget*> m_MouseCursorNeededWidgets{};
+	
+private: /* Interact 가능한(Collider에 접근한) Storage(Weapon Cabinet) 관련 */
+	
+	UPROPERTY()
+	AC_Storage* m_EnteredStorage{};
+	
+	UPROPERTY()
+	AC_InviteInteractable* m_EnteredInviteInteractable{};
 	
 private:
 	

@@ -7,6 +7,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Actor/Character/Player/C_BasicPlayer.h"
 #include "OnlineSubsystem.h"
+#include "GameModeAndManager/C_UIManager.h"
 #include "Interfaces/OnlineSessionInterface.h"
 
 void UC_MenuWidget::NativeOnInitialized()
@@ -102,9 +103,9 @@ FReply UC_MenuWidget::NativeOnKeyDown(const FGeometry& MyGeometry, const FKeyEve
 	{
 		if (APawn* Pawn = GetOwningPlayerPawn())
 		{
-			if (AC_BasicPlayer* Player = Cast<AC_BasicPlayer>(Pawn))
+			if (Cast<AC_BasicPlayer>(Pawn))
 			{
-				Player->ToggleMenuWidget();
+				UI_MANAGER(GetWorld())->ToggleMouseInputNeededWidgetVisibility(EMouseCursorNeededWidgetType::MenuWidget);
 				return FReply::Handled();
 			}
 		}

@@ -69,17 +69,25 @@ void AC_GameOverChecker::Multicast_GameOver_Implementation(bool _PlayerWin)
 	m_bGameOver = true;
 	
 	if (HasAuthority()) POINT_TOWER_MANAGER(this)->ClearCurSeqLeftTimerHandle(); // GameOver 시, 현재 Sequence의 LeftTime 재는 Timer clear 처리 (서버 쪽만 하면된다)
+
+	AC_UIManager* UIManager = UI_MANAGER(GetWorld());
+	if (!UIManager)
+	{
+		UC_Util::Print("From AC_GameOverChecker::Multicast_GameOver : UIManager nullptr", FColor::Red, 10.f);
+		return;
+	}
 	
 	UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld());
 	if (!MainHUD)
 	{
 		UC_Util::Print("From AC_GameOverChecker::Multicast_GameOver : MainHUD nullptr", FColor::Red, 10.f);
+		return;
 	}
-	
-	if (_PlayerWin) MainHUD->GetGameOverWidget()->ActivateWinningSequence();
-	else MainHUD->GetGameOverWidget()->ActivateLoseSequence();
-	
+
+	MainHUD->GetGameOverWidget()->SetHasWin(_PlayerWin);
 	MainHUD->GetInformWidget()->HideAllCurSequenceInfo();
+	
+	UIManager->ToggleMouseInputNeededWidgetVisibility(EMouseCursorNeededWidgetType::GameOverWidget, true);
 }
 
 void AC_GameOverChecker::Multicast_UpdateExitToLobbyRemainTime_Implementation(int32 _RemainTime)

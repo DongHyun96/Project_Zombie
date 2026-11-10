@@ -90,20 +90,22 @@ void AC_InviteInteractable::BeginOverlap
 	if (!Player->IsLocallyControlled()) return;
 	if (!Player || !Player->HasAuthority()) return; // 오로지 방장 플레이어만 Interaction Valid
 
-	Player->SetEnteredInviteInteractable(this);
-	
 	ToggleOutlineEffect(true);
 	
-	AC_UIManager* UIManager = UI_MANAGER(GetWorld()); 
-	if (!UIManager) return;
-	if (!UIManager->GetMenuWidget()) return;
+	AC_UIManager* UIManager = UI_MANAGER(GetWorld());
+	if (!UIManager)
+	{
+		UC_Util::Print("[AC_InviteInteractable::BeginOverlap] : Invalid UIManager", FColor::Red, 10.f);
+		return;
+	}
+	
+	UIManager->SetEnteredInviteInteractable(this);
 	
 	// Menu를 이미 보고 있는 중이라면 따로 처리 x (Menu 창에 해당 중복된 기능이 이미 있음)
-	if (UIManager->GetMenuWidget()->GetVisibility() == ESlateVisibility::Visible) return;
+	if (UIManager->GetMouseInputNeededWidgetVisibility(EMouseCursorNeededWidgetType::MenuWidget)) return; 
 	
 	// Menu를 보고 있지 않은 중이라면, FriendList 활성화 (Interaction 키 처리 없이 바로 해당 창 보여주기 처리)
-	if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
-		MainHUD->ToggleFriendListWidget(true);
+	UIManager->ToggleMouseInputNeededWidgetVisibility(EMouseCursorNeededWidgetType::InviteFriendWidget, true);
 }
 
 void AC_InviteInteractable::EndOverlap
@@ -118,16 +120,17 @@ void AC_InviteInteractable::EndOverlap
 	if (!Player->IsLocallyControlled()) return;
 	if (!Player || !Player->HasAuthority()) return; // 오로지 방장 플레이어만 Interaction Valid
 
-	Player->SetEnteredInviteInteractable(nullptr);
-	
 	ToggleOutlineEffect(false);
-	
-	// 친구창 Visible인 경우에 한해서만 Visible off
-	if (UC_GameMainHUD* MainHUD = MAIN_HUD(GetWorld()))
+
+	if (AC_UIManager* UIManager = UI_MANAGER(GetWorld()))
 	{
-		if (MainHUD->GetFriendListWidget()->GetVisibility() == ESlateVisibility::Visible)
-			MainHUD->ToggleFriendListWidget(false);
+		UIManager->SetEnteredInviteInteractable(nullptr);
+
+		// 친구창 Visibility off
+		UIManager->ToggleMouseInputNeededWidgetVisibility(EMouseCursorNeededWidgetType::InviteFriendWidget, false);
 	}
+	else UC_Util::Print("[AC_InviteInteractable::EndOverlap] : Invalid UIManager", FColor::Red, 10.f);
+	
 }
 
 void AC_InviteInteractable::ToggleOutlineEffect(bool _Enable)

@@ -33,21 +33,7 @@ bool UC_SkinWidgetStrategy::StartInteraction(AC_BasicPlayer* _Interactor, AActor
 
 	// SkinWidget 열기
 	SkinWidget->SetUsePlayer(_Interactor);
-	SkinWidget->SetVisibility(ESlateVisibility::Visible);
-
-	// UI + 게임 입력 사용
-	FInputModeGameAndUI InputMode;
-
-	InputMode.SetWidgetToFocus(nullptr);
-
-	InputMode.SetLockMouseToViewportBehavior(
-		EMouseLockMode::DoNotLock
-	);
-
-	PC->SetInputMode(InputMode);
-
-	// 마우스 커서 표시
-	PC->SetShowMouseCursor(true);
+	UIManager->ToggleMouseInputNeededWidgetVisibility(EMouseCursorNeededWidgetType::SkinWidget, true);
 
 	return true;
 }
@@ -67,15 +53,8 @@ void UC_SkinWidgetStrategy::CancleInteraction(AC_BasicPlayer* _Interactor, AActo
 	UC_SkinWidget* SkinWidget = UIManager->GetSkinWidget();
 	if (!SkinWidget) return;
 
-	// SkinWidget 닫기
-	SkinWidget->SetVisibility(ESlateVisibility::Collapsed);
-
-	// 게임 입력으로 복귀
-	FInputModeGameOnly InputMode;
-	PC->SetInputMode(InputMode);
-
-	// 마우스 커서 숨기기
-	PC->SetShowMouseCursor(false);
+	// SKinWidget 닫기
+	UIManager->ToggleMouseInputNeededWidgetVisibility(EMouseCursorNeededWidgetType::SkinWidget, false);
 }
 
 void UC_SkinWidgetStrategy::CompleteInteraction(AC_BasicPlayer* _Interactor, AActor* _TargetActor)
